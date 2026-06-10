@@ -1,0 +1,93 @@
+{{define "base"}}
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{if .PageTitle}}{{.PageTitle}} - {{end}}{{.Site.Title}}</title>
+  <script src="/js/theme.js"></script>
+  <script src="/js/page-transitions.js" defer></script>
+  <link rel="stylesheet" href="/css/fonts.css">
+  <link rel="stylesheet" href="/css/global.css">
+</head>
+<body class="{{if eq .PageTitle "首页"}}home-body{{else}}page-body{{end}}">
+  {{if eq .PageTitle "首页"}}
+  <header class="site-header">
+    <a class="site-logo" href="/" aria-label="Stat Indet 首页">
+      <span>Stat</span>
+      <span>Indet</span>
+    </a>
+    <nav class="site-nav" aria-label="主导航">
+      <a class="nav-link" href="/">
+        <span class="nav-icon material-symbol" aria-hidden="true">home</span>
+        <span class="nav-label">首页</span>
+      </a>
+      <a class="nav-link" href="/notes/">
+        <span class="nav-icon material-symbol" aria-hidden="true">article</span>
+        <span class="nav-label">文章</span>
+      </a>
+      <a class="nav-link" href="/archive/">
+        <span class="nav-icon material-symbol" aria-hidden="true">archive</span>
+        <span class="nav-label">归档</span>
+      </a>
+      <a class="nav-link" href="/graph/">
+        <span class="nav-icon material-symbol" aria-hidden="true">account_tree</span>
+        <span class="nav-label">关系图谱</span>
+      </a>
+      <a class="nav-link" href="/about/">
+        <span class="nav-icon material-symbol" aria-hidden="true">info</span>
+        <span class="nav-label">关于</span>
+      </a>
+      <button class="notes-action-button header-theme-toggle theme-toggle" type="button" aria-label="切换亮暗模式">
+        <span class="material-symbol" aria-hidden="true">dark_mode</span>
+      </button>
+    </nav>
+  </header>
+
+  <main class="site-main{{if eq .PageTitle "首页"}} home-main{{end}}">
+    {{template "content" .}}
+  </main>
+  {{else}}
+  <div class="page-shell">
+    <aside class="side-rail" aria-label="站点导航">
+      <a class="site-logo side-logo" href="/" aria-label="Stat Indet 首页">
+        <span>Stat</span>
+        <span>Indet</span>
+      </a>
+
+      <a class="side-avatar-link" href="/" aria-label="回到首页">
+        <img class="side-avatar" src="/images/shelby.jpg" alt="史帙头像">
+      </a>
+
+      <nav class="side-nav" aria-label="主导航">
+        <a class="nav-link" href="/">
+          <span class="nav-icon material-symbol" aria-hidden="true">home</span>
+          <span class="nav-label">首页</span>
+        </a>
+        <a class="nav-link" href="/notes/">
+          <span class="nav-icon material-symbol" aria-hidden="true">article</span>
+          <span class="nav-label">文章</span>
+        </a>
+        <a class="nav-link" href="/archive/">
+          <span class="nav-icon material-symbol" aria-hidden="true">archive</span>
+          <span class="nav-label">归档</span>
+        </a>
+        <a class="nav-link" href="/graph/">
+          <span class="nav-icon material-symbol" aria-hidden="true">account_tree</span>
+          <span class="nav-label">关系图谱</span>
+        </a>
+        <a class="nav-link" href="/about/">
+          <span class="nav-icon material-symbol" aria-hidden="true">info</span>
+          <span class="nav-label">关于</span>
+        </a>
+      </nav>
+    </aside>
+
+    <main class="site-main page-main">
+      {{template "content" .}}
+    </main>
+  </div>
+  {{end}}
+</body>
+</html>
+{{end}}
