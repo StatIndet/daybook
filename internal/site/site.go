@@ -116,6 +116,17 @@ func Build(options Options) (BuildResult, error) {
 		return BuildResult{}, fmt.Errorf("生成文章页: %w", err)
 	}
 
+	aboutPath := filepath.Join(options.PublicDir, "about", "index.html")
+	aboutData := render.AboutData{
+		Site:      siteData,
+		PageTitle: "关于",
+		BodyClass: "about-body page-body",
+		Spiral:    render.NewGoldenSpiral(),
+	}
+	if err := renderer.RenderAbout(aboutPath, aboutData); err != nil {
+		return BuildResult{}, fmt.Errorf("生成关于页: %w", err)
+	}
+
 	return BuildResult{Notes: notes, Skipped: skipped}, nil
 }
 

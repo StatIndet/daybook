@@ -1,0 +1,218 @@
+.about-body .page-frame {
+  position: relative;
+  z-index: 1;
+}
+
+.about-page {
+  min-height: calc(100vh - 160px);
+  position: relative;
+}
+
+.about-content {
+  max-width: 34rem;
+  padding-top: clamp(3rem, 9vh, 7rem);
+  position: relative;
+  z-index: 2;
+}
+
+.about-kicker {
+  color: var(--color-muted);
+  font-family: var(--font-meta);
+  font-size: 0.9rem;
+  font-style: italic;
+  line-height: 1;
+  margin: 0 0 0.9rem;
+}
+
+.about-content h1 {
+  font-family: var(--font-ui);
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  line-height: 1.15;
+  margin: 0;
+}
+
+.about-content p {
+  color: var(--color-muted);
+  font-size: 1rem;
+  line-height: 1.8;
+  margin: 1.2rem 0 0;
+}
+
+.golden-spiral {
+  --golden-loop-duration: 19.854s;
+  inset: 0;
+  opacity: 0.9;
+  pointer-events: none;
+  position: fixed;
+  user-select: none;
+  z-index: 0;
+}
+
+.golden-spiral svg {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+.golden-spiral-stage {
+  animation: golden-spiral-zoom var(--golden-loop-duration) linear infinite;
+  transform-box: view-box;
+}
+
+.golden-spiral-layer {
+  transform-box: view-box;
+  transform-origin: inherit;
+}
+
+.golden-spiral-layer-1 {
+  transform: rotate(-180deg) scale(0.3819660112501051);
+}
+
+.golden-spiral-layer-2 {
+  transform: rotate(-360deg) scale(0.14589803375031546);
+}
+
+.golden-rect,
+.golden-diagonal,
+.golden-curve {
+  fill: none;
+  opacity: 0;
+  stroke-dasharray: 0 1;
+  stroke-dashoffset: 0;
+  stroke-linecap: round;
+}
+
+.golden-rect {
+  animation: golden-guide-life var(--golden-loop-duration) var(--ease-page) infinite both;
+  stroke-dashoffset: var(--golden-offset, 0);
+  stroke: var(--color-golden-rect);
+  stroke-width: 1;
+}
+
+.golden-diagonal {
+  animation: golden-guide-life var(--golden-loop-duration) var(--ease-page) infinite both;
+  stroke-dashoffset: var(--golden-offset, 0);
+  stroke: var(--color-golden-diagonal);
+  stroke-width: 0.8;
+}
+
+.golden-curve {
+  animation: golden-curve-life var(--golden-loop-duration) var(--ease-page) infinite both;
+  stroke: var(--color-golden-curve);
+  stroke-width: 1.55;
+}
+
+@keyframes golden-guide-life {
+  0%,
+  2% {
+    opacity: 0;
+    stroke-dasharray: 0 1;
+    stroke-dashoffset: var(--golden-offset, 0);
+  }
+
+  4% {
+    opacity: 1;
+    stroke-dasharray: 0 1;
+    stroke-dashoffset: var(--golden-offset, 0);
+  }
+
+  40.29% {
+    opacity: 1;
+    stroke-dasharray: var(--golden-span, 0.72) 1;
+    stroke-dashoffset: var(--golden-offset, 0);
+  }
+
+  64.74% {
+    opacity: 0.72;
+    stroke-dasharray: var(--golden-span, 0.72) 1;
+    stroke-dashoffset: var(--golden-offset, 0);
+  }
+
+  96.89% {
+    opacity: 0.18;
+    stroke-dasharray: 0 1;
+    stroke-dashoffset: var(--golden-offset, 0);
+  }
+
+  100% {
+    opacity: 0;
+    stroke-dasharray: 0 1;
+    stroke-dashoffset: var(--golden-offset, 0);
+  }
+}
+
+@keyframes golden-curve-life {
+  0%,
+  8.15% {
+    opacity: 0;
+    stroke-dasharray: 0 1;
+    stroke-dashoffset: 0;
+  }
+
+  10% {
+    opacity: 1;
+    stroke-dasharray: 0 1;
+    stroke-dashoffset: 0;
+  }
+
+  48.45% {
+    opacity: 1;
+    stroke-dasharray: 1 1;
+    stroke-dashoffset: 0;
+  }
+
+  56.59% {
+    opacity: 1;
+    stroke-dasharray: 1 1;
+    stroke-dashoffset: 0;
+  }
+
+  96.89% {
+    opacity: 0.9;
+    stroke-dasharray: 0 1;
+    stroke-dashoffset: 0;
+  }
+
+  100% {
+    opacity: 0;
+    stroke-dasharray: 0 1;
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes golden-spiral-zoom {
+  from {
+    transform: scale(1) rotate(0deg);
+  }
+  to {
+    transform: scale(2.618033988749895) rotate(180deg);
+  }
+}
+
+@media (max-width: 960px) {
+  .about-content {
+    padding-top: clamp(2rem, 8vh, 4rem);
+  }
+}
+
+@media (max-width: 768px) {
+  .golden-spiral {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .golden-spiral-stage,
+  .golden-rect,
+  .golden-diagonal,
+  .golden-curve {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  .golden-rect,
+  .golden-diagonal,
+  .golden-curve {
+    stroke-dashoffset: 0 !important;
+  }
+}

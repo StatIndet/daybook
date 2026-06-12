@@ -44,6 +44,9 @@
   --color-code-bg: #f3f0ea;
   --color-code-border: #e1d8ce;
   --color-code-inline-bg: #eee8df;
+  --color-golden-rect: rgba(117, 111, 102, 0.18);
+  --color-golden-diagonal: rgba(117, 111, 102, 0.11);
+  --color-golden-curve: rgba(38, 35, 31, 0.34);
   --shadow-code: inset 0 1px 0 rgba(255, 255, 255, 0.55);
   --syntax-text: #2f2a24;
   --syntax-comment: #8a8176;
@@ -77,6 +80,9 @@
   --color-code-bg: #27231f;
   --color-code-border: #413a33;
   --color-code-inline-bg: #312b25;
+  --color-golden-rect: rgba(173, 163, 151, 0.16);
+  --color-golden-diagonal: rgba(173, 163, 151, 0.1);
+  --color-golden-curve: rgba(232, 224, 214, 0.32);
   --shadow-code: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   --syntax-text: #e8e0d6;
   --syntax-comment: #9f9488;

@@ -1,0 +1,19 @@
+{{define "golden_spiral"}}
+<div class="golden-spiral" aria-hidden="true">
+  <svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <g class="golden-spiral-stage" style="transform-origin: {{.Spiral.PoleX}}px {{.Spiral.PoleY}}px">
+      {{range .Spiral.Layers}}
+      <g class="golden-spiral-layer golden-spiral-layer-{{.Index}}">
+        {{range $.Spiral.Diagonals}}
+        <path class="golden-diagonal" d="{{.D}}" pathLength="1" vector-effect="non-scaling-stroke" style="--golden-offset: {{.Offset}}; --golden-span: {{.Span}}"></path>
+        {{end}}
+        {{range $.Spiral.Squares}}
+        <path class="golden-rect" d="{{.D}}" pathLength="1" vector-effect="non-scaling-stroke" style="--golden-offset: {{.Offset}}; --golden-span: {{.Span}}"></path>
+        {{end}}
+        <path class="golden-curve" d="{{$.Spiral.SpiralPath}}" pathLength="1" vector-effect="non-scaling-stroke"></path>
+      </g>
+      {{end}}
+    </g>
+  </svg>
+</div>
+{{end}}
