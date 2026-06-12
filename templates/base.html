@@ -10,13 +10,15 @@
   <link rel="stylesheet" href="/css/fonts.css">
   <link rel="stylesheet" href="/css/global.css">
 </head>
-<body class="{{if eq .PageTitle "首页"}}home-body{{else}}page-body{{end}}">
+<body class="{{.BodyClass}}">
+  <a class="site-logo persistent-logo" href="/" aria-label="Stat Indet 首页">
+    <span>Stat</span>
+    <span>Indet</span>
+  </a>
+
+  <div class="page-frame">
   {{if eq .PageTitle "首页"}}
   <header class="site-header">
-    <a class="site-logo" href="/" aria-label="Stat Indet 首页">
-      <span>Stat</span>
-      <span>Indet</span>
-    </a>
     <nav class="site-nav" aria-label="主导航">
       <a class="nav-link" href="/">
         <span class="nav-icon material-symbol" aria-hidden="true">home</span>
@@ -50,11 +52,6 @@
   {{else}}
   <div class="page-shell">
     <aside class="side-rail" aria-label="站点导航">
-      <a class="site-logo side-logo" href="/" aria-label="Stat Indet 首页">
-        <span>Stat</span>
-        <span>Indet</span>
-      </a>
-
       <a class="side-avatar-link" href="/" aria-label="回到首页">
         <img class="side-avatar" src="/images/shelby.jpg" alt="史帙头像">
       </a>
@@ -88,6 +85,51 @@
     </main>
   </div>
   {{end}}
+  </div>
 </body>
 </html>
+{{end}}
+
+{{define "notes_aside"}}
+<aside class="notes-aside" aria-label="站点信息">
+  <div class="notes-brand notes-aside-identity">
+    <h1 class="notes-brand-name">
+      <span class="notes-brand-cn">史帙</span>
+      <span class="notes-brand-en">Stat.Indet</span>
+    </h1>
+    <p>笑一个吧，功成名就不是目的。</p>
+  </div>
+
+  <div class="notes-footer">
+    <div class="notes-footer-actions" aria-label="页面操作">
+      <button class="notes-action-button" type="button" aria-label="搜索" data-tooltip="搜索">
+        <span class="material-symbol" aria-hidden="true">search</span>
+      </button>
+      <button class="notes-action-button" type="button" aria-label="标签" data-tooltip="标签">
+        <span class="material-symbol" aria-hidden="true">sell</span>
+      </button>
+      <button class="notes-action-button theme-toggle" type="button" aria-label="切换亮暗模式" data-tooltip="切换亮暗模式">
+        <span class="material-symbol" aria-hidden="true">dark_mode</span>
+      </button>
+    </div>
+
+    <nav class="notes-footer-links" aria-label="页脚链接">
+      <div class="footer-link-row">
+        <a href="/rss.xml">RSS</a>
+        <span class="footer-separator" aria-hidden="true">/</span>
+        <a href="#">Github</a>
+        <span class="footer-separator" aria-hidden="true">/</span>
+        <a href="#">email</a>
+      </div>
+      <div class="footer-link-row">
+        <a href="#">bilibili</a>
+        <span class="footer-separator" aria-hidden="true">/</span>
+        <a href="#">QQ</a>
+        <span class="footer-separator" aria-hidden="true">/</span>
+        <a href="#">Wechat</a>
+      </div>
+    </nav>
+    <p>© 2026 史帙</p>
+  </div>
+</aside>
 {{end}}

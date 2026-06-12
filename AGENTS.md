@@ -225,3 +225,18 @@ MVP 可运行之后，按以下顺序实现后续功能：
 8. RSS 和 sitemap
 
 每个未来功能都应该作为单独步骤实现。
+
+## Protected Layout
+
+The persistent logo and side navigation are now stable.
+
+Do not modify the following unless explicitly requested:
+
+- `.persistent-logo`
+- side navigation layout
+- side navigation avatar position
+- side navigation link order
+- persistent logo position
+- persistent logo typography
+
+The persistent logo must stay fixed across all pages and must not participate in page transition animations.

@@ -15,37 +15,54 @@ type SiteData struct {
 	Title string
 }
 
+type Heading struct {
+	Level int
+	Text  string
+	ID    string
+}
+
 type NoteLink struct {
-	Title       string
-	Date        string
-	ReadingTime string
-	Summary     string
-	URL         string
+	Title               string
+	Date                string
+	ReadingTime         string
+	Summary             string
+	URL                 string
+	Slug                string
+	TitleTransitionName string
+	DateTransitionName  string
 }
 
 type NotePage struct {
-	Title   string
-	Date    string
-	Summary string
-	URL     string
-	HTML    template.HTML
+	Title               string
+	Date                string
+	ReadingTime         string
+	Summary             string
+	URL                 string
+	Slug                string
+	HTML                template.HTML
+	Headings            []Heading
+	TitleTransitionName string
+	DateTransitionName  string
 }
 
 type IndexData struct {
 	Site      SiteData
 	PageTitle string
+	BodyClass string
 	Notes     []NoteLink
 }
 
 type NotesData struct {
 	Site      SiteData
 	PageTitle string
+	BodyClass string
 	Notes     []NoteLink
 }
 
 type NoteData struct {
 	Site      SiteData
 	PageTitle string
+	BodyClass string
 	Note      NotePage
 }
 

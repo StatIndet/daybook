@@ -35,6 +35,31 @@
     return url.origin + url.pathname + url.search;
   }
 
+  function cleanPath(url) {
+    var path = url.pathname;
+    if (path.length > 1 && path.endsWith("/")) {
+      path = path.slice(0, -1);
+    }
+    if (path.endsWith("/index.html")) {
+      path = path.slice(0, -11) || "/";
+    }
+    return path;
+  }
+
+  function isNotesIndex(url) {
+    return cleanPath(url) === "/notes";
+  }
+
+  function isNoteDetail(url) {
+    var path = cleanPath(url);
+    return /^\/notes\/[^/]+$/.test(path);
+  }
+
+  function isArticleTransition(url) {
+    var currentURL = new URL(currentPageKey);
+    return (isNotesIndex(currentURL) && isNoteDetail(url)) || (isNoteDetail(currentURL) && isNotesIndex(url));
+  }
+
   function isPlainLeftClick(event) {
     return event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
   }
@@ -92,7 +117,7 @@
   }
 
   function clearTransitionClasses() {
-    document.documentElement.classList.remove("is-transitioning");
+    document.documentElement.classList.remove("is-transitioning", "article-transition");
     if (!document.body) {
       return;
     }
@@ -123,11 +148,56 @@
     }
   }
 
-  function swapPage(nextDocument, url, updateHistory) {
+  function syncNoteToc(toc) {
+    var button = toc.querySelector(".note-toc-toggle");
+    var icon = button && button.querySelector(".material-symbol");
+    var isOpen = toc.classList.contains("is-open");
+
+    if (button) {
+      button.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    }
+    if (icon) {
+      icon.textContent = "menu";
+    }
+  }
+
+  function syncNoteTocs() {
+    document.querySelectorAll(".note-toc").forEach(syncNoteToc);
+  }
+
+  function swapArticleStage(nextDocument) {
+    var currentStage = document.querySelector(".article-stage");
+    var nextStage = nextDocument.querySelector(".article-stage");
+    var currentNotesPage = currentStage && currentStage.closest(".notes-page");
+    var nextNotesPage = nextStage && nextStage.closest(".notes-page");
+
+    if (!currentStage || !nextStage || !currentNotesPage || !nextNotesPage) {
+      return false;
+    }
+
+    currentNotesPage.className = nextNotesPage.className;
+    currentStage.replaceWith(nextStage);
+    return true;
+  }
+
+  function swapPage(nextDocument, url, updateHistory, articleTransition) {
+    var currentFrame = document.querySelector(".page-frame");
+    var nextFrame = nextDocument.querySelector(".page-frame");
+
     document.title = nextDocument.title;
     document.body.className = nextDocument.body.className;
-    document.body.innerHTML = nextDocument.body.innerHTML;
-    document.body.classList.add(enterClassName());
+
+    if (articleTransition && swapArticleStage(nextDocument)) {
+      // Keep persistent side content mounted; only the article/list stage changes.
+    } else if (currentFrame && nextFrame) {
+      currentFrame.innerHTML = nextFrame.innerHTML;
+    } else {
+      document.body.innerHTML = nextDocument.body.innerHTML;
+    }
+
+    if (!articleTransition) {
+      document.body.classList.add(enterClassName());
+    }
 
     if (updateHistory) {
       history.pushState({ daybook: true }, "", url.href);
@@ -135,22 +205,28 @@
     currentPageKey = pageKey(url.href);
 
     syncThemeButtons();
+    syncNoteTocs();
     window.scrollTo(0, 0);
   }
 
   async function runSwap(nextDocument, url, updateHistory) {
     var useMotion = !reducedMotion();
+    var articleTransition = isArticleTransition(url);
     clearTransitionClasses();
 
     if (useMotion) {
       document.documentElement.classList.add("is-transitioning");
-      document.body.classList.add(exitClassName());
-      await wait(cssDuration("--transition-exit-delay", 260));
+      if (articleTransition) {
+        document.documentElement.classList.add("article-transition");
+      } else {
+        document.body.classList.add(exitClassName());
+        await wait(cssDuration("--transition-exit-delay", 260));
+      }
     }
 
     if (useMotion && document.startViewTransition) {
       var transition = document.startViewTransition(function () {
-        swapPage(nextDocument, url, updateHistory);
+        swapPage(nextDocument, url, updateHistory, articleTransition);
       });
       try {
         await transition.finished;
@@ -158,7 +234,7 @@
         // A canceled transition still leaves the swapped page usable.
       }
     } else {
-      swapPage(nextDocument, url, updateHistory);
+      swapPage(nextDocument, url, updateHistory, articleTransition);
     }
 
     document.documentElement.classList.remove("is-transitioning");
@@ -195,6 +271,16 @@
   }
 
   document.addEventListener("click", function (event) {
+    var tocToggle = event.target.closest(".note-toc-toggle");
+    if (tocToggle) {
+      var toc = tocToggle.closest(".note-toc");
+      if (toc) {
+        toc.classList.toggle("is-open");
+        syncNoteToc(toc);
+      }
+      return;
+    }
+
     var link = event.target.closest("a");
     if (!shouldHandleLink(link, event)) {
       return;
@@ -216,5 +302,8 @@
     clearTransitionClasses();
     currentPageKey = pageKey(window.location.href);
     syncThemeButtons();
+    syncNoteTocs();
   });
+
+  syncNoteTocs();
 })();

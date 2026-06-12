@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"unicode"
 
 	"github.com/StatIndet/daybook/internal/config"
@@ -50,29 +51,41 @@ func Build(options Options) (BuildResult, error) {
 
 	var noteLinks []render.NoteLink
 	for _, note := range notes {
-		html, err := markdown.ToHTML(note.Body)
+		document, err := markdown.ToHTMLWithHeadings(note.Body)
 		if err != nil {
 			return BuildResult{}, fmt.Errorf("处理笔记 %s: %w", note.SourcePath, err)
 		}
+		readingTime := estimateReadingTime(note.Body)
+		titleTransitionName := transitionName("note-title", note.Slug)
+		dateTransitionName := transitionName("note-date", note.Slug)
 
 		noteLinks = append(noteLinks, render.NoteLink{
-			Title:       note.Title,
-			Date:        note.Date,
-			ReadingTime: estimateReadingTime(note.Body),
-			Summary:     note.Summary,
-			URL:         note.URL,
+			Title:               note.Title,
+			Date:                note.Date,
+			ReadingTime:         readingTime,
+			Summary:             note.Summary,
+			URL:                 note.URL,
+			Slug:                note.Slug,
+			TitleTransitionName: titleTransitionName,
+			DateTransitionName:  dateTransitionName,
 		})
 
 		outputPath := filepath.Join(options.PublicDir, "notes", note.Slug, "index.html")
 		data := render.NoteData{
 			Site:      siteData,
 			PageTitle: note.Title,
+			BodyClass: "note-body page-body",
 			Note: render.NotePage{
-				Title:   note.Title,
-				Date:    note.Date,
-				Summary: note.Summary,
-				URL:     note.URL,
-				HTML:    template.HTML(html),
+				Title:               note.Title,
+				Date:                note.Date,
+				ReadingTime:         readingTime,
+				Summary:             note.Summary,
+				URL:                 note.URL,
+				Slug:                note.Slug,
+				HTML:                template.HTML(document.HTML),
+				Headings:            renderHeadings(document.Headings),
+				TitleTransitionName: titleTransitionName,
+				DateTransitionName:  dateTransitionName,
 			},
 		}
 
@@ -85,6 +98,7 @@ func Build(options Options) (BuildResult, error) {
 	indexData := render.IndexData{
 		Site:      siteData,
 		PageTitle: "首页",
+		BodyClass: "home-body",
 		Notes:     noteLinks,
 	}
 	if err := renderer.RenderIndex(indexPath, indexData); err != nil {
@@ -95,6 +109,7 @@ func Build(options Options) (BuildResult, error) {
 	notesData := render.NotesData{
 		Site:      siteData,
 		PageTitle: "文章",
+		BodyClass: "notes-list-body page-body",
 		Notes:     noteLinks,
 	}
 	if err := renderer.RenderNotes(notesIndexPath, notesData); err != nil {
@@ -132,6 +147,48 @@ func estimateReadingTime(text string) string {
 	}
 
 	return fmt.Sprintf("%d min", minutes)
+}
+
+func transitionName(prefix, slug string) string {
+	var builder strings.Builder
+	builder.WriteString(prefix)
+	builder.WriteByte('-')
+
+	lastWasDash := false
+	for _, r := range slug {
+		if r >= 'A' && r <= 'Z' {
+			r += 'a' - 'A'
+		}
+
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' {
+			builder.WriteRune(r)
+			lastWasDash = false
+			continue
+		}
+
+		if !lastWasDash {
+			builder.WriteByte('-')
+			lastWasDash = true
+		}
+	}
+
+	name := strings.TrimRight(builder.String(), "-")
+	if name == prefix {
+		return prefix + "-note"
+	}
+	return name
+}
+
+func renderHeadings(headings []markdown.Heading) []render.Heading {
+	result := make([]render.Heading, 0, len(headings))
+	for _, heading := range headings {
+		result = append(result, render.Heading{
+			Level: heading.Level,
+			Text:  heading.Text,
+			ID:    heading.ID,
+		})
+	}
+	return result
 }
 
 func Serve(publicDir, address string) error {

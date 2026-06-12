@@ -1,11 +1,48 @@
 {{define "content"}}
-<article class="note">
-  <h1>{{.Note.Title}}</h1>
-  <p class="note-meta"><time datetime="{{.Note.Date}}">{{.Note.Date}}</time></p>
-  {{with .Note.Summary}}<p class="note-summary">{{.}}</p>{{end}}
+<div class="notes-page note-detail-page{{if .Note.Headings}} has-toc{{end}}">
+  <section class="note-detail article-stage" aria-label="文章详情">
+    {{if .Note.Headings}}
+    <aside class="note-toc is-open" data-note-toc aria-label="文章目录">
+      <div class="note-toc-header">
+        <button class="note-toc-toggle" type="button" aria-expanded="true" aria-controls="note-toc-list" aria-label="展开或收起文章目录">
+          <span class="material-symbol" aria-hidden="true">menu</span>
+        </button>
+        <span class="note-toc-title">目录</span>
+      </div>
+      <nav class="note-toc-panel" id="note-toc-list" aria-label="文章目录">
+        <ol>
+          {{range .Note.Headings}}
+          <li class="note-toc-depth-{{.Level}}">
+            <a href="#{{.ID}}">{{.Text}}</a>
+          </li>
+          {{end}}
+        </ol>
+      </nav>
+    </aside>
+    {{end}}
 
-  <div class="markdown">
-    {{.Note.HTML}}
-  </div>
-</article>
+    <article class="note">
+      <a class="note-back-link" href="/notes/" aria-label="返回文章列表">
+        <span class="material-symbol" aria-hidden="true">arrow_back</span>
+      </a>
+
+      <header class="note-header">
+        <h1 class="note-title">
+          <span style="view-transition-name: {{.Note.TitleTransitionName}};">{{.Note.Title}}</span>
+        </h1>
+        <p class="note-meta">
+          <time datetime="{{.Note.Date}}">{{.Note.Date}}</time>
+          <span>{{.Note.ReadingTime}}</span>
+        </p>
+        {{with .Note.Summary}}<p class="note-summary">{{.}}</p>{{end}}
+      </header>
+
+      <div class="markdown post-content">
+        {{.Note.HTML}}
+      </div>
+    </article>
+  </section>
+
+  {{template "notes_aside" .}}
+</div>
 {{end}}
