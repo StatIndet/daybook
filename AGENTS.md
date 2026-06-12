@@ -2,9 +2,9 @@
 
 ## 项目概述
 
-本项目名为 `daybook`，是一个使用 Go 编写的极简静态博客与 Obsidian 笔记发布工具。
+`daybook` 是一个使用 Go 编写的极简静态博客与 Obsidian 笔记发布工具。
 
-项目目标是将 `content/notes/` 目录中的 Markdown 笔记转换成 `public/` 目录中的静态网站。
+项目目标是将 `content/notes/` 目录中的 Markdown 笔记转换成 `public/` 目录中的静态网站。当前已经完成基础页面结构、文章列表、文章详情、persistent logo、side-nav、明暗主题和基础 Markdown 渲染。
 
 这个网站刻意保持简单。它没有后端、没有数据库、没有登录系统、没有评论、没有访问统计，也没有后台管理界面。
 
@@ -18,51 +18,44 @@ https://daybook.page
 
 项目所有者是 Go 和 HTML 的初学者。
 
-在修改代码时，优先选择简单、可读、适合初学者理解的实现方式，而不是聪明但复杂的抽象。
+修改代码时，优先选择简单、可读、适合初学者理解的实现方式，而不是聪明但复杂的抽象。必要时可以加入简短注释解释关键思路，但不要给显而易见的代码添加过多注释。
 
-在新增或修改代码时，可以在必要位置加入简短注释，解释重要思路；但不要给显而易见的代码添加过多注释。
+## 当前已完成能力
 
-## 核心需求
+* 首页 hero；
+* 文章列表页 `/notes/`；
+* 文章详情页 `/notes/{slug}/`；
+* Markdown frontmatter；
+* Markdown / GFM 渲染基础；
+* persistent logo；
+* side-nav；
+* 明暗主题；
+* 页面切换动画；
+* `static/` 资源复制；
+* 本地 `build` / `serve` 命令。
 
-最终网站将逐步支持：
+## 已完成的 MVP
 
-* 首页
-* 笔记 / 文章页
-* 归档页
-* 关系图谱页
-* 关于页
-* Obsidian 风格双链，例如 `[[笔记标题]]`
-* 反向链接
-* 根据笔记链接生成关系图谱数据文件
-* 静态部署到 Cloudflare Pages
+MVP 已完成，项目现在进入功能增强阶段。
 
-但是，这些功能必须一步一步实现。
+已完成的 MVP 能力包括：
 
-不要一次性实现所有功能。
+1. 从 `content/notes/` 读取 Markdown 文件；
+2. 解析 YAML frontmatter；
+3. 将 Markdown 正文转换成 HTML；
+4. 为每篇笔记生成一个 HTML 页面；
+5. 生成首页和文章列表页；
+6. 将 `static/` 中的文件复制到 `public/`；
+7. 提供本地预览服务器命令。
 
-## MVP 范围
+后续功能必须一步一步实现。不要一次性实现多个未来功能。
 
-第一版可运行版本只需要实现：
-
-1. 从 `content/notes/` 读取 Markdown 文件
-2. 解析 YAML frontmatter
-3. 将 Markdown 正文转换成 HTML
-4. 为每篇笔记生成一个 HTML 页面
-5. 生成一个简单首页，列出所有笔记
-6. 将 `static/` 中的文件复制到 `public/`
-7. 提供一个本地预览服务器命令
-
-在第一版中，除非明确要求，否则不要实现标签、归档、双链、反链、关系图谱、RSS、sitemap、搜索或 CSS 美化。
-
-## 推荐项目结构
-
-使用以下结构：
+## 当前项目结构
 
 ```text
 daybook/
 ├── cmd/
 │   └── daybook/
-│       └── main.go
 ├── internal/
 │   ├── config/
 │   ├── content/
@@ -72,12 +65,11 @@ daybook/
 ├── content/
 │   └── notes/
 ├── templates/
-│   ├── base.html
-│   ├── index.html
-│   └── note.html
 ├── static/
 │   ├── css/
-│   └── js/
+│   ├── js/
+│   ├── fonts/
+│   └── images/
 ├── public/
 ├── config.yaml
 ├── go.mod
@@ -85,6 +77,8 @@ daybook/
 ├── README.md
 └── AGENTS.md
 ```
+
+`public/` 是构建产物。默认不要手动编辑 `public/`，也不要提交 `public/`，除非用户明确要求。
 
 ## Go 代码风格
 
@@ -110,6 +104,21 @@ daybook/
 * 图标优先使用 `static/fonts/material-symbols/` 中的 Material Symbols。
 * 社交平台等图片图标可以使用 `static/images/` 中的 SVG 文件。
 
+## Protected Layout
+
+The persistent logo and side navigation are stable.
+
+除非用户明确要求，不要修改：
+
+* `.persistent-logo` 的位置、字体、字号、结构；
+* side-nav 的位置、头像、链接顺序；
+* side navigation layout；
+* side navigation avatar position；
+* side navigation link order；
+* persistent logo typography。
+
+`.persistent-logo` 必须在所有页面固定显示，并且不参与页面切换动画。修改页面切换动画、文章页布局或全局 CSS 时，必须确认 persistent logo 和 side-nav 没有被影响。
+
 ## Markdown 与 Frontmatter
 
 Markdown 笔记格式如下：
@@ -127,13 +136,13 @@ draft: false
 这里是笔记正文。
 ```
 
-在 MVP 阶段，必填字段是：
+必填字段：
 
 * `title`
 * `date`
 * `slug`
 
-可选字段是：
+可选字段：
 
 * `tags`
 * `summary`
@@ -141,102 +150,82 @@ draft: false
 
 如果 `draft: true`，这篇笔记不应该被发布。
 
-## 命令
+## Markdown 渲染规则
 
-CLI 最终应支持：
+* Markdown 渲染器位于 `internal/markdown/`。
+* 项目使用 goldmark 渲染 Markdown。
+* 标准 Markdown / GFM 能力优先保持稳定。
+* 不要把 Obsidian 双链、嵌入、callout 混进标准 Markdown 修复中。
+* Obsidian 兼容功能必须分阶段实现。
+* 修改 Markdown 渲染器后必须更新或新增测试。
+* 修改正文样式时只作用于文章正文容器，例如 `.markdown` / `.post-content`，不要污染全站布局。
+* 默认不要允许 Markdown 中的任意 HTML 直接注入危险内容。
+
+## 命令
 
 ```bash
 go run ./cmd/daybook build
 go run ./cmd/daybook serve
 ```
 
-当前阶段：
-
-* `build` 负责生成 `public/`
-* `serve` 负责在 `http://localhost:1313` 预览 `public/`
-
-## 构建输出
-
-生成的文件应使用干净 URL：
-
-```text
-public/
-├── index.html
-└── notes/
-    └── example-note/
-        └── index.html
-```
-
-一篇 `slug: "example-note"` 的笔记应能通过以下地址访问：
-
-```text
-/notes/example-note/
-```
+`build` 负责生成 `public/`。`serve` 负责在 `http://localhost:1313` 预览 `public/`。
 
 ## 测试与验证
 
-修改代码后，运行：
+修改 Go 代码后运行：
 
 ```bash
+gofmt
 go test ./...
 go run ./cmd/daybook build
 ```
 
-如果修改了本地服务器相关代码，需要验证：
+如果修改了本地服务器相关代码，或需要人工预览页面，运行：
 
 ```bash
 go run ./cmd/daybook serve
 ```
 
-能够正常服务生成后的 `public/` 目录。
+## Git 工作流
+
+* 大改前先运行 `git status --short`。
+* 不要在工作区不干净时继续改，除非用户明确要求继续处理当前改动。
+* 每个功能使用独立分支。
+* 不要自动 commit。
+* 不要自动 merge。
+* 不要自动 reset。
+* 不要自动 clean。
+* 回退前必须说明会影响哪些文件。
+* Codex 修改后必须总结改动和测试结果。
 
 ## 开发流程
 
 小步推进。
 
-在进行较大修改前，先提出一个简短计划。
+在进行较大修改前，先提出一个简短计划。每完成一步，说明：
 
-每完成一步，说明：
+* 修改了什么；
+* 改动了哪些文件；
+* 如何测试；
+* 下一步建议做什么。
 
-* 修改了什么
-* 改动了哪些文件
-* 如何测试
-* 下一步建议做什么
-
-除非明确要求，否则不要重写整个项目。
-
-不要在没有解释原因的情况下添加大型依赖。
-
-不要删除 `content/notes/` 中的用户内容。
-
-除非明确要求，否则不要将生成的 `public/` 文件提交到 git。
+除非明确要求，否则不要重写整个项目。不要在没有解释原因的情况下添加大型依赖。不要删除 `content/notes/` 中的用户内容。
 
 ## 未来功能
 
-MVP 可运行之后，按以下顺序实现后续功能：
+当前未来功能顺序：
 
-1. 归档页
-2. 关于页
-3. Obsidian 双链
-4. 反向链接
-5. 关系图谱 JSON 生成
-6. 关系图谱页面渲染
-7. 附件支持
-8. RSS 和 sitemap
+1. 修复并稳定 Markdown/GFM 渲染；
+2. Obsidian wikilink；
+3. Obsidian embed；
+4. Obsidian callout；
+5. backlinks；
+6. graph JSON；
+7. graph 页面；
+8. tags 页面；
+9. archive 页面；
+10. search；
+11. RSS / sitemap；
+12. Cloudflare Pages 部署配置。
 
-每个未来功能都应该作为单独步骤实现。
-
-## Protected Layout
-
-The persistent logo and side navigation are now stable.
-
-Do not modify the following unless explicitly requested:
-
-- `.persistent-logo`
-- side navigation layout
-- side navigation avatar position
-- side navigation link order
-- persistent logo position
-- persistent logo typography
-
-The persistent logo must stay fixed across all pages and must not participate in page transition animations.
+每个未来功能都应该作为单独步骤实现。不要一次实现多个未来功能。

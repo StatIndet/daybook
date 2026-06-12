@@ -44,6 +44,7 @@
   --color-code-bg: #f3f0ea;
   --color-code-border: #e1d8ce;
   --color-code-inline-bg: #eee8df;
+  --shadow-code: inset 0 1px 0 rgba(255, 255, 255, 0.55);
   --syntax-text: #2f2a24;
   --syntax-comment: #8a8176;
   --syntax-keyword: #7a4f9a;
@@ -121,6 +122,7 @@ html.article-transition .hero-identity {
   --color-code-bg: #27231f;
   --color-code-border: #413a33;
   --color-code-inline-bg: #312b25;
+  --shadow-code: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   --syntax-text: #e8e0d6;
   --syntax-comment: #9f9488;
   --syntax-keyword: #d8a4f4;
@@ -1007,8 +1009,15 @@ a {
 
 .markdown input[type="checkbox"] {
   accent-color: var(--color-accent);
-  margin: 0 0.45rem 0.12rem -1.1rem;
+  height: 0.95rem;
+  margin: 0 0.5rem 0.12rem 0;
   vertical-align: middle;
+  width: 0.95rem;
+}
+
+.markdown li:has(> input[type="checkbox"]) {
+  list-style: none;
+  margin-left: -1.45rem;
 }
 
 .markdown blockquote {
@@ -1023,7 +1032,7 @@ a {
   display: block;
   max-width: 100%;
   overflow-x: auto;
-  width: max-content;
+  width: 100%;
 }
 
 .markdown thead {
@@ -1051,6 +1060,7 @@ a {
   background: var(--color-code-bg);
   border: 1px solid var(--color-code-border);
   border-radius: 6px;
+  box-shadow: var(--shadow-code);
   color: var(--syntax-text);
   line-height: 1.7;
   overflow-x: auto;
@@ -1114,14 +1124,27 @@ a {
   overflow-x: auto;
 }
 
-.markdown .highlight pre,
-.markdown pre.chroma {
+.markdown .highlight pre {
   border: 0;
   margin: 0;
 }
 
+.markdown pre.chroma {
+  border: 1px solid var(--color-code-border);
+  margin: 0;
+}
+
 .markdown .chroma .line {
+  display: block;
   min-height: 1.7em;
+}
+
+.markdown .chroma .cl {
+  display: inline;
+}
+
+.markdown .chroma .w {
+  color: inherit;
 }
 
 .markdown .chroma .c,
@@ -1173,6 +1196,7 @@ a {
 }
 
 .markdown .chroma .nf,
+.markdown .chroma .nb,
 .markdown .chroma .nx,
 .markdown .chroma .nc,
 .markdown .chroma .nd,
@@ -1862,10 +1886,6 @@ html:not(.article-transition) body.page-entering .notes-footer > p {
 .note-list .note-summary {
   color: var(--color-muted);
   font-size: 1.05rem;
-}
-
-.markdown img {
-  max-width: 100%;
 }
 
 .home-footer {

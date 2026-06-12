@@ -45,10 +45,10 @@ This heading checks whether English headings also receive stable IDs.
 
 ## 表格
 
-| 功能 | 语法 | 状态 |
+| 功能 | 渲染效果 | 状态 |
 | --- | --- | --- |
-| 加粗 | `**text**` | 已测试 |
-| 删除线 | `~~text~~` | 已测试 |
+| 加粗 | **text** | 已测试 |
+| 删除线 | ~~text~~ | 已测试 |
 | 任务列表 | `- [x] item` | 已测试 |
 
 ## Go 代码块

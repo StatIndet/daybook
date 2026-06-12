@@ -23,7 +23,7 @@ func TestToHTMLWithHeadings(t *testing.T) {
 }
 
 func TestToHTMLWithGFM(t *testing.T) {
-	document, err := ToHTMLWithHeadings("~~old~~\n\n- [x] done\n\n| A | B |\n| --- | --- |\n| 1 | 2 |\n")
+	document, err := ToHTMLWithHeadings("~~old~~\n\n- [x] done\n\n| A | B |\n| --- | --- |\n| **strong** | ~~deleted~~ |\n")
 	if err != nil {
 		t.Fatalf("ToHTMLWithHeadings returned error: %v", err)
 	}
@@ -32,6 +32,8 @@ func TestToHTMLWithGFM(t *testing.T) {
 		"<del>old</del>",
 		`type="checkbox"`,
 		"<table>",
+		"<strong>strong</strong>",
+		"<del>deleted</del>",
 	}
 	for _, part := range wantParts {
 		if !strings.Contains(document.HTML, part) {
