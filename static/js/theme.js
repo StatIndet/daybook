@@ -37,6 +37,21 @@
     });
   }
 
+  function shouldAnimateTheme() {
+    if (!document.startViewTransition) {
+      return false;
+    }
+    if (!window.matchMedia) {
+      return true;
+    }
+    return !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  function clearThemeTransition() {
+    root.style.removeProperty("view-transition-name");
+    delete root.dataset.themeChanging;
+  }
+
   applyTheme(savedTheme() || preferredTheme(), false);
   window.daybookSyncThemeButtons = function () {
     applyTheme(root.dataset.theme, false);
@@ -53,6 +68,20 @@
     }
 
     var current = root.dataset.theme === "dark" ? "dark" : "light";
-    applyTheme(current === "dark" ? "light" : "dark", true);
+    var next = current === "dark" ? "light" : "dark";
+
+    if (!shouldAnimateTheme()) {
+      applyTheme(next, true);
+      return;
+    }
+
+    root.style.setProperty("view-transition-name", "theme-toggle-transition");
+    root.dataset.themeChanging = "true";
+
+    var transition = document.startViewTransition(function () {
+      applyTheme(next, true);
+    });
+
+    transition.finished.then(clearThemeTransition, clearThemeTransition);
   });
 })();

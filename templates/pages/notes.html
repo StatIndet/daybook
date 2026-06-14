@@ -1,9 +1,15 @@
 {{define "content"}}
 <div class="notes-page">
   <section class="notes-list article-stage" aria-label="文章列表">
-    {{if .Notes}}
-      {{range .Notes}}
-        {{template "note_card" .}}
+    {{if .MonthGroups}}
+      {{range .MonthGroups}}
+        <div class="notes-month">
+          <div class="notes-month-list">
+            {{range .Notes}}
+              {{template "note_card" .}}
+            {{end}}
+          </div>
+        </div>
       {{end}}
     {{else}}
       <p class="notes-empty">还没有发布的文章。</p>

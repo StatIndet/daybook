@@ -7,7 +7,7 @@
   max-width: var(--note-body-width);
   min-width: 0;
   position: relative;
-  width: var(--note-body-width);
+  width: min(var(--note-body-width), 100%);
 }
 
 .note-toc {
@@ -73,9 +73,23 @@
   font-family: var(--font-ui);
   font-size: var(--note-title-size);
   font-weight: 700;
+  hyphens: auto;
   letter-spacing: 0;
   line-height: 1.15;
   margin: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+  word-break: normal;
+}
+
+.note-title > span {
+  box-sizing: content-box;
+  display: inline-block;
+  max-width: 100%;
+  padding-right: 0.04em;
+  vertical-align: top;
+  white-space: normal;
 }
 
 .note-meta {
@@ -92,10 +106,22 @@
 
 .note-summary {
   color: var(--color-muted);
-  font-size: 0.98rem;
+  font-size: 0.94rem;
   line-height: 1.75;
   margin: 1.25rem 0 0;
   max-width: 42rem;
+}
+
+.note-summary::first-letter {
+  color: var(--color-accent);
+  float: left;
+  font-family: var(--font-ui);
+  font-size: 3.4em;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 0.92;
+  margin-top: 4px;
+  padding: 4px 10px 0 0;
 }
 
 
@@ -118,6 +144,16 @@
   }
 }
 
+@media (max-width: 1280px) {
+  .note-detail-page {
+    max-width: min(var(--note-body-width), 100%);
+  }
+
+  .note-detail {
+    margin-left: 0;
+  }
+}
+
 @media (max-width: 960px) {
   .note-detail-page {
     max-width: var(--note-body-width);
@@ -132,5 +168,4 @@
     margin-bottom: 1rem;
     position: static;
   }
-}
 }

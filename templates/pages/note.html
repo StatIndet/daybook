@@ -8,9 +8,9 @@
 
       <header class="note-header">
         <h1 class="note-title">
-          <span style="view-transition-name: {{.Note.TitleTransitionName}};">{{.Note.Title}}</span>
+          <span data-title-transition-name="{{.Note.TitleTransitionName}}">{{.Note.Title}}</span>
         </h1>
-        <p class="note-meta">
+        <p class="note-meta" data-meta-transition-name="{{.Note.DateTransitionName}}">
           <time datetime="{{.Note.Date}}">{{.Note.Date}}</time>
           <span>{{.Note.ReadingTime}}</span>
         </p>

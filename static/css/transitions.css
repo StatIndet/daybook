@@ -8,6 +8,44 @@
   animation-timing-function: var(--ease-out);
 }
 
+:root {
+  --theme-reveal-from: 100% 0 0 0;
+}
+
+:root[data-theme="dark"] {
+  --theme-reveal-from: 0 0 100% 0;
+}
+
+html[data-theme-changing] .hero-avatar,
+html[data-theme-changing] .side-avatar,
+html[data-theme-changing] .hero-identity,
+html[data-theme-changing] .notes-aside-identity,
+html[data-theme-changing] .notes-item-title a,
+html[data-theme-changing] .notes-item-meta,
+html[data-theme-changing] .note-title span,
+html[data-theme-changing] .note-meta {
+  view-transition-name: none !important;
+}
+
+::view-transition-old(theme-toggle-transition) {
+  animation: none;
+  mix-blend-mode: normal;
+  z-index: -1;
+}
+
+::view-transition-new(theme-toggle-transition) {
+  animation: theme-toggle-reveal 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  clip-path: inset(0 0 0 0);
+  mix-blend-mode: normal;
+  z-index: 99;
+}
+
+@keyframes theme-toggle-reveal {
+  from {
+    clip-path: inset(var(--theme-reveal-from));
+  }
+}
+
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation-duration: var(--duration-normal);
@@ -37,6 +75,24 @@ html.article-transition .notes-aside-identity,
 html.article-transition .hero-identity {
   view-transition-name: none;
 }
+
+html.identity-exit-down .hero-identity,
+html.identity-exit-down .notes-aside-identity {
+  animation: identity-exit-down var(--transition-exit-delay) var(--ease-out) both;
+  view-transition-name: none;
+}
+
+@keyframes identity-exit-down {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
 @keyframes nav-exit-up {
   from {
     opacity: 1;
@@ -400,6 +456,18 @@ html.article-transition .notes-aside *,
 html.article-transition .notes-footer-actions .notes-action-button,
 html.article-transition .notes-footer-links,
 html.article-transition .notes-footer > p {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+html.article-transition.meta-shared-transition .note-meta {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.note-body .note-meta.meta-shared-target {
   animation: none !important;
   opacity: 1 !important;
   transform: none !important;

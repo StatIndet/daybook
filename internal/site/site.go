@@ -12,7 +12,9 @@ import (
 
 	"github.com/StatIndet/daybook/internal/config"
 	"github.com/StatIndet/daybook/internal/content"
+	"github.com/StatIndet/daybook/internal/feed"
 	"github.com/StatIndet/daybook/internal/markdown"
+	"github.com/StatIndet/daybook/internal/obsidian"
 	"github.com/StatIndet/daybook/internal/render"
 )
 
@@ -45,16 +47,25 @@ func Build(options Options) (BuildResult, error) {
 	if err := copyDir(options.StaticDir, options.PublicDir); err != nil {
 		return BuildResult{}, err
 	}
+	if err := copyNotesAssets(options.NotesDir, options.PublicDir); err != nil {
+		return BuildResult{}, err
+	}
 
 	renderer := render.New(options.TemplatesDir)
 	siteData := render.SiteData{Title: options.Config.Title}
+	obsidianIndex, err := buildObsidianIndex(notes)
+	if err != nil {
+		return BuildResult{}, err
+	}
 
 	var noteLinks []render.NoteLink
 	for _, note := range notes {
-		document, err := markdown.ToHTMLWithHeadings(note.Body)
+		processed := obsidian.Process(note.Body, obsidianIndex)
+		document, err := markdown.ToHTMLWithHeadings(processed.Text)
 		if err != nil {
 			return BuildResult{}, fmt.Errorf("处理笔记 %s: %w", note.SourcePath, err)
 		}
+		document.HTML = obsidian.RestoreHTML(document.HTML, processed.HTML)
 		readingTime := estimateReadingTime(note.Body)
 		titleTransitionName := transitionName("note-title", note.Slug)
 		dateTransitionName := transitionName("note-date", note.Slug)
@@ -107,10 +118,11 @@ func Build(options Options) (BuildResult, error) {
 
 	notesIndexPath := filepath.Join(options.PublicDir, "notes", "index.html")
 	notesData := render.NotesData{
-		Site:      siteData,
-		PageTitle: "文章",
-		BodyClass: "notes-list-body page-body",
-		Notes:     noteLinks,
+		Site:        siteData,
+		PageTitle:   "文章",
+		BodyClass:   "notes-list-body page-body",
+		Notes:       noteLinks,
+		MonthGroups: monthGroups(noteLinks),
 	}
 	if err := renderer.RenderNotes(notesIndexPath, notesData); err != nil {
 		return BuildResult{}, fmt.Errorf("生成文章页: %w", err)
@@ -128,15 +140,33 @@ func Build(options Options) (BuildResult, error) {
 		return BuildResult{}, fmt.Errorf("生成归档页: %w", err)
 	}
 
+	aboutPage, err := content.ParsePageFile(filepath.Join(filepath.Dir(options.NotesDir), "pages", "about.md"))
+	if err != nil {
+		return BuildResult{}, fmt.Errorf("读取关于页: %w", err)
+	}
+	aboutProcessed := obsidian.Process(aboutPage.Body, obsidianIndex)
+	aboutDocument, err := markdown.ToHTMLWithHeadings(aboutProcessed.Text)
+	if err != nil {
+		return BuildResult{}, fmt.Errorf("处理关于页: %w", err)
+	}
+	aboutDocument.HTML = obsidian.RestoreHTML(aboutDocument.HTML, aboutProcessed.HTML)
+
 	aboutPath := filepath.Join(options.PublicDir, "about", "index.html")
 	aboutData := render.AboutData{
 		Site:      siteData,
-		PageTitle: "关于",
+		PageTitle: aboutPage.Title,
 		BodyClass: "about-body page-body",
 		Spiral:    render.NewGoldenSpiral(),
+		Title:     aboutPage.Title,
+		Summary:   aboutPage.Summary,
+		HTML:      template.HTML(aboutDocument.HTML),
 	}
 	if err := renderer.RenderAbout(aboutPath, aboutData); err != nil {
 		return BuildResult{}, fmt.Errorf("生成关于页: %w", err)
+	}
+
+	if err := feed.Write(filepath.Join(options.PublicDir, "rss.xml"), options.Config, notes); err != nil {
+		return BuildResult{}, err
 	}
 
 	return BuildResult{Notes: notes, Skipped: skipped}, nil
@@ -204,6 +234,38 @@ func archiveYearGroups(notes []render.NoteLink) []render.ArchiveYearGroup {
 	return groups
 }
 
+func monthGroups(notes []render.NoteLink) []render.MonthGroup {
+	groups := make([]render.MonthGroup, 0)
+	currentMonth := ""
+
+	for _, note := range notes {
+		month := note.Date
+		if len(month) >= 7 {
+			month = month[:7]
+		}
+
+		if month != currentMonth {
+			groups = append(groups, render.MonthGroup{
+				Key:   month,
+				Label: monthLabel(month),
+				Notes: []render.NoteLink{},
+			})
+			currentMonth = month
+		}
+
+		groups[len(groups)-1].Notes = append(groups[len(groups)-1].Notes, note)
+	}
+
+	return groups
+}
+
+func monthLabel(month string) string {
+	if len(month) == 7 && month[4] == '-' {
+		return month[:4] + " 年 " + month[5:] + " 月"
+	}
+	return month
+}
+
 func archiveDateShort(date string) string {
 	if len(date) >= 10 {
 		return date[5:10]
@@ -251,6 +313,45 @@ func renderHeadings(headings []markdown.Heading) []render.Heading {
 		})
 	}
 	return result
+}
+
+func buildObsidianIndex(notes []content.Note) (obsidian.Index, error) {
+	targets := make([]obsidian.Target, 0, len(notes))
+	for _, note := range notes {
+		document, err := markdown.ToHTMLWithHeadings(note.Body)
+		if err != nil {
+			return obsidian.Index{}, fmt.Errorf("收集笔记标题 %s: %w", note.SourcePath, err)
+		}
+
+		headings := make(map[string]string)
+		for _, heading := range document.Headings {
+			headings[normalizeHeading(heading.Text)] = heading.ID
+		}
+
+		targets = append(targets, obsidian.Target{
+			Title:      note.Title,
+			Slug:       note.Slug,
+			SourcePath: note.SourcePath,
+			Headings:   headings,
+		})
+	}
+
+	return obsidian.NewIndex(targets), nil
+}
+
+func normalizeHeading(text string) string {
+	text = strings.TrimSpace(strings.ToLower(text))
+	text = strings.Join(strings.Fields(text), " ")
+	return text
+}
+
+func copyNotesAssets(notesDir, publicDir string) error {
+	sourceDir := filepath.Join(notesDir, "assets")
+	targetDir := filepath.Join(publicDir, "notes", "assets")
+	if err := copyDir(sourceDir, targetDir); err != nil {
+		return fmt.Errorf("复制笔记图片资源: %w", err)
+	}
+	return nil
 }
 
 func Serve(publicDir, address string) error {

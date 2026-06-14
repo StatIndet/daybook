@@ -92,8 +92,10 @@
   grid-column: 2;
   margin: 0;
   max-width: none;
+  min-width: 0;
   padding: clamp(56px, 7vw, 88px) clamp(32px, 6vw, 84px);
 }
+
 @media (max-width: 960px) {
   .page-shell {
     display: block;
@@ -127,6 +129,8 @@
   .page-main {
     padding: 34px 20px 56px;
   }
+}
+
 @media (max-width: 720px) {
   .side-rail {
     display: none;
@@ -149,3 +153,4 @@
   .site-main {
     padding: 36px 20px 56px;
   }
+}

@@ -4,26 +4,32 @@
   grid-template-columns: minmax(0, var(--notes-content-width)) minmax(220px, var(--notes-aside-width));
   margin: 0 auto;
   max-width: calc(var(--notes-content-width) + var(--notes-aside-width) + var(--notes-page-gap));
+  width: 100%;
 }
 
 .notes-list {
   min-width: 0;
+  width: 100%;
 }
 
-.notes-item {
-  padding: 28px 0 34px;
+.notes-month + .notes-month {
+  margin-top: clamp(2.35rem, 5vw, 3.7rem);
 }
 
-.notes-item::before {
+.notes-month + .notes-month::before {
   background: var(--color-line);
   content: "";
   display: block;
   height: 1px;
-  margin-bottom: 24px;
+  margin-bottom: clamp(1.8rem, 4vw, 2.7rem);
   width: 42px;
 }
 
-.notes-item:first-child {
+.notes-item {
+  padding: 0 0 34px;
+}
+
+.notes-month-list .notes-item:first-child {
   padding-top: 0;
 }
 
@@ -40,11 +46,23 @@
   font-weight: 700;
   line-height: 1.35;
   margin: 0;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .notes-item-title a {
+  box-sizing: content-box;
   color: var(--color-text);
+  display: inline-block;
+  hyphens: auto;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  padding-right: 0.04em;
   text-decoration: none;
+  text-wrap: balance;
+  vertical-align: top;
+  white-space: normal;
+  word-break: normal;
 }
 
 .notes-item-title a:hover,
@@ -71,7 +89,7 @@
   font-size: 0.98rem;
   line-height: 1.75;
   margin: 12px 0 0;
-  max-width: 680px;
+  max-width: var(--notes-content-width);
 }
 
 .notes-aside {
@@ -170,21 +188,35 @@
   font-size: 1.05rem;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1280px) {
   .notes-page {
     display: block;
+    max-width: min(var(--note-body-width), 100%);
   }
 
   .notes-aside {
+    margin-top: clamp(2.75rem, 7vw, 4.5rem);
     min-height: auto;
     position: static;
   }
 
-  .notes-brand {
-    margin-top: 52px;
+  .notes-aside-identity {
+    display: none;
   }
 
   .notes-footer {
-    margin-top: 36px;
+    border-top: 1px solid var(--color-line);
+    margin-top: 0;
+    padding-top: 1.5rem;
+  }
+
+  .notes-footer-actions {
+    margin-bottom: 1.15rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .notes-page {
+    max-width: 100%;
   }
 }

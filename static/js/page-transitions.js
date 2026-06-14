@@ -61,10 +61,21 @@
     return (isNotesIndex(currentURL) && isNoteDetail(url)) || (isNoteDetail(currentURL) && isNotesIndex(url));
   }
 
-  function clearListTitleTransitions(root) {
-    root.querySelectorAll("[data-title-transition-name]").forEach(function (titleLink) {
-      titleLink.style.removeProperty("view-transition-name");
+  function clearTitleTransitions(root) {
+    root.querySelectorAll("[data-title-transition-name]").forEach(function (title) {
+      title.style.removeProperty("view-transition-name");
     });
+  }
+
+  function clearMetaTransitions(root) {
+    root.querySelectorAll("[data-meta-transition-name]").forEach(function (meta) {
+      meta.style.removeProperty("view-transition-name");
+    });
+  }
+
+  function clearArticleSharedTransitions(root) {
+    clearTitleTransitions(root);
+    clearMetaTransitions(root);
   }
 
   function linkMatchesURL(link, url) {
@@ -85,31 +96,176 @@
     return null;
   }
 
-  function setListTitleTransition(titleLink) {
-    if (!titleLink || !titleLink.dataset.titleTransitionName) {
-      return;
+  function findTitleByTransitionName(root, transitionName) {
+    if (!transitionName) {
+      return null;
     }
-    titleLink.style.viewTransitionName = titleLink.dataset.titleTransitionName;
+    if (root.matches && root.matches("[data-title-transition-name]") && root.dataset.titleTransitionName === transitionName) {
+      return root;
+    }
+
+    var titles = root.querySelectorAll("[data-title-transition-name]");
+    for (var i = 0; i < titles.length; i++) {
+      if (titles[i].dataset.titleTransitionName === transitionName) {
+        return titles[i];
+      }
+    }
+    return null;
   }
 
-  function prepareArticleTitleTransition(nextDocument, url, sourceLink) {
-    var currentURL = new URL(currentPageKey);
+  function findArticleTitle(root) {
+    return root.querySelector(".note-title [data-title-transition-name]");
+  }
 
-    clearListTitleTransitions(document);
-    clearListTitleTransitions(nextDocument);
+  function findArticleMeta(root) {
+    return root.querySelector(".note-meta[data-meta-transition-name]");
+  }
+
+  function findMetaForListTitle(titleLink) {
+    var noteItem = titleLink && titleLink.closest(".notes-item");
+    if (!noteItem) {
+      return null;
+    }
+    return noteItem.querySelector("[data-meta-transition-name]");
+  }
+
+  function findListMetaForURL(root, url) {
+    return findMetaForListTitle(findListTitleForURL(root, url));
+  }
+
+  function setTitleTransitionPair(sourceTitle, targetTitle) {
+    if (!sourceTitle || !targetTitle || !sourceTitle.dataset.titleTransitionName) {
+      return false;
+    }
+    if (sourceTitle.dataset.titleTransitionName !== targetTitle.dataset.titleTransitionName) {
+      return false;
+    }
+    sourceTitle.style.viewTransitionName = sourceTitle.dataset.titleTransitionName;
+    targetTitle.style.viewTransitionName = targetTitle.dataset.titleTransitionName;
+    return true;
+  }
+
+  function setMetaTransitionPair(sourceMeta, targetMeta) {
+    if (!sourceMeta || !targetMeta || !sourceMeta.dataset.metaTransitionName) {
+      return false;
+    }
+    if (sourceMeta.dataset.metaTransitionName !== targetMeta.dataset.metaTransitionName) {
+      return false;
+    }
+    sourceMeta.style.viewTransitionName = sourceMeta.dataset.metaTransitionName;
+    targetMeta.style.viewTransitionName = targetMeta.dataset.metaTransitionName;
+    targetMeta.classList.add("meta-shared-target");
+    document.documentElement.classList.add("meta-shared-transition");
+    return true;
+  }
+
+  function lineHeightFor(element) {
+    var style = window.getComputedStyle(element);
+    var lineHeight = Number.parseFloat(style.lineHeight);
+    if (Number.isFinite(lineHeight) && lineHeight > 0) {
+      return lineHeight;
+    }
+
+    var fontSize = Number.parseFloat(style.fontSize);
+    if (Number.isFinite(fontSize) && fontSize > 0) {
+      return fontSize * 1.2;
+    }
+    return 0;
+  }
+
+  function titleLineCount(title) {
+    if (!title) {
+      return 0;
+    }
+
+    var lineHeight = lineHeightFor(title);
+    var height = title.getBoundingClientRect().height;
+    if (!lineHeight || height <= 0) {
+      return 0;
+    }
+    return Math.max(1, Math.round(height / lineHeight));
+  }
+
+  function clonedTitleLineCount(nextDocument, title) {
+    if (!title) {
+      return 0;
+    }
+    if (title.ownerDocument === document) {
+      return titleLineCount(title);
+    }
+
+    var transitionName = title.dataset.titleTransitionName;
+    var targetPage = title.closest(".notes-page") || title.closest(".article-stage");
+    if (!targetPage) {
+      return 0;
+    }
+
+    var probe = targetPage.cloneNode(true);
+    var pageMain = document.querySelector(".page-main") || document.body;
+    var pageMainRect = pageMain.getBoundingClientRect();
+
+    probe.style.position = "fixed";
+    probe.style.left = pageMainRect.left + "px";
+    probe.style.top = pageMainRect.top + "px";
+    probe.style.width = pageMainRect.width + "px";
+    probe.style.visibility = "hidden";
+    probe.style.pointerEvents = "none";
+    probe.style.zIndex = "-1";
+
+    pageMain.appendChild(probe);
+    try {
+      return titleLineCount(findTitleByTransitionName(probe, transitionName));
+    } finally {
+      probe.remove();
+    }
+  }
+
+  function titleLineCountsMatch(sourceTitle, targetTitle, nextDocument) {
+    var sourceLines = titleLineCount(sourceTitle);
+    var targetLines = clonedTitleLineCount(nextDocument, targetTitle);
+    return sourceLines > 0 && targetLines > 0 && sourceLines === targetLines;
+  }
+
+  function prepareArticleSharedTransition(nextDocument, url, sourceLink) {
+    var currentURL = new URL(currentPageKey);
+    var sourceTitle = null;
+    var targetTitle = null;
+    var sourceMeta = null;
+    var targetMeta = null;
+
+    clearArticleSharedTransitions(document);
+    clearArticleSharedTransitions(nextDocument);
 
     if (isNotesIndex(currentURL) && isNoteDetail(url)) {
       if (sourceLink && sourceLink.matches("[data-title-transition-name]") && linkMatchesURL(sourceLink, url)) {
-        setListTitleTransition(sourceLink);
-        return;
+        sourceTitle = sourceLink;
+      } else {
+        sourceTitle = findListTitleForURL(document, url);
       }
-      setListTitleTransition(findListTitleForURL(document, url));
+      targetTitle = findArticleTitle(nextDocument);
+      sourceMeta = findMetaForListTitle(sourceTitle) || findListMetaForURL(document, url);
+      targetMeta = findArticleMeta(nextDocument);
+    } else if (isNoteDetail(currentURL) && isNotesIndex(url)) {
+      sourceTitle = findArticleTitle(document);
+      targetTitle = findListTitleForURL(nextDocument, currentURL);
+      sourceMeta = findArticleMeta(document);
+      targetMeta = findMetaForListTitle(targetTitle) || findListMetaForURL(nextDocument, currentURL);
+    } else {
       return;
     }
 
-    if (isNoteDetail(currentURL) && isNotesIndex(url)) {
-      setListTitleTransition(findListTitleForURL(nextDocument, currentURL));
+    if (titleLineCountsMatch(sourceTitle, targetTitle, nextDocument) && setTitleTransitionPair(sourceTitle, targetTitle)) {
+      return;
     }
+    setMetaTransitionPair(sourceMeta, targetMeta);
+  }
+
+  function hasSiteIdentity(root) {
+    return Boolean(root.querySelector(".hero-identity, .notes-aside-identity"));
+  }
+
+  function shouldAnimateIdentityExit(nextDocument) {
+    return hasSiteIdentity(document) && !hasSiteIdentity(nextDocument);
   }
 
   function isPlainLeftClick(event) {
@@ -177,7 +333,12 @@
   }
 
   function clearTransitionClasses() {
-    document.documentElement.classList.remove("is-transitioning", "article-transition");
+    document.documentElement.classList.remove(
+      "is-transitioning",
+      "article-transition",
+      "identity-exit-down",
+      "meta-shared-transition",
+    );
     if (!document.body) {
       return;
     }
@@ -227,6 +388,12 @@
     }
   }
 
+  function syncHeadingAnchors() {
+    if (window.daybookSyncHeadingAnchors) {
+      window.daybookSyncHeadingAnchors();
+    }
+  }
+
   function swapArticleStage(nextDocument) {
     var currentStage = document.querySelector(".article-stage");
     var nextStage = nextDocument.querySelector(".article-stage");
@@ -268,12 +435,14 @@
 
     syncThemeButtons();
     syncNoteTocs();
+    syncHeadingAnchors();
     window.scrollTo(0, 0);
   }
 
   async function runSwap(nextDocument, url, updateHistory, sourceLink) {
     var useMotion = !reducedMotion();
     var articleTransition = isArticleTransition(url);
+    var animateIdentityExit = !articleTransition && shouldAnimateIdentityExit(nextDocument);
     cancelCleanupTimer();
     clearTransitionClasses();
 
@@ -281,9 +450,12 @@
       document.documentElement.classList.add("is-transitioning");
       if (articleTransition) {
         document.documentElement.classList.add("article-transition");
-        prepareArticleTitleTransition(nextDocument, url, sourceLink);
+        prepareArticleSharedTransition(nextDocument, url, sourceLink);
       } else {
         document.body.classList.add(exitClassName());
+        if (animateIdentityExit) {
+          document.documentElement.classList.add("identity-exit-down");
+        }
         await wait(cssDuration("--transition-exit-delay", 260));
       }
     }
@@ -303,7 +475,7 @@
 
     if (articleTransition) {
       clearTransitionClasses();
-      clearListTitleTransitions(document);
+      clearArticleSharedTransitions(document);
       return;
     }
 
@@ -330,7 +502,7 @@
       var nextDocument = await fetchPage(url);
       await runSwap(nextDocument, url, updateHistory, sourceLink);
     } catch (error) {
-      clearListTitleTransitions(document);
+      clearArticleSharedTransitions(document);
       if (updateHistory) {
         window.location.href = url.href;
       } else {
@@ -365,7 +537,9 @@
     currentPageKey = pageKey(window.location.href);
     syncThemeButtons();
     syncNoteTocs();
+    syncHeadingAnchors();
   });
 
   syncNoteTocs();
+  syncHeadingAnchors();
 })();

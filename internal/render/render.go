@@ -123,10 +123,17 @@ type IndexData struct {
 }
 
 type NotesData struct {
-	Site      SiteData
-	PageTitle string
-	BodyClass string
-	Notes     []NoteLink
+	Site        SiteData
+	PageTitle   string
+	BodyClass   string
+	Notes       []NoteLink
+	MonthGroups []MonthGroup
+}
+
+type MonthGroup struct {
+	Key   string
+	Label string
+	Notes []NoteLink
 }
 
 type ArchiveNote struct {
@@ -164,6 +171,9 @@ type AboutData struct {
 	PageTitle string
 	BodyClass string
 	Spiral    GoldenSpiral
+	Title     string
+	Summary   string
+	HTML      template.HTML
 }
 
 func New(templatesDir string) Renderer {

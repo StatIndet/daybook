@@ -1,9 +1,11 @@
 ---
-title: "Markdown 渲染测试"
-date: "2026-06-10"
-slug: "markdown-render-test"
-tags: ["Markdown", "Test"]
-summary: "用于测试博客的标准 Markdown 和 GFM 渲染效果。"
+title: Markdown 渲染测试
+date: 2026-05-28
+slug: markdown-render-test
+tags:
+  - Markdown
+  - Test
+summary: 用于测试博客的标准 Markdown 和 GFM 渲染效果。
 draft: false
 ---
 

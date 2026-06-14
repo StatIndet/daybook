@@ -4,38 +4,51 @@
 }
 
 .about-page {
+  max-width: min(44rem, 100%);
   min-height: calc(100vh - 160px);
   position: relative;
 }
 
 .about-content {
-  max-width: 34rem;
+  max-width: var(--note-body-width);
   padding-top: clamp(3rem, 9vh, 7rem);
   position: relative;
+  width: 100%;
   z-index: 2;
 }
 
-.about-kicker {
-  color: var(--color-muted);
-  font-family: var(--font-meta);
-  font-size: 0.9rem;
-  font-style: italic;
-  line-height: 1;
-  margin: 0 0 0.9rem;
-}
-
 .about-content h1 {
-  font-family: var(--font-ui);
-  font-size: clamp(2rem, 4vw, 3.4rem);
+  font-family: var(--font-logo);
+  font-size: var(--note-title-size);
+  font-style: italic;
+  font-weight: 650;
   line-height: 1.15;
   margin: 0;
 }
 
-.about-content p {
+.about-summary {
   color: var(--color-muted);
-  font-size: 1rem;
-  line-height: 1.8;
+  font-family: var(--font-ui);
+  font-size: 0.94rem;
+  line-height: 1.75;
   margin: 1.2rem 0 0;
+  max-width: 42rem;
+}
+
+.about-summary::first-letter {
+  color: var(--color-accent);
+  float: left;
+  font-family: var(--font-ui);
+  font-size: 3.4em;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 0.92;
+  margin-top: 4px;
+  padding: 4px 10px 0 0;
+}
+
+.about-markdown {
+  margin-top: 2.2rem;
 }
 
 .golden-spiral {
