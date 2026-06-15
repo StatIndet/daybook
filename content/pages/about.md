@@ -7,7 +7,7 @@ summary: Hello，welcome to my daybook！你好，欢迎来到我的博客！
 draft: false
 ---
 
-这是一个由 Go 构建的纯 HTML 静态博客，也是我用来托管 Obsidian 笔记的个人知识库。
+这是一个由 Go 构建的 HTML 静态博客，也是我用来托管 Obsidian 笔记的个人知识库。
 
 搭建这个网站的初衷是为了托管我的笔记。
 
