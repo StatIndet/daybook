@@ -47,7 +47,11 @@ func Build(options Options) (BuildResult, error) {
 		return BuildResult{}, fmt.Errorf("创建 public 目录: %w", err)
 	}
 
-	if err := copyDir(options.StaticDir, options.PublicDir); err != nil {
+	if err := copyStaticDir(options.StaticDir, options.PublicDir); err != nil {
+		return BuildResult{}, err
+	}
+	assets, err := buildAssets(options.StaticDir, options.PublicDir)
+	if err != nil {
 		return BuildResult{}, err
 	}
 	if err := copyNotesAssets(options.NotesDir, options.PublicDir); err != nil {
@@ -91,6 +95,7 @@ func Build(options Options) (BuildResult, error) {
 			Site:      siteData,
 			PageTitle: note.Title,
 			BodyClass: "note-body page-body",
+			Assets:    assets,
 			Tags:      tagLinks,
 			Note: render.NotePage{
 				Title:               note.Title,
@@ -116,6 +121,7 @@ func Build(options Options) (BuildResult, error) {
 		Site:      siteData,
 		PageTitle: "首页",
 		BodyClass: "home-body",
+		Assets:    assets,
 		Notes:     noteLinks,
 	}
 	if err := renderer.RenderIndex(indexPath, indexData); err != nil {
@@ -127,6 +133,7 @@ func Build(options Options) (BuildResult, error) {
 		Site:        siteData,
 		PageTitle:   "文章",
 		BodyClass:   "notes-list-body page-body",
+		Assets:      assets,
 		Notes:       noteLinks,
 		MonthGroups: monthGroups(noteLinks),
 		Tags:        tagLinks,
@@ -140,6 +147,7 @@ func Build(options Options) (BuildResult, error) {
 		Site:       siteData,
 		PageTitle:  "归档",
 		BodyClass:  "archive-body page-body",
+		Assets:     assets,
 		Total:      len(noteLinks),
 		YearGroups: archiveYearGroups(noteLinks),
 		Tags:       tagLinks,
@@ -164,6 +172,7 @@ func Build(options Options) (BuildResult, error) {
 		Site:      siteData,
 		PageTitle: aboutPage.Title,
 		BodyClass: "about-body page-body",
+		Assets:    assets,
 		Spiral:    render.NewGoldenSpiral(),
 		Title:     aboutPage.Title,
 		Summary:   aboutPage.Summary,
@@ -436,6 +445,10 @@ func Serve(publicDir, address string) error {
 }
 
 func copyDir(sourceDir, targetDir string) error {
+	return copyDirFiltered(sourceDir, targetDir, nil)
+}
+
+func copyDirFiltered(sourceDir, targetDir string, skip func(string, os.DirEntry) bool) error {
 	if _, err := os.Stat(sourceDir); os.IsNotExist(err) {
 		return nil
 	} else if err != nil {
@@ -450,6 +463,12 @@ func copyDir(sourceDir, targetDir string) error {
 		relativePath, err := filepath.Rel(sourceDir, path)
 		if err != nil {
 			return fmt.Errorf("计算 static 相对路径: %w", err)
+		}
+		if skip != nil && skip(relativePath, entry) {
+			if entry.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
 		}
 		targetPath := filepath.Join(targetDir, relativePath)
 
