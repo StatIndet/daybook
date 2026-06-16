@@ -18,6 +18,17 @@ type SiteData struct {
 	Title string
 }
 
+type Assets struct {
+	Paths map[string]string
+}
+
+func (a Assets) Path(originalPath string) string {
+	if path, ok := a.Paths[originalPath]; ok {
+		return path
+	}
+	return originalPath
+}
+
 type Heading struct {
 	Level int
 	Text  string
@@ -120,6 +131,7 @@ type IndexData struct {
 	Site      SiteData
 	PageTitle string
 	BodyClass string
+	Assets    Assets
 	Notes     []NoteLink
 }
 
@@ -134,6 +146,7 @@ type NotesData struct {
 	Site        SiteData
 	PageTitle   string
 	BodyClass   string
+	Assets      Assets
 	Notes       []NoteLink
 	MonthGroups []MonthGroup
 	Tags        []TagLink
@@ -164,6 +177,7 @@ type ArchiveData struct {
 	Site       SiteData
 	PageTitle  string
 	BodyClass  string
+	Assets     Assets
 	Total      int
 	YearGroups []ArchiveYearGroup
 	Tags       []TagLink
@@ -173,6 +187,7 @@ type NoteData struct {
 	Site      SiteData
 	PageTitle string
 	BodyClass string
+	Assets    Assets
 	Note      NotePage
 	Tags      []TagLink
 }
@@ -181,6 +196,7 @@ type AboutData struct {
 	Site      SiteData
 	PageTitle string
 	BodyClass string
+	Assets    Assets
 	Spiral    GoldenSpiral
 	Title     string
 	Summary   string
