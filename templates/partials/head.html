@@ -3,13 +3,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{if .PageTitle}}{{.PageTitle}} - {{end}}{{.Site.Title}}</title>
-  <script src="/js/theme.js"></script>
-  <script src="/js/code-copy.js" defer></script>
-  <script src="/js/toc.js" defer></script>
-  <script src="/js/heading-anchors.js" defer></script>
-  <script src="/js/note-filters.js" defer></script>
-  <script src="/js/page-transitions.js" defer></script>
-  <link rel="stylesheet" href="/css/global.css">
+  <script src="{{.Assets.Path "/js/theme.js"}}"></script>
+  <script src="{{.Assets.Path "/js/code-copy.js"}}" defer></script>
+  <script src="{{.Assets.Path "/js/toc.js"}}" defer></script>
+  <script src="{{.Assets.Path "/js/heading-anchors.js"}}" defer></script>
+  <script src="{{.Assets.Path "/js/note-filters.js"}}" defer></script>
+  <script src="{{.Assets.Path "/js/page-transitions.js"}}" defer></script>
+  <link rel="stylesheet" href="{{.Assets.Path "/css/global.css"}}">
   <link rel="alternate" type="application/rss+xml" title="{{.Site.Title}} RSS" href="/rss.xml">
 </head>
 {{end}}
