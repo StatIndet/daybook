@@ -10,24 +10,42 @@
 
 :root {
   --theme-reveal-from: 100% 0 0 0;
+  --eye-care-reveal-from: 0 100% 0 0;
 }
 
 :root[data-theme="dark"] {
   --theme-reveal-from: 0 0 100% 0;
 }
 
+html[data-eye-care-changing="to-eye-care"] {
+  --eye-care-reveal-from: 0 100% 0 0;
+}
+
+html[data-eye-care-changing="from-eye-care"] {
+  --eye-care-reveal-from: 0 0 0 100%;
+}
+
 html[data-theme-changing] .hero-avatar,
+html[data-eye-care-changing] .hero-avatar,
 html[data-theme-changing] .side-avatar,
+html[data-eye-care-changing] .side-avatar,
 html[data-theme-changing] .hero-identity,
+html[data-eye-care-changing] .hero-identity,
 html[data-theme-changing] .notes-aside-identity,
+html[data-eye-care-changing] .notes-aside-identity,
 html[data-theme-changing] .notes-item-title a,
+html[data-eye-care-changing] .notes-item-title a,
 html[data-theme-changing] .notes-item-meta,
+html[data-eye-care-changing] .notes-item-meta,
 html[data-theme-changing] .note-title span,
-html[data-theme-changing] .note-meta {
+html[data-eye-care-changing] .note-title span,
+html[data-theme-changing] .note-meta,
+html[data-eye-care-changing] .note-meta {
   view-transition-name: none !important;
 }
 
-::view-transition-old(theme-toggle-transition) {
+::view-transition-old(theme-toggle-transition),
+::view-transition-old(eye-care-toggle-transition) {
   animation: none;
   mix-blend-mode: normal;
   z-index: -1;
@@ -40,9 +58,22 @@ html[data-theme-changing] .note-meta {
   z-index: 99;
 }
 
+::view-transition-new(eye-care-toggle-transition) {
+  animation: eye-care-toggle-reveal 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  clip-path: inset(0 0 0 0);
+  mix-blend-mode: normal;
+  z-index: 99;
+}
+
 @keyframes theme-toggle-reveal {
   from {
     clip-path: inset(var(--theme-reveal-from));
+  }
+}
+
+@keyframes eye-care-toggle-reveal {
+  from {
+    clip-path: inset(var(--eye-care-reveal-from));
   }
 }
 

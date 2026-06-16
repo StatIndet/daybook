@@ -11,9 +11,10 @@
           </div>
         </div>
       {{end}}
-    {{else}}
+      {{else}}
       <p class="notes-empty">还没有发布的文章。</p>
     {{end}}
+    <p class="notes-empty notes-filter-empty" hidden>没有找到匹配的文章。</p>
   </section>
 
   {{template "notes_aside" .}}

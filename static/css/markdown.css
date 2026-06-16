@@ -209,6 +209,16 @@
   margin-bottom: 0;
 }
 
+:root[data-eye-care="false"] .markdown blockquote {
+  border-left-color: oklch(40% 0.005 298 / 0.25);
+  color: oklch(40% 0.005 298 / 0.8);
+}
+
+:root[data-eye-care="false"][data-theme="dark"] .markdown blockquote {
+  border-left-color: oklch(77% 0.005 298 / 0.25);
+  color: oklch(77% 0.005 298 / 0.8);
+}
+
 .markdown table {
   border-collapse: collapse;
   display: block;
@@ -250,6 +260,12 @@
   transition:
     background-color 350ms ease,
     border-color 350ms ease;
+}
+
+:root[data-eye-care="false"] .markdown :not(pre) > code {
+  background: var(--color-code-inline-bg);
+  border-color: var(--color-code-border);
+  color: var(--color-muted);
 }
 
 .markdown pre {
@@ -572,6 +588,16 @@
 .markdown .chroma .cpf {
   color: var(--syntax-comment);
   font-style: italic;
+}
+
+:root[data-eye-care="false"] .markdown .chroma .c,
+:root[data-eye-care="false"] .markdown .chroma .ch,
+:root[data-eye-care="false"] .markdown .chroma .cm,
+:root[data-eye-care="false"] .markdown .chroma .c1,
+:root[data-eye-care="false"] .markdown .chroma .cs,
+:root[data-eye-care="false"] .markdown .chroma .cp,
+:root[data-eye-care="false"] .markdown .chroma .cpf {
+  font-style: normal;
 }
 
 .markdown .chroma .k,
