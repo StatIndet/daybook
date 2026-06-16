@@ -5,8 +5,10 @@ import (
 	"html/template"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"unicode"
 
@@ -36,6 +38,7 @@ func Build(options Options) (BuildResult, error) {
 	if err != nil {
 		return BuildResult{}, err
 	}
+	tagLinks := collectTagLinks(notes)
 
 	if err := os.RemoveAll(options.PublicDir); err != nil {
 		return BuildResult{}, fmt.Errorf("清理 public 目录: %w", err)
@@ -69,12 +72,14 @@ func Build(options Options) (BuildResult, error) {
 		readingTime := estimateReadingTime(note.Body)
 		titleTransitionName := transitionName("note-title", note.Slug)
 		dateTransitionName := transitionName("note-date", note.Slug)
+		tags := cleanTags(note.Tags)
 
 		noteLinks = append(noteLinks, render.NoteLink{
 			Title:               note.Title,
 			Date:                note.Date,
 			ReadingTime:         readingTime,
 			Summary:             note.Summary,
+			Tags:                tags,
 			URL:                 note.URL,
 			Slug:                note.Slug,
 			TitleTransitionName: titleTransitionName,
@@ -86,6 +91,7 @@ func Build(options Options) (BuildResult, error) {
 			Site:      siteData,
 			PageTitle: note.Title,
 			BodyClass: "note-body page-body",
+			Tags:      tagLinks,
 			Note: render.NotePage{
 				Title:               note.Title,
 				Date:                note.Date,
@@ -123,6 +129,7 @@ func Build(options Options) (BuildResult, error) {
 		BodyClass:   "notes-list-body page-body",
 		Notes:       noteLinks,
 		MonthGroups: monthGroups(noteLinks),
+		Tags:        tagLinks,
 	}
 	if err := renderer.RenderNotes(notesIndexPath, notesData); err != nil {
 		return BuildResult{}, fmt.Errorf("生成文章页: %w", err)
@@ -135,6 +142,7 @@ func Build(options Options) (BuildResult, error) {
 		BodyClass:  "archive-body page-body",
 		Total:      len(noteLinks),
 		YearGroups: archiveYearGroups(noteLinks),
+		Tags:       tagLinks,
 	}
 	if err := renderer.RenderArchive(archivePath, archiveData); err != nil {
 		return BuildResult{}, fmt.Errorf("生成归档页: %w", err)
@@ -257,6 +265,63 @@ func monthGroups(notes []render.NoteLink) []render.MonthGroup {
 	}
 
 	return groups
+}
+
+func collectTagLinks(notes []content.Note) []render.TagLink {
+	namesByKey := make(map[string]string)
+	names := make([]string, 0)
+
+	for _, note := range notes {
+		for _, tag := range cleanTags(note.Tags) {
+			key := strings.ToLower(tag)
+			if _, ok := namesByKey[key]; ok {
+				continue
+			}
+			namesByKey[key] = tag
+			names = append(names, tag)
+		}
+	}
+
+	sort.SliceStable(names, func(i, j int) bool {
+		left := strings.ToLower(names[i])
+		right := strings.ToLower(names[j])
+		if left == right {
+			return names[i] < names[j]
+		}
+		return left < right
+	})
+
+	links := make([]render.TagLink, 0, len(names))
+	for index, name := range names {
+		links = append(links, render.TagLink{
+			Name:         name,
+			URL:          "/notes/?tag=" + url.QueryEscape(name),
+			Index:        index,
+			ReverseIndex: len(names) - index - 1,
+		})
+	}
+	return links
+}
+
+func cleanTags(tags []string) []string {
+	result := make([]string, 0, len(tags))
+	seen := make(map[string]bool)
+
+	for _, tag := range tags {
+		tag = strings.TrimSpace(tag)
+		if tag == "" {
+			continue
+		}
+
+		key := strings.ToLower(tag)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		result = append(result, tag)
+	}
+
+	return result
 }
 
 func monthLabel(month string) string {

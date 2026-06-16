@@ -29,6 +29,7 @@ type NoteLink struct {
 	Date                string
 	ReadingTime         string
 	Summary             string
+	Tags                []string
 	URL                 string
 	Slug                string
 	TitleTransitionName string
@@ -122,12 +123,20 @@ type IndexData struct {
 	Notes     []NoteLink
 }
 
+type TagLink struct {
+	Name         string
+	URL          string
+	Index        int
+	ReverseIndex int
+}
+
 type NotesData struct {
 	Site        SiteData
 	PageTitle   string
 	BodyClass   string
 	Notes       []NoteLink
 	MonthGroups []MonthGroup
+	Tags        []TagLink
 }
 
 type MonthGroup struct {
@@ -157,6 +166,7 @@ type ArchiveData struct {
 	BodyClass  string
 	Total      int
 	YearGroups []ArchiveYearGroup
+	Tags       []TagLink
 }
 
 type NoteData struct {
@@ -164,6 +174,7 @@ type NoteData struct {
 	PageTitle string
 	BodyClass string
 	Note      NotePage
+	Tags      []TagLink
 }
 
 type AboutData struct {

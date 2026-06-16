@@ -394,6 +394,12 @@
     }
   }
 
+  function syncNoteFilters() {
+    if (window.daybookSyncNoteFilters) {
+      window.daybookSyncNoteFilters();
+    }
+  }
+
   function swapArticleStage(nextDocument) {
     var currentStage = document.querySelector(".article-stage");
     var nextStage = nextDocument.querySelector(".article-stage");
@@ -436,6 +442,7 @@
     syncThemeButtons();
     syncNoteTocs();
     syncHeadingAnchors();
+    syncNoteFilters();
     window.scrollTo(0, 0);
   }
 
@@ -513,6 +520,14 @@
     }
   }
 
+  window.daybookNavigateTo = function (href) {
+    return navigateTo(new URL(href, window.location.href), true);
+  };
+
+  window.daybookSyncPageKey = function (href) {
+    currentPageKey = pageKey(href || window.location.href);
+  };
+
   document.addEventListener("click", function (event) {
     var link = event.target.closest("a");
     if (!shouldHandleLink(link, event)) {
@@ -538,8 +553,10 @@
     syncThemeButtons();
     syncNoteTocs();
     syncHeadingAnchors();
+    syncNoteFilters();
   });
 
   syncNoteTocs();
   syncHeadingAnchors();
+  syncNoteFilters();
 })();

@@ -1,5 +1,5 @@
 {{define "note_card"}}
-<article class="notes-item">
+<article class="notes-item" data-note-card data-search-title="{{.Title}}" data-search-summary="{{.Summary}}" data-tags="{{range .Tags}}{{.}}&#10;{{end}}">
   <div class="notes-item-header">
     <h1 class="notes-item-title">
       <a href="{{.URL}}" data-title-transition-name="{{.TitleTransitionName}}">{{.Title}}</a>
