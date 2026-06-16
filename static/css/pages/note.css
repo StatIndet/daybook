@@ -51,7 +51,7 @@
 
 .note-back-link:hover,
 .note-back-link:focus-visible {
-  color: var(--color-accent);
+  color: var(--color-hover-text);
 }
 
 .note-back-link:hover .material-symbol,

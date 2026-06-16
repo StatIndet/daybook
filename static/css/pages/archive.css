@@ -133,7 +133,7 @@
 .archive-item:focus-within .archive-entry a,
 .archive-entry a:hover,
 .archive-entry a:focus-visible {
-  color: var(--color-accent);
+  color: var(--color-hover-text);
   text-decoration: none;
 }
 

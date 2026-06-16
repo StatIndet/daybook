@@ -76,8 +76,8 @@
 
 .markdown a:hover,
 .markdown a:focus-visible {
-  color: var(--color-accent);
-  text-decoration-color: var(--color-accent);
+  color: var(--color-hover-text);
+  text-decoration-color: var(--color-hover-text);
 }
 
 .markdown a:focus-visible {
@@ -428,7 +428,7 @@
 .code-copy-button:hover,
 .code-copy-button:focus-visible,
 .code-copy-button.is-copied {
-  color: var(--color-accent);
+  color: var(--color-hover-text);
 }
 
 .code-copy-button:hover .material-symbol,
@@ -447,7 +447,7 @@
   background: transparent;
   border: 0;
   bottom: 0;
-  color: var(--color-accent);
+  color: var(--color-hover-text);
   cursor: pointer;
   display: inline-flex;
   font-family: var(--font-ui);

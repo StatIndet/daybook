@@ -71,7 +71,7 @@
 
 .notes-item-title a:hover,
 .notes-item-title a:focus-visible {
-  color: var(--color-accent);
+  color: var(--color-hover-text);
 }
 
 .notes-item-meta {
