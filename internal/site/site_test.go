@@ -1,6 +1,9 @@
 package site
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/StatIndet/daybook/internal/content"
@@ -53,4 +56,122 @@ func TestCollectTagLinks(t *testing.T) {
 	if tags[3].URL != "/notes/?tag=%E8%99%9A%E6%8B%9F%E6%9C%BA" {
 		t.Fatalf("Chinese tag URL = %q", tags[3].URL)
 	}
+}
+
+func TestBuildAssetsFingerprintsCSSImportsAndJS(t *testing.T) {
+	staticDir := filepath.Join(t.TempDir(), "static")
+	publicDir := filepath.Join(t.TempDir(), "public")
+
+	writeTestFile(t, staticDir, "css/global.css", strings.Join([]string{
+		`@import "/css/a.css";`,
+		`@import '/css/b.css';`,
+		`@import url("/css/c.css");`,
+		`@import url('/css/d.css');`,
+		`@import url(e.css);`,
+		`@import url("nested.css");`,
+		`@import url("https://example.com/foo.css");`,
+		`body { color: red; }`,
+	}, "\n"))
+	writeTestFile(t, staticDir, "css/a.css", `.a { color: red; }`)
+	writeTestFile(t, staticDir, "css/b.css", `.b { color: blue; }`)
+	writeTestFile(t, staticDir, "css/c.css", `.c { color: green; }`)
+	writeTestFile(t, staticDir, "css/d.css", `.d { color: yellow; }`)
+	writeTestFile(t, staticDir, "css/e.css", `.e { color: black; }`)
+	writeTestFile(t, staticDir, "css/nested.css", `@import url("nested-child.css"); .nested { color: pink; }`)
+	writeTestFile(t, staticDir, "css/nested-child.css", `.nested-child { color: purple; }`)
+	for _, scriptPath := range []string{
+		"js/theme.js",
+		"js/code-copy.js",
+		"js/toc.js",
+		"js/heading-anchors.js",
+		"js/note-filters.js",
+		"js/page-transitions.js",
+	} {
+		writeTestFile(t, staticDir, scriptPath, `document.documentElement.dataset.loaded = "true";`)
+	}
+
+	assets, err := buildAssets(staticDir, publicDir)
+	if err != nil {
+		t.Fatalf("buildAssets returned error: %v", err)
+	}
+
+	globalPath := assets.Path("/css/global.css")
+	if globalPath == "/css/global.css" || !strings.HasPrefix(globalPath, "/css/global.") || !strings.HasSuffix(globalPath, ".css") {
+		t.Fatalf("global css path = %q, want fingerprinted path", globalPath)
+	}
+	if fileExists(filepath.Join(publicDir, "css", "global.css")) {
+		t.Fatal("unfingerprinted global.css should not be written")
+	}
+
+	globalContent := readPublicAsset(t, publicDir, globalPath)
+	for _, oldPath := range []string{
+		`"/css/a.css"`,
+		`'/css/b.css'`,
+		`"/css/c.css"`,
+		`'/css/d.css'`,
+		`url(e.css)`,
+		`"nested.css"`,
+	} {
+		if strings.Contains(globalContent, oldPath) {
+			t.Fatalf("global css still contains unfingerprinted import %q:\n%s", oldPath, globalContent)
+		}
+	}
+	if !strings.Contains(globalContent, `https://example.com/foo.css`) {
+		t.Fatalf("external import should stay unchanged:\n%s", globalContent)
+	}
+	if globalPath != fingerprintedAssetPath("/css/global.css", []byte(globalContent)) {
+		t.Fatalf("global css hash should be based on rewritten content")
+	}
+
+	nestedPath := assets.Path("/css/nested.css")
+	nestedContent := readPublicAsset(t, publicDir, nestedPath)
+	if strings.Contains(nestedContent, "nested-child.css") {
+		t.Fatalf("nested css still contains unfingerprinted child import:\n%s", nestedContent)
+	}
+	if !strings.Contains(nestedContent, assets.Path("/css/nested-child.css")) {
+		t.Fatalf("nested css does not reference fingerprinted child path:\n%s", nestedContent)
+	}
+
+	themePath := assets.Path("/js/theme.js")
+	if themePath == "/js/theme.js" || !strings.HasPrefix(themePath, "/js/theme.") || !strings.HasSuffix(themePath, ".js") {
+		t.Fatalf("theme js path = %q, want fingerprinted path", themePath)
+	}
+	if fileExists(filepath.Join(publicDir, "js", "theme.js")) {
+		t.Fatal("unfingerprinted theme.js should not be written")
+	}
+
+	manifest := readPublicAsset(t, publicDir, "/assets-manifest.json")
+	for _, originalPath := range []string{"/css/global.css", "/css/a.css", "/css/nested-child.css", "/js/theme.js"} {
+		if !strings.Contains(manifest, originalPath) {
+			t.Fatalf("manifest should contain %s:\n%s", originalPath, manifest)
+		}
+	}
+}
+
+func writeTestFile(t *testing.T, root, relativePath, content string) {
+	t.Helper()
+
+	targetPath := filepath.Join(root, filepath.FromSlash(relativePath))
+	if err := os.MkdirAll(filepath.Dir(targetPath), 0755); err != nil {
+		t.Fatalf("create test file directory: %v", err)
+	}
+	if err := os.WriteFile(targetPath, []byte(content), 0644); err != nil {
+		t.Fatalf("write test file %s: %v", relativePath, err)
+	}
+}
+
+func readPublicAsset(t *testing.T, publicDir, webPath string) string {
+	t.Helper()
+
+	filePath := filepath.Join(publicDir, filepath.FromSlash(strings.TrimPrefix(webPath, "/")))
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Fatalf("read public asset %s: %v", webPath, err)
+	}
+	return string(content)
+}
+
+func fileExists(filePath string) bool {
+	_, err := os.Stat(filePath)
+	return err == nil
 }
