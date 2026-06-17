@@ -117,6 +117,8 @@ graph TD;
 
 ::spotify{url="https://open.spotify.com/track/0HYAsQwJIO6FLqpyTeD3l6"}
 
+::spotify{url="https://open.spotify.com/album/03QiFOKDh6xMiSTkOnsmMG"}
+
 ::codepen{url="https://codepen.io/jh3y/pen/NWdNMBJ"}
 
 ::netease{type="song" id="474667755"}
