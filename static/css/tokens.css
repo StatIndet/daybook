@@ -132,7 +132,7 @@
   --color-code-bg: oklch(40% 0.005 298 / 0.05);
   --color-code-border: oklch(40% 0.005 298 / 0.15);
   --color-code-inline-bg: oklch(40% 0.005 298 / 0.05);
-  --color-golden-rect: oklch(0.93 0.195089 103.2532 / 0.46);
+  --color-golden-rect: oklch(25% 0.005 298 / 0.16);
   --color-golden-diagonal: oklch(25% 0.005 298 / 0.12);
   --color-golden-curve: oklch(25% 0.005 298 / 0.28);
   --shadow-code: inset 0 1px 0 oklch(100% 0 0 / 0.52);
