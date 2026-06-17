@@ -400,6 +400,12 @@
     }
   }
 
+  function syncMermaid() {
+    if (window.DaybookMermaid && typeof window.DaybookMermaid.init === "function") {
+      window.DaybookMermaid.init();
+    }
+  }
+
   function swapArticleStage(nextDocument) {
     var currentStage = document.querySelector(".article-stage");
     var nextStage = nextDocument.querySelector(".article-stage");
@@ -443,6 +449,7 @@
     syncNoteTocs();
     syncHeadingAnchors();
     syncNoteFilters();
+    syncMermaid();
     window.scrollTo(0, 0);
   }
 
@@ -554,9 +561,11 @@
     syncNoteTocs();
     syncHeadingAnchors();
     syncNoteFilters();
+    syncMermaid();
   });
 
   syncNoteTocs();
   syncHeadingAnchors();
   syncNoteFilters();
+  syncMermaid();
 })();

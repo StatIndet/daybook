@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/StatIndet/daybook/internal/config"
 	"github.com/StatIndet/daybook/internal/content"
 	"github.com/StatIndet/daybook/internal/render"
 )
@@ -85,6 +86,8 @@ func TestBuildAssetsFingerprintsCSSImportsAndJS(t *testing.T) {
 		"js/toc.js",
 		"js/heading-anchors.js",
 		"js/note-filters.js",
+		"js/lightbox.js",
+		"js/mermaid-loader.js",
 		"js/page-transitions.js",
 	} {
 		writeTestFile(t, staticDir, scriptPath, `document.documentElement.dataset.loaded = "true";`)
@@ -145,6 +148,95 @@ func TestBuildAssetsFingerprintsCSSImportsAndJS(t *testing.T) {
 		if !strings.Contains(manifest, originalPath) {
 			t.Fatalf("manifest should contain %s:\n%s", originalPath, manifest)
 		}
+	}
+}
+
+func TestBuildMarksNotesWithMermaid(t *testing.T) {
+	contentDir := filepath.Join(t.TempDir(), "content")
+	staticDir := filepath.Join(t.TempDir(), "static")
+	publicDir := filepath.Join(t.TempDir(), "public")
+
+	writeRequiredTemplateAssets(t, staticDir)
+	writeTestFile(t, contentDir, "pages/about.md", strings.Join([]string{
+		"---",
+		"title: About",
+		"summary: Test about page.",
+		"---",
+		"",
+		"About body.",
+	}, "\n"))
+	writeTestFile(t, contentDir, "notes/with-mermaid.md", strings.Join([]string{
+		"---",
+		"title: With Mermaid",
+		"date: 2026-06-17",
+		"slug: with-mermaid",
+		"summary: Mermaid note.",
+		"draft: false",
+		"---",
+		"",
+		"```mermaid",
+		"graph TD",
+		"A --> B",
+		"```",
+	}, "\n"))
+	writeTestFile(t, contentDir, "notes/plain.md", strings.Join([]string{
+		"---",
+		"title: Plain",
+		"date: 2026-06-16",
+		"slug: plain",
+		"summary: Plain note.",
+		"draft: false",
+		"---",
+		"",
+		"Regular content.",
+	}, "\n"))
+
+	_, err := Build(Options{
+		Config:       config.Default(),
+		NotesDir:     filepath.Join(contentDir, "notes"),
+		TemplatesDir: filepath.Join("..", "..", "templates"),
+		StaticDir:    staticDir,
+		PublicDir:    publicDir,
+	})
+	if err != nil {
+		t.Fatalf("Build returned error: %v", err)
+	}
+
+	withMermaid := readPublicAsset(t, publicDir, "/notes/with-mermaid/index.html")
+	if !strings.Contains(withMermaid, `data-has-mermaid="true"`) {
+		t.Fatalf("Mermaid note should be marked with data-has-mermaid=true:\n%s", withMermaid)
+	}
+	if !strings.Contains(withMermaid, `class="mermaid-block"`) {
+		t.Fatalf("Mermaid note should contain Mermaid block HTML:\n%s", withMermaid)
+	}
+	if !strings.Contains(withMermaid, `/js/mermaid-loader.`) {
+		t.Fatalf("Mermaid loader should be referenced through the asset pipeline:\n%s", withMermaid)
+	}
+
+	plain := readPublicAsset(t, publicDir, "/notes/plain/index.html")
+	if !strings.Contains(plain, `data-has-mermaid="false"`) {
+		t.Fatalf("Plain note should be marked with data-has-mermaid=false:\n%s", plain)
+	}
+	if strings.Contains(plain, `class="mermaid-block"`) {
+		t.Fatalf("Plain note should not contain Mermaid block HTML:\n%s", plain)
+	}
+}
+
+func writeRequiredTemplateAssets(t *testing.T, staticDir string) {
+	t.Helper()
+
+	writeTestFile(t, staticDir, "css/global.css", `body { color: black; }`)
+	for _, scriptPath := range []string{
+		"js/theme.js",
+		"js/code-copy.js",
+		"js/toc.js",
+		"js/heading-anchors.js",
+		"js/note-filters.js",
+		"js/lightbox.js",
+		"js/mermaid-loader.js",
+		"js/page-transitions.js",
+	} {
+		writeTestFile(t, staticDir, scriptPath, `document.documentElement.dataset.loaded = "true";`)
 	}
 }
 

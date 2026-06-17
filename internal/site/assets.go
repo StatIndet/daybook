@@ -73,6 +73,8 @@ func requireTemplateAssets(manifest map[string]string) error {
 		"/js/toc.js",
 		"/js/heading-anchors.js",
 		"/js/note-filters.js",
+		"/js/lightbox.js",
+		"/js/mermaid-loader.js",
 		"/js/page-transitions.js",
 	}
 
