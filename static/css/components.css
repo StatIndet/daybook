@@ -462,6 +462,12 @@
   min-height: 0;
   overflow: auto;
   padding: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.note-toc-panel ol::-webkit-scrollbar {
+  display: none;
 }
 
 .note-toc-panel a {

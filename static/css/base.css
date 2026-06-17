@@ -21,6 +21,9 @@ body {
 
 html {
   background: var(--color-page);
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-text) 25%, transparent) transparent;
+  scrollbar-gutter: stable;
 }
 
 a {
