@@ -221,19 +221,20 @@
       });
   }
 
+  var initTimer = 0;
+
   function scheduleInit(options) {
-    var run = function () {
-      init(options);
-    };
-    if (window.requestAnimationFrame) {
-      window.requestAnimationFrame(run);
-      return;
+    if (initTimer) {
+      window.clearTimeout(initTimer);
     }
-    window.setTimeout(run, 0);
+    initTimer = window.setTimeout(function () {
+      initTimer = 0;
+      init(options);
+    }, 10);
   }
 
   window.DaybookMermaid = {
-    init: init,
+    init: scheduleInit,
   };
 
   if (window.MutationObserver) {
