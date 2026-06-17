@@ -1,131 +1,4 @@
-(function () {
-  var compactNumberFormat = new Intl.NumberFormat("en", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  });
-
-  // Fetch repository data from GitHub API with caching
-  async function fetchRepoData(repo) {
-    var cacheKey = "github-repo-" + repo;
-
-    // Check session storage for cached data
-    try {
-      var cachedData = sessionStorage.getItem(cacheKey);
-      if (cachedData) {
-        return JSON.parse(cachedData);
-      }
-    } catch (e) {
-      try {
-        sessionStorage.removeItem(cacheKey);
-      } catch (err) {}
-    }
-
-    // Fetch from API if not cached
-    try {
-      var response = await fetch("https://api.github.com/repos/" + repo);
-      if (!response.ok) {
-        console.warn(
-          "[GithubCard] Failed to fetch " +
-            repo +
-            ": " +
-            response.status +
-            " " +
-            response.statusText
-        );
-        return null;
-      }
-
-      var raw = await response.json();
-      var data = {
-        owner: { avatar_url: raw.owner && raw.owner.avatar_url },
-        description: raw.description,
-        stargazers_count: raw.stargazers_count,
-        forks_count: raw.forks_count,
-        license: raw.license ? { spdx_id: raw.license.spdx_id } : null,
-      };
-
-      // Cache the successful response
-      try {
-        sessionStorage.setItem(cacheKey, JSON.stringify(data));
-      } catch (err) {}
-
-      return data;
-    } catch (error) {
-      console.error("[GithubCard] Failed to fetch " + repo + ":", error);
-      return null;
-    }
-  }
-
-  // Update card UI with repository data
-  function updateCardUI(card, data) {
-    var setText = function (selector, text) {
-      var el = card.querySelector(selector);
-      if (el) {
-        el.textContent = text;
-      }
-    };
-
-    if (!data) {
-      setText(".gc-repo-description", "Failed to load data");
-      return;
-    }
-
-    var avatar = card.querySelector(".gc-owner-avatar");
-    if (avatar && data.owner && data.owner.avatar_url) {
-      avatar.style.backgroundImage = "url(" + data.owner.avatar_url + ")";
-      avatar.style.backgroundSize = "cover";
-      avatar.style.backgroundPosition = "center";
-    }
-
-    setText(".gc-repo-description", data.description || "No description");
-    setText(".gc-stars-count", compactNumberFormat.format(data.stargazers_count || 0));
-    setText(".gc-forks-count", compactNumberFormat.format(data.forks_count || 0));
-    setText(".gc-license-info", (data.license && data.license.spdx_id) || "No License");
-  }
-
-  // Load data for a specific card element
-  async function loadRepoData(card) {
-    var repo = card.getAttribute("data-repo");
-    if (!repo) {
-      return;
-    }
-
-    var data = await fetchRepoData(repo);
-    updateCardUI(card, data);
-  }
-
-  // Initialize all GitHub cards on the page
-  function setupGithubCards() {
-    var cards = document.querySelectorAll(".gc-container");
-    cards.forEach(function (card) {
-      loadRepoData(card);
-    });
-  }
-
-  // Setup Twitter Widgets
-  function setupTweets() {
-    var tweets = document.querySelectorAll(".twitter-tweet");
-    if (tweets.length === 0) {
-      return;
-    }
-
-    // Force light theme
-    tweets.forEach(function (tweet) {
-      tweet.setAttribute("data-theme", "light");
-    });
-
-    if (window.twttr && window.twttr.widgets) {
-      window.twttr.widgets.load();
-    } else if (!document.getElementById("twitter-wjs")) {
-      var script = document.createElement("script");
-      script.id = "twitter-wjs";
-      script.src = "https://platform.twitter.com/widgets.js";
-      script.async = true;
-      document.head.appendChild(script);
-    }
-  }
-
-  function setupNeteasePlayers() {
+function setupNeteasePlayers() {
   var players = document.querySelectorAll(".netease-custom-player");
   if (players.length === 0) return;
 
@@ -138,7 +11,6 @@
 
   players.forEach(async function(container) {
     var id = container.getAttribute("data-id");
-    var autostart = container.getAttribute("data-autostart") === "true";
     if (!id) return;
 
     try {
@@ -194,14 +66,9 @@
       var ctx = canvas.getContext("2d");
 
       var isPlaying = false;
-      var reqId = null;
+      var reqId;
       var drag = false;
       var smoothedProgress = 0;
-      var wavePhase = 0;
-      var lastTime = 0;
-      var rewinding = false;
-      var rewindTime = 0;
-      var rewindStart = 0;
 
       function swapIcon(name) {
         if (iconSpan.textContent === name) return;
@@ -223,8 +90,7 @@
         isPlaying = true;
         playerWrapper.classList.add("is-playing");
         swapIcon("pause");
-        lastTime = performance.now();
-        if (!reqId) loop(lastTime);
+        loop();
       });
 
       audio.addEventListener("pause", function() {
@@ -233,37 +99,17 @@
         swapIcon("play_arrow");
       });
 
-      audio.addEventListener("ended", function() {
-        isPlaying = false;
-        playerWrapper.classList.remove("is-playing");
-        swapIcon("play_arrow");
-        rewinding = true;
-        rewindTime = 0;
-        rewindStart = smoothedProgress;
-        audio.currentTime = 0;
-        if (!reqId) {
-          lastTime = performance.now();
-          loop(lastTime);
-        }
-      });
-
       audio.addEventListener("timeupdate", function() {
         if (!drag) timeDiv.textContent = formatTime(audio.currentTime) + " / " + formatTime(audio.duration);
       });
 
       audio.addEventListener("loadedmetadata", function() {
         timeDiv.textContent = "0:00 / " + formatTime(audio.duration);
-        drawWave(0, wavePhase);
-        if (autostart) {
-          audio.play().catch(function(err) {
-            console.warn("Autoplay prevented by browser:", err);
-          });
-        }
+        drawWave(0, performance.now());
       });
 
       canvas.addEventListener("pointerdown", function(e) {
         drag = true;
-        rewinding = false;
         updateSeek(e);
       });
       window.addEventListener("pointermove", function(e) {
@@ -275,10 +121,6 @@
           var rect = canvas.getBoundingClientRect();
           var p = Math.max(0, Math.min(e.clientX - rect.left, rect.width)) / rect.width;
           if (audio.duration) audio.currentTime = p * audio.duration;
-          if (!reqId) {
-            lastTime = performance.now();
-            loop(lastTime);
-          }
         }
       });
 
@@ -287,7 +129,7 @@
         var p = Math.max(0, Math.min(e.clientX - rect.left, rect.width)) / rect.width;
         if (audio.duration) timeDiv.textContent = formatTime(p * audio.duration) + " / " + formatTime(audio.duration);
         smoothedProgress = p;
-        drawWave(p, wavePhase);
+        drawWave(p, performance.now());
       }
 
       function drawWave(progress, time) {
@@ -300,10 +142,10 @@
 
         ctx.clearRect(0, 0, w, h);
 
-        var gap = 10;
-        var lineWidth = 10;
+        var gap = 8;
+        var lineWidth = 8;
         var waveAmp = 5; 
-        var waveFreq = 0.08; 
+        var waveFreq = 0.06; 
         var phase = (time % 1200) / 1200 * Math.PI * 2;
         var progressX = w * progress;
 
@@ -339,39 +181,19 @@
       }
 
       function loop(t) {
-        var dt = t - (lastTime || t);
-        lastTime = t;
-        if (isPlaying) {
-          wavePhase += dt;
-        }
-
-        if (rewinding) {
-          rewindTime += dt;
-          var p = Math.min(1, rewindTime / 1000);
-          var ease = Math.pow(p, 3); // Ease-in: slow at start, fast at end
-          smoothedProgress = rewindStart * (1 - ease);
-          drawWave(smoothedProgress, wavePhase);
-          if (p >= 1) {
-            rewinding = false;
-            reqId = null;
-          } else {
-            reqId = requestAnimationFrame(loop);
-          }
-          return;
-        }
-
         var targetProgress = audio.duration ? audio.currentTime / audio.duration : 0;
         if (!drag) {
           smoothedProgress += (targetProgress - smoothedProgress) * 0.15;
         } else {
           smoothedProgress = targetProgress;
         }
-        drawWave(smoothedProgress, wavePhase);
+        drawWave(smoothedProgress, t || performance.now());
 
         if (isPlaying || Math.abs(smoothedProgress - targetProgress) > 0.001) {
           reqId = requestAnimationFrame(loop);
         } else {
-          reqId = null;
+          // Even if paused, we need to animate the wave since the wave never stops!
+          reqId = requestAnimationFrame(loop);
         }
       }
     } catch (err) {
@@ -380,15 +202,3 @@
     }
   });
 }
-
-  window.daybookSyncEmbeds = function () {
-    setupGithubCards();
-    setupTweets();
-    setupNeteasePlayers();
-  };
-
-  document.addEventListener("DOMContentLoaded", function () {
-    window.daybookSyncEmbeds();
-  });
-
-})();

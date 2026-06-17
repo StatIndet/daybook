@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html data-theme="dark" style="background: #131110; color: #f4f0e3; color-scheme: dark;">
+<head>
+<style>
+  body { max-width: 800px; margin: 0 auto; padding: 2rem; }
+  .test-iframe { width: 100%; height: 110px; border: none; }
+  
+  .fix-dark iframe {
+    color-scheme: dark;
+    background: transparent;
+  }
+</style>
+</head>
+<body>
+  <h2>NetEase Without Fix</h2>
+  <div class="no-fix">
+    <iframe class="test-iframe" src="https://music.163.com/outchain/player?type=2&id=1808492017&auto=0&height=66"></iframe>
+  </div>
+
+  <h2>NetEase With Fix</h2>
+  <div class="fix-dark">
+    <iframe class="test-iframe" src="https://music.163.com/outchain/player?type=2&id=1808492017&auto=0&height=66"></iframe>
+  </div>
+</body>
+</html>

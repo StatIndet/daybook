@@ -123,10 +123,6 @@ graph TD;
 
 ::netease{type="song" id="474667755"}
 
-::netease{type="playlist" id="35444067"}
-
-::netease{type="album" id="275824188"}
-
 ::tweet{url="https://x.com/hachi_08/status/1906456524337123549"}
 
 ## 普通列表

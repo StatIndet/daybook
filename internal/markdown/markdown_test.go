@@ -155,17 +155,17 @@ func TestToHTMLWithLeafEmbeds(t *testing.T) {
 	}
 
 	wantParts := []string{
-		`class="embed-card embed-card-github"`,
+		`class="no-heti gc-container"`,
 		`href="https://github.com/StatIndet/daybook"`,
 		`youtube-nocookie.com/embed/9pP0pIgP2kE`,
 		`player.bilibili.com/player.html?`,
 		`bvid=BV1sK4y1Z7KG`,
 		`open.spotify.com/embed/track/0HYAsQwJIO6FLqpyTeD3l6`,
 		`codepen.io/jh3y/embed/NWdNMBJ?default-tab=result`,
-		`music.163.com/outchain/player?`,
-		`auto=0`,
-		`class="embed-card embed-card-tweet"`,
-		`Status 1906456524337123549`,
+		`class="netease-custom-player"`,
+		`data-id="28310930"`,
+		`class="twitter-tweet"`,
+		`status/1906456524337123549`,
 	}
 	for _, part := range wantParts {
 		if !strings.Contains(document.HTML, part) {

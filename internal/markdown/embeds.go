@@ -195,44 +195,19 @@ func renderNeteaseEmbed(attrs map[string]string) (string, bool) {
 		return "", false
 	}
 
-	playerType := ""
-	iframeHeight := "110"
-	paramHeight := "90"
-	switch neteaseType {
-	case "song":
-		playerType = "2"
-	case "playlist":
-		playerType = "0"
-		iframeHeight = "450"
-		paramHeight = "430"
-	case "album":
-		playerType = "1"
-		iframeHeight = "450"
-		paramHeight = "430"
-	default:
-		return "", false
+	autostart := "false"
+	if strings.TrimSpace(attrs["autostart"]) == "true" {
+		autostart = "true"
 	}
 
-	values := url.Values{}
-	values.Set("type", playerType)
-	values.Set("id", id)
-	values.Set("auto", "0")
-	values.Set("height", paramHeight)
-	src := "https://music.163.com/outchain/player?" + values.Encode()
-
-	html := fmt.Sprintf(`
-    <figure>
-      <iframe
-        class="netease-embed"
-        src="%s"
-        title="NetEase Cloud Music player"
-        width="100%%"
-        height="%s"
-        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-        loading="lazy"
-      ></iframe>
-    </figure>`, escapeAttr(src), escapeAttr(iframeHeight))
-	return html, true
+	switch neteaseType {
+	case "song":
+		html := fmt.Sprintf(`<div class="netease-custom-player" data-id="%s" data-autostart="%s"></div>`, escapeAttr(id), autostart)
+		return html, true
+	default:
+		// User specifically requested to not support playlist or album anymore.
+		return "", false
+	}
 }
 
 func renderTweetEmbed(attrs map[string]string) (string, bool) {
