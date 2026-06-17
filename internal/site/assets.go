@@ -76,6 +76,7 @@ func requireTemplateAssets(manifest map[string]string) error {
 		"/js/lightbox.js",
 		"/js/mermaid-loader.js",
 		"/js/gallery.js",
+		"/js/embeds.js",
 		"/js/page-transitions.js",
 	}
 

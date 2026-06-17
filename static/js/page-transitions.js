@@ -400,6 +400,12 @@
     }
   }
 
+  function syncEmbeds() {
+    if (window.daybookSyncEmbeds) {
+      window.daybookSyncEmbeds();
+    }
+  }
+
   function syncMermaid() {
     if (window.DaybookMermaid && typeof window.DaybookMermaid.init === "function") {
       window.DaybookMermaid.init();
@@ -450,6 +456,7 @@
     syncHeadingAnchors();
     syncNoteFilters();
     syncMermaid();
+    syncEmbeds();
     window.scrollTo(0, 0);
   }
 
@@ -562,10 +569,12 @@
     syncHeadingAnchors();
     syncNoteFilters();
     syncMermaid();
+    syncEmbeds();
   });
 
   syncNoteTocs();
   syncHeadingAnchors();
   syncNoteFilters();
   syncMermaid();
+  syncEmbeds();
 })();

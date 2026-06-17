@@ -998,3 +998,122 @@
 .markdown .chroma .gd {
   color: var(--syntax-deleted);
 }
+
+/* GitHub Card */
+.markdown .gc-container {
+  margin: 1.5rem 0;
+  display: block;
+  overflow-x: auto;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
+  padding: 1rem 1.25rem;
+  transition: background-color 0.2s ease-out, color 0.2s ease-out;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-text) 15%, transparent) transparent;
+  text-decoration: none;
+  color: var(--color-text);
+}
+
+.markdown .gc-container:hover,
+.markdown .gc-container:focus-visible {
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
+}
+
+.markdown .gc-container + .gc-container {
+  margin-top: -0.5rem;
+}
+
+/* Title Bar */
+.markdown .gc-title-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.markdown .gc-owner-avatar {
+  aspect-ratio: 1/1;
+  width: 1.375rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background-color: color-mix(in srgb, var(--color-text) 20%, transparent);
+}
+
+.markdown .gc-repo-title {
+  display: flex;
+  align-items: center;
+  line-height: normal;
+  color: currentColor;
+}
+
+.markdown .gc-slash {
+  margin: 0 0.25rem;
+  opacity: 0.4;
+}
+
+.markdown .gc-github-icon {
+  margin-left: auto;
+  width: 1.375rem;
+  flex-shrink: 0;
+}
+
+/* Repo Description */
+.markdown .gc-repo-description {
+  margin: 0.6rem 0 0.875rem;
+  text-align: start;
+  font-size: 0.875rem;
+  color: currentColor;
+}
+
+/* Info Bar */
+.markdown .gc-info-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.4375rem;
+  font-size: 0.75rem;
+  color: color-mix(in srgb, currentColor 80%, transparent);
+}
+
+.markdown .gc-info-icon {
+  flex-shrink: 0;
+}
+
+.markdown .gc-stars-count {
+  margin-right: 0.75rem;
+}
+
+.markdown .gc-forks-count {
+  margin-right: 0.9375rem;
+}
+
+.markdown .gc-license-info {
+  margin-left: 0.125rem;
+  margin-right: 1rem;
+}
+
+/* Spotify Embed */
+.markdown .spotify-embed,
+.markdown .netease-embed {
+  width: 100%;
+  border-radius: 12px;
+  border: 0;
+  margin: 0;
+  display: block;
+}
+
+.markdown figure:has(.spotify-embed),
+.markdown figure:has(.netease-embed),
+.markdown figure:has(.twitter-tweet) {
+  margin: 32px 0;
+}
+
+/* Twitter Widget Container */
+.markdown .twitter-tweet {
+  margin: 0;
+}
+
+.markdown blockquote.twitter-tweet {
+  border-left: none;
+  padding: 0;
+  background: transparent;
+  margin: 0;
+}

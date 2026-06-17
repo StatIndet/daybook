@@ -48,12 +48,39 @@ func renderGitHubEmbed(attrs map[string]string) (string, bool) {
 	}
 
 	href := "https://github.com/" + owner + "/" + name
-	return fmt.Sprintf(
-		`<a class="embed-card embed-card-github" href="%s" target="_blank" rel="noopener noreferrer"><span class="embed-kicker">GitHub Repository</span><span class="embed-title"><span>%s</span><span class="embed-slash">/</span><strong>%s</strong></span><span class="embed-action">Open repository</span></a>`,
+	html := fmt.Sprintf(`
+    <a href="%s" class="no-heti gc-container" target="_blank" rel="noopener noreferrer" data-repo="%s">
+      <div class="gc-title-bar">
+        <div class="gc-owner-avatar" aria-hidden="true"></div>
+        <span class="gc-repo-title">
+          <span>%s<span class="gc-slash" aria-hidden="true">/</span><strong>%s</strong></span>
+        </span>
+        <svg class="gc-github-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 1C5.9225 1 1 5.9225 1 12C1 16.8675 4.14875 20.9787 8.52125 22.4362C9.07125 22.5325 9.2775 22.2025 9.2775 21.9137C9.2775 21.6525 9.26375 20.7862 9.26375 19.865C6.5 20.3737 5.785 19.1912 5.565 18.5725C5.44125 18.2562 4.905 17.28 4.4375 17.0187C4.0525 16.8125 3.5025 16.3037 4.42375 16.29C5.29 16.2762 5.90875 17.0875 6.115 17.4175C7.105 19.0812 8.68625 18.6137 9.31875 18.325C9.415 17.61 9.70375 17.1287 10.02 16.8537C7.5725 16.5787 5.015 15.63 5.015 11.4225C5.015 10.2262 5.44125 9.23625 6.1425 8.46625C6.0325 8.19125 5.6475 7.06375 6.2525 5.55125C6.2525 5.55125 7.17375 5.2625 9.2775 6.67875C10.1575 6.43125 11.0925 6.3075 12.0275 6.3075C12.9625 6.3075 13.8975 6.43125 14.7775 6.67875C16.8813 5.24875 17.8025 5.55125 17.8025 5.55125C18.4075 7.06375 18.0225 8.19125 17.9125 8.46625C18.6138 9.23625 19.04 10.2125 19.04 11.4225C19.04 15.6437 16.4688 16.5787 14.0213 16.8537C14.42 17.1975 14.7638 17.8575 14.7638 18.8887C14.7638 20.36 14.75 21.5425 14.75 21.9137C14.75 22.2025 14.9563 22.5462 15.5063 22.4362C19.8513 20.9787 23 16.8537 23 12C23 5.9225 18.0775 1 12 1Z"></path>
+        </svg>
+      </div>
+      <p class="gc-repo-description">Loading repository data...</p>
+      <div class="gc-info-bar">
+        <svg class="gc-info-icon" height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Zm0 2.445L6.615 5.5a.75.75 0 0 1-.564.41l-3.097.45 2.24 2.184a.75.75 0 0 1 .216.664l-.528 3.084 2.769-1.456a.75.75 0 0 1 .698 0l2.77 1.456-.53-3.084a.75.75 0 0 1 .216-.664l2.24-2.183-3.096-.45a.75.75 0 0 1-.564-.41L8 2.694Z"></path>
+        </svg>
+        <span class="gc-stars-count" aria-label="Stars count">--</span>
+        <svg class="gc-info-icon" height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M5 5.372v.878c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.878a2.25 2.25 0 1 1 1.5 0v.878a2.25 2.25 0 0 1-2.25 2.25h-1.5v2.128a2.251 2.251 0 1 1-1.5 0V8.5h-1.5A2.25 2.25 0 0 1 3.5 6.25v-.878a2.25 2.25 0 1 1 1.5 0ZM5 3.25a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Zm6.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm-3 8.75a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Z"></path>
+        </svg>
+        <span class="gc-forks-count" aria-label="Forks count">--</span>
+        <svg class="gc-info-icon" height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M8.75.75V2h.985c.304 0 .603.08.867.231l1.29.736c.038.022.08.033.124.033h2.234a.75.75 0 0 1 0 1.5h-.427l2.111 4.692a.75.75 0 0 1-.154.838l-.53-.53.529.531-.001.002-.002.002-.006.006-.006.005-.01.01-.045.04c-.21.176-.441.327-.686.45C14.556 10.78 13.88 11 13 11a4.498 4.498 0 0 1-2.023-.454 3.544 3.544 0 0 1-.686-.45l-.045-.04-.016-.015-.006-.006-.004-.004v-.001a.75.75 0 0 1-.154-.838L12.178 4.5h-.162c-.305 0-.604-.079-.868-.231l-1.29-.736a.245.245 0 0 0-.124-.033H8.75V13h2.5a.75.75 0 0 1 0 1.5h-6.5a.75.75 0 0 1 0-1.5h2.5V3.5h-.984a.245.245 0 0 0-.124.033l-1.289.737c-.265.15-.564.23-.869.23h-.162l2.112 4.692a.75.75 0 0 1-.154.838l-.53-.53.529.531-.001.002-.002.002-.006.006-.016.015-.045.04c-.21.176-.441.327-.686.45C4.556 10.78 3.88 11 3 11a4.498 4.498 0 0 1-2.023-.454 3.544 3.544 0 0 1-.686-.45l-.045-.04-.016-.015-.006-.006-.004-.004v-.001a.75.75 0 0 1-.154-.838L2.178 4.5H1.75a.75.75 0 0 1 0-1.5h2.234a.249.249 0 0 0 .125-.033l1.288-.737c.265-.15.564-.23.869-.23h.984V.75a.75.75 0 0 1 1.5 0Zm2.945 8.477c.285.135.718.273 1.305.273s1.02-.138 1.305-.273L13 6.327Zm-10 0c.285.135.718.273 1.305.273s1.02-.138 1.305-.273L3 6.327Z"></path>
+        </svg>
+        <span class="gc-license-info" aria-label="License">--</span>
+      </div>
+    </a>`,
 		escapeAttr(href),
+		escapeAttr(repo),
 		escapeText(owner),
 		escapeText(name),
-	), true
+	)
+	return html, true
 }
 
 func parseGitHubRepo(repo string) (string, string, bool) {
@@ -117,7 +144,18 @@ func renderSpotifyEmbed(attrs map[string]string) (string, bool) {
 		height = "152"
 	}
 	src := "https://open.spotify.com/embed/" + spotifyType + "/" + id
-	return fixedHeightIframe("embed-frame-spotify", src, "Spotify embed", height, `allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"`), true
+	html := fmt.Sprintf(`
+    <figure>
+      <iframe
+        class="spotify-embed"
+        src="%s"
+        title="Spotify Embed"
+        height="%s"
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        loading="lazy"
+      ></iframe>
+    </figure>`, escapeAttr(src), escapeAttr(height))
+	return html, true
 }
 
 func validSpotifyType(value string) bool {
@@ -158,16 +196,19 @@ func renderNeteaseEmbed(attrs map[string]string) (string, bool) {
 	}
 
 	playerType := ""
-	height := "86"
+	iframeHeight := "110"
+	paramHeight := "90"
 	switch neteaseType {
 	case "song":
 		playerType = "2"
 	case "playlist":
 		playerType = "0"
-		height = "430"
+		iframeHeight = "450"
+		paramHeight = "430"
 	case "album":
 		playerType = "1"
-		height = "430"
+		iframeHeight = "450"
+		paramHeight = "430"
 	default:
 		return "", false
 	}
@@ -176,9 +217,22 @@ func renderNeteaseEmbed(attrs map[string]string) (string, bool) {
 	values.Set("type", playerType)
 	values.Set("id", id)
 	values.Set("auto", "0")
-	values.Set("height", height)
+	values.Set("height", paramHeight)
 	src := "https://music.163.com/outchain/player?" + values.Encode()
-	return fixedHeightIframe("embed-frame-netease", src, "NetEase Cloud Music player", height, ``), true
+
+	html := fmt.Sprintf(`
+    <figure>
+      <iframe
+        class="netease-embed"
+        src="%s"
+        title="NetEase Cloud Music player"
+        width="100%%"
+        height="%s"
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        loading="lazy"
+      ></iframe>
+    </figure>`, escapeAttr(src), escapeAttr(iframeHeight))
+	return html, true
 }
 
 func renderTweetEmbed(attrs map[string]string) (string, bool) {
@@ -202,19 +256,14 @@ func renderTweetEmbed(attrs map[string]string) (string, bool) {
 		return "", false
 	}
 
-	platform := "X"
-	if host == "twitter.com" {
-		platform = "Twitter"
-	}
-
-	href := "https://" + host + "/" + user + "/status/" + statusID
-	return fmt.Sprintf(
-		`<a class="embed-card embed-card-tweet" href="%s" target="_blank" rel="noopener noreferrer"><span class="embed-kicker">%s status</span><span class="embed-title">@%s</span><span class="embed-meta">Status %s</span><span class="embed-action">Open post</span></a>`,
-		escapeAttr(href),
-		escapeText(platform),
-		escapeText(user),
-		escapeText(statusID),
-	), true
+	href := "https://twitter.com/" + user + "/status/" + statusID
+	html := fmt.Sprintf(`
+    <figure>
+      <blockquote class="twitter-tweet" data-dnt="true">
+        <a href="%s"></a>
+      </blockquote>
+    </figure>`, escapeAttr(href))
+	return html, true
 }
 
 func responsiveIframe(className, src, title, extraAttrs string) string {
