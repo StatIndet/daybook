@@ -23,8 +23,9 @@ type Heading struct {
 }
 
 type Document struct {
-	HTML     string
-	Headings []Heading
+	HTML       string
+	Headings   []Heading
+	HasMermaid bool
 }
 
 func ToHTML(text string) (string, error) {
@@ -37,38 +38,72 @@ func ToHTML(text string) (string, error) {
 }
 
 func ToHTMLWithHeadings(input string) (Document, error) {
-	source := []byte(input)
-	markdown := goldmark.New(
-		goldmark.WithExtensions(
-			extension.Table,
-			extension.Strikethrough,
-			extension.Linkify,
-			extension.TaskList,
-			extension.Footnote,
-			highlighting.NewHighlighting(
-				highlighting.WithStyle("github"),
-				highlighting.WithFormatOptions(
-					chromahtml.WithClasses(true),
-					chromahtml.WithPreWrapper(codeBlockPreWrapper{}),
-				),
-				highlighting.WithWrapperRenderer(renderCodeBlockWrapper),
-			),
-		),
-		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
-	)
+	renderer := newRenderer()
+	return renderer.render(input, true, 0)
+}
 
-	root := markdown.Parser().Parse(gmtext.NewReader(source))
-	headings := collectHeadings(root, source)
+type markdownRenderer struct {
+	markdown goldmark.Markdown
+}
+
+func newRenderer() markdownRenderer {
+	return markdownRenderer{
+		markdown: goldmark.New(
+			goldmark.WithExtensions(
+				extension.Table,
+				extension.Strikethrough,
+				extension.Linkify,
+				extension.TaskList,
+				extension.Footnote,
+				highlighting.NewHighlighting(
+					highlighting.WithStyle("github"),
+					highlighting.WithFormatOptions(
+						chromahtml.WithClasses(true),
+						chromahtml.WithPreWrapper(codeBlockPreWrapper{}),
+					),
+					highlighting.WithWrapperRenderer(renderCodeBlockWrapper),
+				),
+			),
+			goldmark.WithParserOptions(parser.WithAutoHeadingID()),
+		),
+	}
+}
+
+func (renderer markdownRenderer) render(input string, includeHeadings bool, depth int) (Document, error) {
+	processed, replacements, hasMermaid, err := renderer.processExtensions(input, depth)
+	if err != nil {
+		return Document{}, err
+	}
+
+	source := []byte(processed)
+	root := renderer.markdown.Parser().Parse(gmtext.NewReader(source))
+	headings := []Heading{}
+	if includeHeadings {
+		headings = collectHeadings(root, source)
+	}
 
 	var output bytes.Buffer
-	if err := markdown.Renderer().Render(&output, source, root); err != nil {
+	if err := renderer.markdown.Renderer().Render(&output, source, root); err != nil {
 		return Document{}, fmt.Errorf("转换 Markdown: %w", err)
 	}
 
+	html := applyFigureCaptions(output.String())
+	html = restoreHTMLReplacements(html, replacements)
+
 	return Document{
-		HTML:     output.String(),
-		Headings: headings,
+		HTML:       html,
+		Headings:   headings,
+		HasMermaid: hasMermaid,
 	}, nil
+}
+
+func (renderer markdownRenderer) renderFragment(input string, depth int) (string, error) {
+	document, err := renderer.render(input, false, depth)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(document.HTML), nil
 }
 
 func collectHeadings(root ast.Node, source []byte) []Heading {

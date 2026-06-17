@@ -56,6 +56,7 @@ type NotePage struct {
 	Slug                string
 	HTML                template.HTML
 	Headings            []Heading
+	HasMermaid          bool
 	TitleTransitionName string
 	DateTransitionName  string
 }
