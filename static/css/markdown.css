@@ -368,7 +368,6 @@
   max-width: 100%;
   overflow-x: auto;
   padding: 2px 0 12px;
-  scroll-snap-type: x mandatory;
   scrollbar-color: color-mix(in srgb, var(--color-muted) 42%, transparent) transparent;
   scrollbar-width: thin;
 }
@@ -378,7 +377,6 @@
   flex: 0 0 min(78%, 30rem);
   margin: 0;
   max-width: none;
-  scroll-snap-align: start;
 }
 
 .markdown .md-gallery img {
@@ -768,8 +766,6 @@
   cursor: pointer;
   display: inline-flex;
   font-family: var(--font-ui);
-  font-size: 0.7em;
-  left: -1.25em;
   line-height: 1;
   opacity: 0;
   padding: 0 0.4em;
@@ -777,6 +773,13 @@
   text-decoration: none;
   top: 0;
   transition: opacity 180ms ease;
+}
+
+.markdown h2 .heading-anchor,
+.markdown h3 .heading-anchor,
+.markdown h4 .heading-anchor {
+  font-size: 0.85em;
+  left: -1.15em;
 }
 
 .markdown-image {
