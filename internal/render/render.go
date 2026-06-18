@@ -210,6 +210,14 @@ type AboutData struct {
 	HTML      template.HTML
 }
 
+type GraphData struct {
+	Site      SiteData
+	PageTitle string
+	BodyClass string
+	Assets    Assets
+	HasMath   bool
+}
+
 func New(templatesDir string) Renderer {
 	return Renderer{TemplatesDir: templatesDir}
 }
@@ -232,6 +240,10 @@ func (r Renderer) RenderNote(outputPath string, data NoteData) error {
 
 func (r Renderer) RenderAbout(outputPath string, data AboutData) error {
 	return r.render(outputPath, "about.html", data)
+}
+
+func (r Renderer) RenderGraph(outputPath string, data GraphData) error {
+	return r.render(outputPath, "graph.html", data)
 }
 
 func NewGoldenSpiral() GoldenSpiral {

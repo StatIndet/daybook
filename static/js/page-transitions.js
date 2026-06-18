@@ -471,6 +471,7 @@
     syncMermaid();
     syncEmbeds();
     window.scrollTo(0, 0);
+    window.dispatchEvent(new CustomEvent("daybook:page-loaded"));
   }
 
   async function runSwap(nextDocument, url, updateHistory, sourceLink) {
@@ -583,6 +584,7 @@
     syncNoteFilters();
     syncMermaid();
     syncEmbeds();
+    window.dispatchEvent(new CustomEvent("daybook:page-loaded"));
   });
 
   syncNoteTocs();
@@ -590,4 +592,5 @@
   syncNoteFilters();
   syncMermaid();
   syncEmbeds();
+  window.dispatchEvent(new CustomEvent("daybook:page-loaded"));
 })();

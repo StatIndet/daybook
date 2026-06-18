@@ -22,8 +22,17 @@ type Index struct {
 }
 
 type Result struct {
-	Text string
-	HTML map[string]string
+	Text  string
+	HTML  map[string]string
+	Links []Link
+}
+
+type Link struct {
+	Raw    string
+	Target string
+	Slug   string
+	Alias  string
+	Exists bool
 }
 
 var (
@@ -62,6 +71,19 @@ func Process(input string, index Index) Result {
 		targetText, label := splitAlias(inner)
 		noteText, headingText := splitHeading(targetText)
 		target, ok := index.find(noteText)
+
+		link := Link{
+			Raw:    match,
+			Target: noteText,
+			Alias:  label,
+			Exists: ok,
+		}
+
+		if ok {
+			link.Slug = target.Slug
+		}
+		result.Links = append(result.Links, link)
+
 		if !ok {
 			return match
 		}

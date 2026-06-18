@@ -15,6 +15,7 @@ import (
 	"github.com/StatIndet/daybook/internal/config"
 	"github.com/StatIndet/daybook/internal/content"
 	"github.com/StatIndet/daybook/internal/feed"
+	"github.com/StatIndet/daybook/internal/graph"
 	"github.com/StatIndet/daybook/internal/markdown"
 	"github.com/StatIndet/daybook/internal/obsidian"
 	"github.com/StatIndet/daybook/internal/render"
@@ -65,6 +66,9 @@ func Build(options Options) (BuildResult, error) {
 		return BuildResult{}, err
 	}
 
+	var graphNodes []graph.InputNode
+	var graphLinks []graph.InputLink
+
 	var noteLinks []render.NoteLink
 	for _, note := range notes {
 		processed := obsidian.Process(note.Body, obsidianIndex)
@@ -77,6 +81,26 @@ func Build(options Options) (BuildResult, error) {
 		titleTransitionName := transitionName("note-title", note.Slug)
 		dateTransitionName := transitionName("note-date", note.Slug)
 		tags := cleanTags(note.Tags)
+
+		graphNodes = append(graphNodes, graph.InputNode{
+			ID:    note.Slug,
+			Title: note.Title,
+			URL:   note.URL,
+			Tags:  tags,
+			Date:  note.Date,
+		})
+
+		for _, link := range processed.Links {
+			targetID := link.Slug
+			if !link.Exists {
+				targetID = link.Target
+			}
+			graphLinks = append(graphLinks, graph.InputLink{
+				Source: note.Slug,
+				Target: targetID,
+				Exists: link.Exists,
+			})
+		}
 
 		noteLinks = append(noteLinks, render.NoteLink{
 			Title:               note.Title,
@@ -183,6 +207,22 @@ func Build(options Options) (BuildResult, error) {
 	}
 	if err := renderer.RenderAbout(aboutPath, aboutData); err != nil {
 		return BuildResult{}, fmt.Errorf("生成关于页: %w", err)
+	}
+
+	graphJSONPath := filepath.Join(options.PublicDir, "graph.json")
+	if err := graph.BuildJSON(graphNodes, graphLinks, graphJSONPath); err != nil {
+		return BuildResult{}, fmt.Errorf("生成 graph.json: %w", err)
+	}
+
+	graphPath := filepath.Join(options.PublicDir, "graph", "index.html")
+	graphData := render.GraphData{
+		Site:      siteData,
+		PageTitle: "关系图谱",
+		BodyClass: "graph-body page-body",
+		Assets:    assets,
+	}
+	if err := renderer.RenderGraph(graphPath, graphData); err != nil {
+		return BuildResult{}, fmt.Errorf("生成图谱页: %w", err)
 	}
 
 	if err := feed.Write(filepath.Join(options.PublicDir, "rss.xml"), options.Config, notes); err != nil {
