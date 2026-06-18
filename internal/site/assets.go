@@ -78,6 +78,7 @@ func requireTemplateAssets(manifest map[string]string) error {
 		"/js/gallery.js",
 		"/js/embeds.js",
 		"/js/page-transitions.js",
+		"/js/graph-loader.js",
 	}
 
 	for _, originalPath := range requiredPaths {

@@ -1,0 +1,342 @@
+/* Override global padding for graph page to maximize viewport */
+.graph-body .page-main {
+  padding: 24px clamp(24px, 4vw, 40px);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Graph Page Layout */
+.graph-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+}
+
+.graph-shell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: var(--color-paper);
+  border: 1px solid var(--color-line);
+  border-radius: 16px;
+  overflow: hidden;
+  min-height: 400px;
+}
+
+/* Toolbar */
+.graph-toolbar {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.graph-toolbar-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+/* Styled Switch */
+.styled-switch {
+  pointer-events: auto;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.styled-switch span {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-muted);
+  user-select: none;
+  line-height: 24px;
+}
+
+.styled-switch input {
+  display: none;
+}
+
+.switch-track {
+  width: 40px;
+  height: 24px;
+  border-radius: 12px;
+  background-color: color-mix(in srgb, var(--color-page) 90%, var(--color-muted));
+  border: 1.5px solid var(--color-line);
+  position: relative;
+  transition: 
+    background-color 300ms cubic-bezier(0.2, 0, 0, 1),
+    border-color 300ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.styled-switch input:checked + .switch-track {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.switch-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--color-muted);
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  transform: translateY(-50%);
+  transition: 
+    left 300ms cubic-bezier(0.2, 0, 0, 1),
+    width 300ms cubic-bezier(0.2, 0, 0, 1),
+    height 300ms cubic-bezier(0.2, 0, 0, 1),
+    background-color 300ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.styled-switch:active .switch-indicator {
+  width: 18px;
+  height: 18px;
+  left: 2px;
+}
+
+.styled-switch input:checked + .switch-track .switch-indicator {
+  width: 16px;
+  height: 16px;
+  left: 18px;
+  background-color: var(--color-paper);
+}
+
+.styled-switch:active input:checked + .switch-track .switch-indicator {
+  width: 20px;
+  height: 20px;
+  left: 15px;
+}
+
+/* Horizontal Action Buttons */
+.graph-actions-horizontal {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+/* Local Search Box overrides */
+#graph-local-search-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: flex;
+  align-items: flex-end;
+  visibility: hidden;
+  max-height: 0;
+  transform: translateY(-8px);
+  opacity: 0;
+  transition:
+    max-height 360ms cubic-bezier(0.2, 0.78, 0.24, 1),
+    opacity 220ms ease,
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0ms linear 360ms;
+}
+
+.graph-actions-horizontal .notes-search-input {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  width: 240px;
+}
+
+.graph-actions-horizontal.is-search-open #graph-local-search-panel {
+  visibility: visible;
+  max-height: 4.25rem;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    max-height 360ms cubic-bezier(0.2, 0.78, 0.24, 1),
+    opacity 220ms ease,
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0ms linear 0ms;
+}
+
+.graph-actions-horizontal.is-search-open #graph-search-btn {
+  color: var(--color-accent);
+}
+
+/* SVG Elements */
+#graph-container {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+#graph-container:active {
+  cursor: grabbing;
+}
+
+.graph-link {
+  stroke: var(--color-line);
+  stroke-width: 1px;
+  stroke-opacity: 0.4;
+  transition: stroke-opacity var(--duration-fast), stroke var(--duration-fast);
+}
+
+.graph-node {
+  fill: var(--color-text);
+  stroke: var(--color-paper);
+  stroke-width: 1.5px;
+  transition: fill var(--duration-fast), opacity var(--duration-fast);
+  cursor: pointer;
+}
+
+.graph-node.is-missing {
+  fill: var(--color-muted);
+  stroke-dasharray: 2, 2;
+}
+
+.graph-node.is-center {
+  fill: var(--color-text);
+  stroke: var(--color-accent);
+  stroke-width: 2px;
+}
+
+.graph-node:hover {
+  filter: brightness(1.2);
+}
+
+.graph-label {
+  font-size: 10px;
+  fill: var(--color-muted);
+  pointer-events: none;
+  font-family: var(--font-ui);
+  text-shadow: 
+    -1px -1px 2px var(--color-paper),
+     1px -1px 2px var(--color-paper),
+    -1px  1px 2px var(--color-paper),
+     1px  1px 2px var(--color-paper);
+  transition: opacity var(--duration-fast);
+}
+
+.graph-label.is-match {
+  fill: var(--color-text);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* D3 Dimming Effects */
+.graph-dimmed .graph-node {
+  fill: var(--color-faint);
+}
+
+.graph-dimmed .graph-link {
+  stroke-opacity: 0.05;
+}
+
+.graph-dimmed .graph-label {
+  opacity: 0.1;
+}
+
+.graph-dimmed .graph-node.is-highlight {
+  fill: var(--color-text);
+}
+
+.graph-dimmed .graph-node.is-hovered {
+  fill: var(--color-hover-text);
+}
+
+.graph-link.is-highlight {
+  stroke-opacity: 0.8;
+  stroke-width: 1.5px;
+  stroke: var(--color-hover-text);
+}
+
+.graph-label.is-highlight {
+  opacity: 1;
+  fill: var(--color-text);
+}
+
+.graph-dimmed .graph-label.is-hovered {
+  fill: var(--color-hover-text);
+}
+
+/* Tag Nodes */
+.graph-node.is-tag {
+  fill: var(--syntax-inserted);
+  stroke: var(--color-page);
+  stroke-width: 1px;
+}
+
+/* Unconnected tag nodes should be dimmed */
+.graph-dimmed .graph-node.is-tag {
+  fill: color-mix(in srgb, var(--syntax-inserted) 25%, transparent);
+  stroke-opacity: 0.2;
+}
+
+/* Connected tag nodes stay green */
+.graph-dimmed .graph-node.is-tag.is-highlight {
+  fill: var(--syntax-inserted);
+  stroke-opacity: 1;
+}
+
+/* Directly hovered tag nodes take the global hover accent color */
+.graph-dimmed .graph-node.is-tag.is-hovered {
+  fill: var(--color-hover-text);
+  stroke-opacity: 1;
+}
+
+.graph-label.is-tag {
+  font-size: 11px;
+  fill: var(--color-muted);
+}
+
+/* Highlighted tag labels stay green */
+.graph-label.is-tag.is-highlight {
+  fill: var(--syntax-inserted);
+}
+
+/* Directly hovered tag labels take the global hover accent color */
+.graph-dimmed .graph-label.is-tag.is-hovered {
+  fill: var(--color-hover-text);
+}
+
+.graph-label.is-tag.is-match {
+  fill: var(--syntax-inserted);
+}
+
+
+
+/* Mobile */
+@media (max-width: 960px) {
+  .graph-body .page-main {
+    padding: 20px;
+    height: auto;
+    min-height: calc(100vh - 180px); /* Account for header/nav */
+  }
+}
+
+@media (max-width: 768px) {
+  .graph-shell {
+    border: none;
+    border-radius: 0;
+    margin-bottom: 0;
+    min-height: 500px;
+    background: transparent;
+  }
+
+  .graph-toolbar {
+    top: auto;
+    bottom: 16px;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  #graph-search-input {
+    width: 200px;
+  }
+}

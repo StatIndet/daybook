@@ -29,6 +29,19 @@ func TestProcessWikilinks(t *testing.T) {
 			t.Fatalf("processed text does not contain %q: %s", part, result.Text)
 		}
 	}
+
+	if len(result.Links) != 3 {
+		t.Fatalf("expected 3 links, got %d", len(result.Links))
+	}
+	if result.Links[0].Target != "安装 Debian SSH Server" || !result.Links[0].Exists {
+		t.Fatalf("first link unexpected: %+v", result.Links[0])
+	}
+	if result.Links[1].Alias != "关机脚本" || !result.Links[1].Exists {
+		t.Fatalf("second link unexpected: %+v", result.Links[1])
+	}
+	if result.Links[2].Target != "不存在" || result.Links[2].Exists {
+		t.Fatalf("third link unexpected: %+v", result.Links[2])
+	}
 }
 
 func TestProcessImages(t *testing.T) {
