@@ -1,0 +1,11 @@
+{
+  "name": "daybook",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render:katex": "node scripts/render-katex.mjs"
+  },
+  "dependencies": {
+    "katex": "^0.16.10"
+  }
+}

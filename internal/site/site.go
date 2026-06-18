@@ -96,6 +96,7 @@ func Build(options Options) (BuildResult, error) {
 			PageTitle: note.Title,
 			BodyClass: "note-body page-body",
 			Assets:    assets,
+			HasMath:   note.Math,
 			Tags:      tagLinks,
 			Note: render.NotePage{
 				Title:               note.Title,

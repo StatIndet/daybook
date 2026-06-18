@@ -134,6 +134,7 @@ type IndexData struct {
 	PageTitle string
 	BodyClass string
 	Assets    Assets
+	HasMath   bool
 	Notes     []NoteLink
 }
 
@@ -149,6 +150,7 @@ type NotesData struct {
 	PageTitle   string
 	BodyClass   string
 	Assets      Assets
+	HasMath     bool
 	Notes       []NoteLink
 	MonthGroups []MonthGroup
 	Tags        []TagLink
@@ -180,6 +182,7 @@ type ArchiveData struct {
 	PageTitle  string
 	BodyClass  string
 	Assets     Assets
+	HasMath    bool
 	Total      int
 	YearGroups []ArchiveYearGroup
 	Tags       []TagLink
@@ -190,6 +193,7 @@ type NoteData struct {
 	PageTitle string
 	BodyClass string
 	Assets    Assets
+	HasMath   bool
 	Note      NotePage
 	Tags      []TagLink
 }
@@ -199,6 +203,7 @@ type AboutData struct {
 	PageTitle string
 	BodyClass string
 	Assets    Assets
+	HasMath   bool
 	Spiral    GoldenSpiral
 	Title     string
 	Summary   string
