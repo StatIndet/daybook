@@ -1290,3 +1290,24 @@
   border-radius: 12px !important;
   overflow: hidden !important;
 }
+
+/* KaTeX Overflow Fix */
+.markdown .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem 0;
+  margin: 1.25rem 0;
+}
+
+.markdown .katex-display > .katex {
+  max-width: 100%;
+}
+
+.markdown .katex {
+  font-size: 1.05em;
+}
+
+.markdown .katex-display::-webkit-scrollbar {
+  display: none;
+}
+

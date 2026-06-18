@@ -17,6 +17,7 @@ type Note struct {
 	Tags       []string
 	Summary    string
 	Draft      bool
+	Math       bool
 	Body       string
 	URL        string
 	SourcePath string
@@ -29,6 +30,7 @@ type frontmatter struct {
 	Tags    []string `yaml:"tags"`
 	Summary string   `yaml:"summary"`
 	Draft   bool     `yaml:"draft"`
+	Math    bool     `yaml:"math"`
 }
 
 func LoadNotes(dir string) ([]Note, []string, error) {
@@ -102,6 +104,7 @@ func Parse(sourcePath, text string) (Note, error) {
 		Tags:       meta.Tags,
 		Summary:    strings.TrimSpace(meta.Summary),
 		Draft:      meta.Draft,
+		Math:       meta.Math,
 		Body:       strings.TrimSpace(body),
 		SourcePath: sourcePath,
 	}

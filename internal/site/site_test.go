@@ -88,7 +88,12 @@ func TestBuildAssetsFingerprintsCSSImportsAndJS(t *testing.T) {
 		"js/note-filters.js",
 		"js/lightbox.js",
 		"js/mermaid-loader.js",
+		"js/gallery.js",
+		"js/embeds.js",
 		"js/page-transitions.js",
+		"js/math-render.js",
+		"vendor/katex/katex.min.css",
+		"vendor/katex/katex.min.js",
 	} {
 		writeTestFile(t, staticDir, scriptPath, `document.documentElement.dataset.loaded = "true";`)
 	}
@@ -234,7 +239,12 @@ func writeRequiredTemplateAssets(t *testing.T, staticDir string) {
 		"js/note-filters.js",
 		"js/lightbox.js",
 		"js/mermaid-loader.js",
+		"js/gallery.js",
+		"js/embeds.js",
 		"js/page-transitions.js",
+		"js/math-render.js",
+		"vendor/katex/katex.min.css",
+		"vendor/katex/katex.min.js",
 	} {
 		writeTestFile(t, staticDir, scriptPath, `document.documentElement.dataset.loaded = "true";`)
 	}

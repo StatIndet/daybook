@@ -107,6 +107,7 @@ func Build(options Options) (BuildResult, error) {
 				HTML:                template.HTML(document.HTML),
 				Headings:            renderHeadings(document.Headings),
 				HasMermaid:          document.HasMermaid,
+				HasMath:             note.Math,
 				TitleTransitionName: titleTransitionName,
 				DateTransitionName:  dateTransitionName,
 			},

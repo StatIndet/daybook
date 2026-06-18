@@ -1,6 +1,7 @@
 package markdown
 
 import (
+	"encoding/base64"
 	"fmt"
 	stdhtml "html"
 	"regexp"
@@ -50,6 +51,8 @@ func (renderer markdownRenderer) processExtensions(input string, depth int) (str
 		renderer: renderer,
 		depth:    depth,
 	}
+
+	input = extractMath(input, &context)
 
 	lines := strings.Split(input, "\n")
 	output := make([]string, 0, len(lines))
@@ -582,4 +585,148 @@ func rewriteImageAlt(attrText, alt string) string {
 		}
 		return `alt="` + stdhtml.EscapeString(alt) + `"`
 	})
+}
+
+func (context *extensionContext) addMathHTML(mathText string, isBlock bool) string {
+	b64 := base64.StdEncoding.EncodeToString([]byte(mathText))
+	var html string
+	if isBlock {
+		html = fmt.Sprintf(`<div class="math math-display" data-tex-b64="%s"></div>`, b64)
+	} else {
+		html = fmt.Sprintf(`<span class="math math-inline" data-tex-b64="%s"></span>`, b64)
+	}
+	return context.addHTML(html)
+}
+
+func extractMath(input string, context *extensionContext) string {
+	var builder strings.Builder
+	builder.Grow(len(input))
+	i := 0
+
+	for i < len(input) {
+		if input[i] == '`' || input[i] == '~' {
+			char := input[i]
+			start := i
+			for i < len(input) && input[i] == char {
+				i++
+			}
+			length := i - start
+
+			if length >= 3 {
+				closing := findClosingFenceMath(input, i, char, length)
+				builder.WriteString(input[start:closing])
+				i = closing
+				continue
+			} else if char == '`' {
+				closing := findClosingInlineCodeMath(input, i, length)
+				builder.WriteString(input[start:closing])
+				i = closing
+				continue
+			} else {
+				builder.WriteString(input[start:i])
+				continue
+			}
+		}
+
+		if input[i] == '\\' && i+1 < len(input) && (input[i+1] == '$' || input[i+1] == '`' || input[i+1] == '\\') {
+			builder.WriteByte(input[i])
+			builder.WriteByte(input[i+1])
+			i += 2
+			continue
+		}
+
+		if input[i] == '$' {
+			if i+1 < len(input) && input[i+1] == '$' {
+				start := i
+				i += 2
+				closing := strings.Index(input[i:], "$$")
+				if closing != -1 {
+					closing += i
+					mathText := input[start+2 : closing]
+					builder.WriteString(context.addMathHTML(mathText, true))
+					i = closing + 2
+					continue
+				} else {
+					builder.WriteString("$$")
+					continue
+				}
+			}
+
+			start := i
+			i++
+			valid, closing := isValidInlineMathSpan(input, start)
+			if valid {
+				mathText := input[start+1 : closing]
+				builder.WriteString(context.addMathHTML(mathText, false))
+				i = closing + 1
+				continue
+			} else {
+				builder.WriteByte('$')
+				continue
+			}
+		}
+
+		builder.WriteByte(input[i])
+		i++
+	}
+	return builder.String()
+}
+
+func findClosingFenceMath(input string, start int, char byte, length int) int {
+	for i := start; i < len(input); i++ {
+		if input[i] == char {
+			matchLen := 0
+			for i+matchLen < len(input) && input[i+matchLen] == char {
+				matchLen++
+			}
+			if matchLen >= length {
+				return i + matchLen
+			}
+			i += matchLen - 1
+		}
+	}
+	return len(input)
+}
+
+func findClosingInlineCodeMath(input string, start int, length int) int {
+	for i := start; i < len(input); i++ {
+		if input[i] == '`' {
+			matchLen := 0
+			for i+matchLen < len(input) && input[i+matchLen] == '`' {
+				matchLen++
+			}
+			if matchLen == length {
+				return i + matchLen
+			}
+			i += matchLen - 1
+		}
+	}
+	return len(input)
+}
+
+func isValidInlineMathSpan(input string, start int) (bool, int) {
+	if start+1 >= len(input) {
+		return false, -1
+	}
+	if input[start+1] == ' ' || input[start+1] == '\t' || input[start+1] == '\n' {
+		return false, -1
+	}
+
+	i := start + 1
+	for i < len(input) {
+		if input[i] == '\\' && i+1 < len(input) && input[i+1] == '$' {
+			i += 2
+			continue
+		}
+		if input[i] == '$' {
+			if input[i-1] != ' ' && input[i-1] != '\t' && input[i-1] != '\n' && i > start+1 {
+				if !strings.Contains(input[start+1:i], "\n\n") {
+					return true, i
+				}
+			}
+			return false, -1
+		}
+		i++
+	}
+	return false, -1
 }

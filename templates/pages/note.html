@@ -1,7 +1,7 @@
 {{define "content"}}
 <div class="notes-page note-detail-page{{if .Note.Headings}} has-toc{{end}}">
   <section class="note-detail article-stage" aria-label="文章详情">
-    <article class="note" data-has-mermaid="{{if .Note.HasMermaid}}true{{else}}false{{end}}">
+    <article class="note" data-has-mermaid="{{if .Note.HasMermaid}}true{{else}}false{{end}}" data-has-math="{{if .Note.HasMath}}true{{else}}false{{end}}">
       <a class="note-back-link" href="/notes/" aria-label="返回文章列表">
         <span class="material-symbol" aria-hidden="true">arrow_back</span>
       </a>

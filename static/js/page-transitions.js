@@ -457,6 +457,7 @@
     syncNoteFilters();
     syncMermaid();
     syncEmbeds();
+    syncKatex();
     window.scrollTo(0, 0);
   }
 
@@ -570,11 +571,19 @@
     syncNoteFilters();
     syncMermaid();
     syncEmbeds();
+    syncKatex();
   });
+
+  function syncKatex() {
+    if (window.DaybookMath && typeof window.DaybookMath.init === "function") {
+      window.DaybookMath.init();
+    }
+  }
 
   syncNoteTocs();
   syncHeadingAnchors();
   syncNoteFilters();
   syncMermaid();
   syncEmbeds();
+  syncKatex();
 })();
