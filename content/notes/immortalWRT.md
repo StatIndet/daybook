@@ -1,9 +1,13 @@
 ---
-title: "在Debian SSH Server上安装虚拟机"
-date: "2026-06-10"
-slug: "immortalWRT"
-tags: ["debian", "ssh", "immortalWRT", "虚拟机"]
-summary: "记录在 Debian SSH Server 上安装 kvm/qemu 并在主力机上使用virt-manager远程管理并安装OpenWrt"
+title: 在Debian SSH Server上安装虚拟机
+date: 2026-06-10
+slug: immortalWRT
+tags:
+  - debian
+  - ssh
+  - immortalWRT
+  - 虚拟机
+summary: 记录在 Debian SSH Server 上安装 kvm/qemu 并在主力机上使用virt-manager远程管理并安装OpenWrt
 draft: false
 ---
 ### 最小化安装Debian虚拟机服务

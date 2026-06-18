@@ -409,6 +409,11 @@
 
 .note-toc-toggle .material-symbol {
   font-size: 1.25rem;
+  transition: transform 350ms cubic-bezier(0.42, 1.67, 0.21, 0.9);
+}
+
+.note-toc:not(.is-open) .note-toc-toggle .material-symbol {
+  transform: rotate(-180deg);
 }
 
 .note-toc-title {
@@ -492,35 +497,7 @@
   margin-left: 2rem;
 }
 
-.note-back-link {
-  align-items: center;
-  border-radius: 999px;
-  color: var(--color-muted);
-  display: inline-flex;
-  height: 34px;
-  justify-content: center;
-  left: -3rem;
-  position: absolute;
-  text-decoration: none;
-  top: 0.42rem;
-  transition: color 160ms ease;
-  width: 34px;
-}
 
-.note-back-link:hover,
-.note-back-link:focus-visible {
-  color: var(--color-hover-text);
-}
-
-.note-back-link:hover .material-symbol,
-.note-back-link:focus-visible .material-symbol {
-  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
-}
-
-.note-back-link:focus-visible {
-  outline: 1px solid var(--color-accent);
-  outline-offset: 4px;
-}
 
 .zoom-overlay {
   background-color: color-mix(in srgb, var(--color-page) 95%, transparent);

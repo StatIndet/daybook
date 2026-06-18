@@ -8,7 +8,7 @@
       button.setAttribute("aria-expanded", isOpen ? "true" : "false");
     }
     if (icon) {
-      icon.textContent = "menu";
+      icon.textContent = isOpen ? "menu_open" : "menu";
     }
   }
 

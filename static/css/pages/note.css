@@ -34,19 +34,27 @@
   position: relative;
 }
 
+.note-title-wrapper {
+  position: relative;
+}
+
 .note-back-link {
   align-items: center;
   border-radius: 999px;
   color: var(--color-muted);
   display: inline-flex;
-  height: 34px;
+  height: calc(var(--note-title-size) * 1.15);
   justify-content: center;
-  left: -3rem;
+  left: -3.5rem;
   position: absolute;
   text-decoration: none;
-  top: 0.42rem;
+  top: 0;
   transition: color 160ms ease;
-  width: 34px;
+  width: calc(var(--note-title-size) * 1.15);
+}
+
+.note-back-link .material-symbol {
+  font-size: var(--note-title-size);
 }
 
 .note-back-link:hover,

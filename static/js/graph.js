@@ -4,6 +4,7 @@
 
   let rawNodes = [];
   let rawLinks = [];
+  let graphMeta = null;
   let adjacencyMap = new Map();
   let simulation;
   let zoomBehavior;
@@ -28,6 +29,7 @@
       const data = await res.json();
       rawNodes = data.nodes || [];
       rawLinks = data.links || [];
+      graphMeta = data.meta || null;
 
       buildAdjacencyMap(rawNodes, rawLinks);
 
@@ -48,6 +50,7 @@
     }
     rawNodes = [];
     rawLinks = [];
+    graphMeta = null;
     adjacencyMap.clear();
     window.__graphNodes = null;
   }
@@ -96,10 +99,14 @@
 
   function render(initialAlpha = 1) {
     let currentPositions = new Map();
+    let currentTransform = null;
     if (window.__graphNodes) {
       window.__graphNodes.each(function(d) {
         currentPositions.set(d.id, { x: d.x, y: d.y, vx: d.vx, vy: d.vy });
       });
+      if (svg) {
+        currentTransform = d3.zoomTransform(svg.node());
+      }
     }
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -184,10 +191,10 @@
       links = links.concat(newLinks);
     }
 
-    drawGraph(nodes, links, centerNodeId, initialAlpha);
+    drawGraph(nodes, links, centerNodeId, initialAlpha, currentTransform);
   }
 
-  function drawGraph(nodes, links, centerNodeId, initialAlpha = 1) {
+  function drawGraph(nodes, links, centerNodeId, initialAlpha = 1, currentTransform = null) {
     container.innerHTML = '';
     
     // Add flex: 1 style so it definitely takes height if parent is flex
@@ -212,6 +219,22 @@
       });
 
     svg.call(zoomBehavior);
+
+    if (currentTransform) {
+      svg.call(zoomBehavior.transform, currentTransform);
+    } else {
+      let initialScale = 1.0;
+      if (graphMeta && graphMeta.defaultScale) {
+        initialScale = graphMeta.defaultScale;
+      }
+      const isMobile = window.matchMedia("(max-width: 768px)").matches;
+      initialScale = isMobile ? Math.min(initialScale, 1.15) : initialScale;
+
+      svg.call(
+        zoomBehavior.transform, 
+        d3.zoomIdentity.translate(width/2, height/2).scale(initialScale).translate(-width/2, -height/2)
+      );
+    }
 
     simulation = d3.forceSimulation(nodes)
       .alpha(initialAlpha)
@@ -364,9 +387,19 @@
         window.history.pushState({}, '', url);
         render();
       } else if (svg && zoomBehavior) {
+        const w = container.clientWidth || 800;
+        const h = container.clientHeight || 600;
+        
+        let resetScale = 1.0;
+        if (graphMeta && graphMeta.defaultScale) {
+          resetScale = graphMeta.defaultScale;
+        }
+        const isMobile = window.matchMedia("(max-width: 768px)").matches;
+        resetScale = isMobile ? Math.min(resetScale, 1.15) : resetScale;
+
         svg.transition().duration(750).call(
           zoomBehavior.transform,
-          d3.zoomIdentity
+          d3.zoomIdentity.translate(w/2, h/2).scale(resetScale).translate(-w/2, -h/2)
         );
       }
     };

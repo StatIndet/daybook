@@ -22,9 +22,17 @@ type Link struct {
 	Type   string `json:"type"`
 }
 
+type GraphMeta struct {
+	NodeCount    int     `json:"nodeCount"`
+	LinkCount    int     `json:"linkCount"`
+	MaxDegree    int     `json:"maxDegree"`
+	DefaultScale float64 `json:"defaultScale"`
+}
+
 type Data struct {
-	Nodes []Node `json:"nodes"`
-	Links []Link `json:"links"`
+	Nodes []Node    `json:"nodes"`
+	Links []Link    `json:"links"`
+	Meta  GraphMeta `json:"meta"`
 }
 
 type InputNode struct {
@@ -39,6 +47,44 @@ type InputLink struct {
 	Source string
 	Target string // The slug of the target
 	Exists bool
+}
+
+func computeDefaultGraphScale(nodeCount int, maxDegree int) float64 {
+	if nodeCount <= 0 {
+		return 1.0
+	}
+
+	var scale float64
+
+	switch {
+	case nodeCount <= 10:
+		scale = 1.75
+	case nodeCount <= 20:
+		if maxDegree >= 3 {
+			scale = 1.60
+		} else {
+			scale = 1.45
+		}
+	case nodeCount <= 40:
+		if maxDegree >= 4 {
+			scale = 1.40
+		} else {
+			scale = 1.25
+		}
+	case nodeCount <= 80:
+		scale = 1.10
+	default:
+		scale = 1.00
+	}
+
+	if scale < 0.9 {
+		scale = 0.9
+	}
+	if scale > 1.8 {
+		scale = 1.8
+	}
+
+	return scale
 }
 
 func BuildJSON(nodes []InputNode, links []InputLink, outputPath string) error {
@@ -106,9 +152,26 @@ func BuildJSON(nodes []InputNode, links []InputLink, outputPath string) error {
 		}
 	}
 
+	maxDegree := 0
+	for _, n := range finalNodes {
+		if n.Degree > maxDegree {
+			maxDegree = n.Degree
+		}
+	}
+
+	scale := computeDefaultGraphScale(len(finalNodes), maxDegree)
+
+	meta := GraphMeta{
+		NodeCount:    len(finalNodes),
+		LinkCount:    len(finalLinks),
+		MaxDegree:    maxDegree,
+		DefaultScale: scale,
+	}
+
 	data := Data{
 		Nodes: finalNodes,
 		Links: finalLinks,
+		Meta:  meta,
 	}
 
 	if data.Nodes == nil {

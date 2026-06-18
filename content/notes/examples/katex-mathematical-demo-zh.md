@@ -1,6 +1,6 @@
 ---
 title: KaTeX 数学公式测试
-date: "2026-06-18"
+date: 2026-06-18
 slug: katex-mathematical-demo-zh
 tags:
   - Markdown
