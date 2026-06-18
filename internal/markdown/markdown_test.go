@@ -1,6 +1,7 @@
 package markdown
 
 import (
+	"os/exec"
 	"strings"
 	"testing"
 )
@@ -296,5 +297,27 @@ func TestToHTMLDoesNotRenderUnsafeHTML(t *testing.T) {
 
 	if strings.Contains(document.HTML, "<script>") {
 		t.Fatalf("HTML rendered unsafe script tag: %s", document.HTML)
+	}
+}
+
+func TestToHTMLWithMath(t *testing.T) {
+	if _, err := exec.LookPath("node"); err != nil {
+		t.Skip("node is not installed, skipping KaTeX SSR test")
+	}
+
+	document, err := ToHTMLWithHeadings("Some math $x = 1$ inline.\n\n$$\ny = 2\n$$\n\nAnother paragraph.")
+	if err != nil {
+		t.Fatalf("ToHTMLWithHeadings returned error: %v", err)
+	}
+
+	if !strings.Contains(document.HTML, `<span class="katex">`) {
+		t.Fatalf("HTML does not contain rendered inline math: %s", document.HTML)
+	}
+	if !strings.Contains(document.HTML, `<span class="katex-display">`) {
+		t.Fatalf("HTML does not contain rendered display math: %s", document.HTML)
+	}
+
+	if strings.Contains(document.HTML, `<p><span class="katex-display">`) || strings.Contains(document.HTML, `<p><div class="katex-display">`) {
+		t.Fatalf("Display math should not be wrapped in <p> tag: %s", document.HTML)
 	}
 }

@@ -1,9 +1,9 @@
 package markdown
 
 import (
-	"encoding/base64"
 	"fmt"
 	stdhtml "html"
+	"os"
 	"regexp"
 	"strings"
 )
@@ -20,6 +20,7 @@ type extensionContext struct {
 	depth        int
 	replacements []htmlReplacement
 	hasMermaid   bool
+	mathItems    []MathItem
 }
 
 type containerDirective struct {
@@ -53,6 +54,20 @@ func (renderer markdownRenderer) processExtensions(input string, depth int) (str
 	}
 
 	input = extractMath(input, &context)
+
+	if len(context.mathItems) > 0 {
+		results, err := renderMathBlocks(context.mathItems)
+		if err != nil {
+			return "", nil, false, err
+		}
+		for _, result := range results {
+			if !result.OK {
+				fmt.Fprintf(os.Stderr, "KaTeX 渲染错误 (%s): %s\n", result.ID, result.Error)
+			}
+			finalToken := context.addHTML(result.HTML)
+			input = strings.ReplaceAll(input, result.ID, finalToken)
+		}
+	}
 
 	lines := strings.Split(input, "\n")
 	output := make([]string, 0, len(lines))
@@ -588,14 +603,13 @@ func rewriteImageAlt(attrText, alt string) string {
 }
 
 func (context *extensionContext) addMathHTML(mathText string, isBlock bool) string {
-	b64 := base64.StdEncoding.EncodeToString([]byte(mathText))
-	var html string
-	if isBlock {
-		html = fmt.Sprintf(`<div class="math math-display" data-tex-b64="%s"></div>`, b64)
-	} else {
-		html = fmt.Sprintf(`<span class="math math-inline" data-tex-b64="%s"></span>`, b64)
-	}
-	return context.addHTML(html)
+	id := fmt.Sprintf("DAYBOOK_MATH_PLACEHOLDER_%d_%d_END", context.depth, len(context.mathItems))
+	context.mathItems = append(context.mathItems, MathItem{
+		ID:          id,
+		Tex:         mathText,
+		DisplayMode: isBlock,
+	})
+	return id
 }
 
 func extractMath(input string, context *extensionContext) string {

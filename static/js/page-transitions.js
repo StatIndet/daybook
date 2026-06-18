@@ -426,12 +426,25 @@
     currentStage.replaceWith(nextStage);
     return true;
   }
+  function syncKatexCSS(nextDocument) {
+    var katexLink = nextDocument.querySelector('link[href*="katex.min.css"]');
+    if (katexLink) {
+      var existingLink = document.querySelector('link[href*="katex.min.css"]');
+      if (!existingLink) {
+        var newLink = document.createElement('link');
+        newLink.rel = 'stylesheet';
+        newLink.href = katexLink.href;
+        document.head.appendChild(newLink);
+      }
+    }
+  }
 
   function swapPage(nextDocument, url, updateHistory, articleTransition) {
     var currentFrame = document.querySelector(".page-frame");
     var nextFrame = nextDocument.querySelector(".page-frame");
 
     document.title = nextDocument.title;
+    syncKatexCSS(nextDocument);
     document.body.className = nextDocument.body.className;
 
     if (articleTransition && swapArticleStage(nextDocument)) {
@@ -457,7 +470,6 @@
     syncNoteFilters();
     syncMermaid();
     syncEmbeds();
-    syncKatex();
     window.scrollTo(0, 0);
   }
 
@@ -571,19 +583,11 @@
     syncNoteFilters();
     syncMermaid();
     syncEmbeds();
-    syncKatex();
   });
-
-  function syncKatex() {
-    if (window.DaybookMath && typeof window.DaybookMath.init === "function") {
-      window.DaybookMath.init();
-    }
-  }
 
   syncNoteTocs();
   syncHeadingAnchors();
   syncNoteFilters();
   syncMermaid();
   syncEmbeds();
-  syncKatex();
 })();
