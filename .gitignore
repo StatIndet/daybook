@@ -37,4 +37,10 @@ content/.obsidian/workspace-mobile.json
 content/**/.obsidian/workspace.json
 content/**/.obsidian/workspace-mobile.json
 
-# README.md
+# Dependencies
+node_modules/
+
+# README files in subdirectories
+[Rr][Ee][Aa][Dd][Mm][Ee].*
+!/README.md
+!/readme.md
