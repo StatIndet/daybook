@@ -18,8 +18,8 @@ func TestBuildJSON(t *testing.T) {
 
 	links := []InputLink{
 		{Source: "node1", Target: "node2", Exists: true},
-		{Source: "node1", Target: "node2", Exists: true}, // Duplicate
-		{Source: "node2", Target: "node2", Exists: true}, // Self-link
+		{Source: "node1", Target: "node2", Exists: true},  // Duplicate
+		{Source: "node2", Target: "node2", Exists: true},  // Self-link
 		{Source: "node1", Target: "node3", Exists: false}, // Target doesn't exist
 	}
 

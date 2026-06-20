@@ -2,10 +2,10 @@
 <!doctype html>
 <html lang="zh-CN">
 {{template "head" .}}
-<body class="{{.BodyClass}}">
+<body class="{{.BodyClass}}" data-page-kind="{{.PageKind}}" data-search-index-url="/search.json">
   {{template "persistent_logo" .}}
 
-  <div class="page-frame">
+  <div class="page-frame" id="daybook-page" data-daybook-page>
   {{if eq .PageTitle "首页"}}
   {{template "header_nav" .}}
 
@@ -22,6 +22,8 @@
   </div>
   {{end}}
   </div>
+  {{template "mobile_drawer" .}}
+  {{template "mobile_overlay" .}}
 </body>
 </html>
 {{end}}

@@ -1,6 +1,7 @@
 (function() {
-  let container, searchInput, searchBtn, actionsHorizontal, orphanToggle, resetBtn, tagsBtn;
+  let container, searchInput, searchBtn, actionsHorizontal, orphanBtn, resetBtn, tagsBtn;
   let showTags = false;
+  let showOrphans = true;
 
   let rawNodes = [];
   let rawLinks = [];
@@ -19,7 +20,7 @@
     searchBtn = root.querySelector('#graph-search-btn');
     tagsBtn = root.querySelector('#graph-tags-btn');
     actionsHorizontal = root.querySelector('.graph-actions-horizontal');
-    orphanToggle = root.querySelector('#graph-orphan-toggle');
+    orphanBtn = root.querySelector('#graph-orphan-btn');
     resetBtn = root.querySelector('#graph-reset');
 
     if (!container) return;
@@ -114,7 +115,7 @@
     let depth = parseInt(urlParams.get('depth') || '1', 10);
     if (isNaN(depth) || depth < 1) depth = 1;
 
-    const showOrphans = orphanToggle.checked;
+    // Using global showOrphans state
 
     let filteredNodeIds = null;
     if (centerNodeId && adjacencyMap.has(centerNodeId)) {
@@ -256,8 +257,8 @@
       .join('g')
       .on('mouseover', handleMouseOver)
       .on('mouseout', handleMouseOut)
-      .on('auxclick', (event, d) => {
-        if (event.button === 1 && d.url) { // Middle click
+      .on('click', (event, d) => {
+        if (d.url) {
           if (window.daybookNavigateTo) {
             window.daybookNavigateTo(d.url);
           } else {
@@ -377,7 +378,13 @@
   function setupEventListeners() {
     // Need to cleanly replace listeners if init is called multiple times.
     // Cloning nodes or doing removeEventListener would be cleaner but for now replacing outer functions is fine.
-    orphanToggle.onchange = () => render(0.3);
+    if (orphanBtn) {
+      orphanBtn.onclick = () => {
+        showOrphans = !showOrphans;
+        orphanBtn.setAttribute('aria-expanded', showOrphans);
+        render(0.3);
+      };
+    }
 
     resetBtn.onclick = () => {
       const url = new URL(window.location.href);

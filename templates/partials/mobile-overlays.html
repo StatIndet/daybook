@@ -1,0 +1,37 @@
+{{define "mobile_overlays"}}
+<div class="mobile-overlay mobile-search-overlay" id="mobile-search-overlay" aria-hidden="true" data-notes-tools>
+  <div class="mobile-overlay-header">
+    <div class="notes-tool-panel notes-search-panel" data-notes-panel="search" aria-hidden="false">
+      <input class="notes-search-input mobile-search-input" type="search" placeholder="搜索：标题/摘要/标签" autocomplete="off" spellcheck="false" aria-label="搜索：标题/摘要/标签" data-notes-search>
+    </div>
+    <button class="mobile-overlay-close search-overlay-close" aria-label="关闭搜索" type="button" data-notes-tool="search">
+      <span class="material-symbol" aria-hidden="true">close</span>
+    </button>
+  </div>
+</div>
+
+<div class="mobile-overlay mobile-tags-overlay" id="mobile-tags-overlay" aria-hidden="true" data-notes-tools>
+  <div class="mobile-overlay-header">
+    <h2 class="mobile-overlay-title">标签</h2>
+    <button class="mobile-overlay-close tags-overlay-close" aria-label="关闭标签" type="button" data-notes-tool="tags">
+      <span class="material-symbol" aria-hidden="true">close</span>
+    </button>
+  </div>
+  <div class="mobile-overlay-content">
+    <div class="notes-tool-panel notes-tags-panel mobile-tags-panel" data-notes-panel="tags" aria-hidden="false">
+      {{if .Tags}}
+      <nav class="notes-tag-list" aria-label="标签筛选">
+        {{range .Tags}}
+        <a class="notes-tag-link" href="{{.URL}}" data-notes-tag="{{.Name}}" style="--tag-index: {{.Index}}; --tag-exit-index: {{.ReverseIndex}};">
+          <span class="notes-tag-text">{{.Name}}</span>
+          <span class="notes-tag-measure" aria-hidden="true">{{.Name}}</span>
+        </a>
+        {{end}}
+      </nav>
+      {{else}}
+      <p class="notes-tool-empty">暂无标签</p>
+      {{end}}
+    </div>
+  </div>
+</div>
+{{end}}

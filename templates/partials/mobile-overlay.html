@@ -1,0 +1,49 @@
+{{define "mobile_overlay"}}
+<div class="mobile-overlay-container" id="mobile-overlay-container" aria-hidden="true">
+  <div class="mobile-overlay-mask" id="mobile-overlay-mask"></div>
+
+  <div class="mobile-overlay mobile-tags-overlay" id="mobile-tags-overlay" data-overlay-panel="tags" aria-label="标签筛选">
+    <div class="mobile-overlay-header">
+      <h2 class="mobile-overlay-title">标签</h2>
+      <button class="mobile-overlay-close" type="button" aria-label="关闭标签" data-overlay-close>
+        <span class="material-symbol" aria-hidden="true">close</span>
+      </button>
+    </div>
+    <div class="mobile-overlay-content">
+      {{if .Tags}}
+      <nav class="notes-tag-list" aria-label="标签列表">
+        {{range .Tags}}
+        <a class="notes-tag-link" href="{{.URL}}" data-mobile-tag="{{.Name}}" style="--tag-index: {{.Index}}; --tag-exit-index: {{.ReverseIndex}};">
+          <span class="notes-tag-text">{{.Name}}</span>
+          <span class="notes-tag-measure" aria-hidden="true">{{.Name}}</span>
+        </a>
+        {{end}}
+      </nav>
+      {{else}}
+      <p class="mobile-overlay-empty">暂无标签</p>
+      {{end}}
+    </div>
+  </div>
+
+  <div class="mobile-overlay mobile-search-overlay" id="mobile-search-overlay" data-overlay-panel="search" aria-label="搜索">
+    <div class="mobile-overlay-header">
+      <div class="mobile-search-input-wrapper">
+        <span class="material-symbol mobile-search-icon" aria-hidden="true">search</span>
+        <input class="mobile-search-input" type="search" placeholder="搜索：标题/摘要/标签" autocomplete="off" spellcheck="false" aria-label="搜索：标题/摘要/标签" id="mobile-search-input">
+      </div>
+      <button class="mobile-overlay-close" type="button" aria-label="关闭搜索" data-overlay-close>
+        <span class="material-symbol" aria-hidden="true">close</span>
+      </button>
+    </div>
+    <div class="mobile-overlay-content mobile-search-results-container">
+      <div class="mobile-search-results" id="mobile-search-results">
+        <!-- JS 会将结果渲染在这里 -->
+      </div>
+      <p class="mobile-overlay-empty mobile-search-empty" id="mobile-search-empty" hidden>没有找到匹配的文章。</p>
+      <div class="mobile-search-loading" id="mobile-search-loading" hidden>
+        <p>正在加载搜索索引...</p>
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}

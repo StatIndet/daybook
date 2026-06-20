@@ -1,0 +1,84 @@
+{{define "mobile_drawer"}}
+<div class="mobile-drawer-mask" id="mobile-drawer-mask" aria-hidden="true"></div>
+<aside class="mobile-drawer" id="mobile-drawer" aria-label="移动端导航" aria-hidden="true">
+  <div class="mobile-drawer-content">
+    <nav class="mobile-drawer-nav" aria-label="主导航">
+      <a class="drawer-nav-link" href="/">
+        <span class="material-symbol" aria-hidden="true">home</span>
+        <span class="drawer-nav-label">首页</span>
+      </a>
+      <a class="drawer-nav-link" href="/notes/">
+        <span class="material-symbol" aria-hidden="true">article</span>
+        <span class="drawer-nav-label">文章</span>
+      </a>
+      <a class="drawer-nav-link" href="/archive/">
+        <span class="material-symbol" aria-hidden="true">archive</span>
+        <span class="drawer-nav-label">归档</span>
+      </a>
+      <a class="drawer-nav-link" href="/graph/">
+        <span class="material-symbol" aria-hidden="true">account_tree</span>
+        <span class="drawer-nav-label">关系图谱</span>
+      </a>
+      <a class="drawer-nav-link" href="/about/">
+        <span class="material-symbol" aria-hidden="true">info</span>
+        <span class="drawer-nav-label">关于</span>
+      </a>
+    </nav>
+
+    <div class="mobile-drawer-divider"></div>
+
+    <div class="mobile-drawer-funcs" data-mobile-overlay-tools>
+      <button class="drawer-nav-link" type="button" aria-expanded="false" data-mobile-overlay-target="search" id="drawer-search-btn">
+        <span class="material-symbol" aria-hidden="true">search</span>
+        <span class="drawer-nav-label">搜索</span>
+      </button>
+      <button class="drawer-nav-link" type="button" aria-expanded="false" data-mobile-overlay-target="tags" id="drawer-tags-btn">
+        <span class="material-symbol" aria-hidden="true">sell</span>
+        <span class="drawer-nav-label">标签</span>
+      </button>
+    </div>
+
+    <div class="mobile-drawer-divider"></div>
+
+    <div class="mobile-drawer-switches">
+      <label class="drawer-switch-item">
+        <div class="drawer-switch-label">
+          <span class="material-symbol drawer-theme-icon" aria-hidden="true">dark_mode</span>
+          <span class="drawer-switch-text theme-switch-text">暗色模式</span>
+        </div>
+        <button type="button" class="material-switch drawer-theme-toggle theme-toggle" role="switch" aria-checked="false" aria-label="切换暗色模式">
+          <span class="switch-track"></span>
+          <span class="switch-thumb"></span>
+        </button>
+      </label>
+
+      <label class="drawer-switch-item">
+        <div class="drawer-switch-label">
+          <span class="material-symbol drawer-eyecare-icon" aria-hidden="true">visibility</span>
+          <span class="drawer-switch-text">护眼模式</span>
+        </div>
+        <button type="button" class="material-switch drawer-eyecare-toggle eye-care-toggle" role="switch" aria-checked="false" aria-label="切换护眼模式">
+          <span class="switch-track"></span>
+          <span class="switch-thumb"></span>
+        </button>
+      </label>
+    </div>
+
+    <div class="mobile-drawer-footer">
+      <div class="drawer-footer-row">
+        <a href="/rss.xml">RSS</a>
+        <span class="footer-separator" aria-hidden="true">/</span>
+        <a href="https://github.com/StatIndet" target="_blank" rel="noopener noreferrer">Github</a>
+        <span class="footer-separator" aria-hidden="true">/</span>
+        <a href="mailto:shi-zhi@outlook.com">email</a>
+      </div>
+      <div class="drawer-footer-row">
+        <a href="https://space.bilibili.com/1837364961" target="_blank" rel="noopener noreferrer">bilibili</a>
+        <span class="footer-separator" aria-hidden="true">/</span>
+        <a href="https://qm.qq.com/q/JQkjSvKBwI" target="_blank" rel="noopener noreferrer">QQ</a>
+      </div>
+      <p class="drawer-copyright">© 2026 史帙</p>
+    </div>
+  </div>
+</aside>
+{{end}}

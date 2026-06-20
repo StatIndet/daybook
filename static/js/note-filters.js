@@ -61,18 +61,20 @@
   }
 
   function syncToolsState(searchOpen, tagsOpen, focusSearch) {
-    var tools = document.querySelector("[data-notes-tools]");
-    if (!tools) {
+    var toolsList = document.querySelectorAll("[data-notes-tools]");
+    if (!toolsList.length) {
       return;
     }
 
-    tools.classList.toggle("has-open-panel", searchOpen || tagsOpen);
-    tools.classList.toggle("is-search-open", searchOpen);
-    tools.classList.toggle("is-tags-open", tagsOpen);
+    toolsList.forEach(function (tools) {
+      tools.classList.toggle("has-open-panel", searchOpen || tagsOpen);
+      tools.classList.toggle("is-search-open", searchOpen);
+      tools.classList.toggle("is-tags-open", tagsOpen);
 
-    tools.querySelectorAll("[data-notes-panel]").forEach(function (panel) {
-      var isActive = (panel.dataset.notesPanel === "search" && searchOpen) || (panel.dataset.notesPanel === "tags" && tagsOpen);
-      panel.setAttribute("aria-hidden", isActive ? "false" : "true");
+      tools.querySelectorAll("[data-notes-panel]").forEach(function (panel) {
+        var isActive = (panel.dataset.notesPanel === "search" && searchOpen) || (panel.dataset.notesPanel === "tags" && tagsOpen);
+        panel.setAttribute("aria-hidden", isActive ? "false" : "true");
+      });
     });
 
     document.querySelectorAll("[data-notes-tool]").forEach(function (button) {
@@ -86,9 +88,9 @@
   }
 
   function setToolOpen(toolName, isOpen, focusSearch) {
-    var tools = document.querySelector("[data-notes-tools]");
-    var searchOpen = tools && tools.classList.contains("is-search-open");
-    var tagsOpen = tools && tools.classList.contains("is-tags-open");
+    var firstTools = document.querySelector("[data-notes-tools]");
+    var searchOpen = firstTools && firstTools.classList.contains("is-search-open");
+    var tagsOpen = firstTools && firstTools.classList.contains("is-tags-open");
 
     if (toolName === "search") {
       searchOpen = isOpen;
@@ -142,6 +144,18 @@
       }
     });
 
+    document.querySelectorAll(".notes-pinned").forEach(function (pinned) {
+      var hasVisibleNote = Array.from(pinned.querySelectorAll("[data-note-card]")).some(function (card) {
+        return !card.hidden;
+      });
+      pinned.hidden = !hasVisibleNote;
+
+      var divider = document.querySelector(".notes-divider");
+      if (divider) {
+        divider.hidden = !hasVisibleNote;
+      }
+    });
+
     document.querySelectorAll(".notes-month").forEach(function (month) {
       var hasVisibleNote = Array.from(month.querySelectorAll("[data-note-card]")).some(function (card) {
         return !card.hidden;
@@ -169,6 +183,13 @@
     });
   }
 
+  function updateMobileTagReturn(filter) {
+    var returnBtn = document.getElementById("mobile-tag-return");
+    if (returnBtn) {
+      returnBtn.hidden = filter.type !== "tag";
+    }
+  }
+
   function syncSearchInput(filter) {
     var input = document.querySelector("[data-notes-search]");
     if (!input) {
@@ -186,6 +207,7 @@
 
     syncSearchInput(filter);
     updateActiveTags(filter);
+    updateMobileTagReturn(filter);
     if (isNotesPage()) {
       applyNoteFilters(filter);
     }
@@ -253,8 +275,8 @@
     }
 
     var toolName = toolButton.dataset.notesTool;
-    var tools = document.querySelector("[data-notes-tools]");
-    var isOpen = tools && tools.classList.contains("is-" + toolName + "-open");
+    var firstTools = document.querySelector("[data-notes-tools]");
+    var isOpen = firstTools && firstTools.classList.contains("is-" + toolName + "-open");
     setToolOpen(toolName, !isOpen, toolName === "search" && !isOpen);
   });
 

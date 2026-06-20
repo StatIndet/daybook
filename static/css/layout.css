@@ -143,7 +143,7 @@
     display: flex;
     flex-direction: column;
     min-height: auto;
-    padding: calc(var(--persistent-logo-top) + 2.4rem) 20px 20px;
+    padding: 1.5rem 20px 20px;
   }
 
   .site-nav {
@@ -152,5 +152,32 @@
 
   .site-main {
     padding: 36px 20px 56px;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --mobile-topbar-height: 64px;
+  }
+
+  .persistent-logo-container {
+    align-items: center;
+    background: var(--color-page);
+    border-bottom: 1px solid var(--color-line);
+    display: flex;
+    height: var(--mobile-topbar-height);
+    justify-content: space-between;
+    padding: 0 20px;
+    position: sticky;
+    top: 0;
+    z-index: 2010;
+  }
+
+  .persistent-logo {
+    position: static !important;
+  }
+
+  .side-rail {
+    padding-top: 1.5rem;
   }
 }

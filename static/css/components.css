@@ -90,7 +90,7 @@
 .notes-action-button::after {
   background: var(--color-tooltip-bg);
   border-radius: 3px;
-  bottom: calc(100% + 9px);
+  top: calc(100% + 9px);
   color: var(--color-tooltip-text);
   content: attr(data-tooltip);
   font-family: var(--font-ui);
@@ -101,7 +101,7 @@
   padding: 6px 7px;
   pointer-events: none;
   position: absolute;
-  transform: translate(-50%, 4px);
+  transform: translate(-50%, -4px);
   transition:
     opacity 160ms ease,
     transform 160ms ease;
@@ -308,7 +308,8 @@
   user-select: none;
 }
 
-.notes-tools.is-tags-open .notes-tag-link {
+.notes-tools.is-tags-open .notes-tag-link,
+body.is-tags-overlay-open .mobile-tags-overlay .notes-tag-link {
   opacity: 1;
   transform: translateY(0);
   transition-delay: calc(var(--tag-index, 0) * 42ms);
@@ -518,4 +519,453 @@
   position: fixed;
   transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 3001;
+}
+
+/* Mobile Menu Toggle */
+.mobile-menu-toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  color: var(--color-text);
+  cursor: pointer;
+  display: none;
+  height: 40px;
+  justify-content: center;
+  margin-left: 0;
+  padding: 0;
+  position: relative;
+  width: 40px;
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-toggle {
+    display: inline-flex;
+  }
+}
+
+.mobile-menu-toggle .material-symbol {
+  font-size: 1.5rem;
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(0deg);
+  transition: opacity 350ms cubic-bezier(0.42, 1.67, 0.21, 0.9), transform 350ms cubic-bezier(0.42, 1.67, 0.21, 0.9);
+}
+
+.mobile-menu-toggle .icon-close {
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+body.is-mobile-drawer-open .mobile-menu-toggle .icon-menu {
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+body.is-mobile-drawer-open .mobile-menu-toggle .icon-close {
+  opacity: 1;
+  transform: translate(-50%, -50%) rotate(0deg);
+}
+
+/* Base states for icon swap without content replacement if preferred. Actually we can just swap textContent via JS or use CSS content */
+/* Wait, we'll swap textContent in CSS? No, we can just use textContent in JS or CSS ::after. */
+
+/* Drawer Mask */
+.mobile-drawer-mask {
+  background: color-mix(in srgb, var(--color-page) 60%, transparent);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  bottom: 0;
+  display: none;
+  left: 0;
+  opacity: 0;
+  position: fixed;
+  right: 0;
+  top: var(--mobile-topbar-height, 0);
+  transition: opacity 320ms cubic-bezier(0.2, 0.78, 0.24, 1);
+  z-index: 1900;
+}
+
+@media (max-width: 768px) {
+  .mobile-drawer-mask {
+    display: block;
+    pointer-events: none;
+  }
+  body.is-mobile-drawer-open .mobile-drawer-mask {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* Mobile Drawer */
+.mobile-drawer {
+  background: var(--color-page);
+  border-left: 1px solid var(--color-line);
+  bottom: 0;
+  display: none;
+  height: calc(100dvh - var(--mobile-topbar-height, 0));
+  max-width: 360px;
+  position: fixed;
+  right: 0;
+  top: var(--mobile-topbar-height, 0);
+  transform: translateX(100%);
+  transition: transform 420ms cubic-bezier(0.2, 0.78, 0.24, 1), visibility 0s linear 420ms;
+  visibility: hidden;
+  width: 82vw;
+  z-index: 1901;
+}
+
+@media (max-width: 768px) {
+  .mobile-drawer {
+    display: block;
+  }
+  body.is-mobile-drawer-open .mobile-drawer {
+    transform: translateX(0);
+    transition: transform 420ms cubic-bezier(0.2, 0.78, 0.24, 1), visibility 0s linear 0s;
+    visibility: visible;
+  }
+}
+
+.mobile-drawer-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  padding: 24px 24px calc(24px + env(safe-area-inset-bottom));
+  scrollbar-width: none;
+}
+.mobile-drawer-content::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-drawer-nav,
+.mobile-drawer-funcs,
+.mobile-drawer-switches {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mobile-drawer-divider {
+  background: var(--color-line);
+  height: 1px;
+  margin: 20px 0;
+  width: 100%;
+}
+
+.drawer-nav-link {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  color: var(--color-text);
+  cursor: pointer;
+  display: flex;
+  gap: 16px;
+  min-height: 48px;
+  padding: 0 12px;
+  text-decoration: none;
+  transition: background 160ms ease, color 160ms ease;
+  width: 100%;
+}
+
+.drawer-nav-link:hover,
+.drawer-nav-link:focus-visible {
+  background: var(--color-paper);
+  color: var(--color-hover-text);
+  outline: none;
+}
+
+.drawer-nav-link .material-symbol {
+  font-size: 1.35rem;
+}
+
+.drawer-nav-label {
+  font-family: var(--font-ui);
+  font-size: 1.05rem;
+}
+
+/* Material Switch */
+.drawer-switch-item {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 0 12px;
+}
+
+.drawer-switch-label {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+}
+
+.drawer-switch-label .material-symbol {
+  color: var(--color-text);
+  font-size: 1.35rem;
+}
+
+.drawer-switch-text {
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-size: 1.05rem;
+}
+
+.material-switch {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  display: inline-flex;
+  height: 32px;
+  padding: 0;
+  position: relative;
+  width: 52px;
+}
+
+.switch-track {
+  background: var(--color-paper);
+  border: 2px solid var(--color-muted);
+  border-radius: 16px;
+  height: 100%;
+  transition: background 200ms cubic-bezier(0.34, 0.8, 0.34, 1), border-color 200ms cubic-bezier(0.34, 0.8, 0.34, 1);
+  width: 100%;
+}
+
+.switch-thumb {
+  background: var(--color-muted);
+  border-radius: 50%;
+  height: 16px;
+  left: 16px;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  transition:
+    background 200ms cubic-bezier(0.34, 0.8, 0.34, 1),
+    width 350ms cubic-bezier(0.42, 1.67, 0.21, 0.9),
+    height 350ms cubic-bezier(0.42, 1.67, 0.21, 0.9),
+    left 350ms cubic-bezier(0.42, 1.67, 0.21, 0.9);
+  width: 16px;
+}
+
+.material-switch[aria-checked="true"] .switch-track {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.material-switch[aria-checked="true"] .switch-thumb {
+  background: var(--color-page);
+  height: 24px;
+  left: 36px;
+  width: 24px;
+}
+
+.material-switch.is-pressed .switch-thumb {
+  height: 28px;
+  width: 28px;
+}
+
+/* Drawer Footer */
+.mobile-drawer-footer {
+  margin-top: auto;
+  padding-top: 24px;
+}
+
+.drawer-footer-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 4px;
+}
+
+.drawer-footer-row a {
+  color: var(--color-muted);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  text-decoration: none;
+}
+
+.drawer-copyright {
+  color: var(--color-muted);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  margin: 12px 0 0;
+}
+
+/* Mobile Overlays */
+.mobile-overlay-container {
+  bottom: 0;
+  display: none;
+  left: 0;
+  pointer-events: none;
+  position: fixed;
+  right: 0;
+  top: var(--mobile-topbar-height, 0);
+  z-index: 1905;
+}
+
+@media (max-width: 768px) {
+  .mobile-overlay-container {
+    display: block;
+  }
+}
+
+.mobile-overlay-mask {
+  background: color-mix(in srgb, var(--color-page) 85%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  bottom: 0;
+  left: 0;
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  transition: opacity 300ms cubic-bezier(0.2, 0.78, 0.24, 1);
+}
+
+body.is-tags-overlay-open .mobile-overlay-container,
+body.is-search-overlay-open .mobile-overlay-container {
+  pointer-events: auto;
+}
+
+body.is-tags-overlay-open .mobile-overlay-mask,
+body.is-search-overlay-open .mobile-overlay-mask {
+  opacity: 1;
+}
+
+.mobile-overlay {
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  left: 0;
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  transform: translateY(10px);
+  transition: opacity 300ms cubic-bezier(0.2, 0.78, 0.24, 1), transform 300ms cubic-bezier(0.2, 0.78, 0.24, 1), visibility 0s linear 300ms;
+  visibility: hidden;
+}
+
+body.is-tags-overlay-open .mobile-tags-overlay,
+body.is-search-overlay-open .mobile-search-overlay {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms cubic-bezier(0.2, 0.78, 0.24, 1), transform 300ms cubic-bezier(0.2, 0.78, 0.24, 1), visibility 0s linear 0s;
+  visibility: visible;
+}
+
+.mobile-overlay-header {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  min-height: 72px;
+  padding: 16px 24px 0;
+}
+
+.mobile-overlay-title {
+  color: var(--color-text);
+  flex: 1;
+  font-family: var(--font-ui);
+  font-size: 1.3rem;
+  margin: 0;
+}
+
+.mobile-overlay-close {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--color-muted);
+  cursor: pointer;
+  display: flex;
+  height: 40px;
+  justify-content: center;
+  margin-left: auto;
+  padding: 0;
+  transition: color 160ms ease;
+  width: 40px;
+}
+
+.mobile-overlay-close:hover,
+.mobile-overlay-close:focus-visible {
+  color: var(--color-hover-text);
+}
+
+.mobile-overlay-close:focus-visible {
+  outline: 1px solid var(--color-accent);
+}
+
+.mobile-overlay-close .material-symbol {
+  font-size: 1.5rem;
+}
+
+.mobile-search-input-wrapper {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-paper) 72%, transparent);
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  display: flex;
+  flex: 1;
+  padding: 0 12px;
+  transition: border-color 160ms ease;
+}
+
+.mobile-search-input-wrapper:focus-within {
+  border-color: var(--color-accent);
+}
+
+.mobile-search-icon {
+  color: var(--color-muted);
+  font-size: 1.25rem;
+}
+
+.mobile-search-input {
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  flex: 1;
+  font: 0.95rem/1.4 var(--font-ui);
+  padding: 10px;
+  width: 100%;
+}
+
+.mobile-search-input::placeholder {
+  color: var(--color-muted);
+  opacity: 0.74;
+}
+
+.mobile-search-input:focus {
+  outline: 0;
+}
+
+.mobile-overlay-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.mobile-search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mobile-overlay-empty,
+.mobile-search-loading {
+  color: var(--color-muted);
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  margin: 0;
+  text-align: center;
+}
+
+
+/* Article Title Morphable Layout */
+.article-title--morphable .title-token {
+  display: inline-block;
+  white-space: pre;
 }

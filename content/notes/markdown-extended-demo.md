@@ -2,6 +2,7 @@
 title: Markdown 扩展语法测试页
 date: 2026-06-16
 slug: markdown-extended-demo
+pin: true
 tags:
   - Markdown
   - Test
