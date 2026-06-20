@@ -137,9 +137,22 @@ hr.notes-divider {
 }
 
 .notes-brand-cn {
-  font-family: var(--font-signature-cn);
   font-size: clamp(2.2rem, 3vw, 3rem);
-  font-weight: 400;
+  display: inline-block;
+  width: 1.8em;
+  height: 0.85em;
+  background-color: var(--color-text);
+  -webkit-mask-image: url('/images/ShiZhi.png');
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-image: url('/images/ShiZhi.png');
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  color: transparent;
+  user-select: none;
+  align-self: baseline;
 }
 
 .notes-brand-en {
