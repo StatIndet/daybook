@@ -90,7 +90,12 @@ func TestBuildAssetsFingerprintsCSSImportsAndJS(t *testing.T) {
 		"js/mermaid-loader.js",
 		"js/gallery.js",
 		"js/embeds.js",
-		"js/page-transitions.js",
+		"js/page-transition-engine.js",
+		"js/graph-loader.js",
+		"js/graph.js",
+		"js/mobile-drawer.js",
+		"js/search-overlay.js",
+		"js/daybook-router.js",
 		"vendor/katex/katex.min.css",
 	} {
 		writeTestFile(t, staticDir, scriptPath, `document.documentElement.dataset.loaded = "true";`)
@@ -239,7 +244,12 @@ func writeRequiredTemplateAssets(t *testing.T, staticDir string) {
 		"js/mermaid-loader.js",
 		"js/gallery.js",
 		"js/embeds.js",
-		"js/page-transitions.js",
+		"js/page-transition-engine.js",
+		"js/graph-loader.js",
+		"js/graph.js",
+		"js/mobile-drawer.js",
+		"js/search-overlay.js",
+		"js/daybook-router.js",
 		"vendor/katex/katex.min.css",
 	} {
 		writeTestFile(t, staticDir, scriptPath, `document.documentElement.dataset.loaded = "true";`)

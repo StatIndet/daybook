@@ -65,9 +65,5 @@
     syncHeadingAnchors(document);
   };
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", window.daybookSyncHeadingAnchors);
-  } else {
-    window.daybookSyncHeadingAnchors();
-  }
+  document.addEventListener("daybook:page-load", window.daybookSyncHeadingAnchors);
 })();

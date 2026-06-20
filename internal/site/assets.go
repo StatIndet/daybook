@@ -77,8 +77,11 @@ func requireTemplateAssets(manifest map[string]string) error {
 		"/js/mermaid-loader.js",
 		"/js/gallery.js",
 		"/js/embeds.js",
-		"/js/page-transitions.js",
+		"/js/page-transition-engine.js",
 		"/js/graph-loader.js",
+		"/js/mobile-drawer.js",
+		"/js/search-overlay.js",
+		"/js/daybook-router.js",
 	}
 
 	for _, originalPath := range requiredPaths {

@@ -19,6 +19,8 @@ import (
 	"github.com/StatIndet/daybook/internal/markdown"
 	"github.com/StatIndet/daybook/internal/obsidian"
 	"github.com/StatIndet/daybook/internal/render"
+	"github.com/StatIndet/daybook/internal/search"
+	"github.com/StatIndet/daybook/internal/titlelayout"
 )
 
 type Options struct {
@@ -102,6 +104,8 @@ func Build(options Options) (BuildResult, error) {
 			})
 		}
 
+		titleLayoutHTML := titlelayout.GenerateHTML(note.Title, note.Slug)
+
 		noteLinks = append(noteLinks, render.NoteLink{
 			Title:               note.Title,
 			Date:                note.Date,
@@ -110,6 +114,8 @@ func Build(options Options) (BuildResult, error) {
 			Tags:                tags,
 			URL:                 note.URL,
 			Slug:                note.Slug,
+			Pin:                 note.Pin,
+			TitleLayout:         titleLayoutHTML,
 			TitleTransitionName: titleTransitionName,
 			DateTransitionName:  dateTransitionName,
 		})
@@ -118,6 +124,7 @@ func Build(options Options) (BuildResult, error) {
 		data := render.NoteData{
 			Site:      siteData,
 			PageTitle: note.Title,
+			PageKind:  "note",
 			BodyClass: "note-body page-body",
 			Assets:    assets,
 			HasMath:   note.Math,
@@ -133,6 +140,7 @@ func Build(options Options) (BuildResult, error) {
 				Headings:            renderHeadings(document.Headings),
 				HasMermaid:          document.HasMermaid,
 				HasMath:             note.Math,
+				TitleLayout:         titleLayoutHTML,
 				TitleTransitionName: titleTransitionName,
 				DateTransitionName:  dateTransitionName,
 			},
@@ -147,22 +155,36 @@ func Build(options Options) (BuildResult, error) {
 	indexData := render.IndexData{
 		Site:      siteData,
 		PageTitle: "首页",
+		PageKind:  "home",
 		BodyClass: "home-body",
 		Assets:    assets,
 		Notes:     noteLinks,
+		Tags:      tagLinks,
 	}
 	if err := renderer.RenderIndex(indexPath, indexData); err != nil {
 		return BuildResult{}, fmt.Errorf("生成首页: %w", err)
+	}
+
+	var pinnedNotes []render.NoteLink
+	var regularNotes []render.NoteLink
+	for _, link := range noteLinks {
+		if link.Pin {
+			pinnedNotes = append(pinnedNotes, link)
+		} else {
+			regularNotes = append(regularNotes, link)
+		}
 	}
 
 	notesIndexPath := filepath.Join(options.PublicDir, "notes", "index.html")
 	notesData := render.NotesData{
 		Site:        siteData,
 		PageTitle:   "文章",
+		PageKind:    "notes",
 		BodyClass:   "notes-list-body page-body",
 		Assets:      assets,
 		Notes:       noteLinks,
-		MonthGroups: monthGroups(noteLinks),
+		PinnedNotes: pinnedNotes,
+		MonthGroups: monthGroups(regularNotes),
 		Tags:        tagLinks,
 	}
 	if err := renderer.RenderNotes(notesIndexPath, notesData); err != nil {
@@ -173,6 +195,7 @@ func Build(options Options) (BuildResult, error) {
 	archiveData := render.ArchiveData{
 		Site:       siteData,
 		PageTitle:  "归档",
+		PageKind:   "archive",
 		BodyClass:  "archive-body page-body",
 		Assets:     assets,
 		Total:      len(noteLinks),
@@ -198,12 +221,14 @@ func Build(options Options) (BuildResult, error) {
 	aboutData := render.AboutData{
 		Site:      siteData,
 		PageTitle: aboutPage.Title,
+		PageKind:  "about",
 		BodyClass: "about-body page-body",
 		Assets:    assets,
 		Spiral:    render.NewGoldenSpiral(),
 		Title:     aboutPage.Title,
 		Summary:   aboutPage.Summary,
 		HTML:      template.HTML(aboutDocument.HTML),
+		Tags:      tagLinks,
 	}
 	if err := renderer.RenderAbout(aboutPath, aboutData); err != nil {
 		return BuildResult{}, fmt.Errorf("生成关于页: %w", err)
@@ -218,8 +243,10 @@ func Build(options Options) (BuildResult, error) {
 	graphData := render.GraphData{
 		Site:      siteData,
 		PageTitle: "关系图谱",
+		PageKind:  "graph",
 		BodyClass: "graph-body page-body",
 		Assets:    assets,
+		Tags:      tagLinks,
 	}
 	if err := renderer.RenderGraph(graphPath, graphData); err != nil {
 		return BuildResult{}, fmt.Errorf("生成图谱页: %w", err)
@@ -227,6 +254,11 @@ func Build(options Options) (BuildResult, error) {
 
 	if err := feed.Write(filepath.Join(options.PublicDir, "rss.xml"), options.Config, notes); err != nil {
 		return BuildResult{}, err
+	}
+
+	searchJSONPath := filepath.Join(options.PublicDir, "search.json")
+	if err := search.BuildIndex(notes, estimateReadingTime, searchJSONPath); err != nil {
+		return BuildResult{}, fmt.Errorf("生成 search.json: %w", err)
 	}
 
 	return BuildResult{Notes: notes, Skipped: skipped}, nil

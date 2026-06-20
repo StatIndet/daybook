@@ -63,7 +63,6 @@
   overflow-wrap: anywhere;
   padding-right: 0.04em;
   text-decoration: none;
-  text-wrap: balance;
   vertical-align: top;
   white-space: normal;
   word-break: normal;
@@ -72,6 +71,25 @@
 .notes-item-title a:hover,
 .notes-item-title a:focus-visible {
   color: var(--color-hover-text);
+}
+
+.notes-item-pin {
+  background-color: var(--color-muted);
+  display: inline-block;
+  height: 1.1em;
+  margin-left: 0.3em;
+  mask-image: url('/icons/ui/pin.svg');
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+  vertical-align: text-bottom;
+  width: 1.1em;
+}
+
+hr.notes-divider {
+  border: none;
+  border-top: 1px dashed var(--color-line);
+  margin: clamp(0.5rem, 1.5vw, 1rem) 0 clamp(1.5rem, 3.5vw, 2.5rem);
 }
 
 .notes-item-meta {
@@ -253,5 +271,77 @@
 
   .notes-tools.has-open-panel {
     margin-bottom: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .notes-aside {
+    display: none !important;
+  }
+
+  .notes-item-summary {
+    display: none;
+  }
+
+  .notes-item {
+    padding: 0 0 clamp(1.2rem, 3.4vw, 1.5rem);
+  }
+
+  .notes-item-header {
+    display: block;
+  }
+
+  .notes-item-title {
+    display: block;
+    font-size: 1rem;
+    margin-bottom: 0.25em;
+  }
+
+  .notes-item-meta {
+    align-items: center;
+    display: flex;
+    font-size: 0.875rem;
+    gap: 0.65em;
+    padding-top: 0.2em;
+  }
+}
+
+/* Mobile Tag Return Button */
+.mobile-tag-return {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-tag-return:not([hidden]) {
+    display: flex;
+    margin-bottom: 16px;
+  }
+
+  .mobile-tag-return-btn {
+    align-items: center;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--color-muted);
+    cursor: pointer;
+    display: inline-flex;
+    gap: 8px;
+    padding: 8px 12px 8px 0;
+    text-decoration: none;
+    transition: color 160ms ease, transform 160ms ease;
+  }
+
+  .mobile-tag-return-btn:hover,
+  .mobile-tag-return-btn:focus-visible {
+    color: var(--color-hover-text);
+  }
+
+  .mobile-tag-return-text {
+    font-family: var(--font-ui);
+    font-size: 1.05rem;
+  }
+
+  .mobile-tag-return-btn .material-symbol {
+    font-size: 1.35rem;
   }
 }

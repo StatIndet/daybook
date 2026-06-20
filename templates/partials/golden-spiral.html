@@ -118,19 +118,21 @@
   </style>
 
   <svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-    <g class="golden-spiral-stage" style="--golden-loop-duration: {{.Spiral.LoopDuration}}">
-      <animateTransform class="golden-spin-motion" attributeName="transform" type="rotate" from="0 {{.Spiral.SpinCenterX}} {{.Spiral.SpinCenterY}}" to="360 {{.Spiral.SpinCenterX}} {{.Spiral.SpinCenterY}}" dur="{{.Spiral.SpinDuration}}" repeatCount="indefinite"></animateTransform>
-      {{range .Spiral.Layers}}
-      <g class="golden-spiral-layer golden-spiral-layer-{{.Index}}">
-        {{range $.Spiral.Diagonals}}
-        <path class="golden-diagonal" d="{{.D}}" pathLength="1" vector-effect="non-scaling-stroke" style="animation-name: golden-guide-life-{{.Order}}; --golden-grow-delay: {{.GrowDelay}}; --golden-shrink-delay: {{.ShrinkDelay}}"></path>
+    <g class="golden-spiral-pan">
+      <g class="golden-spiral-stage" style="--golden-loop-duration: {{.Spiral.LoopDuration}}">
+        <animateTransform class="golden-spin-motion" attributeName="transform" type="rotate" from="0 {{.Spiral.SpinCenterX}} {{.Spiral.SpinCenterY}}" to="360 {{.Spiral.SpinCenterX}} {{.Spiral.SpinCenterY}}" dur="{{.Spiral.SpinDuration}}" repeatCount="indefinite"></animateTransform>
+        {{range .Spiral.Layers}}
+        <g class="golden-spiral-layer golden-spiral-layer-{{.Index}}">
+          {{range $.Spiral.Diagonals}}
+          <path class="golden-diagonal" d="{{.D}}" pathLength="1" vector-effect="non-scaling-stroke" style="animation-name: golden-guide-life-{{.Order}}; --golden-grow-delay: {{.GrowDelay}}; --golden-shrink-delay: {{.ShrinkDelay}}"></path>
+          {{end}}
+          {{range $.Spiral.Squares}}
+          <path class="golden-rect" d="{{.D}}" pathLength="1" vector-effect="non-scaling-stroke" style="animation-name: golden-guide-life-{{.Order}}; --golden-grow-delay: {{.GrowDelay}}; --golden-shrink-delay: {{.ShrinkDelay}}"></path>
+          {{end}}
+          <path class="golden-curve" d="{{$.Spiral.SpiralPath}}" pathLength="4096"></path>
+        </g>
         {{end}}
-        {{range $.Spiral.Squares}}
-        <path class="golden-rect" d="{{.D}}" pathLength="1" vector-effect="non-scaling-stroke" style="animation-name: golden-guide-life-{{.Order}}; --golden-grow-delay: {{.GrowDelay}}; --golden-shrink-delay: {{.ShrinkDelay}}"></path>
-        {{end}}
-        <path class="golden-curve" d="{{$.Spiral.SpiralPath}}" pathLength="4096"></path>
       </g>
-      {{end}}
     </g>
   </svg>
 

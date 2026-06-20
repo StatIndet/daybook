@@ -87,7 +87,6 @@
   margin: 0;
   max-width: 100%;
   overflow-wrap: anywhere;
-  text-wrap: balance;
   word-break: normal;
 }
 
@@ -175,5 +174,12 @@
   .note-back-link {
     margin-bottom: 1rem;
     position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .note-meta {
+    font-size: 0.875rem;
+    gap: 0.65em;
   }
 }

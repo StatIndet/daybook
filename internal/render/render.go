@@ -43,6 +43,8 @@ type NoteLink struct {
 	Tags                []string
 	URL                 string
 	Slug                string
+	Pin                 bool
+	TitleLayout         template.HTML
 	TitleTransitionName string
 	DateTransitionName  string
 }
@@ -58,6 +60,7 @@ type NotePage struct {
 	Headings            []Heading
 	HasMermaid          bool
 	HasMath             bool
+	TitleLayout         template.HTML
 	TitleTransitionName string
 	DateTransitionName  string
 }
@@ -132,10 +135,12 @@ type GoldenSpiral struct {
 type IndexData struct {
 	Site      SiteData
 	PageTitle string
+	PageKind  string
 	BodyClass string
 	Assets    Assets
 	HasMath   bool
 	Notes     []NoteLink
+	Tags      []TagLink
 }
 
 type TagLink struct {
@@ -148,10 +153,12 @@ type TagLink struct {
 type NotesData struct {
 	Site        SiteData
 	PageTitle   string
+	PageKind    string
 	BodyClass   string
 	Assets      Assets
 	HasMath     bool
 	Notes       []NoteLink
+	PinnedNotes []NoteLink
 	MonthGroups []MonthGroup
 	Tags        []TagLink
 }
@@ -180,6 +187,7 @@ type ArchiveYearGroup struct {
 type ArchiveData struct {
 	Site       SiteData
 	PageTitle  string
+	PageKind   string
 	BodyClass  string
 	Assets     Assets
 	HasMath    bool
@@ -191,6 +199,7 @@ type ArchiveData struct {
 type NoteData struct {
 	Site      SiteData
 	PageTitle string
+	PageKind  string
 	BodyClass string
 	Assets    Assets
 	HasMath   bool
@@ -201,6 +210,7 @@ type NoteData struct {
 type AboutData struct {
 	Site      SiteData
 	PageTitle string
+	PageKind  string
 	BodyClass string
 	Assets    Assets
 	HasMath   bool
@@ -208,14 +218,17 @@ type AboutData struct {
 	Title     string
 	Summary   string
 	HTML      template.HTML
+	Tags      []TagLink
 }
 
 type GraphData struct {
 	Site      SiteData
 	PageTitle string
+	PageKind  string
 	BodyClass string
 	Assets    Assets
 	HasMath   bool
+	Tags      []TagLink
 }
 
 func New(templatesDir string) Renderer {

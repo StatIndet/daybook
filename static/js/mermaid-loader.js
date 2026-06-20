@@ -251,15 +251,7 @@
     });
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener(
-      "DOMContentLoaded",
-      function () {
-        scheduleInit();
-      },
-      { once: true },
-    );
-  } else {
+  document.addEventListener("daybook:transition-finished", function () {
     scheduleInit();
-  }
+  });
 })();

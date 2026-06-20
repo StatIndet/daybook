@@ -119,11 +119,11 @@
     }, 10);
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", scheduleCheck, { once: true });
-  } else {
-    scheduleCheck();
-  }
+  document.addEventListener("daybook:transition-finished", scheduleCheck);
 
-  window.addEventListener("daybook:page-loaded", scheduleCheck);
+  document.addEventListener("daybook:before-swap", function () {
+    if (window.DaybookGraph && typeof window.DaybookGraph.destroy === "function") {
+      window.DaybookGraph.destroy();
+    }
+  });
 })();

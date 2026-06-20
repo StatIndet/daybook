@@ -9,6 +9,7 @@ tags:
   - 虚拟机
 summary: 记录在小主机上安装 Debian SSH Server，并规划 Docker、虚拟机和同步服务。
 draft: false
+pin: true
 ---
 
 ### 安装Debian ssh服务器记录

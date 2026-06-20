@@ -2,10 +2,15 @@
 <article class="notes-item" data-note-card data-search-title="{{.Title}}" data-search-summary="{{.Summary}}" data-tags="{{range .Tags}}{{.}}&#10;{{end}}">
   <div class="notes-item-header">
     <h1 class="notes-item-title">
-      <a href="{{.URL}}" data-title-transition-name="{{.TitleTransitionName}}">{{.Title}}</a>
+      <a href="{{.URL}}" data-title-transition-key="{{.Slug}}">
+        {{.TitleLayout}}
+      </a>
+      {{if .Pin}}
+        <span class="notes-item-pin" aria-hidden="true" title="已固定"></span>
+      {{end}}
     </h1>
-    <p class="notes-item-meta" data-meta-transition-name="{{.DateTransitionName}}">
-      <time datetime="{{.Date}}">{{.Date}}</time>
+    <p class="notes-item-meta" data-meta-transition-key="{{.Slug}}">
+      <time datetime="{{.Date}}" data-date-transition-key="{{.Slug}}">{{.Date}}</time>
       <span>{{.ReadingTime}}</span>
     </p>
   </div>

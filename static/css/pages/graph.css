@@ -45,78 +45,7 @@
   gap: 16px;
 }
 
-/* Styled Switch */
-.styled-switch {
-  pointer-events: auto;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
 
-.styled-switch span {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--color-muted);
-  user-select: none;
-  line-height: 24px;
-}
-
-.styled-switch input {
-  display: none;
-}
-
-.switch-track {
-  width: 40px;
-  height: 24px;
-  border-radius: 12px;
-  background-color: color-mix(in srgb, var(--color-page) 90%, var(--color-muted));
-  border: 1.5px solid var(--color-line);
-  position: relative;
-  transition: 
-    background-color 300ms cubic-bezier(0.2, 0, 0, 1),
-    border-color 300ms cubic-bezier(0.2, 0, 0, 1);
-}
-
-.styled-switch input:checked + .switch-track {
-  background-color: var(--color-accent);
-  border-color: var(--color-accent);
-}
-
-.switch-indicator {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background-color: var(--color-muted);
-  position: absolute;
-  top: 50%;
-  left: 4px;
-  transform: translateY(-50%);
-  transition: 
-    left 300ms cubic-bezier(0.2, 0, 0, 1),
-    width 300ms cubic-bezier(0.2, 0, 0, 1),
-    height 300ms cubic-bezier(0.2, 0, 0, 1),
-    background-color 300ms cubic-bezier(0.2, 0, 0, 1);
-}
-
-.styled-switch:active .switch-indicator {
-  width: 18px;
-  height: 18px;
-  left: 2px;
-}
-
-.styled-switch input:checked + .switch-track .switch-indicator {
-  width: 16px;
-  height: 16px;
-  left: 18px;
-  background-color: var(--color-paper);
-}
-
-.styled-switch:active input:checked + .switch-track .switch-indicator {
-  width: 20px;
-  height: 20px;
-  left: 15px;
-}
 
 /* Horizontal Action Buttons */
 .graph-actions-horizontal {
@@ -126,6 +55,10 @@
   align-items: center;
   gap: 8px;
   position: relative;
+}
+
+.notes-action-text {
+  display: none;
 }
 
 /* Local Search Box overrides */
@@ -330,13 +263,63 @@
   }
 
   .graph-toolbar {
-    top: auto;
-    bottom: 16px;
+    top: 16px;
+    bottom: auto;
+    right: 0;
+    left: 0;
+    width: 100%;
+    align-items: center;
+  }
+
+  .graph-toolbar-inner {
+    align-items: center;
+    width: 100%;
+  }
+
+  .graph-actions-horizontal {
+    justify-content: center;
+    gap: clamp(16px, 6vw, 36px);
+    width: 100%;
+  }
+
+  .graph-actions-horizontal .notes-action-button {
+    display: flex;
     flex-direction: column;
-    align-items: flex-end;
+    height: auto;
+    width: auto;
+    gap: 6px;
+    min-width: 52px;
+    border-radius: 8px;
+  }
+
+  .notes-action-text {
+    display: block;
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    line-height: 1;
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  #graph-local-search-panel {
+    top: calc(100% + 8px);
+    bottom: auto;
+    right: auto;
+    left: 50%;
+    transform: translate(-50%, -8px);
+    align-items: center;
+  }
+
+  .graph-actions-horizontal.is-search-open #graph-local-search-panel {
+    transform: translate(-50%, 0);
   }
 
   #graph-search-input {
-    width: 200px;
+    width: 240px;
+  }
+
+  .graph-toolbar .theme-toggle,
+  .graph-toolbar .eye-care-toggle {
+    display: none !important;
   }
 }

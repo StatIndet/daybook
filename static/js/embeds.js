@@ -98,6 +98,8 @@
   function setupGithubCards() {
     var cards = document.querySelectorAll(".gc-container");
     cards.forEach(function (card) {
+      if (card.dataset.initialized === "true") return;
+      card.dataset.initialized = "true";
       loadRepoData(card);
     });
   }
@@ -137,6 +139,8 @@
   }
 
   players.forEach(async function(container) {
+    if (container.dataset.initialized === "true") return;
+    container.dataset.initialized = "true";
     var id = container.getAttribute("data-id");
     var autostart = container.getAttribute("data-autostart") === "true";
     if (!id) return;
@@ -387,8 +391,19 @@
     setupNeteasePlayers();
   };
 
-  document.addEventListener("DOMContentLoaded", function () {
+
+
+  document.addEventListener("daybook:transition-finished", function () {
     window.daybookSyncEmbeds();
+  });
+
+  document.addEventListener("daybook:before-swap", function () {
+    // Pause any active netease audio players to prevent ghost audio
+    document.querySelectorAll(".nm-player audio").forEach(function(audio) {
+      if (!audio.paused) {
+        audio.pause();
+      }
+    });
   });
 
 })();

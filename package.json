@@ -6,6 +6,25 @@
     "render:katex": "node scripts/render-katex.mjs"
   },
   "dependencies": {
+    "jsdom": "^29.1.1",
     "katex": "^0.16.10"
-  }
+  },
+  "version": "1.0.0",
+  "description": "A minimalist static blog generator for Go and HTML beginners.",
+  "main": "patch.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/StatIndet/daybook.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/StatIndet/daybook/issues"
+  },
+  "homepage": "https://github.com/StatIndet/daybook#readme"
 }

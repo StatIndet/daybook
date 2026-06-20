@@ -1267,6 +1267,128 @@
   border: 1px solid var(--color-border);
 }
 
+@media (max-width: 768px) {
+  .nm-player {
+    height: auto;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    border-radius: 20px;
+  }
+
+  .nm-inner {
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 18px;
+    gap: 10px;
+  }
+
+  .nm-player .nm-cover {
+    width: min(68vw, 220px);
+    height: min(68vw, 220px);
+    margin-right: 0;
+    margin-bottom: 0 !important;
+  }
+
+  .nm-body {
+    width: 100%;
+    align-items: center;
+    flex: none;
+  }
+
+  .nm-text {
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    white-space: normal;
+  }
+
+  .nm-title {
+    margin-right: 0;
+    margin-bottom: 4px;
+    text-align: center;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    font-weight: 700;
+  }
+
+  .nm-artist {
+    text-align: center;
+    width: 100%;
+  }
+
+  .nm-time {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .nm-bottom {
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  .nm-canvas {
+    width: min(100%, 260px);
+    max-width: 100%;
+    flex: none;
+  }
+
+  .nm-playbtn-wrapper {
+    margin-left: 0;
+    margin-top: 16px;
+    width: 56px;
+    height: 56px;
+  }
+
+  .nm-playbtn {
+    width: 52px;
+    height: 52px;
+    border-radius: 26px;
+  }
+  
+  .nm-player.is-playing .nm-playbtn {
+    width: 52px;
+    height: 52px;
+    border-radius: 20px;
+  }
+
+  .nm-icon {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 380px) {
+  .nm-player {
+    border-radius: 16px;
+  }
+  
+  .nm-inner {
+    padding: 16px;
+  }
+  
+  .nm-player .nm-cover {
+    width: 190px;
+    height: 190px;
+  }
+  
+  .nm-canvas {
+    width: 230px;
+  }
+  
+  .nm-playbtn-wrapper {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .nm-playbtn, .nm-player.is-playing .nm-playbtn {
+    width: 48px;
+    height: 48px;
+  }
+}
+
 .markdown figure:has(.spotify-embed),
 .markdown figure:has(.netease-embed),
 .markdown figure:has(.twitter-tweet) {

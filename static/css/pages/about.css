@@ -153,7 +153,11 @@
 
 @media (max-width: 768px) {
   .golden-spiral {
-    display: none;
+    opacity: 0.5;
+  }
+
+  .golden-spiral-pan {
+    transform: translate(-420px, 160px);
   }
 }
 

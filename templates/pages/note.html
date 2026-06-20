@@ -8,11 +8,13 @@
             <span class="material-symbol" aria-hidden="true">arrow_back</span>
           </a>
           <h1 class="note-title">
-            <span data-title-transition-name="{{.Note.TitleTransitionName}}">{{.Note.Title}}</span>
+            <span data-title-transition-key="{{.Note.Slug}}">
+              {{.Note.TitleLayout}}
+            </span>
           </h1>
         </div>
-        <p class="note-meta" data-meta-transition-name="{{.Note.DateTransitionName}}">
-          <time datetime="{{.Note.Date}}">{{.Note.Date}}</time>
+        <p class="note-meta" data-meta-transition-key="{{.Note.Slug}}">
+          <time datetime="{{.Note.Date}}" data-date-transition-key="{{.Note.Slug}}">{{.Note.Date}}</time>
           <span>{{.Note.ReadingTime}}</span>
         </p>
         {{with .Note.Summary}}<p class="note-summary">{{.}}</p>{{end}}

@@ -65,6 +65,11 @@ html[data-eye-care-changing] .note-meta {
   z-index: 99;
 }
 
+::view-transition-group(active-switch-track),
+::view-transition-group(active-switch-thumb) {
+  z-index: 100;
+}
+
 @keyframes theme-toggle-reveal {
   from {
     clip-path: inset(var(--theme-reveal-from));
@@ -492,16 +497,53 @@ html.article-transition .notes-footer > p {
   transform: none !important;
 }
 
-html.article-transition.meta-shared-transition .note-meta {
-  animation: none !important;
-  opacity: 1 !important;
-  transform: none !important;
+html.article-transition [data-title-transition-key],
+html.article-transition [data-date-transition-key],
+html.article-transition [data-meta-transition-key] {
+  view-transition-name: none !important;
 }
 
-.note-body .note-meta.meta-shared-target {
-  animation: none !important;
-  opacity: 1 !important;
-  transform: none !important;
+.article-morph-layer {
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+  position: fixed;
+  z-index: 2600;
+}
+
+.article-morph-clone {
+  display: block;
+  margin: 0;
+  max-width: none;
+  min-width: 0;
+  overflow: visible;
+  pointer-events: none;
+  position: absolute;
+  transform: none;
+  transform-origin: 0 0;
+  will-change: left, top, width, font-size, font-weight, line-height, color;
+}
+
+.article-morph-clone-title {
+  hyphens: auto;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  word-break: normal;
+}
+
+.article-morph-token {
+  overflow-wrap: normal;
+  white-space: pre;
+  width: auto;
+  word-break: normal;
+}
+
+.article-morph-clone-meta {
+  white-space: nowrap;
+}
+
+.article-morph-hidden {
+  visibility: hidden !important;
 }
 
 html:not(.article-transition) body.page-entering.page-body .side-nav .nav-link {

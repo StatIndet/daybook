@@ -148,12 +148,13 @@
     }
   }
 
-  // We set up overlay on DOMContentLoaded or immediately if already loaded
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", setupOverlay);
-  } else {
-    setupOverlay();
-  }
+  document.addEventListener("daybook:page-load", setupOverlay);
+
+  document.addEventListener("daybook:before-swap", function() {
+    if (zoomedImg) {
+      zoomOut();
+    }
+  });
 
   document.addEventListener("click", handleClick);
   document.addEventListener("keydown", handleKeyDown);

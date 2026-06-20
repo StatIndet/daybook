@@ -18,6 +18,7 @@ type Note struct {
 	Summary    string
 	Draft      bool
 	Math       bool
+	Pin        bool
 	Body       string
 	URL        string
 	SourcePath string
@@ -31,6 +32,7 @@ type frontmatter struct {
 	Summary string   `yaml:"summary"`
 	Draft   bool     `yaml:"draft"`
 	Math    bool     `yaml:"math"`
+	Pin     bool     `yaml:"pin"`
 }
 
 func LoadNotes(dir string) ([]Note, []string, error) {
@@ -105,6 +107,7 @@ func Parse(sourcePath, text string) (Note, error) {
 		Summary:    strings.TrimSpace(meta.Summary),
 		Draft:      meta.Draft,
 		Math:       meta.Math,
+		Pin:        meta.Pin,
 		Body:       strings.TrimSpace(body),
 		SourcePath: sourcePath,
 	}
