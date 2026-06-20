@@ -155,10 +155,6 @@
   .golden-spiral {
     opacity: 0.5;
   }
-
-  .golden-spiral-pan {
-    transform: translate(-420px, 160px);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
