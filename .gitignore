@@ -1,7 +1,9 @@
 # Build output
 /public/
 /daybook
-
+/static/js/*.js
+/static/js/*.js.map
+!/static/js/vendor/
 # Go generated files
 *.test
 coverage.out

@@ -3,7 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "render:katex": "node scripts/render-katex.mjs"
+    "render:katex": "node scripts/render-katex.mjs",
+    "typecheck": "tsc --noEmit",
+    "build:js": "node scripts/build-js.mjs",
+    "watch:js": "node scripts/build-js.mjs --watch",
+    "build": "npm run typecheck && npm run build:js && go run ./cmd/daybook build",
+    "serve": "npm run typecheck && npm run build:js && concurrently \"npm run watch:js\" \"go run ./cmd/daybook serve\""
   },
   "dependencies": {
     "jsdom": "^29.1.1",
@@ -26,5 +31,10 @@
   "bugs": {
     "url": "https://github.com/StatIndet/daybook/issues"
   },
-  "homepage": "https://github.com/StatIndet/daybook#readme"
+  "homepage": "https://github.com/StatIndet/daybook#readme",
+  "devDependencies": {
+    "concurrently": "^10.0.3",
+    "esbuild": "^0.28.1",
+    "typescript": "^6.0.3"
+  }
 }
