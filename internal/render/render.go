@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/StatIndet/daybook/internal/config"
 )
 
 type Renderer struct {
@@ -60,6 +62,7 @@ type NotePage struct {
 	Headings            []Heading
 	HasMermaid          bool
 	HasMath             bool
+	CommentEnabled      bool
 	TitleLayout         template.HTML
 	TitleTransitionName string
 	DateTransitionName  string
@@ -198,6 +201,7 @@ type ArchiveData struct {
 
 type NoteData struct {
 	Site      SiteData
+	Config    config.Config
 	PageTitle string
 	PageKind  string
 	BodyClass string

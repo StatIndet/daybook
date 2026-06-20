@@ -24,6 +24,20 @@
   </div>
   {{template "mobile_drawer" .}}
   {{template "mobile_overlay" .}}
+  <script type="module">
+    let walineLoader = null;
+    document.addEventListener("daybook:page-load", async () => {
+      const container = document.getElementById("waline");
+      if (container) {
+        if (!walineLoader) {
+          walineLoader = await import("{{.Assets.Path "/js/waline-loader.js"}}");
+        }
+        walineLoader.setupWaline();
+      } else if (walineLoader) {
+        walineLoader.setupWaline(); // setupWaline will destroy it if no container
+      }
+    });
+  </script>
 </body>
 </html>
 {{end}}

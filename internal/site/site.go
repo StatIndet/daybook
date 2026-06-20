@@ -120,9 +120,15 @@ func Build(options Options) (BuildResult, error) {
 			DateTransitionName:  dateTransitionName,
 		})
 
+		commentEnabled := options.Config.Comment.Enabled
+		if note.Comment != nil {
+			commentEnabled = *note.Comment
+		}
+
 		outputPath := filepath.Join(options.PublicDir, "notes", note.Slug, "index.html")
 		data := render.NoteData{
 			Site:      siteData,
+			Config:    options.Config,
 			PageTitle: note.Title,
 			PageKind:  "note",
 			BodyClass: "note-body page-body",
@@ -140,6 +146,7 @@ func Build(options Options) (BuildResult, error) {
 				Headings:            renderHeadings(document.Headings),
 				HasMermaid:          document.HasMermaid,
 				HasMath:             note.Math,
+				CommentEnabled:      commentEnabled,
 				TitleLayout:         titleLayoutHTML,
 				TitleTransitionName: titleTransitionName,
 				DateTransitionName:  dateTransitionName,

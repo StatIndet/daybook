@@ -1,2 +1,12 @@
 title: "Daybook"
 baseURL: "https://daybook.page"
+comment:
+  enabled: true
+  provider: "waline"
+  waline:
+    serverURL: "https://comment.daybook.page"
+    lang: "zh-CN"
+    pageSize: 10
+    commentSorting: "latest"
+    search: false
+    imageUploader: false

@@ -1,0 +1,96 @@
+/* Waline Theme overrides for Daybook */
+#waline {
+  --waline-theme-color: var(--color-accent);
+  --waline-active-color: var(--color-hover-text);
+  
+  --waline-color: var(--color-text);
+  --waline-bg-color: transparent;
+  --waline-bg-color-light: transparent;
+  --waline-bg-color-hover: transparent;
+  --waline-border-color: var(--color-line);
+  --waline-disable-bg-color: var(--color-paper);
+  --waline-disable-color: var(--color-muted);
+  
+  --waline-bq-color: var(--color-line);
+  
+  --waline-info-bg-color: transparent;
+  --waline-info-color: var(--color-muted);
+
+  --waline-border: 1px solid var(--waline-border-color);
+  --waline-avatar-radius: 50%;
+  
+  margin-top: 1.5rem;
+}
+
+/* Make panel transparent and blend in */
+#waline .wl-panel {
+  background: transparent;
+  border: var(--waline-border);
+  border-radius: 8px;
+  margin: 0;
+}
+
+#waline .wl-header {
+  border-bottom: var(--waline-border);
+}
+
+#waline .wl-header-item {
+  border-right: var(--waline-border);
+}
+#waline .wl-header-item:last-child {
+  border-right: none;
+}
+
+#waline .wl-editor {
+  background: transparent;
+}
+
+#waline .wl-editor::placeholder {
+  color: var(--color-muted);
+  opacity: 0.6;
+}
+
+#waline .wl-btn {
+  color: var(--color-text);
+  border: var(--waline-border);
+  background: transparent;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+#waline .wl-btn:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+#waline .wl-btn.wl-btn-primary {
+  color: var(--color-page);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+#waline .wl-btn.wl-btn-primary:hover {
+  background: var(--color-hover-text);
+  border-color: var(--color-hover-text);
+}
+
+#waline .wl-reaction {
+  display: none;
+}
+
+#waline .wl-card-item {
+  padding: 1rem 0;
+}
+
+#waline .wl-comment .wl-content p {
+  color: var(--color-text);
+  font-size: var(--note-text-size);
+  line-height: 1.7;
+}
+
+#waline .wl-emoji-popup {
+  background: var(--color-paper);
+  border: var(--waline-border);
+}
+
+#waline .wl-gif-popup {
+  background: var(--color-paper);
+  border: var(--waline-border);
+}

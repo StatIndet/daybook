@@ -7,15 +7,42 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type WalineConfig struct {
+	ServerURL      string `yaml:"serverURL"`
+	Lang           string `yaml:"lang"`
+	PageSize       int    `yaml:"pageSize"`
+	CommentSorting string `yaml:"commentSorting"`
+	Search         bool   `yaml:"search"`
+	ImageUploader  bool   `yaml:"imageUploader"`
+}
+
+type CommentConfig struct {
+	Enabled  bool         `yaml:"enabled"`
+	Provider string       `yaml:"provider"`
+	Waline   WalineConfig `yaml:"waline"`
+}
+
 type Config struct {
-	Title   string `yaml:"title"`
-	BaseURL string `yaml:"baseURL"`
+	Title   string        `yaml:"title"`
+	BaseURL string        `yaml:"baseURL"`
+	Comment CommentConfig `yaml:"comment"`
 }
 
 func Default() Config {
 	return Config{
 		Title:   "Daybook",
 		BaseURL: "http://localhost:1313",
+		Comment: CommentConfig{
+			Enabled:  false,
+			Provider: "waline",
+			Waline: WalineConfig{
+				Lang:           "zh-CN",
+				PageSize:       10,
+				CommentSorting: "latest",
+				Search:         false,
+				ImageUploader:  false,
+			},
+		},
 	}
 }
 
