@@ -25,6 +25,22 @@
       <div class="markdown post-content">
         {{.Note.HTML}}
       </div>
+
+      {{if .Note.CommentEnabled}}
+      <section class="post-comments">
+        <h2 class="post-comments-title">评论</h2>
+        <div id="waline"
+             data-server-url="{{$.Config.Comment.Waline.ServerURL}}"
+             data-lang="{{$.Config.Comment.Waline.Lang}}"
+             data-page-size="{{$.Config.Comment.Waline.PageSize}}"
+             data-comment-sorting="{{$.Config.Comment.Waline.CommentSorting}}"
+             data-search="{{$.Config.Comment.Waline.Search}}"
+             data-image-uploader="{{$.Config.Comment.Waline.ImageUploader}}"
+             data-path="/notes/{{.Note.Slug}}"></div>
+        <link rel="stylesheet" href="/vendor/waline/waline.css">
+        <link rel="stylesheet" href="{{.Assets.Path "/css/components/waline-theme.css"}}">
+      </section>
+      {{end}}
     </article>
   </section>
 

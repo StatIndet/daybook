@@ -107,7 +107,7 @@ func Tokenize(title string) []TitleToken {
 		}
 
 		// 5. CJK Particle boundaries
-		// Break *before* particles so particle starts a new token? 
+		// Break *before* particles so particle starts a new token?
 		// Or break *after* particle? Usually breaking before particle is better so "的" goes with the next word or starts a line.
 		// Wait, breaking after particle is better so "长标题的" is one line, "几何过渡" is another.
 		if currIsCJK && isParticle(r) && !isParticle(prev) {
