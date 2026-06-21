@@ -5,6 +5,10 @@
   padding-top: var(--home-hero-top);
 }
 
+.home-main > #main-content-wrapper {
+  display: contents;
+}
+
 .home-hero {
   align-items: center;
   display: flex;
