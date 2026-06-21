@@ -8,6 +8,7 @@ tags:
   - Test
 summary: 用于检查 daybook Markdown 扩展语法、嵌入组件、Lightbox、Mermaid 和嵌套任务列表渲染。
 draft: false
+toc: false
 ---
 
 本文介绍 Retypeset 主题支持的 Markdown 扩展功能，包括语法示例与效果展示。
@@ -232,11 +233,17 @@ graph TD;
 
 ## 网易云
 
-使用双冒号语法 `::netease{type="song"id="歌曲id"}`，即可嵌入 网易云网易播放器。
+使用双冒号语法 `::netease{type="song"id="歌曲id"}`，即可嵌入 网易云网易播放器。也可通过bool值来控制是否自动播放。
 
-### 效果
+### 语法
 
-::netease{type="song" id="474667755"}
+```
+::netease{type="song" id="1406633327" autostart="false"}
+```
+
+### 效果（该演示卡片没有启用自动播放）
+
+::netease{type="song" id="1406633327" autostart="false"}
 
 ## 普通列表
 

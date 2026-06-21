@@ -9,6 +9,7 @@ tags:
 summary: 测试 daybook 对 KaTeX 数学公式、align 环境、矩阵、希腊字母和常用数学符号的渲染支持。
 draft: false
 math: true
+toc: false
 ---
 
 KaTeX 是一个跨浏览器的 JavaScript 库，可在网页浏览器中渲染数学公式。其设计以快速和易用为核心，最初由可汗学院开发，后成为 GitHub 上最热门的五大项目之一。

@@ -30,9 +30,9 @@ type containerDirective struct {
 }
 
 var (
-	htmlImageParagraphPattern = regexp.MustCompile(`(?s)<p><img\s+([^>]*)></p>`)
-	htmlAttrPattern           = regexp.MustCompile(`(?is)([a-zA-Z][a-zA-Z0-9_-]*)\s*=\s*(?:"([^"]*)"|'([^']*)')`)
-	markdownImageLinePattern  = regexp.MustCompile(`^!\[[^\]]*\]\([^)]+\)\s*$`)
+	htmlImageParagraphPattern = regexp.MustCompile(`(?s)<p>((?:\s*<img\s+[^>]*>)+)\s*</p>`)
+	htmlAttrPattern           = regexp.MustCompile(`(?i)([a-z-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))`)
+	imgTagPattern             = regexp.MustCompile(`(?i)<img\s+([^>]*)>`)
 )
 
 var admonitionTitles = map[string]string{
@@ -264,7 +264,6 @@ func (context *extensionContext) renderFold(title, content string) (string, erro
 }
 
 func (context *extensionContext) renderGallery(content string) (string, error) {
-	content = separateGalleryImages(content)
 	document, err := context.renderer.render(content, false, context.depth+1)
 	if err != nil {
 		return "", err
@@ -277,26 +276,6 @@ func (context *extensionContext) renderGallery(content string) (string, error) {
 	builder.WriteString(contentHTML)
 	builder.WriteString(`</div>`)
 	return builder.String(), nil
-}
-
-func separateGalleryImages(content string) string {
-	lines := strings.Split(content, "\n")
-	output := make([]string, 0, len(lines)*2)
-
-	for index, line := range lines {
-		output = append(output, line)
-		if index == len(lines)-1 {
-			continue
-		}
-
-		currentIsImage := markdownImageLinePattern.MatchString(strings.TrimSpace(line))
-		nextIsImage := markdownImageLinePattern.MatchString(strings.TrimSpace(lines[index+1]))
-		if currentIsImage && nextIsImage {
-			output = append(output, "")
-		}
-	}
-
-	return strings.Join(output, "\n")
 }
 
 func isMermaidFence(line string, fenceLength int) bool {
@@ -563,16 +542,25 @@ func applyFigureCaptions(html string) string {
 			return match
 		}
 
-		attrs := parseHTMLAttrs(parts[1])
-		alt := attrs["alt"]
-		if strings.HasPrefix(alt, "_") {
-			return `<p><img ` + rewriteImageAlt(parts[1], strings.TrimPrefix(alt, "_")) + `></p>`
-		}
-		if strings.TrimSpace(alt) == "" {
-			return match
-		}
+		imgTags := imgTagPattern.FindAllString(parts[1], -1)
+		var builder strings.Builder
+		for _, imgTag := range imgTags {
+			attrText := imgTagPattern.FindStringSubmatch(imgTag)[1]
+			attrs := parseHTMLAttrs(attrText)
+			alt := attrs["alt"]
 
-		return `<figure><img ` + parts[1] + `><figcaption>` + stdhtml.EscapeString(alt) + `</figcaption></figure>`
+			if strings.HasPrefix(alt, "_") {
+				builder.WriteString(`<p><img ` + rewriteImageAlt(attrText, strings.TrimPrefix(alt, "_")) + `></p>`)
+				continue
+			}
+			if strings.TrimSpace(alt) == "" {
+				builder.WriteString(`<p>` + imgTag + `</p>`)
+				continue
+			}
+
+			builder.WriteString(`<figure><img ` + attrText + `><figcaption>` + stdhtml.EscapeString(alt) + `</figcaption></figure>`)
+		}
+		return builder.String()
 	})
 }
 
@@ -580,12 +568,15 @@ func parseHTMLAttrs(text string) map[string]string {
 	attrs := make(map[string]string)
 	matches := htmlAttrPattern.FindAllStringSubmatch(text, -1)
 	for _, match := range matches {
-		if len(match) != 4 {
+		if len(match) < 4 {
 			continue
 		}
 		value := match[2]
-		if value == "" {
+		if value == "" && len(match) >= 4 {
 			value = match[3]
+		}
+		if value == "" && len(match) >= 5 {
+			value = match[4]
 		}
 		attrs[strings.ToLower(match[1])] = stdhtml.UnescapeString(value)
 	}
@@ -595,7 +586,7 @@ func parseHTMLAttrs(text string) map[string]string {
 func rewriteImageAlt(attrText, alt string) string {
 	return htmlAttrPattern.ReplaceAllStringFunc(attrText, func(match string) string {
 		parts := htmlAttrPattern.FindStringSubmatch(match)
-		if len(parts) != 4 || !strings.EqualFold(parts[1], "alt") {
+		if len(parts) < 4 || !strings.EqualFold(parts[1], "alt") {
 			return match
 		}
 		return `alt="` + stdhtml.EscapeString(alt) + `"`
