@@ -11,7 +11,8 @@ draft: false
 toc: false
 ---
 
-本文介绍 Retypeset 主题支持的 Markdown 扩展功能，包括语法示例与效果展示。
+本文介绍 Markdown 扩展功能，包括语法示例与效果展示。
+*示例取自 [Retypeset](https://retypeset.radishzz.cc/en/posts/markdown-extended-features/)*
 
 ## 图注
 
