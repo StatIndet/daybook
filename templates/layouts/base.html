@@ -10,14 +10,18 @@
   {{template "header_nav" .}}
 
   <main class="site-main{{if eq .PageTitle "首页"}} home-main{{end}}">
-    {{template "content" .}}
+    <div id="main-content-wrapper">
+      {{template "content" .}}
+    </div>
   </main>
   {{else}}
   <div class="page-shell">
     {{template "side_nav" .}}
 
     <main class="site-main page-main">
-      {{template "content" .}}
+      <div id="main-content-wrapper">
+        {{template "content" .}}
+      </div>
     </main>
   </div>
   {{end}}

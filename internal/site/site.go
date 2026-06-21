@@ -125,6 +125,11 @@ func Build(options Options) (BuildResult, error) {
 			commentEnabled = *note.Comment
 		}
 
+		tocEnabled := true
+		if note.Toc != nil {
+			tocEnabled = *note.Toc
+		}
+
 		outputPath := filepath.Join(options.PublicDir, "notes", note.Slug, "index.html")
 		data := render.NoteData{
 			Site:      siteData,
@@ -142,10 +147,12 @@ func Build(options Options) (BuildResult, error) {
 				Summary:             note.Summary,
 				URL:                 note.URL,
 				Slug:                note.Slug,
+				Tags:                tags,
 				HTML:                template.HTML(document.HTML),
 				Headings:            renderHeadings(document.Headings),
 				HasMermaid:          document.HasMermaid,
 				HasMath:             note.Math,
+				TocEnabled:          tocEnabled,
 				CommentEnabled:      commentEnabled,
 				TitleLayout:         titleLayoutHTML,
 				TitleTransitionName: titleTransitionName,

@@ -367,6 +367,12 @@ body.is-tags-overlay-open .mobile-tags-overlay .notes-tag-link {
   gap: 0.35rem;
 }
 
+.search-highlight {
+  background-color: var(--color-accent);
+  border-radius: 2px;
+  color: var(--color-page);
+}
+
 .notes-footer-links a {
   color: var(--color-muted);
   text-decoration: none;

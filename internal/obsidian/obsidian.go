@@ -266,6 +266,11 @@ func rewriteAssetPath(rawPath string) string {
 	}
 
 	cleaned := strings.TrimSpace(rawPath)
+	lowerPath := strings.ToLower(cleaned)
+	if strings.HasPrefix(lowerPath, "http://") || strings.HasPrefix(lowerPath, "https://") || strings.HasPrefix(lowerPath, "data:") || strings.HasPrefix(lowerPath, "//") {
+		return cleaned
+	}
+
 	withoutQuery := cleaned
 	if index := strings.IndexAny(cleaned, "?#"); index >= 0 {
 		withoutQuery = cleaned[:index]

@@ -58,10 +58,12 @@ type NotePage struct {
 	Summary             string
 	URL                 string
 	Slug                string
+	Tags                []string
 	HTML                template.HTML
 	Headings            []Heading
 	HasMermaid          bool
 	HasMath             bool
+	TocEnabled          bool
 	CommentEnabled      bool
 	TitleLayout         template.HTML
 	TitleTransitionName string

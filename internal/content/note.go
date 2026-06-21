@@ -22,6 +22,7 @@ type Note struct {
 	Body       string
 	URL        string
 	SourcePath string
+	Toc        *bool
 	Comment    *bool
 }
 
@@ -34,6 +35,7 @@ type frontmatter struct {
 	Draft   bool     `yaml:"draft"`
 	Math    bool     `yaml:"math"`
 	Pin     bool     `yaml:"pin"`
+	Toc     *bool    `yaml:"toc"`
 	Comment *bool    `yaml:"comment"`
 }
 
@@ -110,6 +112,7 @@ func Parse(sourcePath, text string) (Note, error) {
 		Draft:      meta.Draft,
 		Math:       meta.Math,
 		Pin:        meta.Pin,
+		Toc:        meta.Toc,
 		Comment:    meta.Comment,
 		Body:       strings.TrimSpace(body),
 		SourcePath: sourcePath,

@@ -1,11 +1,11 @@
 {{define "content"}}
 <div class="notes-page">
   <section class="notes-list article-stage" aria-label="文章列表">
-    <div class="mobile-tag-return" id="mobile-tag-return" hidden>
-      <a href="/notes/" class="mobile-tag-return-btn">
+    <div class="tag-back-container" id="tag-back-container" hidden>
+      <button class="tag-back-btn" id="tag-back-btn" aria-label="返回上一页" type="button">
         <span class="material-symbol" aria-hidden="true">arrow_back</span>
-        <span class="mobile-tag-return-text">返回所有文章</span>
-      </a>
+      </button>
+      <h2 class="tag-back-title" id="tag-back-title"></h2>
     </div>
 
     {{if .PinnedNotes}}

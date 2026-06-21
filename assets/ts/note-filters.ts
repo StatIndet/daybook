@@ -7,6 +7,25 @@
     value: string;
   }
 
+  function escapeHtml(str: string): string {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function highlightMatches(text: string, keyword: string): string {
+    if (!keyword) return escapeHtml(text);
+    var escapedText = escapeHtml(text);
+    var escapedKeyword = escapeHtml(keyword);
+    // Replace special regex characters in keyword
+    escapedKeyword = escapedKeyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    var regex = new RegExp("(" + escapedKeyword + ")", "gi");
+    return escapedText.replace(regex, '<mark class="search-highlight">$1</mark>');
+  }
+
   function cleanText(value: string | null): string {
     return (value || "").trim();
   }
@@ -142,6 +161,7 @@
   function applyNoteFilters(filter: NoteFilter) {
     var cards = document.querySelectorAll("[data-note-card]");
     var visibleCount = 0;
+    var keyword = filter.type === "search" ? filter.value : "";
 
     cards.forEach(function (cardEl) {
       var card = cardEl as HTMLElement;
@@ -149,6 +169,15 @@
       card.hidden = !isVisible;
       if (isVisible) {
         visibleCount++;
+        
+        var titleA = card.querySelector(".notes-item-title a");
+        if (titleA) {
+          titleA.innerHTML = highlightMatches(card.dataset.searchTitle || "", keyword);
+        }
+        var summary = card.querySelector(".notes-item-summary");
+        if (summary) {
+          summary.innerHTML = highlightMatches(card.dataset.searchSummary || "", keyword);
+        }
       }
     });
 
@@ -202,6 +231,17 @@
     if (returnBtn) {
       returnBtn.hidden = filter.type !== "tag";
     }
+    
+    var tagBackContainer = document.getElementById("tag-back-container");
+    var tagBackTitle = document.getElementById("tag-back-title");
+    if (tagBackContainer && tagBackTitle) {
+      if (filter.type === "tag") {
+        tagBackContainer.hidden = false;
+        tagBackTitle.textContent = "#" + filter.value;
+      } else {
+        tagBackContainer.hidden = true;
+      }
+    }
   }
 
   function syncSearchInput(filter: NoteFilter) {
@@ -252,18 +292,7 @@
 
     if (isNotesPage()) {
       updateNotesSearch(query);
-      return;
     }
-
-    if (!query) {
-      return;
-    }
-
-    var url = notesURL();
-    url.searchParams.set("q", query);
-    pendingSearchFocus = true;
-    pendingTagsOpen = Boolean(document.querySelector("[data-notes-tools].is-tags-open"));
-    navigateTo(url);
   }
 
   function handleTagClick(link: HTMLElement, event: MouseEvent) {
@@ -296,6 +325,16 @@
     setToolOpen(toolName, !isOpen, toolName === "search" && !isOpen);
   });
 
+  document.addEventListener("click", function (event: MouseEvent) {
+    var target = event.target as HTMLElement;
+    var backBtn = target.closest("#tag-back-btn");
+    if (backBtn) {
+      event.preventDefault();
+      var url = notesURL();
+      navigateTo(url);
+    }
+  });
+
   document.addEventListener("input", function (event: Event) {
     var target = event.target as HTMLElement;
     var input = target.closest("[data-notes-search]") as HTMLInputElement | null;
@@ -314,5 +353,6 @@
   });
 
   window.daybookSyncNoteFilters = syncNoteFilters;
+  document.addEventListener("daybook:page-load", syncNoteFilters);
   syncNoteFilters();
 })();

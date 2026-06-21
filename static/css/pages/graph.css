@@ -7,6 +7,12 @@
 }
 
 /* Graph Page Layout */
+.graph-body .page-main #main-content-wrapper {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
 .graph-page {
   display: flex;
   flex-direction: column;

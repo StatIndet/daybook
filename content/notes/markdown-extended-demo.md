@@ -10,121 +10,233 @@ summary: 用于检查 daybook Markdown 扩展语法、嵌入组件、Lightbox、
 draft: false
 ---
 
-这篇文章用于测试第一阶段新增的 Markdown 扩展能力。
+本文介绍 Retypeset 主题支持的 Markdown 扩展功能，包括语法示例与效果展示。
 
-## 图片图注
+## 图注
 
-普通图片会根据 alt 文本生成图注。
+使用标准的 Markdown 图像语法 `![alt](src)`，即可自动生成图注。在 `alt` 前添加下划线 `_` 或留空 `alt`，即可隐藏图注。
 
-点击下面的图注图片应该可以放大浏览。
+### 语法
 
-![史帙头像](/images/avatar/shelby.jpg)
+```
+![图片描述](https://image.radishzz.cc/image/gallery/06.webp)
 
-alt 以 `_` 开头时不显示图注，但图片仍然保留可访问的 alt 文本。
+![_图片描述](https://image.radishzz.cc/image/gallery/06.webp)
+```
 
-点击下面的隐藏图注图片也应该可以放大浏览。
+### 效果
 
-![_隐藏图注的头像](/images/avatar/shelby.jpg)
+![图片描述](https://image.radishzz.cc/image/gallery/06.webp)
 
-## GitHub Alerts
+![_图片描述](https://image.radishzz.cc/image/gallery/06.webp)
 
+## 提示块
+
+使用 GitHub 语法 `> [!TYPE]` 或三冒号语法 `:::type`，即可创建提示块。支持 `note`、`tip`、`important`、`warning`、`caution` 五种类型。
+
+### 语法
+
+```
 > [!NOTE]
-> 普通说明内容。这里可以包含 **加粗文本** 和 [链接](https://daybook.page)。
+> 即使快速浏览，也值得用户留意的信息。
 
 > [!TIP]
-> 一个小技巧：保持每个功能小步实现，更容易定位问题。
+> 可选信息，可帮助用户更轻松地完成操作。
 
 > [!IMPORTANT]
-> 重要信息通常用于提醒读者不要跳过关键前提。
-
-> [!WARNING]
-> 警告内容用于说明可能出现的问题。
-
-> [!CAUTION]
-> 风险提示用于强调可能带来负面结果的操作。
-
-## Container Admonition
-
-:::note
-这是 `note` 容器提示块。
-:::
-
-:::tip
-这是 `tip` 容器提示块。
-:::
-
-:::important
-这是 `important` 容器提示块。
-:::
+> 用户成功所需的关键信息。
 
 :::warning
-这是 `warning` 容器提示块。
+由于存在潜在风险，需要用户立即关注的关键内容。
 :::
 
 :::caution
-这是 `caution` 容器提示块。
+某些操作可能带来的负面后果。
 :::
 
 :::note[自定义标题]
-这里是带自定义标题的提示块。
-
-- 内部列表项目
-- 内部 **Markdown** 也会继续渲染
+这是一个自定义标题的提示块。
 :::
-
-## Fold
-
-:::fold[展开查看]
-这里是默认折叠的内容。
-
-- 可以包含列表
-- 可以包含代码块
-
-```go
-fmt.Println("hello fold")
 ```
+
+### 效果
+
+> [!NOTE]
+> 即使快速浏览，也值得用户留意的信息。
+
+> [!TIP]
+> 可选信息，可帮助用户更轻松地完成操作。
+
+> [!IMPORTANT]
+> 用户成功所需的关键信息。
+
+:::warning
+由于存在潜在风险，需要用户立即关注的关键内容。
 :::
 
-## Gallery
+:::caution
+某些操作可能带来的负面后果。
+:::
 
-点击画廊中的任意图片也应该进入同一套 Lightbox，并且可以在多张图片之间左右切换。
+:::note[自定义标题]
+这是一个自定义标题的提示块。
+:::
 
-:::gallery
-![添加新连接](/notes/assets/add-new-link.png)
-![网桥配置](/notes/assets/br0.png)
-![头像](/images/avatar/shelby.jpg)
+## 折叠块
+
+使用三冒号语法 `:::fold[title]`，即可创建折叠块。点击标题可以展开或收起。
+
+### 语法
+
+```
+:::fold[使用提示]
+如果需要添加并非所有读者都会感兴趣的内容，可以将其放在折叠块中。
+:::
+```
+
+### 效果
+
+:::fold[使用提示]
+如果需要添加并非所有读者都会感兴趣的内容，可以将其放在折叠块中。
 :::
 
 ## Mermaid 图表
 
-下面的 Mermaid 图表应该被渲染为流程图，而不是普通代码块。
+使用代码块包裹 Mermaid 语法，并标注语言类型 `mermaid`，即可创建 Mermaid 图表。
+
+### 语法
+
+``````
+```mermaid
+graph TD;
+    A-->B;
+    A-->C;
+    B-->D;
+    C-->D;
+```
+``````
+
+### 效果
 
 ```mermaid
 graph TD;
-    A[开始] --> B{是否喜欢 Markdown?};
-    B -- 是 --> C[继续写博客];
-    B -- 否 --> D[去喝一杯咖啡];
-    C --> E[完成];
-    D --> E[完成];
+    A-->B;
+    A-->C;
+    B-->D;
+    C-->D;
 ```
 
-## Leaf Embeds
+## 画廊
 
-::github{repo="StatIndet/daybook"}
+使用三冒号语法 `:::gallery`，即可创建图片画廊。水平滚动以查看更多图片。
+
+### 语法
+
+```
+:::gallery
+![羊驼](https://image.radishzz.cc/image/gallery/sheep-1.jpg)
+![转头](https://image.radishzz.cc/image/gallery/sheep-2.jpg)
+![对视](https://image.radishzz.cc/image/gallery/sheep-3.jpg)
+![小羊驼](https://image.radishzz.cc/image/gallery/sheep-4.jpg)
+![可爱捏](https://image.radishzz.cc/image/gallery/sheep-5.jpg)
+:::
+```
+
+### 效果
+
+:::gallery
+![羊驼](https://image.radishzz.cc/image/gallery/sheep-1.jpg)
+![转头](https://image.radishzz.cc/image/gallery/sheep-2.jpg)
+![对视](https://image.radishzz.cc/image/gallery/sheep-3.jpg)
+![小羊驼](https://image.radishzz.cc/image/gallery/sheep-4.jpg)
+![可爱捏](https://image.radishzz.cc/image/gallery/sheep-5.jpg)
+:::
+
+## GitHub 仓库
+
+使用双冒号语法 `::github{repo="owner/repo"}`，即可嵌入 GitHub 仓库。
+
+### 语法
+
+```
+::github{repo="radishzzz/astro-theme-retypeset"}
+```
+
+### 效果
+
+::github{repo="radishzzz/astro-theme-retypeset"}
+
+## 视频
+
+使用双冒号语法 `::youtube{id="video-id"}`，即可嵌入视频。
+
+### 语法
+
+```
+::youtube{id="9pP0pIgP2kE"}
+
+::bilibili{id="BV1sK4y1Z7KG"}
+```
+
+### 效果
 
 ::youtube{id="9pP0pIgP2kE"}
 
 ::bilibili{id="BV1sK4y1Z7KG"}
 
+## Spotify
+
+使用双冒号语法 `::spotify{url="spotify-url"}`，即可嵌入 Spotify 内容。
+
+### 语法
+
+```
+::spotify{url="https://open.spotify.com/track/0HYAsQwJIO6FLqpyTeD3l6"}
+
+::spotify{url="https://open.spotify.com/album/03QiFOKDh6xMiSTkOnsmMG"}
+```
+
+### 效果
+
 ::spotify{url="https://open.spotify.com/track/0HYAsQwJIO6FLqpyTeD3l6"}
 
 ::spotify{url="https://open.spotify.com/album/03QiFOKDh6xMiSTkOnsmMG"}
 
-::codepen{url="https://codepen.io/jh3y/pen/NWdNMBJ"}
+## X 推文
 
-::netease{type="song" id="474667755"}
+使用双冒号语法 `::tweet{url="tweet-url"}`，即可嵌入 X 推文。
+
+### 语法
+
+```
+::tweet{url="https://x.com/hachi_08/status/1906456524337123549"}
+```
+
+### 效果
 
 ::tweet{url="https://x.com/hachi_08/status/1906456524337123549"}
+
+## CodePen
+
+使用双冒号语法 `::codepen{url="codepen-url"}`，即可嵌入 CodePen 演示。
+
+### 语法
+
+```
+::codepen{url="https://codepen.io/jh3y/pen/NWdNMBJ"}
+```
+
+### 效果
+
+::codepen{url="https://codepen.io/jh3y/pen/NWdNMBJ"}
+
+## 网易云
+
+使用双冒号语法 `::netease{type="song"id="歌曲id"}`，即可嵌入 网易云网易播放器。
+
+### 效果
+
+::netease{type="song" id="474667755"}
 
 ## 普通列表
 

@@ -20,11 +20,24 @@
         {{with .Note.Summary}}<p class="note-summary">{{.}}</p>{{end}}
       </header>
 
+      {{if .Note.TocEnabled}}
       {{template "toc" .}}
+      {{end}}
 
       <div class="markdown post-content">
         {{.Note.HTML}}
       </div>
+
+      {{if .Note.Tags}}
+      <section class="note-tags" aria-label="文章标签">
+        <hr class="note-tags-divider">
+        <div class="note-tags-list">
+          {{range .Note.Tags}}
+          <a href="/notes/?tag={{urlquery .}}" class="note-tag-capsule">#{{.}}</a>
+          {{end}}
+        </div>
+      </section>
+      {{end}}
 
       {{if .Note.CommentEnabled}}
       <section class="post-comments">
