@@ -153,6 +153,7 @@ func renderSpotifyEmbed(attrs map[string]string) (string, bool) {
         height="%s"
         allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
         loading="lazy"
+        referrerpolicy="strict-origin-when-cross-origin"
       ></iframe>
     </figure>`, escapeAttr(src), escapeAttr(height))
 	return html, true
@@ -242,7 +243,7 @@ func renderTweetEmbed(attrs map[string]string) (string, bool) {
 }
 
 func responsiveIframe(className, src, title, extraAttrs string) string {
-	return `<div class="embed-card embed-frame embed-frame-video ` + escapeAttr(className) + `"><iframe src="` + escapeAttr(src) + `" title="` + escapeAttr(title) + `" loading="lazy" ` + extraAttrs + `></iframe></div>`
+	return `<div class="embed-card embed-frame embed-frame-video ` + escapeAttr(className) + `"><iframe src="` + escapeAttr(src) + `" title="` + escapeAttr(title) + `" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" ` + extraAttrs + `></iframe></div>`
 }
 
 func fixedHeightIframe(className, src, title, height, extraAttrs string) string {
@@ -250,7 +251,7 @@ func fixedHeightIframe(className, src, title, height, extraAttrs string) string 
 	if extras != "" {
 		extras = " " + extras
 	}
-	return `<div class="embed-card embed-frame ` + escapeAttr(className) + `"><iframe src="` + escapeAttr(src) + `" title="` + escapeAttr(title) + `" height="` + escapeAttr(height) + `" loading="lazy"` + extras + `></iframe></div>`
+	return `<div class="embed-card embed-frame ` + escapeAttr(className) + `"><iframe src="` + escapeAttr(src) + `" title="` + escapeAttr(title) + `" height="` + escapeAttr(height) + `" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"` + extras + `></iframe></div>`
 }
 
 func cleanPathParts(path string) []string {
