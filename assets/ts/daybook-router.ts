@@ -58,12 +58,17 @@ interface DaybookTransitionFinishedDetail {
     document.addEventListener("click", handleGlobalClick);
     window.addEventListener("popstate", handlePopState);
 
-    // Trigger initial load event after all deferred scripts attach listeners
-    window.addEventListener("DOMContentLoaded", () => {
+    const triggerInitialLoad = () => {
       setTimeout(() => {
         emitPageLoad("initial", location.href, location.href);
       }, 0);
-    });
+    };
+
+    if (document.readyState === "loading") {
+      window.addEventListener("DOMContentLoaded", triggerInitialLoad);
+    } else {
+      triggerInitialLoad();
+    }
   }
 
   function isNotesUrl(urlStr: string): boolean {
