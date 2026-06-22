@@ -70,9 +70,9 @@ func TestToHTMLWithFigureCaptions(t *testing.T) {
 	}
 
 	wantParts := []string{
-		`<figure><img src="/images/example.webp" alt="A caption"><figcaption>A caption</figcaption></figure>`,
-		`<p><img src="/images/hidden.webp" alt="Hidden caption"></p>`,
-		`<p><img src="/images/plain.webp" alt=""></p>`,
+		`<figure><img src="/images/example.webp" alt="A caption" loading="lazy" decoding="async"><figcaption>A caption</figcaption></figure>`,
+		`<p><img src="/images/hidden.webp" alt="Hidden caption" loading="lazy" decoding="async"></p>`,
+		`<p><img src="/images/plain.webp" alt="" loading="lazy" decoding="async"></p>`,
 		`<p>Text <img src="/images/inline.webp" alt="inline"> image.</p>`,
 	}
 	for _, part := range wantParts {
@@ -129,8 +129,8 @@ func TestToHTMLWithContainerDirectives(t *testing.T) {
 		`<details class="md-fold"><summary>More</summary>`,
 		`<li>hidden item</li>`,
 		`<div class="md-gallery">`,
-		`<figure><img src="/images/one.webp" alt="One"><figcaption>One</figcaption></figure>`,
-		`<figure><img src="/images/two.webp" alt="Two"><figcaption>Two</figcaption></figure>`,
+		`<figure><img src="/images/one.webp" alt="One" loading="lazy" decoding="async"><figcaption>One</figcaption></figure>`,
+		`<figure><img src="/images/two.webp" alt="Two" loading="lazy" decoding="async"><figcaption>Two</figcaption></figure>`,
 	}
 	for _, part := range wantParts {
 		if !strings.Contains(document.HTML, part) {

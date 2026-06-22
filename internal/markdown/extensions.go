@@ -550,15 +550,15 @@ func applyFigureCaptions(html string) string {
 			alt := attrs["alt"]
 
 			if strings.HasPrefix(alt, "_") {
-				builder.WriteString(`<p><img ` + rewriteImageAlt(attrText, strings.TrimPrefix(alt, "_")) + `></p>`)
+				builder.WriteString(`<p><img ` + rewriteImageAlt(attrText, strings.TrimPrefix(alt, "_")) + ` loading="lazy" decoding="async"></p>`)
 				continue
 			}
 			if strings.TrimSpace(alt) == "" {
-				builder.WriteString(`<p>` + imgTag + `</p>`)
+				builder.WriteString(`<p><img ` + attrText + ` loading="lazy" decoding="async"></p>`)
 				continue
 			}
 
-			builder.WriteString(`<figure><img ` + attrText + `><figcaption>` + stdhtml.EscapeString(alt) + `</figcaption></figure>`)
+			builder.WriteString(`<figure><img ` + attrText + ` loading="lazy" decoding="async"><figcaption>` + stdhtml.EscapeString(alt) + `</figcaption></figure>`)
 		}
 		return builder.String()
 	})
