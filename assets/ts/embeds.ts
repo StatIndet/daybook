@@ -405,7 +405,7 @@
 
 
 
-  document.addEventListener("daybook:transition-finished", function () {
+  document.addEventListener("daybook:page-load", function () {
     window.daybookSyncEmbeds();
   });
 

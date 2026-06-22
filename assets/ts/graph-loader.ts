@@ -119,7 +119,7 @@
     }, 10);
   }
 
-  document.addEventListener("daybook:transition-finished", scheduleCheck);
+  document.addEventListener("daybook:page-load", scheduleCheck);
 
   document.addEventListener("daybook:before-swap", function () {
     if (window.DaybookGraph && typeof window.DaybookGraph.destroy === "function") {
