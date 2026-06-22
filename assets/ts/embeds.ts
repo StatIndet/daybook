@@ -1,3 +1,4 @@
+console.log("EMBEDS.JS LOADED!");
 (function () {
   var compactNumberFormat = new Intl.NumberFormat("en", {
     notation: "compact",
@@ -406,7 +407,7 @@
 
 
   document.addEventListener("daybook:page-load", function () {
-    window.daybookSyncEmbeds();
+    console.log("EMBEDS.TS LISTENER FIRED"); window.daybookSyncEmbeds();
   });
 
   document.addEventListener("daybook:before-swap", function () {

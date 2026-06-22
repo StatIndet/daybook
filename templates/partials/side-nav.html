@@ -26,5 +26,17 @@
       <span class="nav-label">关于</span>
     </a>
   </nav>
+
+  {{if eq .PageKind "note"}}
+  <div class="desktop-reading-controls" aria-label="阅读控制" aria-hidden="true">
+    <button class="reading-control-btn back-to-top-btn" type="button" aria-label="回到顶部">
+      <span class="material-symbol" aria-hidden="true">arrow_upward</span>
+    </button>
+    <button class="reading-control-btn reading-progress-btn" type="button" aria-label="前往底部">
+      <span class="reading-progress-text" data-desktop-progress-text>0</span>
+      <span class="material-symbol hover-icon" aria-hidden="true">arrow_downward</span>
+    </button>
+  </div>
+  {{end}}
 </aside>
 {{end}}

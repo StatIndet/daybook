@@ -1,4 +1,24 @@
 {{define "content"}}
+<div class="mobile-reading-controls" id="mobile-reading-controls" style="--reading-progress: 0%;">
+  <div class="rc-layer rc-base">
+    <button class="mobile-reading-btn mobile-top-btn" type="button" aria-label="回到顶部">
+      <span class="material-symbol" aria-hidden="true">arrow_upward</span>
+    </button>
+    <span class="mobile-reading-percentage" data-mobile-progress-text>0%</span>
+    <button class="mobile-reading-btn mobile-bottom-btn" type="button" aria-label="前往底部">
+      <span class="material-symbol" aria-hidden="true">arrow_downward</span>
+    </button>
+  </div>
+  <div class="rc-layer rc-progress">
+    <button class="mobile-reading-btn mobile-top-btn" type="button" tabindex="-1" aria-hidden="true">
+      <span class="material-symbol" aria-hidden="true">arrow_upward</span>
+    </button>
+    <span class="mobile-reading-percentage" data-mobile-progress-text>0%</span>
+    <button class="mobile-reading-btn mobile-bottom-btn" type="button" tabindex="-1" aria-hidden="true">
+      <span class="material-symbol" aria-hidden="true">arrow_downward</span>
+    </button>
+  </div>
+</div>
 <div class="notes-page note-detail-page{{if .Note.Headings}} has-toc{{end}}">
   <section class="note-detail article-stage" aria-label="文章详情">
     <article class="note" data-has-mermaid="{{if .Note.HasMermaid}}true{{else}}false{{end}}" data-has-math="{{if .Note.HasMath}}true{{else}}false{{end}}">

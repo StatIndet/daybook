@@ -41,6 +41,13 @@
         walineLoader.setupWaline(); // setupWaline will destroy it if no container
       }
     });
+
+    import("{{.Assets.Path "/js/reading-controls.js"}}").then(module => {
+      module.initReadingControls();
+      document.addEventListener("daybook:page-load", () => {
+        module.initReadingControls();
+      });
+    });
   </script>
 </body>
 </html>
