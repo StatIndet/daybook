@@ -116,7 +116,7 @@
 
 .archive-entry a {
   color: var(--color-text);
-  font-family: var(--font-ui);
+  font-family: var(--font-body);
   font-size: 1.02rem;
   font-weight: 700;
   line-height: 1.4;
@@ -155,7 +155,7 @@
 .archive-entry p,
 .archive-empty {
   color: var(--color-muted);
-  font-family: var(--font-ui);
+  font-family: var(--font-body);
   font-size: 0.94rem;
   line-height: 1.75;
 }

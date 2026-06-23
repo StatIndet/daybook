@@ -45,7 +45,7 @@
 }
 
 .notes-item-title {
-  font-family: var(--font-ui);
+  font-family: var(--font-body);
   font-size: 1.05rem;
   font-weight: 700;
   line-height: 1.35;
@@ -107,7 +107,7 @@ hr.notes-divider {
 .notes-item-summary,
 .notes-empty {
   color: var(--color-muted);
-  font-family: var(--font-ui);
+  font-family: var(--font-body);
   font-size: 0.98rem;
   line-height: 1.75;
   margin: 12px 0 0;
