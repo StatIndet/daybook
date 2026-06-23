@@ -1,6 +1,6 @@
 ---
 title: 内嵌外链卡片测试
-date: 2026-06-16
+date: 2026-06-23
 slug: embed
 pin: false
 tags:
@@ -11,7 +11,6 @@ draft: false
 toc: false
 ---
 ::spotify{url="https://open.spotify.com/track/0HYAsQwJIO6FLqpyTeD3l6"}
-
 
 ::github{repo="radishzzz/astro-theme-retypeset"}
 
