@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "fetch:font-sources": "bash tools/font-subsets/fetch-font-sources.sh",
     "build:fonts": "bash tools/font-subsets/build.sh",
     "render:katex": "node scripts/render-katex.mjs",
     "typecheck": "tsc --noEmit",

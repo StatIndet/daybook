@@ -44,3 +44,5 @@ node_modules/
 [Rr][Ee][Aa][Dd][Mm][Ee].*
 !/README.md
 !/readme.md
+
+tools/font-subsets/source/

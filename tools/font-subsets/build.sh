@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-SRC="$ROOT/static/fonts"
+SRC="$ROOT/tools/font-subsets/source"
 GLYPHS="$ROOT/tools/font-subsets/glyphs"
 OUT="$ROOT/static/vendor/fonts/decorative"
 
@@ -11,7 +11,8 @@ mkdir -p "$OUT"
 require_file() {
   local file="$1"
   if [[ ! -f "$file" ]]; then
-    echo "Missing required file: $file" >&2
+    echo "Error: Missing required source font: $file" >&2
+    echo "Please run 'npm run fetch:font-sources' first to download the fonts." >&2
     exit 1
   fi
 }
@@ -39,17 +40,17 @@ subset_font \
   "$OUT/allura-subset.woff2"
 
 subset_font \
-  "$SRC/fraunces/Fraunces-Italic-VariableFont_SOFT,WONK,opsz,wght.ttf" \
+  "$SRC/fraunces/Fraunces-Italic[SOFT,WONK,opsz,wght].ttf" \
   "$GLYPHS/fraunces.txt" \
-  "$OUT/fraunces-subset.woff2"
+  "$OUT/fraunces-italic-subset.woff2"
 
 subset_font \
-  "$SRC/playfair_display/PlayfairDisplay-Italic-VariableFont_wght.ttf" \
+  "$SRC/playfair-display/PlayfairDisplay-Italic[wght].ttf" \
   "$GLYPHS/playfair-display.txt" \
-  "$OUT/playfair-display-subset.woff2"
+  "$OUT/playfair-display-italic-subset.woff2"
 
 subset_font \
-  "$SRC/ZhiMangXing/ZhiMangXing-Regular.ttf" \
+  "$SRC/zhi-mang-xing/ZhiMangXing-Regular.ttf" \
   "$GLYPHS/zhi-mang-xing.txt" \
   "$OUT/zhi-mang-xing-subset.woff2"
 
