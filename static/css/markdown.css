@@ -1,6 +1,6 @@
 .markdown {
   color: var(--color-text);
-  font-family: var(--font-ui);
+  font-family: var(--font-body);
   font-size: var(--note-text-size);
   line-height: 1.75;
   overflow-wrap: anywhere;
@@ -28,7 +28,7 @@
 .markdown h3,
 .markdown h4 {
   color: var(--color-text);
-  font-family: var(--font-ui);
+  font-family: var(--font-body);
   font-weight: 700;
   overflow-wrap: anywhere;
   word-wrap: break-word;
@@ -163,7 +163,7 @@
 
 .markdown ol li::marker {
   color: var(--color-accent);
-  font-family: var(--font-ui);
+  font-family: var(--font-body);
   font-size: 14px;
 }
 
@@ -528,7 +528,7 @@
 .markdown table {
   border-collapse: collapse;
   display: block;
-  font-family: var(--font-ui);
+  font-family: var(--font-body);
   font-size: 14px;
   margin: 28px 0;
   max-width: 100%;
@@ -558,10 +558,10 @@
   border: 1px solid var(--color-line);
   border-radius: 3px;
   color: var(--color-muted);
-  font-family: var(--font-ui);
-  font-feature-settings: "tnum";
+  font-family: var(--font-mono);
+  font-variant-ligatures: contextual common-ligatures;
+  font-feature-settings: "liga" 1, "calt" 1;
   font-size: 14.5px;
-  font-variant-numeric: tabular-nums;
   padding: 1px 6px;
   transition:
     background-color 350ms ease,
@@ -580,6 +580,9 @@
   border-radius: 4px;
   box-shadow: var(--shadow-code);
   color: var(--syntax-text);
+  font-family: var(--font-mono);
+  font-variant-ligatures: contextual common-ligatures;
+  font-feature-settings: "liga" 1, "calt" 1;
   font-size: 14px;
   line-height: 1.7;
   margin: 28px 0;
@@ -597,6 +600,7 @@
   border-radius: 0;
   color: inherit;
   display: block;
+  font-family: inherit;
   font-size: inherit;
   padding: 0;
 }

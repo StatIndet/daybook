@@ -1,6 +1,8 @@
 :root {
   --font-logo: "Fraunces", serif;
-  --font-ui: "Maple Mono", monospace;
+  --font-ui: "LXGW WenKai", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: "LXGW WenKai", "PingFang SC", "Microsoft YaHei", serif;
+  --font-mono: "Maple Mono CN", "Maple Mono", "SFMono-Regular", "Cascadia Code", "JetBrains Mono", ui-monospace, monospace;
   --font-icon: "Material Symbols Rounded";
   --font-meta: "Playfair Display", serif;
   --font-signature-cn: "Zhi Mang Xing", cursive;

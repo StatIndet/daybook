@@ -28,7 +28,7 @@
 
 .about-summary {
   color: var(--color-muted);
-  font-family: var(--font-ui);
+  font-family: var(--font-body);
   font-size: 0.94rem;
   line-height: 1.75;
   margin: 1.2rem 0 0;
