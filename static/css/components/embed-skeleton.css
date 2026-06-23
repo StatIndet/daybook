@@ -106,18 +106,23 @@
   display: flex;
   background: var(--color-paper);
   border: 1px solid var(--color-line);
-  border-radius: 8px;
+  border-radius: 16px;
   overflow: hidden;
-  height: 110px; /* Matches default desktop horizontal height */
+  height: 160px; /* Matches default desktop horizontal height */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  padding: 16px;
+  align-items: center;
+  box-sizing: border-box;
 }
 
 /* Desktop layout (horizontal) */
 .nm-skeleton-cover {
-  width: 110px;
-  height: 110px;
+  width: 128px;
+  height: 128px;
   flex-shrink: 0;
+  border-radius: 8px;
   background: color-mix(in srgb, var(--color-text) 5%, transparent);
+  margin-right: 16px;
 }
 
 .nm-skeleton-body {
@@ -125,7 +130,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 0 1.25rem;
+  padding: 0;
   gap: 0.5rem;
 }
 
@@ -152,28 +157,30 @@
 }
 
 .nm-skeleton-playbtn {
-  width: 40px;
-  height: 40px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
   background: color-mix(in srgb, var(--color-text) 5%, transparent);
   align-self: center;
-  margin-right: 1.25rem;
+  margin-left: auto;
+  margin-right: 14px;
 }
 
 /* Mobile layout (vertical) */
-@media screen and (max-width: 600px) {
+@media screen and (max-width: 768px) {
   .nm-skeleton {
     flex-direction: column;
     height: auto;
-    padding: 1.25rem;
+    padding: 20px 18px;
+    border-radius: 20px;
     align-items: center;
     text-align: center;
-    gap: 1rem;
+    gap: 10px;
   }
   .nm-skeleton-cover {
-    width: 160px;
-    height: 160px;
-    border-radius: 8px;
+    width: min(68vw, 220px);
+    height: min(68vw, 220px);
+    margin-right: 0;
   }
   .nm-skeleton-body {
     width: 100%;
@@ -187,10 +194,9 @@
     width: 40%;
   }
   .nm-skeleton-playbtn {
-    margin-right: 0;
-    margin-top: 0.5rem;
-    width: 48px;
-    height: 48px;
+    margin: 10px 0 0 0;
+    width: 45px;
+    height: 45px;
   }
 }
 
@@ -198,36 +204,67 @@
    4. Twitter & GitHub Skeleton
    ----------------------------- */
 
-/* GitHub Card skeleton */
-.gc-skeleton {
-  min-height: 120px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding: 1rem;
+/* GitHub Card Skeleton */
+.gc-container[data-embed-status="loading"] {
+  position: relative;
+  overflow: hidden;
+  /* Retain original padding and border-radius from .gc-container */
 }
 
-.gc-skeleton-title {
-  width: 50%;
-  height: 1.25rem;
+/* Add shimmering sweep to the entire card */
+.gc-container[data-embed-status="loading"]::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-text) 3%, transparent) 40%,
+    color-mix(in srgb, var(--color-text) 5%, transparent) 50%,
+    color-mix(in srgb, var(--color-text) 3%, transparent) 60%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: embed-shimmer 2s infinite var(--ease-out);
+  pointer-events: none;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gc-container[data-embed-status="loading"]::after {
+    animation: none;
+    transform: translateX(0);
+    background: color-mix(in srgb, var(--color-text) 2%, transparent);
+  }
+}
+
+/* Hide real text and replace with grey rounded blocks */
+.gc-container[data-embed-status="loading"] .gc-repo-description,
+.gc-container[data-embed-status="loading"] .gc-stars-count,
+.gc-container[data-embed-status="loading"] .gc-forks-count,
+.gc-container[data-embed-status="loading"] .gc-license-info {
+  color: transparent !important;
   background: color-mix(in srgb, var(--color-text) 6%, transparent);
   border-radius: 4px;
 }
 
-.gc-skeleton-desc {
+.gc-container[data-embed-status="loading"] .gc-repo-description {
   width: 80%;
   height: 0.875rem;
-  background: color-mix(in srgb, var(--color-text) 4%, transparent);
-  border-radius: 4px;
+  margin: 0.6rem 0 0.875rem;
+  display: block; /* Ensure the block size is respected */
 }
 
-.gc-skeleton-meta {
-  width: 30%;
-  height: 0.875rem;
-  background: color-mix(in srgb, var(--color-text) 4%, transparent);
-  border-radius: 4px;
-  margin-top: 0.5rem;
+.gc-container[data-embed-status="loading"] .gc-stars-count,
+.gc-container[data-embed-status="loading"] .gc-forks-count,
+.gc-container[data-embed-status="loading"] .gc-license-info {
+  display: inline-block;
+  min-width: 2rem;
+  height: 0.75rem;
+  vertical-align: middle;
 }
+
+/* The owner avatar will just naturally be its empty background color from markdown.css */
 
 /* Twitter Card skeleton */
 .tweet-skeleton {

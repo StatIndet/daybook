@@ -145,7 +145,7 @@ func renderSpotifyEmbed(attrs map[string]string) (string, bool) {
 	}
 	src := "https://open.spotify.com/embed/" + spotifyType + "/" + id
 	html := fmt.Sprintf(`
-    <figure>
+    <figure class="embed-frame embed-frame-spotify" style="border-radius: 12px; overflow: hidden; padding: 0; line-height: 0;">
       <iframe
         class="spotify-embed"
         src="%s"
