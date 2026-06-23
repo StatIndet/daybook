@@ -43,3 +43,25 @@ export function setupWaline() {
   }
 }
 
+// Global click listener for mobile adaptation of Waline RSS icon
+if (typeof window !== 'undefined') {
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const rssWrapper = target.closest('.wl-rss');
+
+    if (rssWrapper) {
+      if (window.matchMedia('(hover: none)').matches) {
+        if (!rssWrapper.classList.contains('expanded')) {
+          e.preventDefault(); // Stop navigation on first tap
+          rssWrapper.classList.add('expanded');
+        }
+      }
+    } else {
+      if (window.matchMedia('(hover: none)').matches) {
+        document.querySelectorAll('.wl-rss.expanded').forEach(el => {
+          el.classList.remove('expanded');
+        });
+      }
+    }
+  });
+}

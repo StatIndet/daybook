@@ -61,12 +61,12 @@
   border-color: var(--color-accent);
 }
 
-#waline .wl-btn.wl-btn-primary {
+#waline .wl-btn.primary {
   color: var(--color-page);
-  background: var(--color-accent);
-  border-color: var(--color-accent);
+  background: var(--color-text);
+  border-color: var(--color-text);
 }
-#waline .wl-btn.wl-btn-primary:hover {
+#waline .wl-btn.primary:hover {
   background: var(--color-hover-text);
   border-color: var(--color-hover-text);
 }
@@ -93,4 +93,52 @@
 #waline .wl-gif-popup {
   background: var(--color-paper);
   border: var(--waline-border);
+}
+
+/* Custom RSS Icon */
+#waline .wl-rss svg {
+  display: none;
+}
+
+#waline .wl-rss a {
+  align-items: center; /* 确保图标和文字垂直居中对齐 */
+}
+
+#waline .wl-rss a::before {
+  content: "rss_feed";
+  font-family: "Material Symbols Rounded";
+  font-weight: 400;
+  font-style: normal;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-page);
+  background-color: var(--color-text);
+  border-radius: 4px;
+  
+  /* ⬅️ 只需要在这里调整图标的字号即可，背景框会自动按比例撑开！ */
+  font-size: 12px; 
+  
+  /* 背景框相对于内部图标的倍数（1.25倍），这样无论 font-size 怎么变都不会被截断 */
+  width: 1.3em;
+  height: 1.3em;
+  
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Mobile adaptation for RSS */
+#waline .wl-rss.expanded {
+  max-width: 100% !important;
+}
+
+@media (hover: none) {
+  #waline .wl-rss:hover {
+    max-width: 16px; /* Disable default CSS hover expansion on touch devices */
+  }
 }
