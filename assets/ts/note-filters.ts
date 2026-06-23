@@ -172,11 +172,25 @@
         
         var titleA = card.querySelector(".notes-item-title a");
         if (titleA) {
-          titleA.innerHTML = highlightMatches(card.dataset.searchTitle || "", keyword);
+          if (!titleA.hasAttribute("data-original-html")) {
+            titleA.setAttribute("data-original-html", titleA.innerHTML);
+          }
+          if (keyword) {
+            titleA.innerHTML = highlightMatches(card.dataset.searchTitle || "", keyword);
+          } else {
+            titleA.innerHTML = titleA.getAttribute("data-original-html") || "";
+          }
         }
         var summary = card.querySelector(".notes-item-summary");
         if (summary) {
-          summary.innerHTML = highlightMatches(card.dataset.searchSummary || "", keyword);
+          if (!summary.hasAttribute("data-original-html")) {
+            summary.setAttribute("data-original-html", summary.innerHTML);
+          }
+          if (keyword) {
+            summary.innerHTML = highlightMatches(card.dataset.searchSummary || "", keyword);
+          } else {
+            summary.innerHTML = summary.getAttribute("data-original-html") || "";
+          }
         }
       }
     });
