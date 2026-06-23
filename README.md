@@ -116,6 +116,24 @@ npm run serve
 * `npm run build`: **核心生产构建命令**。它会依次执行：TS 校验 -> JS 打包 -> `go run` 生成完整的静态 HTML。最终的上线产物全部位于 `public/` 目录。
 * `npm run serve`: 本地并发服务器。
 
+### 字体资产构建 (Font Assets)
+
+运行时的字体资产分为两大类，均被提交在 `static/vendor/fonts/` 下，因此**普通 Go 构建和页面加载不依赖 NPM 安装与网络。** 只有在更新字体源或修改了装饰字体文本时才需要重新生成：
+
+* **运行时前端字体 (Vendor Fonts)**：管理正文字体 (LXGW WenKai)、代码字体 (Maple Mono CN) 及图标字体 (Material Symbols)。
+  如果您需要刷新或升级这些 NPM 托管的字体：
+  ```bash
+  npm install
+  npm run build:vendor-fonts
+  ```
+
+* **装饰性字体子集 (Decorative Fonts)**：管理 Logo、日期与签名的超小字体切片。
+  如果您修改了相关的源文本，需要更新相应的 `.woff2`：
+  ```bash
+  npm run fetch:font-sources  # 如果缺少源字体，必须先通过网络拉取
+  npm run build:decorative-fonts
+  ```
+
 ---
 
 ## Cloudflare Pages 部署

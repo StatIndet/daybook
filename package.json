@@ -3,8 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:vendor-fonts": "node scripts/build-vendor-fonts.mjs",
     "fetch:font-sources": "bash tools/font-subsets/fetch-font-sources.sh",
-    "build:fonts": "bash tools/font-subsets/build.sh",
+    "build:decorative-fonts": "bash tools/font-subsets/build.sh",
+    "build:all-fonts": "npm run build:vendor-fonts && npm run build:decorative-fonts",
     "render:katex": "node scripts/render-katex.mjs",
     "typecheck": "tsc --noEmit",
     "build:js": "node scripts/build-js.mjs",
@@ -35,8 +37,11 @@
   },
   "homepage": "https://github.com/StatIndet/daybook#readme",
   "devDependencies": {
+    "@chinese-fonts/lxgwwenkai": "^3.0.0",
+    "@chinese-fonts/maple-mono-cn": "^2.0.0",
     "concurrently": "^10.0.3",
     "esbuild": "^0.28.1",
+    "material-symbols": "^0.45.2",
     "typescript": "^6.0.3"
   }
 }
