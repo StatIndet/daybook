@@ -417,13 +417,10 @@ interface ArticleMorphSession {
 
     const tokens: TokenSnapshot[] = [];
     for (const el of Array.from(tokenElements)) {
-      const rects = Array.from(el.getClientRects()).filter(rect => rect.width > 0 && rect.height > 0);
-      if (rects.length !== 1) {
-        return null;
-      }
+      const rect = el.getBoundingClientRect();
       tokens.push({
         index: Number(el.getAttribute("data-token")),
-        rect: rectSnapshot(rects[0]!),
+        rect: rectSnapshot(rect),
         text: el.textContent || "",
         style: captureStyle(el as HTMLElement)
       });
@@ -469,12 +466,17 @@ interface ArticleMorphSession {
 
   function createTitleMorphItem(layer: HTMLElement, sourceElement: HTMLElement): MorphItem | null {
     const sourceSnapshot = captureElementFinal(sourceElement);
-    if (!sourceSnapshot) return null;
+    if (!sourceSnapshot) {
+      console.error("DEBUG: sourceSnapshot is null for sourceElement:", sourceElement);
+      return null;
+    }
 
     const sourceTokens = measurePrecalculatedTokens(sourceElement);
     if (!sourceTokens || sourceTokens.length === 0) {
+      console.error("DEBUG: sourceTokens is null or empty! sourceElement:", sourceElement, " tokenElements length:", sourceElement.querySelectorAll(".title-token[data-token]").length);
       return createBlockMorphItem(layer, sourceElement, sourceSnapshot, "title");
     }
+    console.log("DEBUG: sourceTokens matched:", sourceTokens.length);
 
     const clones = sourceTokens.map(token => createTokenClone(layer, token));
     sourceElement.classList.add("article-morph-hidden");
@@ -561,21 +563,30 @@ interface ArticleMorphSession {
 
   function animateTitleTokens(item: MorphItem, targetElement: HTMLElement, duration: number, easing: string): Promise<Animation>[] {
     const targetSnapshot = captureElementFinal(targetElement);
-    if (!targetSnapshot) return [];
+    if (!targetSnapshot) {
+      console.error("DEBUG: targetSnapshot is null");
+      return [];
+    }
 
     const targetTokens = measurePrecalculatedTokensFinal(targetElement);
     
-    if (
-      !targetTokens ||
-      !item.sourceTokens ||
-      targetTokens.length !== item.sourceTokens.length
-    ) {
+    if (!targetTokens) {
+      console.error("DEBUG: targetTokens is null. TargetElement tokenElements length:", targetElement.querySelectorAll(".title-token[data-token]").length);
+      return fallbackToBlock(item, targetElement, targetSnapshot!, duration, easing);
+    }
+    if (!item.sourceTokens) {
+      console.error("DEBUG: item.sourceTokens is null. Why did createTitleMorphItem not catch this?");
+      return fallbackToBlock(item, targetElement, targetSnapshot!, duration, easing);
+    }
+    if (targetTokens.length !== item.sourceTokens.length) {
+      console.error(`DEBUG: Length mismatch! Target: ${targetTokens.length}, Source: ${item.sourceTokens.length}`);
       return fallbackToBlock(item, targetElement, targetSnapshot!, duration, easing);
     }
 
     let isTextMatched = true;
     for (let i = 0; i < targetTokens.length; i++) {
       if (targetTokens[i]!.text !== item.sourceTokens[i]!.text || targetTokens[i]!.index !== item.sourceTokens[i]!.index) {
+        console.error(`DEBUG: Mismatch at index ${i}. Target: '${targetTokens[i]!.text}' (${targetTokens[i]!.index}), Source: '${item.sourceTokens[i]!.text}' (${item.sourceTokens[i]!.index})`);
         isTextMatched = false;
         break;
       }
@@ -584,6 +595,7 @@ interface ArticleMorphSession {
       return fallbackToBlock(item, targetElement, targetSnapshot!, duration, easing);
     }
 
+    console.log("DEBUG: All tokens matched successfully. Playing token animation.");
     item.targetElement = targetElement;
     item.targetSnapshot = targetSnapshot;
     item.targetTokens = targetTokens;
