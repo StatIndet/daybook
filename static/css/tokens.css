@@ -1,12 +1,12 @@
 :root {
-  --font-logo: "Fraunces", serif;
+  --font-logo: "Daybook Fraunces", serif;
   --font-ui: "LXGW WenKai", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-body: "LXGW WenKai", "PingFang SC", "Microsoft YaHei", serif;
   --font-mono: "Maple Mono CN", "Maple Mono", "SFMono-Regular", "Cascadia Code", "JetBrains Mono", ui-monospace, monospace;
   --font-icon: "Material Symbols Rounded";
-  --font-meta: "Playfair Display", serif;
-  --font-signature-cn: "Zhi Mang Xing", cursive;
-  --font-signature-en: "Allura", cursive;
+  --font-meta: "Daybook Playfair Display", serif;
+  --font-signature-cn: "Daybook Zhi Mang Xing", cursive;
+  --font-signature-en: "Daybook Allura", cursive;
   --side-rail-width: 220px;
   --persistent-logo-left: 40px;
   --persistent-logo-top: 23px;

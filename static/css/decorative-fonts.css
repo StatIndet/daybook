@@ -1,0 +1,31 @@
+@font-face {
+  font-family: "Daybook Fraunces";
+  src: url("/vendor/fonts/decorative/fraunces-subset.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Daybook Playfair Display";
+  src: url("/vendor/fonts/decorative/playfair-display-subset.woff2") format("woff2");
+  font-weight: 400 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Daybook Allura";
+  src: url("/vendor/fonts/decorative/allura-subset.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Daybook Zhi Mang Xing";
+  src: url("/vendor/fonts/decorative/zhi-mang-xing-subset.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
