@@ -1,165 +1,267 @@
 (function () {
-  var overlay: HTMLElement | null = null;
-  var zoomedImg: HTMLImageElement | null = null;
-  var originalImg: HTMLImageElement | null = null;
+  type LightboxState = "idle" | "opening" | "open" | "closing";
 
-  // Setup overlay element
-  function setupOverlay() {
-    if (overlay) return;
-    overlay = document.createElement("div");
-    overlay.className = "zoom-overlay";
-    overlay.setAttribute("role", "dialog");
-    overlay.setAttribute("aria-modal", "true");
-    overlay.setAttribute("aria-label", "图片浏览器");
-    overlay.setAttribute("tabindex", "-1");
+  class LightboxController {
+    private state: LightboxState = "idle";
+    private overlay: HTMLDivElement | null = null;
+    private clonedImg: HTMLImageElement | null = null;
+    private originalImg: HTMLImageElement | null = null;
+    private transitionTimeout: number | null = null;
 
-    document.body.appendChild(overlay);
-  }
-
-  // Zoom in the image
-  function zoomIn(img: HTMLImageElement) {
-    if (!overlay) {
-      setupOverlay();
+    constructor() {
+      this.setupOverlay();
+      this.bindEvents();
     }
 
-    // Disable scrolling and get position
-    document.body.style.overflow = "hidden";
-    var rect = img.getBoundingClientRect();
-    originalImg = img;
-
-    // Clone and setup image
-    zoomedImg = img.cloneNode() as HTMLImageElement;
-    zoomedImg.className = "zoom-img";
-    zoomedImg.removeAttribute("id");
-    zoomedImg.removeAttribute("loading");
-
-    zoomedImg.style.top = rect.top + "px";
-    zoomedImg.style.left = rect.left + "px";
-    zoomedImg.style.width = rect.width + "px";
-    zoomedImg.style.height = rect.height + "px";
-
-    // Add to DOM and show
-    document.body.appendChild(zoomedImg);
-    if(overlay) overlay.style.display = "block";
-    if(overlay) overlay.focus();
-
-    // Calculate scale and position
-    var viewportWidth = window.innerWidth;
-    var viewportHeight = window.innerHeight;
-    var scaleFactor = window.innerWidth < 768 ? 1 : 0.8;
-    var scale = Math.min(
-      (viewportWidth * scaleFactor) / rect.width,
-      (viewportHeight * scaleFactor) / rect.height
-    );
-    
-    var translateX = (-rect.left + (viewportWidth - rect.width) / 2) / scale;
-    var translateY = (-rect.top + (viewportHeight - rect.height) / 2) / scale;
-
-    // Start animation
-    requestAnimationFrame(function () {
-      if (overlay) {
-        overlay.style.opacity = "1";
+    private setupOverlay() {
+      // Remove existing overlay if any
+      if (this.overlay && this.overlay.parentNode) {
+        this.overlay.parentNode.removeChild(this.overlay);
       }
-
-      if (zoomedImg) {
-        zoomedImg.style.transform = "scale(" + scale + ") translate3d(" + translateX + "px, " + translateY + "px, 0)";
-      }
-    });
-  }
-
-  // Zoom out the image
-  function zoomOut() {
-    if (!overlay || !zoomedImg || !originalImg) {
-      return;
+      this.overlay = document.createElement("div");
+      this.overlay.className = "zoom-overlay";
+      this.overlay.setAttribute("role", "dialog");
+      this.overlay.setAttribute("aria-modal", "true");
+      this.overlay.setAttribute("aria-label", "图片浏览器");
+      this.overlay.setAttribute("tabindex", "-1");
+      document.body.appendChild(this.overlay);
     }
 
-    // Start closing animation
-    zoomedImg.style.transform = "";
-    overlay.style.opacity = "0";
-    document.body.style.overflow = "";
+    private bindEvents() {
+      document.addEventListener("click", this.handleClick.bind(this));
+      document.addEventListener("keydown", this.handleKeyDown.bind(this));
+      window.addEventListener("resize", () => {
+        if (this.state !== "idle") this.forceCleanup();
+      });
+      window.addEventListener("scroll", () => {
+        if (this.state === "open") this.close();
+      }, { passive: true });
 
-    var currentZoomedImg = zoomedImg;
-    var currentOverlay = overlay;
-    var currentOriginalImg = originalImg;
+      document.addEventListener("daybook:page-load", () => {
+        this.forceCleanup();
+        this.setupOverlay();
+      });
+      document.addEventListener("daybook:before-swap", () => this.forceCleanup());
+      window.addEventListener("beforeunload", () => this.forceCleanup());
+    }
 
-    // Define cleanup logic
-    var cleanup = function () {
-      if (!currentZoomedImg) return;
-
-      // Remove zoomed image
-      if (currentZoomedImg.parentNode) {
-        currentZoomedImg.parentNode.removeChild(currentZoomedImg);
-      }
-
-      // Hide overlay
-      if (currentOverlay) {
-        currentOverlay.style.display = "none";
-      }
-
-      // Restore focus
-      if (currentOriginalImg && document.body.contains(currentOriginalImg)) {
+    private playAnimation(element: HTMLElement, keyframes: Keyframe[], options: KeyframeAnimationOptions): Promise<void> {
+      return new Promise((resolve) => {
         try {
-          currentOriginalImg.focus({ preventScroll: true });
+          const animation = element.animate(keyframes, options);
+          animation.onfinish = () => resolve();
+          animation.oncancel = () => resolve();
         } catch (e) {
-          currentOriginalImg.focus();
+          // Fallback if WAAPI fails
+          const lastFrame = keyframes[keyframes.length - 1];
+          if (lastFrame && "transform" in lastFrame) {
+            element.style.transform = lastFrame.transform as string;
+          }
+          resolve();
+        }
+      });
+    }
+
+    private fadeOverlay(opacity: string): Promise<void> {
+      return new Promise((resolve) => {
+        if (!this.overlay) return resolve();
+        let isResolved = false;
+        const complete = () => {
+          if (isResolved) return;
+          isResolved = true;
+          this.overlay?.removeEventListener("transitionend", complete);
+          if (this.transitionTimeout !== null) {
+            window.clearTimeout(this.transitionTimeout);
+            this.transitionTimeout = null;
+          }
+          resolve();
+        };
+
+        this.overlay.addEventListener("transitionend", complete, { once: true });
+        this.transitionTimeout = window.setTimeout(complete, 350);
+        this.overlay.style.opacity = opacity;
+      });
+    }
+
+    public async open(img: HTMLImageElement) {
+      // Lazy setup if overlay was somehow destroyed
+      if (!this.overlay || !document.body.contains(this.overlay)) {
+        this.setupOverlay();
+      }
+
+      if (this.state !== "idle" || !this.overlay) return;
+      this.state = "opening";
+      this.originalImg = img;
+
+      // Lock scrolling
+      document.body.style.overflow = "hidden";
+
+      // FLIP - First
+      const rect = img.getBoundingClientRect();
+
+      // Create clone
+      this.clonedImg = img.cloneNode() as HTMLImageElement;
+      this.clonedImg.className = "zoom-img";
+      this.clonedImg.removeAttribute("id");
+      this.clonedImg.removeAttribute("loading");
+
+      // Apply initial state
+      this.clonedImg.style.top = rect.top + "px";
+      this.clonedImg.style.left = rect.left + "px";
+      this.clonedImg.style.width = rect.width + "px";
+      this.clonedImg.style.height = rect.height + "px";
+      // Remove any CSS transition so WAAPI takes full control
+      this.clonedImg.style.transition = "none";
+
+      // Add to DOM
+      document.body.appendChild(this.clonedImg);
+      this.overlay.style.display = "block";
+
+      // Hide original image
+      this.originalImg.style.visibility = "hidden";
+
+      // FLIP - Last & Invert
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const scaleFactor = viewportWidth < 768 ? 1 : 0.8;
+      const scale = Math.min(
+        (viewportWidth * scaleFactor) / rect.width,
+        (viewportHeight * scaleFactor) / rect.height
+      );
+
+      const translateX = -rect.left + (viewportWidth - rect.width) / 2;
+      const translateY = -rect.top + (viewportHeight - rect.height) / 2;
+      const targetTransform = `translate3d(${translateX}px, ${translateY}px, 0) scale(${scale})`;
+
+      // FLIP - Play
+      await Promise.all([
+        this.fadeOverlay("1"),
+        this.playAnimation(this.clonedImg, [
+          { transform: "translate3d(0, 0, 0) scale(1)" },
+          { transform: targetTransform }
+        ], {
+          duration: 300,
+          easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+          fill: "forwards"
+        })
+      ]);
+
+      if (this.state === "opening") {
+        this.state = "open";
+        this.clonedImg.style.transform = targetTransform;
+        this.overlay.focus();
+      }
+    }
+
+    public async close() {
+      if (this.state !== "open" && this.state !== "opening") return;
+      this.state = "closing";
+
+      if (!this.clonedImg || !this.originalImg || !this.overlay) {
+        this.forceCleanup();
+        return;
+      }
+
+      // Re-read original rect in case of scrolling/resizing
+      const newRect = this.originalImg.getBoundingClientRect();
+      const oldRectTop = parseFloat(this.clonedImg.style.top || "0");
+      const oldRectLeft = parseFloat(this.clonedImg.style.left || "0");
+
+      const dx = newRect.left - oldRectLeft;
+      const dy = newRect.top - oldRectTop;
+      
+      // Get current transform to animate from it smoothly if interrupted
+      const currentTransform = getComputedStyle(this.clonedImg).transform;
+      const targetTransform = `translate3d(${dx}px, ${dy}px, 0) scale(1)`;
+
+      document.body.style.overflow = "";
+
+      // Play closing animation
+      await Promise.all([
+        this.fadeOverlay("0"),
+        this.playAnimation(this.clonedImg, [
+          { transform: currentTransform !== "none" ? currentTransform : "translate3d(0, 0, 0) scale(1)" },
+          { transform: targetTransform }
+        ], {
+          duration: 300,
+          easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+          fill: "forwards"
+        })
+      ]);
+
+      this.cleanup();
+    }
+
+    public forceCleanup() {
+      if (this.transitionTimeout !== null) {
+        window.clearTimeout(this.transitionTimeout);
+        this.transitionTimeout = null;
+      }
+      this.cleanup();
+    }
+
+    private cleanup() {
+      if (this.clonedImg && this.clonedImg.parentNode) {
+        this.clonedImg.parentNode.removeChild(this.clonedImg);
+      }
+
+      if (this.overlay) {
+        this.overlay.style.display = "none";
+        this.overlay.style.opacity = "0";
+      }
+
+      if (this.originalImg) {
+        this.originalImg.style.visibility = "";
+        if (document.body.contains(this.originalImg) && document.activeElement === this.overlay) {
+          try {
+            this.originalImg.focus({ preventScroll: true });
+          } catch (e) {
+            this.originalImg.focus();
+          }
         }
       }
-    };
 
-    // Listen for transition end to cleanup
-    currentZoomedImg.addEventListener("transitionend", cleanup, { once: true });
-    
-    // Reset state early so multiple clicks don't break it
-    zoomedImg = null;
-    originalImg = null;
-  }
-
-  // Handle click events
-  function handleClick(event: MouseEvent) {
-    if (zoomedImg) {
-      zoomOut();
-      return;
+      document.body.style.overflow = "";
+      this.clonedImg = null;
+      this.originalImg = null;
+      this.state = "idle";
     }
 
-    var target = event.target as HTMLElement;
-    // We only target images in .post-content
-    if (!target || target.tagName !== "IMG" || !target.closest(".post-content")) {
-      return;
-    }
-    
-    // Ignore images inside explicit links or with no-lightbox
-    if (target.closest("a[href]") || target.matches(".no-lightbox, [data-no-lightbox=\"true\"]")) {
-      return;
-    }
+    private handleClick(event: MouseEvent) {
+      if (this.state === "open" || this.state === "opening") {
+        this.close();
+        return;
+      }
 
-    var imgTarget = target as HTMLImageElement;
+      if (this.state !== "idle") {
+        return;
+      }
 
-    // Ignore small or incomplete images
-    if (!imgTarget.complete || imgTarget.width < 100 || imgTarget.height < 100) {
-      return;
-    }
+      const target = event.target as HTMLElement;
+      if (!target || target.tagName !== "IMG" || !target.closest(".post-content")) {
+        return;
+      }
+      
+      if (target.closest("a[href]") || target.matches(".no-lightbox, [data-no-lightbox=\"true\"]")) {
+        return;
+      }
 
-    event.preventDefault();
-    zoomIn(imgTarget);
-  }
-  
-  function handleKeyDown(event: KeyboardEvent) {
-    if (zoomedImg && event.key === "Escape") {
+      const imgTarget = target as HTMLImageElement;
+      if (!imgTarget.complete || imgTarget.width < 100 || imgTarget.height < 100) {
+        return;
+      }
+
       event.preventDefault();
-      zoomOut();
+      this.open(imgTarget);
+    }
+    
+    private handleKeyDown(event: KeyboardEvent) {
+      if ((this.state === "open" || this.state === "opening") && event.key === "Escape") {
+        event.preventDefault();
+        this.close();
+      }
     }
   }
 
-  document.addEventListener("daybook:page-load", setupOverlay);
-
-  document.addEventListener("daybook:before-swap", function() {
-    if (zoomedImg) {
-      zoomOut();
-    }
-  });
-
-  document.addEventListener("click", handleClick);
-  document.addEventListener("keydown", handleKeyDown);
-  window.addEventListener("resize", zoomOut);
-  window.addEventListener("scroll", zoomOut, { passive: true });
+  new LightboxController();
 })();
