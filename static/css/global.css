@@ -4,6 +4,7 @@
 @import url("layout.css");
 @import url("components.css");
 @import url("components/embed-skeleton.css");
+@import url("components/custom-cursor.css");
 @import url("pages/home.css");
 @import url("pages/notes.css");
 @import url("pages/note.css");
