@@ -24,7 +24,6 @@
         {{range .Tags}}
         <a class="notes-tag-link" href="{{.URL}}" data-notes-tag="{{.Name}}" style="--tag-index: {{.Index}}; --tag-exit-index: {{.ReverseIndex}};">
           <span class="notes-tag-text">{{.Name}}</span>
-          <span class="notes-tag-measure" aria-hidden="true">{{.Name}}</span>
         </a>
         {{end}}
       </nav>

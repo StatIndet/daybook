@@ -280,12 +280,10 @@
   position: relative;
   text-decoration: none;
   transform: translateY(7px);
-  transition:
-    border-color 180ms ease,
-    color 160ms ease,
-    opacity 240ms ease,
-    transform 320ms var(--ease-out);
-  transition-delay: calc(var(--tag-exit-index, 0) * 28ms);
+  transition-property: border-color, color, opacity, transform;
+  transition-duration: 160ms, 160ms, 240ms, 320ms;
+  transition-timing-function: ease, ease, ease, var(--ease-out);
+  transition-delay: 0ms, 0ms, calc(var(--tag-exit-index, 0) * 28ms), calc(var(--tag-exit-index, 0) * 28ms);
 }
 
 .notes-tag-link span {
@@ -296,23 +294,11 @@
   white-space: nowrap;
 }
 
-.notes-tag-text {
-  font-weight: 400;
-  transition: font-weight 160ms ease;
-}
-
-.notes-tag-measure {
-  font-weight: 700;
-  opacity: 0;
-  pointer-events: none;
-  user-select: none;
-}
-
 .notes-tools.is-tags-open .notes-tag-link,
 body.is-tags-overlay-open .mobile-tags-overlay .notes-tag-link {
   opacity: 1;
   transform: translateY(0);
-  transition-delay: calc(var(--tag-index, 0) * 42ms);
+  transition-delay: 0ms, 0ms, calc(var(--tag-index, 0) * 42ms), calc(var(--tag-index, 0) * 42ms);
 }
 
 .notes-tag-link:hover,
@@ -320,12 +306,6 @@ body.is-tags-overlay-open .mobile-tags-overlay .notes-tag-link {
 .notes-tag-link.is-active {
   border-color: color-mix(in srgb, var(--color-muted) 80%, transparent);
   color: var(--color-hover-text);
-}
-
-.notes-tag-link:hover .notes-tag-text,
-.notes-tag-link:focus-visible .notes-tag-text,
-.notes-tag-link.is-active .notes-tag-text {
-  font-weight: 650;
 }
 
 .notes-tag-link:focus-visible {

@@ -218,7 +218,6 @@
 
 .note-tag-capsule:hover,
 .note-tag-capsule:focus-visible {
-  background: var(--color-accent-bg);
   border-color: var(--color-accent);
   color: var(--color-accent);
 }
