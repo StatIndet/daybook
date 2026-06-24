@@ -1,3 +1,5 @@
+import { IdleClockController } from "./custom-cursor-clock";
+
 (() => {
   if (typeof window === "undefined") return;
   
@@ -41,6 +43,17 @@
   let rafId: number | null = null;
   let currentState = "default";
 
+  const clockController = new IdleClockController();
+  const IDLE_DELAY = 1400;
+  // 阈值加大：只基于速度判断。移动速度超过 6.0 px/ms 时触发拉断
+  const BREAK_SPEED = 3.0;
+  
+  let idleTimer: number | null = null;
+  let isClockActive = false;
+  let lastMoveTime = performance.now();
+  let lastMoveX = mouseX;
+  let lastMoveY = mouseY;
+
   const lerpFactor = 0.3;
   
   const selectors = {
@@ -62,10 +75,62 @@
     }
   }
 
-  function handleMouseMove(e: MouseEvent) {
+  function resetIdleTimer() {
+    if (idleTimer) {
+      clearTimeout(idleTimer);
+      idleTimer = null;
+    }
+    const path = window.location.pathname;
+    // 严格白名单：仅在首页显示时钟
+    if (path !== "/") {
+      return;
+    }
+    if (currentState === "default") {
+      idleTimer = window.setTimeout(() => {
+        isClockActive = true;
+        clockController.start(cursorX, cursorY);
+      }, IDLE_DELAY);
+    }
+  }
+
+  function breakIdleClock(snap = false) {
+    isClockActive = false;
+    if (snap) {
+      clockController.snap();
+    } else {
+      clockController.stop();
+    }
+    resetIdleTimer();
+  }
+
+  function handlePointerMove(e: PointerEvent) {
     mouseX = e.clientX;
     mouseY = e.clientY;
     
+    const now = performance.now();
+    // 强制 dt 至少为 16ms（约等于 60fps 的一帧），防止微秒级事件连发导致的瞬间速度无限大 Bug
+    const dt = Math.max(now - lastMoveTime, 16); 
+    const dx = mouseX - lastMoveX;
+    const dy = mouseY - lastMoveY;
+    const distSq = dx * dx + dy * dy;
+    
+    if (isClockActive) {
+      let speed = 0;
+      if (dt > 0) speed = Math.sqrt(distSq) / dt;
+      
+      if (speed > BREAK_SPEED) {
+        breakIdleClock(true);
+      } else {
+        clockController.updateTarget(mouseX, mouseY);
+      }
+    } else {
+      resetIdleTimer();
+    }
+
+    lastMoveTime = now;
+    lastMoveX = mouseX;
+    lastMoveY = mouseY;
+
     if (!isMoving) {
       isMoving = true;
       rafId = requestAnimationFrame(updateCursorPosition);
@@ -76,6 +141,17 @@
     if (currentState === state) return;
     currentState = state;
     cursorEl.dataset.cursorState = state;
+
+    if (state !== "default" && state !== "hidden") {
+      isClockActive = false;
+      clockController.stop();
+      if (idleTimer) {
+        clearTimeout(idleTimer);
+        idleTimer = null;
+      }
+    } else if (state === "default") {
+      resetIdleTimer();
+    }
   }
   
   function updateStateFromTarget(target: HTMLElement | null) {
@@ -127,15 +203,29 @@
     updateStateFromTarget(e.target as HTMLElement);
   }
 
-  document.addEventListener("mousemove", handleMouseMove, { passive: true });
+  document.addEventListener("pointermove", handlePointerMove, { passive: true });
   document.addEventListener("mouseover", handleMouseOver, { passive: true });
   document.addEventListener("mousedown", handleMouseDown, { passive: true });
   document.addEventListener("mouseup", handleMouseUp, { passive: true });
   document.addEventListener("mouseleave", handleMouseLeave);
   document.addEventListener("mouseenter", handleMouseEnter);
 
+  function handleInteraction() {
+    breakIdleClock();
+  }
+
+  document.addEventListener("scroll", handleInteraction, { passive: true });
+  document.addEventListener("click", handleInteraction, { passive: true });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) handleInteraction();
+    else clockController.updateColors();
+  });
+
   // Fallback for SPA routing to re-eval hover state
   document.addEventListener("daybook:page-load", () => {
-    // If needed, we can re-evaluate hover state, but generally the next mousemove handles it smoothly.
+    const path = window.location.pathname;
+    if (path !== "/") {
+      breakIdleClock(); // 原地倒序坍缩退出
+    }
   });
 })();

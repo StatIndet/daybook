@@ -108,10 +108,24 @@
 
 /* Reduced motion disables the fake cursor */
 @media (prefers-reduced-motion: reduce) {
-  .daybook-cursor {
+  .daybook-cursor,
+  .daybook-cursor-clock {
     display: none !important;
   }
   html.has-custom-cursor * {
     cursor: auto !important;
   }
+}
+
+.daybook-cursor-clock {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 99998;
+  display: none;
+}
+
+.daybook-cursor-clock.is-visible {
+  display: block;
 }
