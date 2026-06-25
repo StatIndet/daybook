@@ -16,6 +16,7 @@ import (
 type Note struct {
 	Title      string
 	Date       string
+	Updated    string
 	Slug       string
 	Tags       []string
 	Summary    string
@@ -35,6 +36,7 @@ type Note struct {
 type frontmatter struct {
 	Title   string   `yaml:"title"`
 	Date    string   `yaml:"date"`
+	Updated string   `yaml:"updated"`
 	Slug    string   `yaml:"slug"`
 	Tags    []string `yaml:"tags"`
 	Summary string   `yaml:"summary"`
@@ -112,6 +114,7 @@ func Parse(sourcePath, text string) (Note, error) {
 	note := Note{
 		Title:      strings.TrimSpace(meta.Title),
 		Date:       strings.TrimSpace(meta.Date),
+		Updated:    strings.TrimSpace(meta.Updated),
 		Slug:       strings.TrimSpace(meta.Slug),
 		Tags:       meta.Tags,
 		Summary:    strings.TrimSpace(meta.Summary),

@@ -101,21 +101,40 @@
 
 .note-meta {
   color: var(--color-muted);
-  display: inline-flex;
+  display: flex;
   font-family: var(--font-meta);
-  font-size: clamp(0.95rem, 1.3vw, 1.12rem);
   font-style: italic;
-  gap: 0.8rem;
+  font-weight: 600;
+  font-size: clamp(0.95rem, 1.3vw, 1.12rem);
+  gap: 1.2rem;
   line-height: 1;
   margin: 1.2rem 0 0;
   white-space: nowrap;
   flex-wrap: wrap;
 }
 
-.meta-transition-group {
+
+
+.meta-transition-group,
+.meta-stagger {
   display: inline-flex;
-  gap: 0.8rem;
+  gap: 0.45rem;
 }
+
+.note-updated {
+  color: var(--color-muted);
+  display: flex;
+  font-family: var(--font-meta);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(0.95rem, 1.3vw, 1.12rem);
+  gap: 0.45rem;
+  line-height: 1;
+  margin: 0.4rem 0 0;
+  white-space: nowrap;
+}
+
+
 
 .note-summary {
   color: var(--color-muted);

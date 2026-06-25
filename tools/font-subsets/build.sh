@@ -44,10 +44,7 @@ subset_font \
   "$GLYPHS/fraunces.txt" \
   "$OUT/fraunces-italic-subset.woff2"
 
-subset_font \
-  "$SRC/playfair-display/PlayfairDisplay-Italic[wght].ttf" \
-  "$GLYPHS/playfair-display.txt" \
-  "$OUT/playfair-display-italic-subset.woff2"
+
 
 subset_font \
   "$SRC/zhi-mang-xing/ZhiMangXing-Regular.ttf" \

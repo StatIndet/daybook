@@ -98,6 +98,14 @@ export function initSiteStats(root: Document | HTMLElement = document) {
         el.textContent = stats.pageViews.toLocaleString();
       }
     });
+
+    const pageViewsLabelEls = root.querySelectorAll("[data-page-views-label]");
+    pageViewsLabelEls.forEach(el => {
+      const pathAttr = el.getAttribute("data-path");
+      if (pathAttr && normalizePath(pathAttr) === stats.path) {
+        el.textContent = stats.pageViews === 1 ? "view" : "views";
+      }
+    });
   });
 }
 

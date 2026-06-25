@@ -8,13 +8,13 @@
     <div class="markdown about-markdown">
       {{.HTML}}
     </div>
-    <p class="about-meta">
+    <div class="about-meta">
       <time datetime="{{.Date}}">{{.Date}}</time>
-      <span>
-        <span class="material-symbol" aria-hidden="true" style="font-size: 1.1em; vertical-align: -0.15em;">visibility</span>
+      <span class="about-meta-group">
         <span data-page-views data-path="/about/">--</span>
+        <span data-page-views-label data-path="/about/">views</span>
       </span>
-    </p>
+    </div>
   </div>
 </section>
 {{end}}

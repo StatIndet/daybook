@@ -8,7 +8,6 @@ BASE="https://raw.githubusercontent.com/google/fonts/main/ofl"
 mkdir -p \
   "$SRC/allura" \
   "$SRC/fraunces" \
-  "$SRC/playfair-display" \
   "$SRC/zhi-mang-xing"
 
 download() {
@@ -36,11 +35,7 @@ download "$BASE/fraunces/Fraunces-Italic%5BSOFT%2CWONK%2Copsz%2Cwght%5D.ttf" \
 download "$BASE/fraunces/OFL.txt" \
   "$SRC/fraunces/OFL.txt"
 
-download "$BASE/playfairdisplay/PlayfairDisplay-Italic%5Bwght%5D.ttf" \
-  "$SRC/playfair-display/PlayfairDisplay-Italic[wght].ttf"
 
-download "$BASE/playfairdisplay/OFL.txt" \
-  "$SRC/playfair-display/OFL.txt"
 
 download "$BASE/zhimangxing/ZhiMangXing-Regular.ttf" \
   "$SRC/zhi-mang-xing/ZhiMangXing-Regular.ttf"

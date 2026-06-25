@@ -43,6 +43,7 @@ type NoteLink struct {
 	Title               string
 	Date                string
 	ReadingTime         string
+	ReadingMinutes      int
 	Summary             string
 	Tags                []string
 	URL                 string
@@ -56,6 +57,7 @@ type NoteLink struct {
 type NotePage struct {
 	Title               string
 	Date                string
+	Updated             string
 	ReadingTime         string
 	Summary             string
 	URL                 string

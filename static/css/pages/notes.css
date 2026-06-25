@@ -96,7 +96,8 @@ hr.notes-divider {
   color: var(--color-muted);
   display: inline-flex;
   font-family: var(--font-meta);
-  font-size: 0.84rem;
+  font-size: 1.05rem;
+  font-weight: 600;
   font-style: italic;
   gap: 0.7rem;
   line-height: 1;
@@ -313,7 +314,7 @@ hr.notes-divider {
   .notes-item-meta {
     align-items: center;
     display: flex;
-    font-size: 0.875rem;
+    font-size: 1.05rem;
     gap: 0.65em;
     padding-top: 0.2em;
   }

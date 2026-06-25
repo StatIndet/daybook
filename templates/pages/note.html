@@ -36,11 +36,21 @@
         <p class="note-meta">
           <span class="meta-transition-group" data-meta-transition-key="{{.Note.Slug}}">
             <time datetime="{{.Note.Date}}" data-date-transition-key="{{.Note.Slug}}">{{.Note.Date}}</time>
-            <span class="reading-time" data-reading-transition-key="{{.Note.Slug}}">{{.Note.ReadingTime}}</span>
+            <span>{{.Note.ReadingMinutes}} min</span>
           </span>
-          <span class="meta-stagger">{{formatNum .Note.WordCount}} 字</span>
-          <span class="meta-stagger"><span class="material-symbol" aria-hidden="true" style="font-size: 1.1em; vertical-align: -0.15em;">visibility</span> <span data-page-views data-path="{{.Note.CanonicalPath}}">--</span></span>
+          <span class="meta-stagger">
+            <span>{{formatNum .Note.WordCount}} chars</span>
+          </span>
+          <span class="meta-stagger">
+            <span data-page-views data-path="{{.Note.CanonicalPath}}">--</span>
+            <span data-page-views-label data-path="{{.Note.CanonicalPath}}">views</span>
+          </span>
         </p>
+        {{if .Note.Updated}}
+        <p class="note-updated meta-stagger">
+          updated <time datetime="{{.Note.Updated}}">{{.Note.Updated}}</time>
+        </p>
+        {{end}}
         {{with .Note.Summary}}<p class="note-summary">{{.}}</p>{{end}}
       </header>
 

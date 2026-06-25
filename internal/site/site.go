@@ -126,6 +126,7 @@ func Build(options Options) (BuildResult, error) {
 			Title:               note.Title,
 			Date:                note.Date,
 			ReadingTime:         readingTime,
+			ReadingMinutes:      note.ReadingMinutes,
 			Summary:             note.Summary,
 			Tags:                tags,
 			URL:                 note.URL,
@@ -159,6 +160,7 @@ func Build(options Options) (BuildResult, error) {
 			Note: render.NotePage{
 				Title:               note.Title,
 				Date:                note.Date,
+				Updated:             note.Updated,
 				ReadingTime:         readingTime,
 				Summary:             note.Summary,
 				URL:                 note.URL,

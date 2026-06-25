@@ -6,13 +6,6 @@
   font-display: swap;
 }
 
-@font-face {
-  font-family: "Daybook Playfair Display";
-  src: url("/vendor/fonts/decorative/playfair-display-italic-subset.woff2") format("woff2");
-  font-weight: 400 900;
-  font-style: italic;
-  font-display: swap;
-}
 
 @font-face {
   font-family: "Daybook Allura";
