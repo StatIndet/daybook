@@ -1,5 +1,11 @@
 {{define "home_footer"}}
 <footer class="home-footer">
+  <p>
+    访客 <strong data-site-visitors>--</strong> / 
+    总访问 <strong data-site-views>--</strong> / 
+    全站 <strong>{{ .Site.TotalWordCount }}</strong> 字 / 
+    已运行 <strong data-site-uptime data-started-at="{{ .Site.StartedAt }}">--</strong>
+  </p>
   <p>© 2026 史帙</p>
 </footer>
 {{end}}

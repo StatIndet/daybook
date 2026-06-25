@@ -17,7 +17,9 @@ type Renderer struct {
 }
 
 type SiteData struct {
-	Title string
+	Title          string
+	StartedAt      string
+	TotalWordCount int
 }
 
 type Assets struct {
@@ -59,6 +61,9 @@ type NotePage struct {
 	URL                 string
 	Slug                string
 	Tags                []string
+	WordCount           int
+	ReadingMinutes      int
+	CanonicalPath       string
 	HTML                template.HTML
 	Headings            []Heading
 	HasMermaid          bool

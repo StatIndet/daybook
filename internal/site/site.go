@@ -61,8 +61,24 @@ func Build(options Options) (BuildResult, error) {
 		return BuildResult{}, err
 	}
 
+	totalWordCount := 0
+	for _, note := range notes {
+		if !note.Draft {
+			totalWordCount += note.WordCount
+		}
+	}
+
+	startedAt := options.Config.StartedAt
+	if startedAt == "" && len(notes) > 0 {
+		startedAt = notes[len(notes)-1].Date
+	}
+
 	renderer := render.New(options.TemplatesDir)
-	siteData := render.SiteData{Title: options.Config.Title}
+	siteData := render.SiteData{
+		Title:          options.Config.Title,
+		StartedAt:      startedAt,
+		TotalWordCount: totalWordCount,
+	}
 	obsidianIndex, err := buildObsidianIndex(notes)
 	if err != nil {
 		return BuildResult{}, err
@@ -148,6 +164,9 @@ func Build(options Options) (BuildResult, error) {
 				URL:                 note.URL,
 				Slug:                note.Slug,
 				Tags:                tags,
+				WordCount:           note.WordCount,
+				ReadingMinutes:      note.ReadingMinutes,
+				CanonicalPath:       note.CanonicalPath,
 				HTML:                template.HTML(document.HTML),
 				Headings:            renderHeadings(document.Headings),
 				HasMermaid:          document.HasMermaid,
