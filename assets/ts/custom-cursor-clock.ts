@@ -20,6 +20,8 @@ export class IdleClockController {
   private pscale = new Float64Array(200);
   private popacity = new Float64Array(200);
   private pradiusOffset = new Float64Array(200);
+  private pdx = new Float64Array(200);
+  private pdy = new Float64Array(200);
   private vx = new Float64Array(200);
   private vy = new Float64Array(200);
 
@@ -118,6 +120,8 @@ export class IdleClockController {
       for (let i = 0; i < this.sum; i++) {
         this.dx[i] = 0;
         this.dy[i] = 0;
+        this.pdx[i] = 0;
+        this.pdy[i] = 0;
         this.zx[i] = 0;
         this.zy[i] = 0;
         this.pscale[i] = 1;
@@ -145,11 +149,10 @@ export class IdleClockController {
     if (this.state === 'hidden' || this.state === 'snapped') return;
     this.state = 'snapped';
     
+    // Inherit real momentum from the previous frame for true inertia
     for (let i = 0; i < this.sum; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 2 + 1; // 1 to 3
-      this.vx[i] = Math.cos(angle) * speed;
-      this.vy[i] = Math.sin(angle) * speed + 1.5; // slight downward bias
+      this.vx[i] = this.dx[i] - this.pdx[i];
+      this.vy[i] = this.dy[i] - this.pdy[i];
     }
   }
 
@@ -183,12 +186,14 @@ export class IdleClockController {
       }
     } else if (this.state === 'snapped') {
       for (let i = 0; i < this.sum; i++) {
-        // Physics scatter without gravity acceleration for clean look
+        // True inertia sliding with air friction
         this.dx[i] += this.vx[i];
         this.dy[i] += this.vy[i];
+        this.vx[i] *= 0.96;
+        this.vy[i] *= 0.96;
         
-        this.popacity[i] -= 0.02; // fade out in ~50 frames
-        if (this.popacity[i] > 0) allDone = false;
+        this.popacity[i] -= 0.01; // fade out in ~100 frames (1.6s)
+        if (this.popacity[i]! > 0) allDone = false;
         else this.popacity[i] = 0;
       }
       if (allDone) {
@@ -215,6 +220,12 @@ export class IdleClockController {
 
   private updatePositions() {
     const del = 0.4;
+    
+    // Save previous frame state for momentum calculation
+    for (let i = 0; i < this.sum; i++) {
+      this.pdx[i] = this.dx[i];
+      this.pdy[i] = this.dy[i];
+    }
     
     this.zy[0] = this.dy[0] += (this.cursor.y - this.dy[0]) * del;
     this.zx[0] = this.dx[0] += (this.cursor.x - this.dx[0]) * del;

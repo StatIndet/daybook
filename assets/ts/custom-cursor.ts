@@ -44,7 +44,7 @@ import { IdleClockController } from "./custom-cursor-clock";
   let currentState = "default";
 
   const clockController = new IdleClockController();
-  const IDLE_DELAY = 1400;
+  const IDLE_DELAY = 2000;
   // 阈值加大：只基于速度判断。移动速度超过 6.0 px/ms 时触发拉断
   const BREAK_SPEED = 3.0;
   
