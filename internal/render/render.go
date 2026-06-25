@@ -574,7 +574,21 @@ func (r Renderer) render(outputPath, pageTemplate string, data any) error {
 		return fmt.Errorf("解析模板: %w", err)
 	}
 
-	tmpl, err := template.ParseFiles(files...)
+	tmpl := template.New(filepath.Base(files[0])).Funcs(template.FuncMap{
+		"formatNum": func(n int) string {
+			s := fmt.Sprintf("%d", n)
+			var parts []string
+			for i := len(s); i > 0; i -= 3 {
+				if i-3 > 0 {
+					parts = append([]string{s[i-3 : i]}, parts...)
+				} else {
+					parts = append([]string{s[:i]}, parts...)
+				}
+			}
+			return strings.Join(parts, ",")
+		},
+	})
+	tmpl, err = tmpl.ParseFiles(files...)
 	if err != nil {
 		return fmt.Errorf("解析模板: %w", err)
 	}

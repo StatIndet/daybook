@@ -33,11 +33,13 @@
             </span>
           </h1>
         </div>
-        <p class="note-meta" data-meta-transition-key="{{.Note.Slug}}">
-          <time datetime="{{.Note.Date}}" data-date-transition-key="{{.Note.Slug}}">{{.Note.Date}}</time>
-          <span>{{.Note.WordCount}} 字</span>
-          <span>预计阅读 {{.Note.ReadingMinutes}} 分</span>
-          <span data-page-views data-path="{{.Note.CanonicalPath}}">--</span> 次阅读
+        <p class="note-meta">
+          <span class="meta-transition-group" data-meta-transition-key="{{.Note.Slug}}">
+            <time datetime="{{.Note.Date}}" data-date-transition-key="{{.Note.Slug}}">{{.Note.Date}}</time>
+            <span class="reading-time" data-reading-transition-key="{{.Note.Slug}}">{{.Note.ReadingTime}}</span>
+          </span>
+          <span class="meta-stagger">{{formatNum .Note.WordCount}} 字</span>
+          <span class="meta-stagger"><span class="material-symbol" aria-hidden="true" style="font-size: 1.1em; vertical-align: -0.15em;">visibility</span> <span data-page-views data-path="{{.Note.CanonicalPath}}">--</span></span>
         </p>
         {{with .Note.Summary}}<p class="note-summary">{{.}}</p>{{end}}
       </header>

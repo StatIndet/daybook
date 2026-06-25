@@ -135,8 +135,20 @@
   text-align: center;
 }
 
-.home-footer p {
+.home-footer p,
+.home-footer .footer-stats-row {
   margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.footer-stat-item,
+.footer-separator {
+  display: inline-block;
 }
 
 @media (max-width: 720px) {

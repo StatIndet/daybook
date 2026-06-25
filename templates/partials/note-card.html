@@ -9,9 +9,11 @@
         <span class="notes-item-pin" aria-hidden="true" title="已固定"></span>
       {{end}}
     </h1>
-    <p class="notes-item-meta" data-meta-transition-key="{{.Slug}}">
-      <time datetime="{{.Date}}" data-date-transition-key="{{.Slug}}">{{.Date}}</time>
-      <span>{{.ReadingTime}}</span>
+    <p class="notes-item-meta">
+      <span class="meta-transition-group" data-meta-transition-key="{{.Slug}}">
+        <time datetime="{{.Date}}" data-date-transition-key="{{.Slug}}">{{.Date}}</time>
+        <span>{{.ReadingTime}}</span>
+      </span>
     </p>
   </div>
   {{with .Summary}}<p class="notes-item-summary">{{.}}</p>{{end}}
