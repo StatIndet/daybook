@@ -1,5 +1,6 @@
 title: "Daybook"
 baseURL: "https://daybook.page"
+startedAt: "2026-06-08"
 comment:
   enabled: true
   provider: "waline"
