@@ -266,8 +266,8 @@ export class IdleClockController {
     const hrs = time.getHours();
     const hr = (Math.PI * (hrs - 3)) / 6 + (Math.PI * time.getMinutes()) / 360;
 
-    // Increased font size to balance the larger geometric hand dots
-    this.ctx.font = "bold 14px sans-serif";
+    // Use project's Maple Mono font with normal weight for a clean look
+    this.ctx.font = "normal 14px 'Maple Mono CN', 'Maple Mono', monospace";
     this.ctx.textAlign = "center";
     this.ctx.textBaseline = "middle";
 
