@@ -84,14 +84,6 @@
       if (button.getAttribute("role") === "switch") {
         button.setAttribute("aria-checked", nextEyeCare ? "true" : "false");
       }
-      const icon = button.querySelector(".material-symbol");
-      if (icon) {
-        icon.textContent = nextEyeCare ? "visibility" : "visibility_off";
-      }
-    });
-
-    document.querySelectorAll(".drawer-eyecare-icon").forEach(function (icon) {
-      icon.textContent = nextEyeCare ? "visibility" : "visibility_off";
     });
   }
 
