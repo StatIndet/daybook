@@ -36,7 +36,7 @@
         <p class="note-meta">
           <span class="meta-transition-group" data-meta-transition-key="{{.Note.Slug}}">
             <time datetime="{{.Note.Date}}" data-date-transition-key="{{.Note.Slug}}">{{.Note.Date}}</time>
-            <span>{{.Note.ReadingMinutes}} min</span>
+            <span class="reading-time">{{.Note.ReadingMinutes}} min</span>
           </span>
           <span class="meta-stagger">
             <span>{{formatNum .Note.WordCount}} chars</span>
