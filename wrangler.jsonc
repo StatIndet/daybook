@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "daybook",
+  "compatibility_date": "2026-06-25",
+  "pages_build_output_dir": "public",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "daybook_stats",
+      "database_id": "e7e159a5-e980-4d57-a811-b97975c32390",
+      "migrations_dir": "migrations"
+    }
+  ]
+}

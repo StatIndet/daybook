@@ -1,3 +1,5 @@
+import { initSiteStats, initSiteUptime } from "./site-stats";
+
 interface RouterState {
   __daybook: boolean;
   index: number;
@@ -61,6 +63,8 @@ interface DaybookTransitionFinishedDetail {
     const triggerInitialLoad = () => {
       setTimeout(() => {
         emitPageLoad("initial", location.href, location.href);
+        initSiteStats();
+        initSiteUptime();
       }, 0);
     };
 
@@ -264,6 +268,8 @@ interface DaybookTransitionFinishedDetail {
         requestAnimationFrame(() => {
           currentRouterUrl = targetUrl.href;
           emitPageLoad(isTraverse ? "traverse" : "push", oldUrl, targetUrl.href);
+          initSiteStats();
+          initSiteUptime();
         });
       };
 

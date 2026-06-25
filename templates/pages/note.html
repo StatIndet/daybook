@@ -35,7 +35,9 @@
         </div>
         <p class="note-meta" data-meta-transition-key="{{.Note.Slug}}">
           <time datetime="{{.Note.Date}}" data-date-transition-key="{{.Note.Slug}}">{{.Note.Date}}</time>
-          <span>{{.Note.ReadingTime}}</span>
+          <span>{{.Note.WordCount}} 字</span>
+          <span>预计阅读 {{.Note.ReadingMinutes}} 分</span>
+          <span data-page-views data-path="{{.Note.CanonicalPath}}">--</span> 次阅读
         </p>
         {{with .Note.Summary}}<p class="note-summary">{{.}}</p>{{end}}
       </header>

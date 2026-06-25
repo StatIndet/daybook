@@ -23,9 +23,10 @@ type CommentConfig struct {
 }
 
 type Config struct {
-	Title   string        `yaml:"title"`
-	BaseURL string        `yaml:"baseURL"`
-	Comment CommentConfig `yaml:"comment"`
+	Title     string        `yaml:"title"`
+	BaseURL   string        `yaml:"baseURL"`
+	StartedAt string        `yaml:"startedAt"`
+	Comment   CommentConfig `yaml:"comment"`
 }
 
 func Default() Config {

@@ -2,10 +2,13 @@ package content
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
+	"unicode"
 
 	"gopkg.in/yaml.v3"
 )
@@ -22,8 +25,11 @@ type Note struct {
 	Body       string
 	URL        string
 	SourcePath string
-	Toc        *bool
-	Comment    *bool
+	Toc            *bool
+	Comment        *bool
+	WordCount      int
+	ReadingMinutes int
+	CanonicalPath  string
 }
 
 type frontmatter struct {
@@ -118,6 +124,9 @@ func Parse(sourcePath, text string) (Note, error) {
 		SourcePath: sourcePath,
 	}
 	note.URL = "/notes/" + note.Slug + "/"
+	note.CanonicalPath = "/notes/" + note.Slug + "/"
+	note.WordCount = countWords(note.Body)
+	note.ReadingMinutes = int(math.Max(1, math.Ceil(float64(note.WordCount)/300.0)))
 
 	if err := validate(note); err != nil {
 		return Note{}, err
@@ -156,4 +165,41 @@ func validate(note Note) error {
 	}
 
 	return nil
+}
+
+func countWords(text string) int {
+	reCodeBlock := regexp.MustCompile("(?s)```.*?```")
+	text = reCodeBlock.ReplaceAllString(text, "")
+
+	reMathBlock := regexp.MustCompile(`(?s)\$\$.*?\$\$`)
+	text = reMathBlock.ReplaceAllString(text, "")
+
+	reInlineCode := regexp.MustCompile("(?s)`.*?`")
+	text = reInlineCode.ReplaceAllString(text, "")
+
+	reHTML := regexp.MustCompile(`(?s)<.*?>`)
+	text = reHTML.ReplaceAllString(text, "")
+
+	reLink := regexp.MustCompile(`!?\[(.*?)\]\(.*?\)`)
+	text = reLink.ReplaceAllString(text, "$1")
+
+	reFormat := regexp.MustCompile(`[#*_=~>|-]+`)
+	text = reFormat.ReplaceAllString(text, " ")
+
+	count := 0
+	inWord := false
+	for _, r := range text {
+		if unicode.Is(unicode.Han, r) || unicode.Is(unicode.Hiragana, r) || unicode.Is(unicode.Katakana, r) || unicode.Is(unicode.Hangul, r) {
+			count++
+			inWord = false
+		} else if unicode.IsLetter(r) || unicode.IsNumber(r) {
+			if !inWord {
+				count++
+				inWord = true
+			}
+		} else {
+			inWord = false
+		}
+	}
+	return count
 }

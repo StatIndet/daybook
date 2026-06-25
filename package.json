@@ -42,6 +42,7 @@
     "concurrently": "^10.0.3",
     "esbuild": "^0.28.1",
     "material-symbols": "^0.45.2",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "wrangler": "^4.104.0"
   }
 }
