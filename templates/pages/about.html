@@ -8,7 +8,13 @@
     <div class="markdown about-markdown">
       {{.HTML}}
     </div>
-    <p class="about-meta">本页访问量：<strong data-page-views data-path="/about/">--</strong></p>
+    <p class="about-meta">
+      <time datetime="{{.Date}}">{{.Date}}</time>
+      <span>
+        <span class="material-symbol" aria-hidden="true" style="font-size: 1.1em; vertical-align: -0.15em;">visibility</span>
+        <span data-page-views data-path="/about/">--</span>
+      </span>
+    </p>
   </div>
 </section>
 {{end}}

@@ -258,9 +258,12 @@ func Build(options Options) (BuildResult, error) {
 		BodyClass: "about-body page-body",
 		Assets:    assets,
 		Spiral:    render.NewGoldenSpiral(),
-		Title:     aboutPage.Title,
-		Summary:   aboutPage.Summary,
-		HTML:      template.HTML(aboutDocument.HTML),
+		Title:       aboutPage.Title,
+		Summary:     aboutPage.Summary,
+		Date:        aboutPage.Date,
+		ReadingTime: estimateReadingTime(aboutPage.Body),
+		WordCount:   aboutPage.WordCount,
+		HTML:        template.HTML(aboutDocument.HTML),
 		Tags:      tagLinks,
 	}
 	if err := renderer.RenderAbout(aboutPath, aboutData); err != nil {

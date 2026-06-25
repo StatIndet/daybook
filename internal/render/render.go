@@ -226,9 +226,12 @@ type AboutData struct {
 	Assets    Assets
 	HasMath   bool
 	Spiral    GoldenSpiral
-	Title     string
-	Summary   string
-	HTML      template.HTML
+	Title       string
+	Summary     string
+	Date        string
+	ReadingTime string
+	WordCount   int
+	HTML        template.HTML
 	Tags      []TagLink
 }
 

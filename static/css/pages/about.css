@@ -51,6 +51,19 @@
   margin-top: 2.2rem;
 }
 
+.about-meta {
+  color: var(--color-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-family: var(--font-meta);
+  font-size: clamp(0.95rem, 1.3vw, 1.12rem);
+  font-style: italic;
+  gap: 0.6em;
+  line-height: 1;
+  margin: 2.5rem 0 1.5rem;
+}
+
 .golden-spiral {
   /*
    * Golden background timeline (all durations are φ multiples):

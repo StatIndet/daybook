@@ -2,6 +2,7 @@ package content
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"strings"
 
@@ -12,9 +13,11 @@ type Page struct {
 	Title      string
 	Date       string
 	Summary    string
-	Draft      bool
-	Body       string
-	SourcePath string
+	Draft          bool
+	Body           string
+	SourcePath     string
+	WordCount      int
+	ReadingMinutes int
 }
 
 type pageFrontmatter struct {
@@ -52,6 +55,9 @@ func ParsePage(sourcePath, text string) (Page, error) {
 		Body:       strings.TrimSpace(body),
 		SourcePath: sourcePath,
 	}
+
+	page.WordCount = countWords(page.Body)
+	page.ReadingMinutes = int(math.Max(1, math.Ceil(float64(page.WordCount)/300.0)))
 
 	if page.Title == "" {
 		return Page{}, fmt.Errorf("缺少必填字段 title")
