@@ -172,7 +172,7 @@
 
 @media (max-width: 768px) {
   .golden-spiral {
-    opacity: 0.5;
+    display: none;
   }
 }
 

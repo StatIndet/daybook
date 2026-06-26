@@ -129,3 +129,12 @@
 .daybook-cursor-clock.is-visible {
   display: block;
 }
+
+@media (max-width: 768px), (pointer: coarse) {
+  .daybook-cursor,
+  .daybook-cursor-clock {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
+}
