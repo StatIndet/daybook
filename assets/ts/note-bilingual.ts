@@ -87,7 +87,6 @@
         swapContent(originalState);
         toggleBtn.dataset.currentLang = originalState.lang;
         toggleBtn.setAttribute("aria-pressed", "false");
-        toggleBtn.removeAttribute("title");
       } else {
         // Fetch or use cached
         if (!cachedAltFragment) {
@@ -127,8 +126,6 @@
           
           toggleBtn.dataset.currentLang = cachedAltFragment.lang;
           toggleBtn.setAttribute("aria-pressed", "true");
-          const backText = originalState.lang === "en" ? "Back to English" : "返回中文";
-          toggleBtn.setAttribute("title", backText);
         }
       }
     });
