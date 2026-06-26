@@ -86,6 +86,15 @@
   width: 1.1em;
 }
 
+.notes-item-bilingual {
+  color: var(--color-muted);
+  font-size: 1.1em;
+  margin-left: 0.3em;
+  vertical-align: text-bottom;
+  display: inline-block;
+  line-height: 1;
+}
+
 hr.notes-divider {
   border: none;
   border-top: 1px dashed var(--color-line);
