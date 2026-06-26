@@ -51,8 +51,11 @@
             <span data-page-views-label data-path="/notes/{{.Note.Slug}}/">views</span>
           </span>
           {{if .Note.HasTranslation}}
-          <span class="meta-stagger note-bilingual-link">
-            <a href="{{if eq .Lang "en"}}/notes/{{.Note.Slug}}/{{else}}/en/notes/{{.Note.Slug}}/{{end}}">{{T .Lang "post.bilingual"}}</a>
+          <span class="meta-stagger note-bilingual-wrapper">
+            <button type="button" class="bilingual-toggle-btn" aria-label="Toggle Bilingual Translation" data-current-lang="{{.Lang}}" data-alt-fragment-url="{{if eq .Lang "en"}}/notes/{{.Note.Slug}}/fragment.json{{else}}/en/notes/{{.Note.Slug}}/fragment.json{{end}}">
+              <span class="bilingual-char bilingual-zh">中</span>
+              <span class="bilingual-char bilingual-en">En</span>
+            </button>
           </span>
           {{end}}
         </p>
