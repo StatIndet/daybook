@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 	"unicode"
 
@@ -19,8 +18,11 @@ type Note struct {
 	Updated    string
 	Slug       string
 	Tags       []string
+	TagsZh     []string
+	TagsEn     []string
 	Summary    string
 	Draft      bool
+	Listed     *bool
 	Math       bool
 	Pin        bool
 	Body       string
@@ -30,6 +32,8 @@ type Note struct {
 	Comment        *bool
 	WordCount      int
 	ReadingMinutes int
+	Lang           string
+	I18nKey        string
 	CanonicalPath  string
 }
 
@@ -38,7 +42,12 @@ type frontmatter struct {
 	Date    string   `yaml:"date"`
 	Updated string   `yaml:"updated"`
 	Slug    string   `yaml:"slug"`
+	Lang    string   `yaml:"lang"`
+	I18nKey string   `yaml:"i18n_key"`
+	Listed  *bool    `yaml:"listed"`
 	Tags    []string `yaml:"tags"`
+	TagsZh  []string `yaml:"tags_zh"`
+	TagsEn  []string `yaml:"tags_en"`
 	Summary string   `yaml:"summary"`
 	Draft   bool     `yaml:"draft"`
 	Math    bool     `yaml:"math"`
@@ -47,10 +56,10 @@ type frontmatter struct {
 	Comment *bool    `yaml:"comment"`
 }
 
-func LoadNotes(dir string) ([]Note, []string, error) {
+func LoadNotes(dir string) ([]*ArticleGroup, []string, error) {
 	var notes []Note
 	var skipped []string
-	seenSlugs := make(map[string]string)
+	seenSlugs := make(map[string]string) // "lang:slug" -> path
 
 	err := filepath.WalkDir(dir, func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
@@ -69,10 +78,11 @@ func LoadNotes(dir string) ([]Note, []string, error) {
 			return nil
 		}
 
-		if otherPath, ok := seenSlugs[note.Slug]; ok {
-			return fmt.Errorf("slug 重复: %s 同时出现在 %s 和 %s", note.Slug, otherPath, path)
+		key := note.Lang + ":" + note.Slug
+		if otherPath, ok := seenSlugs[key]; ok {
+			return fmt.Errorf("URL 冲突: %s 环境下 slug %s 同时出现在 %s 和 %s", note.Lang, note.Slug, otherPath, path)
 		}
-		seenSlugs[note.Slug] = path
+		seenSlugs[key] = path
 
 		notes = append(notes, note)
 		return nil
@@ -81,14 +91,12 @@ func LoadNotes(dir string) ([]Note, []string, error) {
 		return nil, nil, fmt.Errorf("遍历笔记目录: %w", err)
 	}
 
-	sort.SliceStable(notes, func(i, j int) bool {
-		if notes[i].Date == notes[j].Date {
-			return notes[i].Title < notes[j].Title
-		}
-		return notes[i].Date > notes[j].Date
-	})
+	groups, err := GroupNotes(notes)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	return notes, skipped, nil
+	return groups, skipped, nil
 }
 
 func ParseFile(path string) (Note, error) {
@@ -116,9 +124,14 @@ func Parse(sourcePath, text string) (Note, error) {
 		Date:       strings.TrimSpace(meta.Date),
 		Updated:    strings.TrimSpace(meta.Updated),
 		Slug:       strings.TrimSpace(meta.Slug),
+		Lang:       strings.TrimSpace(meta.Lang),
+		I18nKey:    strings.TrimSpace(meta.I18nKey),
 		Tags:       meta.Tags,
+		TagsZh:     meta.TagsZh,
+		TagsEn:     meta.TagsEn,
 		Summary:    strings.TrimSpace(meta.Summary),
 		Draft:      meta.Draft,
+		Listed:     meta.Listed,
 		Math:       meta.Math,
 		Pin:        meta.Pin,
 		Toc:        meta.Toc,
@@ -128,6 +141,14 @@ func Parse(sourcePath, text string) (Note, error) {
 	}
 	note.URL = "/notes/" + note.Slug + "/"
 	note.CanonicalPath = "/notes/" + note.Slug + "/"
+	
+	if note.Lang == "" {
+		note.Lang = "zh-CN"
+	}
+	if note.I18nKey == "" {
+		note.I18nKey = note.Slug
+	}
+	
 	note.WordCount = countWords(note.Body)
 	note.ReadingMinutes = int(math.Max(1, math.Ceil(float64(note.WordCount)/300.0)))
 
@@ -165,6 +186,15 @@ func validate(note Note) error {
 	}
 	if strings.Contains(note.Slug, "/") || strings.Contains(note.Slug, "\\") || strings.Contains(note.Slug, "..") {
 		return fmt.Errorf("slug 不能包含路径分隔符或 ..")
+	}
+	if note.Lang != "zh-CN" && note.Lang != "en" {
+		return fmt.Errorf("lang 必须是 zh-CN 或 en，当前为 %s", note.Lang)
+	}
+	if len(note.TagsZh) > 0 && len(note.TagsZh) != len(note.Tags) {
+		return fmt.Errorf("tags_zh 长度 (%d) 必须与 tags (%d) 一致", len(note.TagsZh), len(note.Tags))
+	}
+	if len(note.TagsEn) > 0 && len(note.TagsEn) != len(note.Tags) {
+		return fmt.Errorf("tags_en 长度 (%d) 必须与 tags (%d) 一致", len(note.TagsEn), len(note.Tags))
 	}
 
 	return nil

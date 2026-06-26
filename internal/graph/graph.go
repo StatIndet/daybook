@@ -6,14 +6,19 @@ import (
 	"os"
 )
 
+type TagNode struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+}
+
 type Node struct {
-	ID     string   `json:"id"`
-	Title  string   `json:"title"`
-	URL    string   `json:"url"`
-	Tags   []string `json:"tags"`
-	Date   string   `json:"date"`
-	Degree int      `json:"degree"`
-	Exists bool     `json:"exists"`
+	ID     string    `json:"id"`
+	Title  string    `json:"title"`
+	URL    string    `json:"url"`
+	Tags   []TagNode `json:"tags"`
+	Date   string    `json:"date"`
+	Degree int       `json:"degree"`
+	Exists bool      `json:"exists"`
 }
 
 type Link struct {
@@ -39,7 +44,7 @@ type InputNode struct {
 	ID    string
 	Title string
 	URL   string
-	Tags  []string
+	Tags  []TagNode
 	Date  string
 }
 
@@ -144,7 +149,7 @@ func BuildJSON(nodes []InputNode, links []InputLink, outputPath string) error {
 				ID:     target,
 				Title:  target,
 				URL:    "",
-				Tags:   []string{},
+				Tags:   []TagNode{},
 				Date:   "",
 				Degree: degreeMap[target],
 				Exists: false,

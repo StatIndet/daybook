@@ -254,4 +254,8 @@
   document.addEventListener("daybook:page-load", function () {
     scheduleInit();
   });
+
+  document.addEventListener("daybook:article-content-swapped", function () {
+    scheduleInit();
+  });
 })();

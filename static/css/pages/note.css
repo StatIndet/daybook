@@ -448,3 +448,4 @@
     font-weight: 500;
   }
 }
+.note-bilingual-link a.is-translation-active { color: var(--color-accent); font-weight: 500; }

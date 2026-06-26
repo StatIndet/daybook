@@ -1,5 +1,5 @@
 {{define "content"}}
-<section class="home-hero" aria-label="个人介绍">
+<section class="home-hero" aria-label="{{T .Lang "home.hero_label"}}">
   <div class="hero-avatar-wrap">
     <img class="hero-avatar" src="/images/avatar/shelby.jpg" alt="史帙头像">
   </div>
@@ -11,7 +11,7 @@
         <span class="hero-name-en">Stat.Indet</span>
       </h1>
 
-      <p class="hero-slogan">笑一个吧，功成名就不是目的。</p>
+      <p class="hero-slogan">{{T .Lang "home.slogan"}}</p>
     </div>
 
     {{template "social_links" .}}

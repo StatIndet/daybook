@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/StatIndet/daybook/internal/config"
-	"github.com/StatIndet/daybook/internal/content"
+	"github.com/StatIndet/daybook/internal/render"
 )
 
 type rss struct {
@@ -33,7 +33,7 @@ type item struct {
 	PubDate     string `xml:"pubDate,omitempty"`
 }
 
-func Write(path string, cfg config.Config, notes []content.Note) error {
+func Write(path string, cfg config.Config, notes []render.NoteLink) error {
 	baseURL := strings.TrimRight(cfg.BaseURL, "/")
 	document := rss{
 		Version: "2.0",

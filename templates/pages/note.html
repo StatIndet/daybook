@@ -24,7 +24,7 @@
     <article class="note" data-has-mermaid="{{if .Note.HasMermaid}}true{{else}}false{{end}}" data-has-math="{{if .Note.HasMath}}true{{else}}false{{end}}">
       <header class="note-header">
         <div class="note-title-wrapper">
-          <a class="note-back-link" href="/notes/" aria-label="返回文章列表">
+          <a class="note-back-link" href="{{if eq .Lang "en"}}/en{{end}}/notes/" aria-label="{{T .Lang "action.back"}}">
             <span class="material-symbol" aria-hidden="true">arrow_back</span>
           </a>
           <h1 class="note-title">
@@ -33,18 +33,28 @@
             </span>
           </h1>
         </div>
+        {{if .Note.IsFallback}}
+        <div class="note-fallback-warning">
+          <p>{{T .Lang "post.no_translation"}}</p>
+        </div>
+        {{end}}
         <p class="note-meta">
           <span class="meta-transition-group" data-meta-transition-key="{{.Note.Slug}}">
             <time datetime="{{.Note.Date}}" data-date-transition-key="{{.Note.Slug}}">{{.Note.Date}}</time>
-            <span class="reading-time">{{.Note.ReadingMinutes}} min</span>
+            <span class="reading-time">{{.Note.ReadingMinutes}} {{T .Lang "post.min_read"}}</span>
           </span>
           <span class="meta-stagger">
-            <span>{{formatNum .Note.WordCount}} chars</span>
+            <span>{{formatNum .Note.WordCount}} {{T .Lang "post.words"}}</span>
           </span>
           <span class="meta-stagger">
-            <span data-page-views data-path="{{.Note.CanonicalPath}}">--</span>
-            <span data-page-views-label data-path="{{.Note.CanonicalPath}}">views</span>
+            <span data-page-views data-path="/notes/{{.Note.Slug}}/">--</span>
+            <span data-page-views-label data-path="/notes/{{.Note.Slug}}/">views</span>
           </span>
+          {{if .Note.HasTranslation}}
+          <span class="meta-stagger note-bilingual-link">
+            <a href="{{if eq .Lang "en"}}/notes/{{.Note.Slug}}/{{else}}/en/notes/{{.Note.Slug}}/{{end}}">{{T .Lang "post.bilingual"}}</a>
+          </span>
+          {{end}}
         </p>
         {{if .Note.Updated}}
         <p class="note-updated meta-stagger">
@@ -63,11 +73,11 @@
       </div>
 
       {{if .Note.Tags}}
-      <section class="note-tags" aria-label="文章标签">
+      <section class="note-tags" aria-label="{{T .Lang "action.tags"}}">
         <hr class="note-tags-divider">
         <div class="note-tags-list">
           {{range .Note.Tags}}
-          <a href="/notes/?tag={{urlquery .}}" class="note-tag-capsule">#{{.}}</a>
+          <a href="{{if eq $.Lang "en"}}/en{{end}}/notes/?tag={{urlquery .}}" class="note-tag-capsule">#{{.}}</a>
           {{end}}
         </div>
       </section>
@@ -75,15 +85,15 @@
 
       {{if .Note.CommentEnabled}}
       <section class="post-comments">
-        <h2 class="post-comments-title">评论</h2>
+        <h2 class="post-comments-title">Comments</h2>
         <div id="waline"
              data-server-url="{{$.Config.Comment.Waline.ServerURL}}"
-             data-lang="{{$.Config.Comment.Waline.Lang}}"
+             data-lang="{{if eq $.Lang "en"}}en-US{{else}}zh-CN{{end}}"
              data-page-size="{{$.Config.Comment.Waline.PageSize}}"
              data-comment-sorting="{{$.Config.Comment.Waline.CommentSorting}}"
              data-search="{{$.Config.Comment.Waline.Search}}"
              data-image-uploader="{{$.Config.Comment.Waline.ImageUploader}}"
-             data-path="/notes/{{.Note.Slug}}"></div>
+             data-path="/notes/{{.Note.Slug}}/"></div>
         <link rel="stylesheet" href="/vendor/waline/waline.css">
         <link rel="stylesheet" href="{{.Assets.Path "/css/components/waline-theme.css"}}">
       </section>

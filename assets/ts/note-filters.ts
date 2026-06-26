@@ -140,7 +140,7 @@
       return true;
     }
 
-    var tags = noteTags(card);
+    var tags = (card.dataset.tagIds || "").split(/\n/).map(cleanText).filter(Boolean);
     if (filter.type === "tag") {
       var activeTag = lower(filter.value);
       return tags.some(function (tag) {
@@ -148,11 +148,12 @@
       });
     }
 
+    var textTags = noteTags(card);
     var keyword = lower(filter.value);
     var text = [
       card.dataset.searchTitle || "",
       card.dataset.searchSummary || "",
-      tags.join(" "),
+      textTags.join(" "),
     ].join(" ");
 
     return lower(text).includes(keyword);

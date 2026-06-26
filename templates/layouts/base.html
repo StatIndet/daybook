@@ -1,15 +1,15 @@
 {{define "base"}}
 <!doctype html>
-<html lang="zh-CN">
+<html lang="{{if .Lang}}{{.Lang}}{{else}}zh-CN{{end}}">
 {{template "head" .}}
 <body class="{{.BodyClass}}" data-page-kind="{{.PageKind}}" data-search-index-url="/search.json">
   {{template "persistent_logo" .}}
 
   <div class="page-frame" id="daybook-page" data-daybook-page>
-  {{if eq .PageTitle "首页"}}
+  {{if eq .PageKind "home"}}
   {{template "header_nav" .}}
 
-  <main class="site-main{{if eq .PageTitle "首页"}} home-main{{end}}">
+  <main class="site-main{{if eq .PageKind "home"}} home-main{{end}}">
     <div id="main-content-wrapper">
       {{template "content" .}}
     </div>

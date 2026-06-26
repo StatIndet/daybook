@@ -2,13 +2,18 @@ interface GraphMeta {
   defaultScale?: number;
 }
 
+export interface TagNode {
+  id: string;
+  title: string;
+}
+
 interface RawNode {
   id: string;
   title: string;
   url?: string;
   exists: boolean;
   degree: number;
-  tags?: string[];
+  tags?: TagNode[];
 }
 
 interface GraphNode {
@@ -23,7 +28,7 @@ interface GraphNode {
   url?: string;
   exists: boolean;
   degree: number;
-  tags?: string[];
+  tags?: TagNode[];
   isTag?: boolean;
   radius: number;
 }
@@ -79,7 +84,8 @@ interface GraphData {
     if (!container) return;
 
     try {
-      const res = await fetch('/graph.json');
+      const basePath = window.location.pathname.replace(/\/graph\/?$/, '');
+      const res = await fetch(`${basePath}/graph.json`);
       const data: GraphData = await res.json();
       rawNodes = data.nodes || [];
       rawLinks = data.links || [];
@@ -216,15 +222,15 @@ interface GraphData {
       
       nodes.forEach(n => {
         if (n.tags && n.tags.length > 0) {
-          n.tags.forEach(tag => {
-            const tagId = 'tag-' + tag;
+          n.tags.forEach(tagObj => {
+            const tagId = tagObj.id;
             if (!tagNodesMap.has(tagId)) {
               // Add a slight random offset to prevent near-zero distance singularity physics explosion
               const angle = Math.random() * Math.PI * 2;
               const offset = 20;
               tagNodesMap.set(tagId, {
                 id: tagId,
-                title: '#' + tag,
+                title: '#' + tagObj.title,
                 isTag: true,
                 exists: true,
                 degree: 1,

@@ -3,25 +3,25 @@
 <aside class="mobile-drawer" id="mobile-drawer" aria-label="移动端导航" aria-hidden="true">
   <div class="mobile-drawer-content">
     <nav class="mobile-drawer-nav" aria-label="主导航">
-      <a class="drawer-nav-link" href="/">
+      <a class="drawer-nav-link" href="{{if eq .Lang "en"}}/en{{end}}/">
         <span class="material-symbol" aria-hidden="true">home</span>
-        <span class="drawer-nav-label">首页</span>
+        <span class="drawer-nav-label">{{T .Lang "nav.home"}}</span>
       </a>
-      <a class="drawer-nav-link" href="/notes/">
+      <a class="drawer-nav-link" href="{{if eq .Lang "en"}}/en{{end}}/notes/">
         <span class="material-symbol" aria-hidden="true">article</span>
-        <span class="drawer-nav-label">文章</span>
+        <span class="drawer-nav-label">{{T .Lang "nav.notes"}}</span>
       </a>
-      <a class="drawer-nav-link" href="/archive/">
+      <a class="drawer-nav-link" href="{{if eq .Lang "en"}}/en{{end}}/archive/">
         <span class="material-symbol" aria-hidden="true">archive</span>
-        <span class="drawer-nav-label">归档</span>
+        <span class="drawer-nav-label">{{T .Lang "nav.archive"}}</span>
       </a>
-      <a class="drawer-nav-link" href="/graph/">
+      <a class="drawer-nav-link" href="{{if eq .Lang "en"}}/en{{end}}/graph/">
         <span class="material-symbol" aria-hidden="true">account_tree</span>
-        <span class="drawer-nav-label">关系图谱</span>
+        <span class="drawer-nav-label">{{T .Lang "nav.graph"}}</span>
       </a>
-      <a class="drawer-nav-link" href="/about/">
+      <a class="drawer-nav-link" href="{{if eq .Lang "en"}}/en{{end}}/about/">
         <span class="material-symbol" aria-hidden="true">info</span>
-        <span class="drawer-nav-label">关于</span>
+        <span class="drawer-nav-label">{{T .Lang "nav.about"}}</span>
       </a>
     </nav>
 
@@ -30,11 +30,11 @@
     <div class="mobile-drawer-funcs" data-mobile-overlay-tools>
       <button class="drawer-nav-link" type="button" aria-expanded="false" data-mobile-overlay-target="search" id="drawer-search-btn">
         <span class="material-symbol" aria-hidden="true">search</span>
-        <span class="drawer-nav-label">搜索</span>
+        <span class="drawer-nav-label">{{T .Lang "action.search"}}</span>
       </button>
       <button class="drawer-nav-link" type="button" aria-expanded="false" data-mobile-overlay-target="tags" id="drawer-tags-btn">
         <span class="material-symbol" aria-hidden="true">sell</span>
-        <span class="drawer-nav-label">标签</span>
+        <span class="drawer-nav-label">{{T .Lang "action.tags"}}</span>
       </button>
     </div>
 
@@ -55,18 +55,25 @@
       <label class="drawer-switch-item">
         <div class="drawer-switch-label">
           <span class="material-symbol drawer-eyecare-icon" aria-hidden="true">palette</span>
-          <span class="drawer-switch-text">切换主题</span>
+          <span class="drawer-switch-text">{{T .Lang "action.theme"}}</span>
         </div>
-        <button type="button" class="material-switch drawer-eyecare-toggle eye-care-toggle" role="switch" aria-checked="false" aria-label="切换主题">
+        <button type="button" class="material-switch drawer-eyecare-toggle eye-care-toggle" role="switch" aria-checked="false" aria-label="{{T .Lang "action.theme"}}">
           <span class="switch-track"></span>
           <span class="switch-thumb"></span>
         </button>
       </label>
+      
+      <a class="drawer-switch-item" href="{{.AlternateURL}}" style="text-decoration: none; color: inherit;">
+        <div class="drawer-switch-label">
+          <span class="material-symbol" aria-hidden="true">translate</span>
+          <span class="drawer-switch-text">中/EN</span>
+        </div>
+      </a>
     </div>
 
     <div class="mobile-drawer-footer">
       <div class="drawer-footer-row">
-        <a href="/rss.xml">RSS</a>
+        <a href="{{if eq .Lang "en"}}/en{{end}}/rss.xml">RSS</a>
         <span class="footer-separator" aria-hidden="true">/</span>
         <a href="https://github.com/StatIndet" target="_blank" rel="noopener noreferrer">Github</a>
         <span class="footer-separator" aria-hidden="true">/</span>

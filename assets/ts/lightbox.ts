@@ -41,6 +41,10 @@
         this.forceCleanup();
         this.setupOverlay();
       });
+      document.addEventListener("daybook:article-content-swapped", () => {
+        this.forceCleanup();
+        this.setupOverlay();
+      });
       document.addEventListener("daybook:before-swap", () => this.forceCleanup());
       window.addEventListener("beforeunload", () => this.forceCleanup());
     }
