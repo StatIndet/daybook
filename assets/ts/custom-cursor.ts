@@ -3,8 +3,13 @@ import { IdleClockController } from "./custom-cursor-clock";
 (() => {
   if (typeof window === "undefined") return;
   
-  // Try to avoid touch devices that don't support hover well
-  if (window.matchMedia("(hover: none)").matches) return;
+  // Try to avoid touch devices, devices with coarse pointers, or small screens
+  const isTouch = window.matchMedia("(hover: none), (pointer: coarse)").matches;
+  const isMobileSize = window.matchMedia("(max-width: 768px)").matches;
+  
+  if (isTouch || isMobileSize) {
+    return;
+  }
 
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     return;
@@ -44,11 +49,9 @@ import { IdleClockController } from "./custom-cursor-clock";
   let currentState = "default";
 
   const clockController = new IdleClockController();
-  const IDLE_DELAY = 2000;
   // 阈值加大：只基于速度判断。移动速度超过 6.0 px/ms 时触发拉断
   const BREAK_SPEED = 3.0;
   
-  let idleTimer: number | null = null;
   let isClockActive = false;
   let lastMoveTime = performance.now();
   let lastMoveX = mouseX;
@@ -75,24 +78,6 @@ import { IdleClockController } from "./custom-cursor-clock";
     }
   }
 
-  function resetIdleTimer() {
-    if (idleTimer) {
-      clearTimeout(idleTimer);
-      idleTimer = null;
-    }
-    const path = window.location.pathname;
-    // 严格白名单：仅在首页显示时钟
-    if (path !== "/") {
-      return;
-    }
-    if (currentState === "default") {
-      idleTimer = window.setTimeout(() => {
-        isClockActive = true;
-        clockController.start(cursorX, cursorY);
-      }, IDLE_DELAY);
-    }
-  }
-
   function breakIdleClock(snap = false) {
     isClockActive = false;
     if (snap) {
@@ -100,7 +85,6 @@ import { IdleClockController } from "./custom-cursor-clock";
     } else {
       clockController.stop();
     }
-    resetIdleTimer();
   }
 
   function handlePointerMove(e: PointerEvent) {
@@ -123,8 +107,6 @@ import { IdleClockController } from "./custom-cursor-clock";
       } else {
         clockController.updateTarget(mouseX, mouseY);
       }
-    } else {
-      resetIdleTimer();
     }
 
     lastMoveTime = now;
@@ -145,12 +127,6 @@ import { IdleClockController } from "./custom-cursor-clock";
     if (state !== "default" && state !== "hidden") {
       isClockActive = false;
       clockController.stop();
-      if (idleTimer) {
-        clearTimeout(idleTimer);
-        idleTimer = null;
-      }
-    } else if (state === "default") {
-      resetIdleTimer();
     }
   }
   
@@ -210,22 +186,29 @@ import { IdleClockController } from "./custom-cursor-clock";
   document.addEventListener("mouseleave", handleMouseLeave);
   document.addEventListener("mouseenter", handleMouseEnter);
 
-  function handleInteraction() {
-    breakIdleClock();
-  }
+  document.addEventListener("click", (e) => {
+    const path = window.location.pathname;
+    if (path.startsWith("/graph/") || path.startsWith("/about/")) {
+      return;
+    }
 
-  document.addEventListener("scroll", handleInteraction, { passive: true });
-  document.addEventListener("click", handleInteraction, { passive: true });
+    if (isClockActive) {
+      breakIdleClock(false);
+    } else {
+      if (currentState === "default") {
+        isClockActive = true;
+        clockController.start(cursorX, cursorY);
+      }
+    }
+  }, { passive: true });
+
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) handleInteraction();
+    if (document.hidden) breakIdleClock(false);
     else clockController.updateColors();
   });
 
   // Fallback for SPA routing to re-eval hover state
   document.addEventListener("daybook:page-load", () => {
-    const path = window.location.pathname;
-    if (path !== "/") {
-      breakIdleClock(); // 原地倒序坍缩退出
-    }
+    breakIdleClock(false);
   });
 })();
