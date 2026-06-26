@@ -32,10 +32,10 @@ async function copyFileClean(source, target) {
   console.log(`Copied ${source} -> ${target}`);
 }
 
-// Copy LXGW WenKai Regular
+// Copy LXGW WenKai Screen
 await copyDirClean(
-  path.join(root, "node_modules", "@chinese-fonts", "lxgwwenkai", "dist", "LXGWWenKai-Regular"),
-  path.join(root, "static", "vendor", "fonts", "lxgwwenkai", "regular"),
+  path.join(root, "node_modules", "lxgw-wenkai-screen-web", "lxgwwenkaiscreen"),
+  path.join(root, "static", "vendor", "fonts", "lxgw-wenkai-screen", "regular"),
 );
 
 // Copy Maple Mono CN Regular

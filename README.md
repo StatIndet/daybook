@@ -120,8 +120,12 @@ npm run serve
 
 运行时的字体资产分为两大类，均被提交在 `static/vendor/fonts/` 下，因此**普通 Go 构建和页面加载不依赖 NPM 安装与网络。** 只有在更新字体源或修改了装饰字体文本时才需要重新生成：
 
-* **运行时前端字体 (Vendor Fonts)**：管理正文字体 (LXGW WenKai)、代码字体 (Maple Mono CN) 及图标字体 (Material Symbols)。
-  如果您需要刷新或升级这些 NPM 托管的字体：
+* **运行时前端字体 (Vendor Fonts)**：管理正文字体 (LXGW WenKai Screen)、代码字体 (Maple Mono CN) 及图标字体 (Material Symbols)。
+  LXGW WenKai Screen is used for prose/body text because it is more readable on screens than the standard LXGW WenKai package.
+
+  `static/vendor/fonts/` contains generated runtime font assets and is intentionally committed.
+
+  To refresh npm-managed runtime fonts:
   ```bash
   npm install
   npm run build:vendor-fonts

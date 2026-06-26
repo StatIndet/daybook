@@ -37,10 +37,10 @@
   },
   "homepage": "https://github.com/StatIndet/daybook#readme",
   "devDependencies": {
-    "@chinese-fonts/lxgwwenkai": "^3.0.0",
     "@chinese-fonts/maple-mono-cn": "^2.0.0",
     "concurrently": "^10.0.3",
     "esbuild": "^0.28.1",
+    "lxgw-wenkai-screen-web": "^1.522.0",
     "material-symbols": "^0.45.2",
     "typescript": "^6.0.3",
     "wrangler": "^4.104.0"
