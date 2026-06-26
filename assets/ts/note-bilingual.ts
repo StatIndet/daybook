@@ -14,8 +14,8 @@
   }
 
   let originalState: OriginalState | null = null;
-  let isTranslationActive = false;
   let cachedAltFragment: NoteFragment | null = null;
+  let isFetching = false;
 
   function dispatchSwapEvent() {
     document.dispatchEvent(new CustomEvent("daybook:article-content-swapped"));
@@ -44,14 +44,13 @@
   }
 
   function initBilingualToggle() {
-    const toggleLink = document.querySelector(".note-bilingual-link a") as HTMLAnchorElement;
-    if (!toggleLink) return;
+    const toggleBtn = document.querySelector(".bilingual-toggle-btn") as HTMLButtonElement;
+    if (!toggleBtn) return;
 
-    toggleLink.addEventListener("click", async (event) => {
+    toggleBtn.addEventListener("click", async (event) => {
       event.preventDefault();
 
-      const btnContainer = toggleLink.closest(".note-bilingual-link");
-      if (!btnContainer) return;
+      if (isFetching) return;
 
       if (!originalState) {
         const postContent = document.querySelector(".post-content") as HTMLElement;
@@ -73,43 +72,48 @@
         }
 
         originalState = {
-          lang: postContent ? (postContent.getAttribute("lang") || document.documentElement.lang) : document.documentElement.lang,
+          lang: toggleBtn.dataset.currentLang || document.documentElement.lang,
           html: postContent ? postContent.innerHTML : "",
           summary: noteSummary ? noteSummary.innerHTML : "",
           headings: originalHeadings
         };
       }
 
-      if (isTranslationActive) {
+      const currentLang = toggleBtn.dataset.currentLang;
+      const isAlt = currentLang !== originalState.lang;
+
+      if (isAlt) {
         // Revert to original
         swapContent(originalState);
-        isTranslationActive = false;
-        
-        toggleLink.classList.remove("is-translation-active");
-        toggleLink.setAttribute("aria-pressed", "false");
-        toggleLink.removeAttribute("title");
+        toggleBtn.dataset.currentLang = originalState.lang;
+        toggleBtn.setAttribute("aria-pressed", "false");
+        toggleBtn.removeAttribute("title");
       } else {
         // Fetch or use cached
         if (!cachedAltFragment) {
+          isFetching = true;
           try {
-            toggleLink.style.pointerEvents = "none";
-            toggleLink.style.opacity = "0.5";
-            
-            const href = toggleLink.getAttribute("href") || "";
-            const jsonUrl = href.replace(/\/$/, '') + '/fragment.json';
+            toggleBtn.style.pointerEvents = "none";
+            const jsonUrl = toggleBtn.dataset.altFragmentUrl;
+            if (!jsonUrl) throw new Error("Missing alt fragment URL");
             
             const res = await fetch(jsonUrl);
             if (!res.ok) throw new Error("Failed to fetch translation fragment");
             
-            cachedAltFragment = await res.json();
+            const data = await res.json();
+            if (data && data.html) {
+               cachedAltFragment = data;
+            } else {
+               throw new Error("Invalid fragment structure");
+            }
           } catch (e) {
             console.error(e);
-            toggleLink.style.pointerEvents = "";
-            toggleLink.style.opacity = "";
-            return; // Abort
+            isFetching = false;
+            toggleBtn.style.pointerEvents = "";
+            return; // Abort silently
           } finally {
-            toggleLink.style.pointerEvents = "";
-            toggleLink.style.opacity = "";
+            isFetching = false;
+            toggleBtn.style.pointerEvents = "";
           }
         }
 
@@ -120,23 +124,20 @@
              html: cachedAltFragment.html,
              headings: cachedAltFragment.headings || []
           });
-          isTranslationActive = true;
           
-          toggleLink.classList.add("is-translation-active");
-          toggleLink.setAttribute("aria-pressed", "true");
-          
-          const backText = document.documentElement.lang === "en" ? "Back to page language" : "返回当前页面语言";
-          toggleLink.setAttribute("title", backText);
+          toggleBtn.dataset.currentLang = cachedAltFragment.lang;
+          toggleBtn.setAttribute("aria-pressed", "true");
+          const backText = originalState.lang === "en" ? "Back to English" : "返回中文";
+          toggleBtn.setAttribute("title", backText);
         }
       }
     });
   }
 
   document.addEventListener("daybook:page-load", () => {
-    // Reset state on actual navigation
     originalState = null;
-    isTranslationActive = false;
     cachedAltFragment = null;
+    isFetching = false;
     initBilingualToggle();
   });
 
