@@ -541,7 +541,11 @@ import { setupImages } from "./image-loader.js";
 
 
   document.addEventListener("daybook:page-load", function () {
-    console.log("EMBEDS.TS LISTENER FIRED"); window.daybookSyncEmbeds();
+    window.daybookSyncEmbeds();
+  });
+
+  document.addEventListener("daybook:article-content-swapped", function () {
+    window.daybookSyncEmbeds();
   });
 
   document.addEventListener("daybook:before-swap", function () {

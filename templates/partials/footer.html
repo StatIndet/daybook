@@ -1,10 +1,10 @@
 {{define "home_footer"}}
 <footer class="home-footer">
   <div class="footer-stats-row">
-    <span class="footer-stat-item">访客 <strong data-site-visitors>--</strong> &middot;</span>
-    <span class="footer-stat-item">访问 <strong data-site-views>--</strong> &middot;</span>
-    <span class="footer-stat-item">字数 <strong>{{ formatNum .Site.TotalWordCount }}</strong> &middot;</span>
-    <span class="footer-stat-item">历时 <strong data-site-uptime data-started-at="{{ .Site.StartedAt }}">--</strong></span>
+    <span class="footer-stat-item">{{T .Lang "footer.visitors"}} <strong data-site-visitors>--</strong> &middot;</span>
+    <span class="footer-stat-item">{{T .Lang "footer.views"}} <strong data-site-views>--</strong> &middot;</span>
+    <span class="footer-stat-item">{{T .Lang "footer.words"}} <strong>{{ formatNum .Site.TotalWordCount }}</strong> &middot;</span>
+    <span class="footer-stat-item">{{T .Lang "footer.uptime"}} <strong data-site-uptime data-started-at="{{ .Site.StartedAt }}">--</strong></span>
   </div>
   <p class="footer-copyright">© 2026 史帙</p>
 </footer>
@@ -17,13 +17,13 @@
       <span class="notes-brand-cn">史帙</span>
       <span class="notes-brand-en">Stat.Indet</span>
     </h1>
-    <p>笑一个吧，功成名就不是目的。</p>
+    <p>{{T .Lang "home.slogan"}}</p>
   </div>
 
   <div class="notes-aside-controls">
     <div class="notes-tools" data-notes-tools>
       <div class="notes-tool-panel notes-search-panel" id="notes-search-panel" data-notes-panel="search" aria-hidden="true">
-        <input class="notes-search-input" type="search" placeholder="搜索：标题/摘要/标签" autocomplete="off" spellcheck="false" aria-label="搜索：标题/摘要/标签" data-notes-search>
+        <input class="notes-search-input" type="search" placeholder="{{T .Lang "search.placeholder"}}" autocomplete="off" spellcheck="false" aria-label="{{T .Lang "search.placeholder"}}" data-notes-search>
       </div>
 
       <div class="notes-tool-panel notes-tags-panel" id="notes-tags-panel" data-notes-panel="tags" aria-hidden="true">
@@ -36,7 +36,7 @@
           {{end}}
         </nav>
         {{else}}
-        <p class="notes-tool-empty">暂无标签</p>
+        <p class="notes-tool-empty">{{T .Lang "tag.empty"}}</p>
         {{end}}
       </div>
     </div>
@@ -52,10 +52,10 @@
 
 {{define "notes_footer_actions"}}
 <div class="notes-footer-actions" aria-label="页面操作">
-  <button class="notes-action-button" type="button" aria-label="搜索" aria-expanded="false" aria-controls="notes-search-panel" data-tooltip="搜索" data-notes-tool="search">
+  <button class="notes-action-button" type="button" aria-label="{{T .Lang "action.search"}}" aria-expanded="false" aria-controls="notes-search-panel" data-tooltip="{{T .Lang "tooltip.search"}}" data-notes-tool="search">
     <span class="material-symbol" aria-hidden="true">search</span>
   </button>
-  <button class="notes-action-button" type="button" aria-label="标签" aria-expanded="false" aria-controls="notes-tags-panel" data-tooltip="标签" data-notes-tool="tags">
+  <button class="notes-action-button" type="button" aria-label="{{T .Lang "action.tags"}}" aria-expanded="false" aria-controls="notes-tags-panel" data-tooltip="{{T .Lang "tooltip.tags"}}" data-notes-tool="tags">
     <span class="material-symbol" aria-hidden="true">sell</span>
   </button>
   {{template "theme_toggle_action" .}}
@@ -65,7 +65,7 @@
 {{define "notes_footer_links"}}
 <nav class="notes-footer-links" aria-label="页脚链接">
   <div class="footer-link-row">
-    <a href="/rss.xml">RSS</a>
+    <a href="{{if eq .Lang "en"}}/en{{end}}/rss.xml">RSS</a>
     <span class="footer-separator" aria-hidden="true">/</span>
     <a href="https://github.com/StatIndet" target="_blank" rel="noopener noreferrer">Github</a>
     <span class="footer-separator" aria-hidden="true">/</span>

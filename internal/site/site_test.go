@@ -31,13 +31,28 @@ func TestMonthGroups(t *testing.T) {
 }
 
 func TestCollectTagLinks(t *testing.T) {
-	notes := []content.Note{
-		{Tags: []string{"ssh", "debian", "ssh"}},
-		{Tags: []string{"Debian", "虚拟机"}},
-		{Tags: []string{"  ", "Go"}},
+	groups := []*content.ArticleGroup{
+		{
+			I18nKey: "1",
+			Versions: map[string]*content.Note{
+				"zh-CN": {Tags: []string{"ssh", "debian", "ssh"}},
+			},
+		},
+		{
+			I18nKey: "2",
+			Versions: map[string]*content.Note{
+				"zh-CN": {Tags: []string{"Debian", "虚拟机"}},
+			},
+		},
+		{
+			I18nKey: "3",
+			Versions: map[string]*content.Note{
+				"zh-CN": {Tags: []string{"  ", "Go"}},
+			},
+		},
 	}
 
-	tags := collectTagLinks(notes)
+	tags := collectTagLinksForLang(groups, "zh-CN")
 	wantNames := []string{"debian", "Go", "ssh", "虚拟机"}
 
 	if len(tags) != len(wantNames) {

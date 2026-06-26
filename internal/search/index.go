@@ -8,7 +8,7 @@ import (
 	"github.com/StatIndet/daybook/internal/content"
 )
 
-type IndexItem struct {
+type IndexVersion struct {
 	Title       string   `json:"title"`
 	Summary     string   `json:"summary"`
 	Tags        []string `json:"tags"`
@@ -17,21 +17,44 @@ type IndexItem struct {
 	ReadingTime string   `json:"readingTime"`
 }
 
-func BuildIndex(notes []content.Note, estimateReadingTime func(string) string, outputPath string) error {
+type IndexItem struct {
+	I18nKey  string                  `json:"i18n_key"`
+	Versions map[string]IndexVersion `json:"versions"`
+}
+
+func BuildIndex(groups []*content.ArticleGroup, estimateReadingTime func(string) string, outputPath string) error {
 	var items []IndexItem
 
-	for _, note := range notes {
-		if note.Draft {
+	for _, group := range groups {
+		versions := make(map[string]IndexVersion)
+		for lang, note := range group.Versions {
+			if note.Draft {
+				continue
+			}
+			tags := note.Tags
+			if lang == "en" && len(note.TagsEn) > 0 {
+				tags = note.TagsEn
+			} else if lang == "zh-CN" && len(note.TagsZh) > 0 {
+				tags = note.TagsZh
+			}
+			
+			versions[lang] = IndexVersion{
+				Title:       note.Title,
+				Summary:     note.Summary,
+				Tags:        tags,
+				Date:        note.Date,
+				URL:         note.URL,
+				ReadingTime: estimateReadingTime(note.Body),
+			}
+		}
+		
+		if len(versions) == 0 {
 			continue
 		}
 
 		items = append(items, IndexItem{
-			Title:       note.Title,
-			Summary:     note.Summary,
-			Tags:        note.Tags,
-			Date:        note.Date,
-			URL:         note.URL,
-			ReadingTime: estimateReadingTime(note.Body),
+			I18nKey:  group.I18nKey,
+			Versions: versions,
 		})
 	}
 

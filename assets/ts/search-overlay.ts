@@ -1,3 +1,17 @@
+interface IndexVersion {
+  title: string;
+  summary: string;
+  tags: string[];
+  date: string;
+  url: string;
+  readingTime: string;
+}
+
+interface IndexItem {
+  i18n_key: string;
+  versions: Record<string, IndexVersion>;
+}
+
 interface SearchItem {
   title: string;
   url: string;
@@ -91,8 +105,18 @@ interface SearchItem {
          if (!res.ok) throw new Error("Failed to fetch search index");
          return res.json();
       })
-      .then(function(data: SearchItem[]) {
-         searchData = data;
+      .then(function(data: IndexItem[]) {
+         const currentLang = document.documentElement.lang || "zh-CN";
+         searchData = [];
+         for (let i = 0; i < data.length; i++) {
+            const group = data[i];
+            if (!group) continue;
+            const version = group.versions[currentLang] || group.versions["zh-CN"];
+            if (version) {
+               searchData.push(version);
+            }
+         }
+         
          if (loadingState) loadingState.hidden = true;
          const searchInput = getMobileInput();
          if (searchInput) renderMobileResults(searchInput.value);
@@ -172,7 +196,8 @@ interface SearchItem {
     if (!desktopContainer) return;
     
     if (result.count === 0) {
-      const emptyMsg = cleanText(query) ? '<p class="notes-empty">没有找到匹配的文章。</p>' : '';
+      const emptyText = document.documentElement.lang === "en" ? "No results found" : "没有找到匹配的文章。";
+      const emptyMsg = cleanText(query) ? '<p class="notes-empty">' + emptyText + '</p>' : '';
       desktopContainer.innerHTML = '<div class="notes-month"><div class="notes-month-list">' + emptyMsg + '</div></div>';
       return;
     }

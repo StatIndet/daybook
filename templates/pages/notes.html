@@ -1,8 +1,8 @@
 {{define "content"}}
 <div class="notes-page">
-  <section class="notes-list article-stage" aria-label="文章列表">
+  <section class="notes-list article-stage" aria-label="{{T .Lang "nav.notes"}}">
     <div class="tag-back-container" id="tag-back-container" hidden>
-      <button class="tag-back-btn" id="tag-back-btn" aria-label="返回上一页" type="button">
+      <button class="tag-back-btn" id="tag-back-btn" aria-label="{{T .Lang "action.back"}}" type="button">
         <span class="material-symbol" aria-hidden="true">arrow_back</span>
       </button>
       <h2 class="tag-back-title" id="tag-back-title"></h2>
@@ -30,9 +30,9 @@
         </div>
       {{end}}
       {{else}}
-      <p class="notes-empty">还没有发布的文章。</p>
+      <p class="notes-empty">{{T .Lang "archive.empty"}}</p>
     {{end}}
-    <p class="notes-empty notes-filter-empty" hidden>没有找到匹配的文章。</p>
+    <p class="notes-empty notes-filter-empty" hidden>{{T .Lang "search.empty"}}</p>
   </section>
 
   {{template "notes_aside" .}}

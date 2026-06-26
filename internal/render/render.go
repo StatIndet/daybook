@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/StatIndet/daybook/internal/config"
+	"github.com/StatIndet/daybook/internal/i18n"
 )
 
 type Renderer struct {
@@ -42,13 +43,16 @@ type Heading struct {
 type NoteLink struct {
 	Title               string
 	Date                string
+	Lang                string
 	ReadingTime         string
 	ReadingMinutes      int
 	Summary             string
 	Tags                []string
+	TagIDs              []string
 	URL                 string
 	Slug                string
 	Pin                 bool
+	HasTranslation      bool
 	TitleLayout         template.HTML
 	TitleTransitionName string
 	DateTransitionName  string
@@ -72,6 +76,8 @@ type NotePage struct {
 	HasMath             bool
 	TocEnabled          bool
 	CommentEnabled      bool
+	IsFallback          bool
+	HasTranslation      bool
 	TitleLayout         template.HTML
 	TitleTransitionName string
 	DateTransitionName  string
@@ -149,6 +155,8 @@ type IndexData struct {
 	PageTitle string
 	PageKind  string
 	BodyClass string
+	Lang      string
+	AlternateURL string
 	Assets    Assets
 	HasMath   bool
 	Notes     []NoteLink
@@ -167,6 +175,8 @@ type NotesData struct {
 	PageTitle   string
 	PageKind    string
 	BodyClass   string
+	Lang        string
+	AlternateURL string
 	Assets      Assets
 	HasMath     bool
 	Notes       []NoteLink
@@ -188,6 +198,7 @@ type ArchiveNote struct {
 	DateShort   string
 	ReadingTime string
 	Summary     string
+	TagIDs      []string
 	URL         string
 }
 
@@ -201,6 +212,8 @@ type ArchiveData struct {
 	PageTitle  string
 	PageKind   string
 	BodyClass  string
+	Lang       string
+	AlternateURL string
 	Assets     Assets
 	HasMath    bool
 	Total      int
@@ -214,6 +227,8 @@ type NoteData struct {
 	PageTitle string
 	PageKind  string
 	BodyClass string
+	Lang      string
+	AlternateURL string
 	Assets    Assets
 	HasMath   bool
 	Note      NotePage
@@ -225,6 +240,8 @@ type AboutData struct {
 	PageTitle string
 	PageKind  string
 	BodyClass string
+	Lang      string
+	AlternateURL string
 	Assets    Assets
 	HasMath   bool
 	Spiral    GoldenSpiral
@@ -242,6 +259,8 @@ type GraphData struct {
 	PageTitle string
 	PageKind  string
 	BodyClass string
+	Lang      string
+	AlternateURL string
 	Assets    Assets
 	HasMath   bool
 	Tags      []TagLink
@@ -592,6 +611,7 @@ func (r Renderer) render(outputPath, pageTemplate string, data any) error {
 			}
 			return strings.Join(parts, ",")
 		},
+		"T": i18n.T,
 	})
 	tmpl, err = tmpl.ParseFiles(files...)
 	if err != nil {

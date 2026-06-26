@@ -338,6 +338,14 @@ html.identity-exit-down .notes-aside-identity {
   animation-delay: 140ms;
 }
 
+.home-exiting .site-nav > *:nth-child(7) {
+  animation-delay: 160ms;
+}
+
+.home-exiting .site-nav > *:nth-child(8) {
+  animation-delay: 180ms;
+}
+
 .home-exiting .hero-social a {
   animation: social-exit-down var(--duration-normal) var(--ease-out) both;
 }
@@ -403,6 +411,14 @@ html.identity-exit-down .notes-aside-identity {
 
 .home-entering .site-nav > *:nth-child(6) {
   animation-delay: 230ms;
+}
+
+.home-entering .site-nav > *:nth-child(7) {
+  animation-delay: 260ms;
+}
+
+.home-entering .site-nav > *:nth-child(8) {
+  animation-delay: 290ms;
 }
 
 .home-entering .hero-social a {

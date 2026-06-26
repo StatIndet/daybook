@@ -1,10 +1,10 @@
 {{define "content"}}
 <div class="notes-page">
   <main class="archive-page" aria-label="归档">
-    <section class="archive-timeline" aria-label="文章归档">
+    <section class="archive-timeline" aria-label="{{T .Lang "nav.archive"}}">
       <header class="archive-header">
         <p class="archive-kicker">Archive</p>
-        <p class="archive-count">共 {{.Total}} 篇文章</p>
+        <p class="archive-count">{{.Total}} {{T .Lang "archive.posts"}}</p>
       </header>
 
       {{if .YearGroups}}
@@ -27,7 +27,7 @@
           </section>
         {{end}}
       {{else}}
-        <p class="archive-empty">还没有发布的文章。</p>
+        <p class="archive-empty">{{T .Lang "archive.empty"}}</p>
       {{end}}
     </section>
   </main>

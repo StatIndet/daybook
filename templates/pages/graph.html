@@ -6,30 +6,30 @@
       <div class="graph-toolbar-inner">
         
         <div class="graph-actions-horizontal" data-notes-tools>
-          <button class="notes-action-button" type="button" aria-label="搜索" aria-expanded="false" aria-controls="graph-local-search-panel" data-tooltip="搜索" id="graph-search-btn">
+          <button class="notes-action-button" type="button" aria-label="{{T .Lang "action.search"}}" aria-expanded="false" aria-controls="graph-local-search-panel" data-tooltip="{{T .Lang "tooltip.search"}}" id="graph-search-btn">
             <span class="material-symbol" aria-hidden="true">search</span>
-            <span class="notes-action-text">搜索</span>
+            <span class="notes-action-text">{{T .Lang "action.search"}}</span>
           </button>
           
-          <button class="notes-action-button" type="button" aria-label="显示孤立节点" aria-expanded="true" data-tooltip="显示孤立节点" id="graph-orphan-btn">
+          <button class="notes-action-button" type="button" aria-label="{{T .Lang "graph.orphans"}}" aria-expanded="true" data-tooltip="{{T .Lang "graph.orphans"}}" id="graph-orphan-btn">
             <span class="material-symbol" aria-hidden="true">scatter_plot</span>
-            <span class="notes-action-text">孤立节点</span>
+            <span class="notes-action-text">{{T .Lang "graph.orphans"}}</span>
           </button>
 
-          <button class="notes-action-button" type="button" aria-label="标签" aria-expanded="false" data-tooltip="显示标签" id="graph-tags-btn">
+          <button class="notes-action-button" type="button" aria-label="{{T .Lang "action.tags"}}" aria-expanded="false" data-tooltip="{{T .Lang "tooltip.tags"}}" id="graph-tags-btn">
             <span class="material-symbol" aria-hidden="true">sell</span>
-            <span class="notes-action-text">标签</span>
+            <span class="notes-action-text">{{T .Lang "action.tags"}}</span>
           </button>
           
           {{template "theme_toggle_action" .}}
           
-          <button id="graph-reset" class="notes-action-button" type="button" aria-label="重置视图" data-tooltip="重置视图">
+          <button id="graph-reset" class="notes-action-button" type="button" aria-label="{{T .Lang "graph.reset"}}" data-tooltip="{{T .Lang "graph.reset"}}">
             <span class="material-symbol" aria-hidden="true">center_focus_strong</span>
-            <span class="notes-action-text">重置</span>
+            <span class="notes-action-text">{{T .Lang "graph.reset"}}</span>
           </button>
 
           <div class="notes-tool-panel notes-search-panel" id="graph-local-search-panel" aria-hidden="true">
-            <input class="notes-search-input" type="search" id="graph-search-input" placeholder="搜索文章标题..." autocomplete="off" spellcheck="false" aria-label="搜索文章标题...">
+            <input class="notes-search-input" type="search" id="graph-search-input" placeholder="{{T .Lang "graph.search"}}" autocomplete="off" spellcheck="false" aria-label="{{T .Lang "graph.search"}}">
           </div>
         </div>
       </div>

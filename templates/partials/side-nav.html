@@ -5,25 +5,25 @@
   </a>
 
   <nav class="side-nav" aria-label="主导航">
-    <a class="nav-link" href="/">
+    <a class="nav-link" href="{{if eq .Lang "en"}}/en{{end}}/">
       <span class="nav-icon material-symbol" aria-hidden="true">home</span>
-      <span class="nav-label">首页</span>
+      <span class="nav-label">{{T .Lang "nav.home"}}</span>
     </a>
-    <a class="nav-link" href="/notes/">
+    <a class="nav-link" href="{{if eq .Lang "en"}}/en{{end}}/notes/">
       <span class="nav-icon material-symbol" aria-hidden="true">article</span>
-      <span class="nav-label">文章</span>
+      <span class="nav-label">{{T .Lang "nav.notes"}}</span>
     </a>
-    <a class="nav-link" href="/archive/">
+    <a class="nav-link" href="{{if eq .Lang "en"}}/en{{end}}/archive/">
       <span class="nav-icon material-symbol" aria-hidden="true">archive</span>
-      <span class="nav-label">归档</span>
+      <span class="nav-label">{{T .Lang "nav.archive"}}</span>
     </a>
-    <a class="nav-link" href="/graph/">
+    <a class="nav-link" href="{{if eq .Lang "en"}}/en{{end}}/graph/">
       <span class="nav-icon material-symbol" aria-hidden="true">account_tree</span>
-      <span class="nav-label">关系图谱</span>
+      <span class="nav-label">{{T .Lang "nav.graph"}}</span>
     </a>
-    <a class="nav-link" href="/about/">
+    <a class="nav-link" href="{{if eq .Lang "en"}}/en{{end}}/about/">
       <span class="nav-icon material-symbol" aria-hidden="true">info</span>
-      <span class="nav-label">关于</span>
+      <span class="nav-label">{{T .Lang "nav.about"}}</span>
     </a>
   </nav>
 

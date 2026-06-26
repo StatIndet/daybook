@@ -71,4 +71,5 @@
   };
 
   document.addEventListener("daybook:page-load", window.daybookSyncHeadingAnchors);
+  document.addEventListener("daybook:article-content-swapped", window.daybookSyncHeadingAnchors);
 })();
