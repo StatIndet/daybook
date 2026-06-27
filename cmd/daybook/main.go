@@ -27,6 +27,7 @@ func run() error {
 
 	options := site.Options{
 		Config:       cfg,
+		ContentDir:   "content",
 		NotesDir:     "content/notes",
 		TemplatesDir: "templates",
 		StaticDir:    "static",

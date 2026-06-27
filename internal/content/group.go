@@ -54,21 +54,21 @@ func (g *ArticleGroup) IsListed(lang string) bool {
 	if !ok {
 		return false
 	}
-	
+
 	if note.Listed != nil {
 		return *note.Listed
 	}
-	
+
 	return true
 }
 
 // GroupNotes takes a flat slice of Notes and groups them into ArticleGroups.
 func GroupNotes(notes []Note) ([]*ArticleGroup, error) {
 	groupsMap := make(map[string]*ArticleGroup)
-	
+
 	for i := range notes {
 		note := &notes[i]
-		
+
 		group, ok := groupsMap[note.I18nKey]
 		if !ok {
 			group = &ArticleGroup{
@@ -77,33 +77,33 @@ func GroupNotes(notes []Note) ([]*ArticleGroup, error) {
 			}
 			groupsMap[note.I18nKey] = group
 		}
-		
+
 		if _, exists := group.Versions[note.Lang]; exists {
 			return nil, fmt.Errorf("I18nKey %s 包含多个 %s 语言版本", note.I18nKey, note.Lang)
 		}
-		
+
 		group.Versions[note.Lang] = note
 	}
-	
+
 	var groups []*ArticleGroup
 	for _, g := range groupsMap {
 		groups = append(groups, g)
 	}
-	
+
 	sort.SliceStable(groups, func(i, j int) bool {
 		// Use zh-CN date to sort, or fallback
 		noteI, _ := groups[i].SelectVersion("zh-CN")
 		noteJ, _ := groups[j].SelectVersion("zh-CN")
-		
+
 		if noteI == nil || noteJ == nil {
 			return false
 		}
-		
+
 		if noteI.Date == noteJ.Date {
 			return noteI.Title < noteJ.Title
 		}
 		return noteI.Date > noteJ.Date
 	})
-	
+
 	return groups, nil
 }

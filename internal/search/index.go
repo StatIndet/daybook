@@ -37,7 +37,7 @@ func BuildIndex(groups []*content.ArticleGroup, estimateReadingTime func(string)
 			} else if lang == "zh-CN" && len(note.TagsZh) > 0 {
 				tags = note.TagsZh
 			}
-			
+
 			versions[lang] = IndexVersion{
 				Title:       note.Title,
 				Summary:     note.Summary,
@@ -47,7 +47,7 @@ func BuildIndex(groups []*content.ArticleGroup, estimateReadingTime func(string)
 				ReadingTime: estimateReadingTime(note.Body),
 			}
 		}
-		
+
 		if len(versions) == 0 {
 			continue
 		}

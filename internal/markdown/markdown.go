@@ -55,6 +55,7 @@ func newRenderer() markdownRenderer {
 				extension.Linkify,
 				extension.TaskList,
 				extension.Footnote,
+				ObsidianExtension,
 				highlighting.NewHighlighting(
 					highlighting.WithStyle("github"),
 					highlighting.WithFormatOptions(

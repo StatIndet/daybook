@@ -10,9 +10,9 @@ import (
 )
 
 type Page struct {
-	Title      string
-	Date       string
-	Summary    string
+	Title          string
+	Date           string
+	Summary        string
 	Draft          bool
 	Body           string
 	SourcePath     string

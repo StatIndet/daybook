@@ -89,8 +89,8 @@ func TestToHTMLWithGitHubAlerts(t *testing.T) {
 	}
 
 	wantParts := []string{
-		`<div class="admonition admonition-warning">`,
-		`<div class="admonition-title">Warning</div>`,
+		`<div class="callout" data-callout="warning">`,
+		`<div class="callout-title"><span class="callout-icon material-symbol">warning</span><div class="callout-title-inner">Warning</div></div>`,
 		`<strong>Careful</strong>`,
 		`<li>List item</li>`,
 	}
@@ -123,8 +123,8 @@ func TestToHTMLWithContainerDirectives(t *testing.T) {
 	}
 
 	wantParts := []string{
-		`<div class="admonition admonition-note">`,
-		`<div class="admonition-title">Custom Title</div>`,
+		`<div class="callout" data-callout="note">`,
+		`<div class="callout-title"><span class="callout-icon material-symbol">info</span><div class="callout-title-inner">Custom Title</div></div>`,
 		`Body with <strong>markdown</strong>.`,
 		`<details class="md-fold"><summary>More</summary>`,
 		`<li>hidden item</li>`,

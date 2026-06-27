@@ -3,6 +3,7 @@ export class IdleClockController {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private rafId: number | null = null;
+  private onResizeBound: () => void;
   
   private state: 'hidden' | 'entering' | 'active' | 'exiting' | 'snapped' = 'hidden';
 
@@ -71,8 +72,9 @@ export class IdleClockController {
       this.vy[i] = 0;
     }
 
+    this.onResizeBound = () => this.onResize();
     this.onResize();
-    window.addEventListener("resize", () => this.onResize(), { passive: true });
+    window.addEventListener("resize", this.onResizeBound, { passive: true });
     this.updateDateWords();
   }
 
@@ -143,6 +145,18 @@ export class IdleClockController {
   public stop() {
     if (this.state === 'hidden' || this.state === 'exiting' || this.state === 'snapped') return;
     this.state = 'exiting';
+  }
+
+  public destroy() {
+    this.state = 'hidden';
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+    if (this.canvas && this.canvas.parentNode) {
+      this.canvas.parentNode.removeChild(this.canvas);
+    }
+    window.removeEventListener("resize", this.onResizeBound);
   }
 
   public snap() {

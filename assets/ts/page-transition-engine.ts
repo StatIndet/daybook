@@ -75,6 +75,9 @@ interface ArticleMorphSession {
   }
 
   function isArticleTransition(currentUrlStr: string, targetUrlStr: string): boolean {
+    if (document.documentElement.getAttribute('data-title-transition-disabled') === 'true') {
+      return false;
+    }
     return Boolean(articleTransitionInfo(currentUrlStr, targetUrlStr));
   }
 

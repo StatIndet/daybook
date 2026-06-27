@@ -20,7 +20,20 @@ coverage.out
 # Temporary files
 *.tmp
 *.log
+# macOS
 .DS_Store
+
+# Remote R2 attachments
+content/attachments/audio/**
+content/attachments/video/**
+content/attachments/picture/**
+content/attachments/pdf/**
+
+# Keep directory placeholders
+!content/attachments/audio/.gitkeep
+!content/attachments/video/.gitkeep
+!content/attachments/picture/.gitkeep
+!content/attachments/pdf/.gitkeep
 Thumbs.db
 
 # Local environment

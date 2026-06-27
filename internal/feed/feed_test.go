@@ -7,13 +7,13 @@ import (
 	"testing"
 
 	"github.com/StatIndet/daybook/internal/config"
-	"github.com/StatIndet/daybook/internal/content"
+	"github.com/StatIndet/daybook/internal/render"
 )
 
 func TestWriteRSS(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "rss.xml")
-	notes := []content.Note{
+	notes := []render.NoteLink{
 		{
 			Title:   "示例笔记",
 			Date:    "2026-06-14",

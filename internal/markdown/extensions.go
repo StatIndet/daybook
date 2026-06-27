@@ -35,12 +35,63 @@ var (
 	imgTagPattern             = regexp.MustCompile(`(?i)<img\s+([^>]*)>`)
 )
 
-var admonitionTitles = map[string]string{
+type calloutInfo struct {
+	Type          string
+	OriginalType  string
+	Title         string
+	IsCollapsible bool
+	IsDefaultOpen bool
+}
+
+var calloutTitles = map[string]string{
 	"note":      "Note",
 	"tip":       "Tip",
 	"important": "Important",
 	"warning":   "Warning",
 	"caution":   "Caution",
+	"abstract":  "Abstract",
+	"info":      "Info",
+	"todo":      "Todo",
+	"success":   "Success",
+	"question":  "Question",
+	"failure":   "Failure",
+	"danger":    "Danger",
+	"bug":       "Bug",
+	"example":   "Example",
+	"quote":     "Quote",
+}
+
+var calloutAliases = map[string]string{
+	"summary":   "abstract",
+	"tldr":      "abstract",
+	"hint":      "tip",
+	"check":     "success",
+	"done":      "success",
+	"help":      "question",
+	"faq":       "question",
+	"attention": "warning",
+	"fail":      "failure",
+	"missing":   "failure",
+	"error":     "danger",
+	"cite":      "quote",
+}
+
+var calloutIcons = map[string]string{
+	"note":      "info",
+	"abstract":  "subject",
+	"info":      "info",
+	"todo":      "checklist",
+	"tip":       "lightbulb",
+	"important": "priority_high",
+	"success":   "check_circle",
+	"question":  "help",
+	"warning":   "warning",
+	"caution":   "error",
+	"failure":   "cancel",
+	"danger":    "report",
+	"bug":       "bug_report",
+	"example":   "science",
+	"quote":     "format_quote",
 }
 
 func (renderer markdownRenderer) processExtensions(input string, depth int) (string, []htmlReplacement, bool, error) {
@@ -110,11 +161,8 @@ func (renderer markdownRenderer) processExtensions(input string, depth int) (str
 			continue
 		}
 
-		if alertType, firstContent, ok := githubAlertStart(line); ok {
+		if info, ok := parseCalloutStart(line); ok {
 			contentLines := []string{}
-			if firstContent != "" {
-				contentLines = append(contentLines, firstContent)
-			}
 
 			next := i + 1
 			for next < len(lines) {
@@ -126,7 +174,7 @@ func (renderer markdownRenderer) processExtensions(input string, depth int) (str
 				next++
 			}
 
-			html, err := context.renderAdmonition(alertType, "", strings.Join(contentLines, "\n"))
+			html, err := context.renderCallout(info, strings.Join(contentLines, "\n"))
 			if err != nil {
 				return "", nil, false, err
 			}
@@ -189,13 +237,17 @@ func restoreHTMLReplacements(html string, replacements []htmlReplacement) string
 	return html
 }
 
-func (context *extensionContext) renderAdmonition(admonitionType, title, content string) (string, error) {
-	admonitionType = strings.ToLower(admonitionType)
-	if _, ok := admonitionTitles[admonitionType]; !ok {
-		return "", fmt.Errorf("未知提示块类型: %s", admonitionType)
-	}
-	if strings.TrimSpace(title) == "" {
-		title = admonitionTitles[admonitionType]
+func (context *extensionContext) renderCallout(info calloutInfo, content string) (string, error) {
+	if info.Title == "" {
+		if defaultTitle, ok := calloutTitles[info.OriginalType]; ok {
+			info.Title = defaultTitle
+		} else if defaultTitle, ok := calloutTitles[strings.ToLower(info.OriginalType)]; ok {
+			info.Title = defaultTitle
+		} else if defaultTitle, ok := calloutTitles[info.Type]; ok {
+			info.Title = defaultTitle
+		} else {
+			info.Title = strings.ToUpper(info.OriginalType[:1]) + info.OriginalType[1:]
+		}
 	}
 
 	document, err := context.renderer.render(content, false, context.depth+1)
@@ -204,27 +256,89 @@ func (context *extensionContext) renderAdmonition(admonitionType, title, content
 	}
 	context.hasMermaid = context.hasMermaid || document.HasMermaid
 	contentHTML := strings.TrimSpace(document.HTML)
-	if contentHTML == "" {
-		contentHTML = "<p></p>"
+	isTitleOnly := contentHTML == ""
+
+	iconName := "info"
+	if name, ok := calloutIcons[info.Type]; ok {
+		iconName = name
 	}
 
 	var builder strings.Builder
-	builder.WriteString(`<div class="admonition admonition-`)
-	builder.WriteString(admonitionType)
-	builder.WriteString(`">`)
-	builder.WriteString(`<div class="admonition-title">`)
-	builder.WriteString(stdhtml.EscapeString(title))
-	builder.WriteString(`</div>`)
-	builder.WriteString(`<div class="admonition-content">`)
-	builder.WriteString(contentHTML)
-	builder.WriteString(`</div></div>`)
+	if info.IsCollapsible {
+		builder.WriteString(`<details class="callout is-collapsible" data-callout="`)
+		builder.WriteString(info.Type)
+		builder.WriteString(`"`)
+		if info.OriginalType != info.Type && strings.ToLower(info.OriginalType) != info.Type {
+			builder.WriteString(` data-callout-original="`)
+			builder.WriteString(stdhtml.EscapeString(info.OriginalType))
+			builder.WriteString(`"`)
+		}
+		if info.IsDefaultOpen {
+			builder.WriteString(` open`)
+		}
+		builder.WriteString(`>`)
+
+		builder.WriteString(`<summary class="callout-title">`)
+		builder.WriteString(`<span class="callout-icon material-symbol">`)
+		builder.WriteString(iconName)
+		builder.WriteString(`</span>`)
+		builder.WriteString(`<div class="callout-title-inner">`)
+		builder.WriteString(stdhtml.EscapeString(info.Title))
+		builder.WriteString(`</div>`)
+		builder.WriteString(`<span class="callout-fold-icon material-symbol">expand_more</span>`)
+		builder.WriteString(`</summary>`)
+
+		builder.WriteString(`<div class="callout-content">`)
+		if !isTitleOnly {
+			builder.WriteString(contentHTML)
+		} else {
+			builder.WriteString(`<p></p>`)
+		}
+		builder.WriteString(`</div></details>`)
+	} else {
+		builder.WriteString(`<div class="callout`)
+		if isTitleOnly {
+			builder.WriteString(` is-title-only`)
+		}
+		builder.WriteString(`" data-callout="`)
+		builder.WriteString(info.Type)
+		builder.WriteString(`"`)
+		if info.OriginalType != info.Type && strings.ToLower(info.OriginalType) != info.Type {
+			builder.WriteString(` data-callout-original="`)
+			builder.WriteString(stdhtml.EscapeString(info.OriginalType))
+			builder.WriteString(`"`)
+		}
+		builder.WriteString(`>`)
+
+		builder.WriteString(`<div class="callout-title">`)
+		builder.WriteString(`<span class="callout-icon material-symbol">`)
+		builder.WriteString(iconName)
+		builder.WriteString(`</span>`)
+		builder.WriteString(`<div class="callout-title-inner">`)
+		builder.WriteString(stdhtml.EscapeString(info.Title))
+		builder.WriteString(`</div>`)
+		builder.WriteString(`</div>`)
+
+		if !isTitleOnly {
+			builder.WriteString(`<div class="callout-content">`)
+			builder.WriteString(contentHTML)
+			builder.WriteString(`</div>`)
+		}
+		builder.WriteString(`</div>`)
+	}
+
 	return builder.String(), nil
 }
 
 func (context *extensionContext) renderContainer(directive containerDirective, content string) (string, bool, error) {
 	name := strings.ToLower(directive.Name)
-	if _, ok := admonitionTitles[name]; ok {
-		html, err := context.renderAdmonition(name, directive.Title, content)
+	if _, ok := calloutTitles[name]; ok {
+		info := calloutInfo{
+			Type:         name,
+			OriginalType: directive.Name,
+			Title:        directive.Title,
+		}
+		html, err := context.renderCallout(info, content)
 		return html, true, err
 	}
 
@@ -316,28 +430,60 @@ func renderMermaidBlock(source string) string {
 		`</code></pre><div class="mermaid-diagram" aria-hidden="true"></div><p class="mermaid-error" hidden></p></div>`
 }
 
-func githubAlertStart(line string) (string, string, bool) {
+func parseCalloutStart(line string) (calloutInfo, bool) {
 	content, ok := stripBlockquoteMarker(line)
 	if !ok {
-		return "", "", false
+		return calloutInfo{}, false
 	}
 
 	trimmed := strings.TrimLeft(content, " \t")
 	if !strings.HasPrefix(trimmed, "[!") {
-		return "", "", false
+		return calloutInfo{}, false
 	}
 
 	end := strings.IndexByte(trimmed, ']')
 	if end < 0 {
-		return "", "", false
+		return calloutInfo{}, false
 	}
 
-	alertType := strings.ToLower(strings.TrimSpace(trimmed[2:end]))
-	if _, ok := admonitionTitles[alertType]; !ok {
-		return "", "", false
+	typeStr := strings.TrimSpace(trimmed[2:end])
+	if typeStr == "" {
+		return calloutInfo{}, false
+	}
+	if strings.ContainsAny(typeStr, " \t\n\r") {
+		return calloutInfo{}, false
 	}
 
-	return alertType, strings.TrimLeft(trimmed[end+1:], " \t"), true
+	info := calloutInfo{
+		OriginalType: typeStr,
+	}
+
+	rest := strings.TrimLeft(trimmed[end+1:], " \t")
+
+	if strings.HasPrefix(rest, "+") {
+		info.IsCollapsible = true
+		info.IsDefaultOpen = true
+		rest = strings.TrimLeft(rest[1:], " \t")
+	} else if strings.HasPrefix(rest, "-") {
+		info.IsCollapsible = true
+		info.IsDefaultOpen = false
+		rest = strings.TrimLeft(rest[1:], " \t")
+	}
+
+	info.Title = strings.TrimSpace(rest)
+
+	lowerType := strings.ToLower(typeStr)
+	if alias, ok := calloutAliases[lowerType]; ok {
+		info.Type = alias
+	} else {
+		info.Type = lowerType
+	}
+
+	if _, ok := calloutTitles[info.Type]; !ok {
+		info.Type = "note"
+	}
+
+	return info, true
 }
 
 func stripBlockquoteMarker(line string) (string, bool) {

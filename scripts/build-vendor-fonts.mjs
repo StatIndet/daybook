@@ -90,6 +90,57 @@ async function subsetCormorantGaramond() {
   console.log(`Subsampled Cormorant Garamond -> ${targetWoff2}`);
 }
 
+async function subsetSettingsFonts() {
+  const fontDir = path.join(root, "static", "vendor", "fonts", "settings");
+  const tempEng = path.join("/tmp", "CormorantGaramond.ttf");
+  const tempZh = path.join("/tmp", "NotoSerifSC.ttf");
+  
+  const targetEng = path.join(fontDir, "cormorant-garamond-settings.woff2");
+  const targetZh = path.join(fontDir, "noto-serif-sc-settings.woff2");
+
+  await mkdir(fontDir, { recursive: true });
+
+  console.log("Downloading CormorantGaramond[wght].ttf...");
+  await new Promise((resolve, reject) => {
+    const wget = spawn("wget", ["-q", "-O", tempEng, "https://github.com/google/fonts/raw/main/ofl/cormorantgaramond/CormorantGaramond%5Bwght%5D.ttf"], { stdio: "inherit" });
+    wget.on("close", (code) => code === 0 ? resolve() : reject(new Error(`wget failed with code ${code}`)));
+  });
+
+  console.log("Downloading NotoSerifSC[wght].ttf...");
+  await new Promise((resolve, reject) => {
+    const wget = spawn("wget", ["-q", "-O", tempZh, "https://github.com/google/fonts/raw/main/ofl/notoserifsc/NotoSerifSC%5Bwght%5D.ttf"], { stdio: "inherit" });
+    wget.on("close", (code) => code === 0 ? resolve() : reject(new Error(`wget failed with code ${code}`)));
+  });
+
+  console.log("Subsetting settings fonts...");
+  
+  // English: basic ASCII
+  await new Promise((resolve, reject) => {
+    const subset = spawn("pyftsubset", [
+      tempEng,
+      "--unicodes=U+0020-007F",
+      "--flavor=woff2",
+      `--output-file=${targetEng}`
+    ], { stdio: "inherit" });
+    subset.on("close", (code) => code === 0 ? resolve() : reject(new Error(`pyftsubset failed with code ${code}`)));
+  });
+  console.log(`Subsampled Settings Eng -> ${targetEng}`);
+
+  // Chinese: exact subset from settings-overlay.html
+  const zhChars = "设置关闭面板使用系统默认光标禁用后台播放评论区标题过渡动画";
+  await new Promise((resolve, reject) => {
+    const subset = spawn("pyftsubset", [
+      tempZh,
+      `--text=${zhChars}`,
+      "--flavor=woff2",
+      `--output-file=${targetZh}`
+    ], { stdio: "inherit" });
+    subset.on("close", (code) => code === 0 ? resolve() : reject(new Error(`pyftsubset failed with code ${code}`)));
+  });
+  console.log(`Subsampled Settings Zh -> ${targetZh}`);
+}
+
 await subsetCormorantGaramond();
+await subsetSettingsFonts();
 
 console.log("Vendor fonts copied successfully.");

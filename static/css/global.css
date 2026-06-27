@@ -3,6 +3,7 @@
 @import url("base.css");
 @import url("layout.css");
 @import url("components.css");
+@import url("components/settings-overlay.css");
 @import url("components/embed-skeleton.css");
 @import url("components/custom-cursor.css");
 @import url("pages/home.css");
@@ -13,3 +14,11 @@
 @import url("pages/graph.css");
 @import url("markdown.css");
 @import url("transitions.css");
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+html[data-use-system-cursor="true"] * {
+  cursor: auto !important;
+}

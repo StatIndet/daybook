@@ -13,21 +13,21 @@ import (
 )
 
 type Note struct {
-	Title      string
-	Date       string
-	Updated    string
-	Slug       string
-	Tags       []string
-	TagsZh     []string
-	TagsEn     []string
-	Summary    string
-	Draft      bool
-	Listed     *bool
-	Math       bool
-	Pin        bool
-	Body       string
-	URL        string
-	SourcePath string
+	Title          string
+	Date           string
+	Updated        string
+	Slug           string
+	Tags           []string
+	TagsZh         []string
+	TagsEn         []string
+	Summary        string
+	Draft          bool
+	Listed         *bool
+	Math           bool
+	Pin            bool
+	Body           string
+	URL            string
+	SourcePath     string
 	Toc            *bool
 	Comment        *bool
 	WordCount      int
@@ -141,14 +141,14 @@ func Parse(sourcePath, text string) (Note, error) {
 	}
 	note.URL = "/notes/" + note.Slug + "/"
 	note.CanonicalPath = "/notes/" + note.Slug + "/"
-	
+
 	if note.Lang == "" {
 		note.Lang = "zh-CN"
 	}
 	if note.I18nKey == "" {
 		note.I18nKey = note.Slug
 	}
-	
+
 	note.WordCount = countWords(note.Body)
 	note.ReadingMinutes = int(math.Max(1, math.Ceil(float64(note.WordCount)/300.0)))
 

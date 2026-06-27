@@ -151,16 +151,16 @@ type GoldenSpiral struct {
 }
 
 type IndexData struct {
-	Site      SiteData
-	PageTitle string
-	PageKind  string
-	BodyClass string
-	Lang      string
+	Site         SiteData
+	PageTitle    string
+	PageKind     string
+	BodyClass    string
+	Lang         string
 	AlternateURL string
-	Assets    Assets
-	HasMath   bool
-	Notes     []NoteLink
-	Tags      []TagLink
+	Assets       Assets
+	HasMath      bool
+	Notes        []NoteLink
+	Tags         []TagLink
 }
 
 type TagLink struct {
@@ -171,18 +171,18 @@ type TagLink struct {
 }
 
 type NotesData struct {
-	Site        SiteData
-	PageTitle   string
-	PageKind    string
-	BodyClass   string
-	Lang        string
+	Site         SiteData
+	PageTitle    string
+	PageKind     string
+	BodyClass    string
+	Lang         string
 	AlternateURL string
-	Assets      Assets
-	HasMath     bool
-	Notes       []NoteLink
-	PinnedNotes []NoteLink
-	MonthGroups []MonthGroup
-	Tags        []TagLink
+	Assets       Assets
+	HasMath      bool
+	Notes        []NoteLink
+	PinnedNotes  []NoteLink
+	MonthGroups  []MonthGroup
+	Tags         []TagLink
 }
 
 type MonthGroup struct {
@@ -208,62 +208,62 @@ type ArchiveYearGroup struct {
 }
 
 type ArchiveData struct {
-	Site       SiteData
-	PageTitle  string
-	PageKind   string
-	BodyClass  string
-	Lang       string
+	Site         SiteData
+	PageTitle    string
+	PageKind     string
+	BodyClass    string
+	Lang         string
 	AlternateURL string
-	Assets     Assets
-	HasMath    bool
-	Total      int
-	YearGroups []ArchiveYearGroup
-	Tags       []TagLink
+	Assets       Assets
+	HasMath      bool
+	Total        int
+	YearGroups   []ArchiveYearGroup
+	Tags         []TagLink
 }
 
 type NoteData struct {
-	Site      SiteData
-	Config    config.Config
-	PageTitle string
-	PageKind  string
-	BodyClass string
-	Lang      string
+	Site         SiteData
+	Config       config.Config
+	PageTitle    string
+	PageKind     string
+	BodyClass    string
+	Lang         string
 	AlternateURL string
-	Assets    Assets
-	HasMath   bool
-	Note      NotePage
-	Tags      []TagLink
+	Assets       Assets
+	HasMath      bool
+	Note         NotePage
+	Tags         []TagLink
 }
 
 type AboutData struct {
-	Site      SiteData
-	PageTitle string
-	PageKind  string
-	BodyClass string
-	Lang      string
+	Site         SiteData
+	PageTitle    string
+	PageKind     string
+	BodyClass    string
+	Lang         string
 	AlternateURL string
-	Assets    Assets
-	HasMath   bool
-	Spiral    GoldenSpiral
-	Title       string
-	Summary     string
-	Date        string
-	ReadingTime string
-	WordCount   int
-	HTML        template.HTML
-	Tags      []TagLink
+	Assets       Assets
+	HasMath      bool
+	Spiral       GoldenSpiral
+	Title        string
+	Summary      string
+	Date         string
+	ReadingTime  string
+	WordCount    int
+	HTML         template.HTML
+	Tags         []TagLink
 }
 
 type GraphData struct {
-	Site      SiteData
-	PageTitle string
-	PageKind  string
-	BodyClass string
-	Lang      string
+	Site         SiteData
+	PageTitle    string
+	PageKind     string
+	BodyClass    string
+	Lang         string
 	AlternateURL string
-	Assets    Assets
-	HasMath   bool
-	Tags      []TagLink
+	Assets       Assets
+	HasMath      bool
+	Tags         []TagLink
 }
 
 func New(templatesDir string) Renderer {

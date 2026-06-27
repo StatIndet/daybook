@@ -5,13 +5,18 @@ let walineInstance: any = null;
 
 export function setupWaline() {
   const container = document.getElementById('waline');
-  if (!container) {
+  if (!container || document.documentElement.getAttribute('data-comments-disabled') === 'true') {
     if (walineInstance) {
       walineInstance.destroy();
       walineInstance = null;
     }
+    if (container) {
+      container.style.display = document.documentElement.getAttribute('data-comments-disabled') === 'true' ? 'none' : '';
+    }
     return;
   }
+  
+  container.style.display = '';
 
   if (walineInstance) {
     walineInstance.destroy();
@@ -65,3 +70,7 @@ if (typeof window !== 'undefined') {
     }
   });
 }
+
+document.addEventListener('daybook:settings-change', () => {
+  setupWaline();
+});

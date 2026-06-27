@@ -28,6 +28,7 @@ import (
 
 type Options struct {
 	Config       config.Config
+	ContentDir   string
 	NotesDir     string
 	TemplatesDir string
 	StaticDir    string
@@ -44,7 +45,7 @@ func Build(options Options) (BuildResult, error) {
 	if err != nil {
 		return BuildResult{}, err
 	}
-	
+
 	var allNotes []content.Note
 	for _, group := range groups {
 		for _, note := range group.Versions {
@@ -66,7 +67,7 @@ func Build(options Options) (BuildResult, error) {
 	if err != nil {
 		return BuildResult{}, err
 	}
-	if err := copyNotesAssets(options.NotesDir, options.PublicDir); err != nil {
+	if err := copyAttachments(options.ContentDir, options.PublicDir, options.Config.Attachments); err != nil {
 		return BuildResult{}, err
 	}
 
@@ -99,11 +100,11 @@ func Build(options Options) (BuildResult, error) {
 		return BuildResult{}, fmt.Errorf("生成 search.json: %w", err)
 	}
 
-	obsidianIndex, err := buildObsidianIndex(allNotes)
+	obsidianIndex, err := buildObsidianIndex(allNotes, options.ContentDir, options.Config.Attachments)
 	if err != nil {
 		return BuildResult{}, err
 	}
-	
+
 	tagRegistry, err := content.NewTagRegistry(allNotes)
 	if err != nil {
 		return BuildResult{}, fmt.Errorf("构建标签字典: %w", err)
@@ -119,7 +120,7 @@ func Build(options Options) (BuildResult, error) {
 			langPrefix = "en"
 			altLangPrefix = ""
 		}
-		
+
 		langPublicDir := filepath.Join(options.PublicDir, langPrefix)
 		if langPrefix != "" {
 			if err := os.MkdirAll(langPublicDir, 0755); err != nil {
@@ -139,7 +140,7 @@ func Build(options Options) (BuildResult, error) {
 			if note == nil || note.Draft {
 				continue
 			}
-			
+
 			if group.IsListed(lang) {
 				langNotes = append(langNotes, *note)
 			}
@@ -151,14 +152,14 @@ func Build(options Options) (BuildResult, error) {
 			}
 			document.HTML = obsidian.RestoreHTML(document.HTML, processed.HTML)
 			readingTime := estimateReadingTime(note.Body)
-			
+
 			slugToUse := note.Slug
 			if lang == "en" {
 				slugToUse = note.I18nKey // In English context, we could use I18nKey as slug for links to keep them stable, but actually note.Slug is what we have. Let's use note.Slug.
 			}
 			titleTransitionName := transitionName("note-title", slugToUse)
 			dateTransitionName := transitionName("note-date", slugToUse)
-			
+
 			var tagNodes []graph.TagNode
 			var displayTags []string
 			var tagIDs []string
@@ -170,17 +171,17 @@ func Build(options Options) (BuildResult, error) {
 					continue
 				}
 				seenTags[canonicalID] = true
-				
+
 				displayTag := tagRegistry.GetTitle(canonicalID, lang)
 				displayTags = append(displayTags, displayTag)
 				tagIDs = append(tagIDs, canonicalID)
-				
+
 				tagNodes = append(tagNodes, graph.TagNode{
 					ID:    "tag:" + canonicalID,
 					Title: displayTag,
 				})
 			}
-			
+
 			tags := displayTags
 
 			// Graph node should not be deduplicated strictly unless we want to, wait, we do.
@@ -211,7 +212,7 @@ func Build(options Options) (BuildResult, error) {
 						break
 					}
 				}
-				
+
 				graphLinks = append(graphLinks, graph.InputLink{
 					Source: group.I18nKey,
 					Target: resolvedID,
@@ -240,7 +241,7 @@ func Build(options Options) (BuildResult, error) {
 				TitleTransitionName: titleTransitionName,
 				DateTransitionName:  dateTransitionName,
 			}
-			
+
 			if group.IsListed(lang) {
 				noteLinks = append(noteLinks, noteLink)
 			}
@@ -263,16 +264,16 @@ func Build(options Options) (BuildResult, error) {
 
 			outputPath := filepath.Join(langPublicDir, "notes", note.Slug, "index.html")
 			notePageData := render.NoteData{
-				Site:      siteData,
-				Config:    options.Config,
-				PageTitle: note.Title,
-				PageKind:  "note",
-				BodyClass: "note-body page-body",
-				Lang:      lang,
+				Site:         siteData,
+				Config:       options.Config,
+				PageTitle:    note.Title,
+				PageKind:     "note",
+				BodyClass:    "note-body page-body",
+				Lang:         lang,
 				AlternateURL: altURL,
-				Assets:    assets,
-				HasMath:   note.Math,
-				Tags:      tagLinks,
+				Assets:       assets,
+				HasMath:      note.Math,
+				Tags:         tagLinks,
 				Note: render.NotePage{
 					Title:               note.Title,
 					Date:                note.Date,
@@ -306,10 +307,10 @@ func Build(options Options) (BuildResult, error) {
 			// Generate lightweight fragment for temporary bilingual translation
 			fragmentPath := filepath.Join(langPublicDir, "notes", note.Slug, "fragment.json")
 			type fragmentData struct {
-				Lang     string            `json:"lang"`
-				Summary  string            `json:"summary"`
-				HTML     string            `json:"html"`
-				Headings []render.Heading  `json:"headings"`
+				Lang     string           `json:"lang"`
+				Summary  string           `json:"summary"`
+				HTML     string           `json:"html"`
+				Headings []render.Heading `json:"headings"`
 			}
 			frag := fragmentData{
 				Lang:     note.Lang,
@@ -324,15 +325,15 @@ func Build(options Options) (BuildResult, error) {
 
 		indexPath := filepath.Join(langPublicDir, "index.html")
 		indexData := render.IndexData{
-			Site:      siteData,
-			PageTitle: i18n.T(lang, "nav.home"),
-			PageKind:  "home",
-			BodyClass: "home-body",
-			Lang:      lang,
+			Site:         siteData,
+			PageTitle:    i18n.T(lang, "nav.home"),
+			PageKind:     "home",
+			BodyClass:    "home-body",
+			Lang:         lang,
 			AlternateURL: path.Join("/", altLangPrefix, "/"),
-			Assets:    assets,
-			Notes:     noteLinks,
-			Tags:      tagLinks,
+			Assets:       assets,
+			Notes:        noteLinks,
+			Tags:         tagLinks,
 		}
 		if err := renderer.RenderIndex(indexPath, indexData); err != nil {
 			return BuildResult{}, fmt.Errorf("生成首页: %w", err)
@@ -350,17 +351,17 @@ func Build(options Options) (BuildResult, error) {
 
 		notesIndexPath := filepath.Join(langPublicDir, "notes", "index.html")
 		notesData := render.NotesData{
-			Site:        siteData,
-			PageTitle:   i18n.T(lang, "nav.notes"),
-			PageKind:    "notes",
-			BodyClass:   "notes-list-body page-body",
-			Lang:        lang,
+			Site:         siteData,
+			PageTitle:    i18n.T(lang, "nav.notes"),
+			PageKind:     "notes",
+			BodyClass:    "notes-list-body page-body",
+			Lang:         lang,
 			AlternateURL: path.Join("/", altLangPrefix, "notes", "/"),
-			Assets:      assets,
-			Notes:       noteLinks,
-			PinnedNotes: pinnedNotes,
-			MonthGroups: monthGroups(regularNotes),
-			Tags:        tagLinks,
+			Assets:       assets,
+			Notes:        noteLinks,
+			PinnedNotes:  pinnedNotes,
+			MonthGroups:  monthGroups(regularNotes),
+			Tags:         tagLinks,
 		}
 		if err := renderer.RenderNotes(notesIndexPath, notesData); err != nil {
 			return BuildResult{}, fmt.Errorf("生成文章页: %w", err)
@@ -368,16 +369,16 @@ func Build(options Options) (BuildResult, error) {
 
 		archivePath := filepath.Join(langPublicDir, "archive", "index.html")
 		archiveData := render.ArchiveData{
-			Site:       siteData,
-			PageTitle:  i18n.T(lang, "nav.archive"),
-			PageKind:   "archive",
-			BodyClass:  "archive-body page-body",
-			Lang:       lang,
+			Site:         siteData,
+			PageTitle:    i18n.T(lang, "nav.archive"),
+			PageKind:     "archive",
+			BodyClass:    "archive-body page-body",
+			Lang:         lang,
 			AlternateURL: path.Join("/", altLangPrefix, "archive", "/"),
-			Assets:     assets,
-			Total:      len(noteLinks),
-			YearGroups: archiveYearGroups(noteLinks),
-			Tags:       tagLinks,
+			Assets:       assets,
+			Total:        len(noteLinks),
+			YearGroups:   archiveYearGroups(noteLinks),
+			Tags:         tagLinks,
 		}
 		if err := renderer.RenderArchive(archivePath, archiveData); err != nil {
 			return BuildResult{}, fmt.Errorf("生成归档页: %w", err)
@@ -390,7 +391,7 @@ func Build(options Options) (BuildResult, error) {
 				aboutFile = "about-en.md"
 			}
 		}
-		
+
 		aboutPage, err := content.ParsePageFile(filepath.Join(filepath.Dir(options.NotesDir), "pages", aboutFile))
 		if err != nil {
 			return BuildResult{}, fmt.Errorf("读取关于页: %w", err)
@@ -404,21 +405,21 @@ func Build(options Options) (BuildResult, error) {
 
 		aboutPath := filepath.Join(langPublicDir, "about", "index.html")
 		aboutData := render.AboutData{
-			Site:      siteData,
-			PageTitle: aboutPage.Title,
-			PageKind:  "about",
-			BodyClass: "about-body page-body",
-			Lang:      lang,
+			Site:         siteData,
+			PageTitle:    aboutPage.Title,
+			PageKind:     "about",
+			BodyClass:    "about-body page-body",
+			Lang:         lang,
 			AlternateURL: path.Join("/", altLangPrefix, "about", "/"),
-			Assets:    assets,
-			Spiral:    render.NewGoldenSpiral(),
-			Title:       aboutPage.Title,
-			Summary:     aboutPage.Summary,
-			Date:        aboutPage.Date,
-			ReadingTime: estimateReadingTime(aboutPage.Body),
-			WordCount:   aboutPage.WordCount,
-			HTML:        template.HTML(aboutDocument.HTML),
-			Tags:      tagLinks,
+			Assets:       assets,
+			Spiral:       render.NewGoldenSpiral(),
+			Title:        aboutPage.Title,
+			Summary:      aboutPage.Summary,
+			Date:         aboutPage.Date,
+			ReadingTime:  estimateReadingTime(aboutPage.Body),
+			WordCount:    aboutPage.WordCount,
+			HTML:         template.HTML(aboutDocument.HTML),
+			Tags:         tagLinks,
 		}
 		if err := renderer.RenderAbout(aboutPath, aboutData); err != nil {
 			return BuildResult{}, fmt.Errorf("生成关于页: %w", err)
@@ -431,14 +432,14 @@ func Build(options Options) (BuildResult, error) {
 
 		graphPath := filepath.Join(langPublicDir, "graph", "index.html")
 		graphData := render.GraphData{
-			Site:      siteData,
-			PageTitle: i18n.T(lang, "nav.graph"),
-			PageKind:  "graph",
-			BodyClass: "graph-body page-body",
-			Lang:      lang,
+			Site:         siteData,
+			PageTitle:    i18n.T(lang, "nav.graph"),
+			PageKind:     "graph",
+			BodyClass:    "graph-body page-body",
+			Lang:         lang,
 			AlternateURL: path.Join("/", altLangPrefix, "graph", "/"),
-			Assets:    assets,
-			Tags:      tagLinks,
+			Assets:       assets,
+			Tags:         tagLinks,
 		}
 		if err := renderer.RenderGraph(graphPath, graphData); err != nil {
 			return BuildResult{}, fmt.Errorf("生成图谱页: %w", err)
@@ -567,7 +568,7 @@ func collectTagLinksForLang(groups []*content.ArticleGroup, lang string, tagRegi
 		}
 		return leftTitle < rightTitle
 	})
-	
+
 	langPrefix := ""
 	if lang == "en" {
 		langPrefix = "/en"
@@ -663,7 +664,7 @@ func renderHeadings(headings []markdown.Heading) []render.Heading {
 	return result
 }
 
-func buildObsidianIndex(notes []content.Note) (obsidian.Index, error) {
+func buildObsidianIndex(notes []content.Note, contentDir string, cfg config.AttachmentConfig) (obsidian.Index, error) {
 	targets := make([]obsidian.Target, 0, len(notes))
 	for _, note := range notes {
 		document, err := markdown.ToHTMLWithHeadings(note.Body)
@@ -676,15 +677,126 @@ func buildObsidianIndex(notes []content.Note) (obsidian.Index, error) {
 			headings[normalizeHeading(heading.Text)] = heading.ID
 		}
 
+		blocks := make(map[string]string)
+		lines := strings.Split(note.Body, "\n")
+		for _, line := range lines {
+			if idx := strings.LastIndex(line, " ^"); idx != -1 {
+				blockID := strings.TrimSpace(line[idx+2:])
+				if isValidBlockID(blockID) {
+					// Simply use the raw line as the snippet for now.
+					// Strip the block ID part.
+					snippet := strings.TrimSpace(line[:idx])
+					if snippet != "" {
+						blocks[blockID] = snippet
+					}
+				}
+			}
+		}
+
 		targets = append(targets, obsidian.Target{
 			Title:      note.Title,
 			Slug:       note.Slug,
+			Summary:    note.Summary,
+			Content:    note.Body,
 			SourcePath: note.SourcePath,
 			Headings:   headings,
+			Blocks:     blocks,
 		})
 	}
 
-	return obsidian.NewIndex(targets), nil
+	var attachments []obsidian.Attachment
+	attDir := filepath.Join(contentDir, "attachments")
+	if _, err := os.Stat(attDir); err == nil {
+		err = filepath.WalkDir(attDir, func(path string, d os.DirEntry, err error) error {
+			if err != nil || d.IsDir() {
+				return nil
+			}
+
+			relPath, err := filepath.Rel(attDir, path)
+			if err != nil {
+				return nil
+			}
+
+			// Replace Windows backslashes with forward slashes for relative paths
+			relPath = filepath.ToSlash(relPath)
+
+			ext := strings.ToLower(filepath.Ext(d.Name()))
+			mediaType := ""
+			switch {
+			case obsidian.IsImageExt(ext):
+				mediaType = "image"
+			case ext == ".pdf":
+				mediaType = "pdf"
+			case obsidian.IsAudioExt(ext):
+				mediaType = "audio"
+			case obsidian.IsVideoExt(ext):
+				mediaType = "video"
+			default:
+				if d.Name() != ".gitkeep" {
+					fmt.Printf("[obsidian] unsupported attachment type: %s\n", d.Name())
+				}
+				return nil
+			}
+
+			isRemote := false
+			for _, rdir := range cfg.RemoteDirs {
+				if strings.HasPrefix(relPath, rdir+"/") {
+					isRemote = true
+					break
+				}
+			}
+
+			pubMode := "local"
+			var pubURL string
+			if isRemote {
+				pubMode = "remote"
+				pubURL = cfg.RemoteBaseURL + "/" + escapeURLPath(relPath)
+			} else {
+				pubMode = "local"
+				pubURL = cfg.PublicPath + escapeURLPath(relPath)
+				info, err := d.Info()
+				if err == nil && info.Size() > 25*1024*1024 {
+					fmt.Printf("[obsidian] local attachment may exceed Pages single-file limit: %s\n", d.Name())
+				}
+			}
+
+			attachments = append(attachments, obsidian.Attachment{
+				Name:        d.Name(),
+				RelPath:     relPath,
+				AbsPath:     path,
+				Ext:         ext,
+				MediaType:   mediaType,
+				PublishMode: pubMode,
+				PublicURL:   pubURL,
+			})
+			return nil
+		})
+		if err != nil {
+			return obsidian.Index{}, fmt.Errorf("扫描附件目录: %w", err)
+		}
+	}
+
+	return obsidian.NewIndex(targets, attachments), nil
+}
+
+func escapeURLPath(p string) string {
+	parts := strings.Split(p, "/")
+	for i, part := range parts {
+		parts[i] = url.PathEscape(part)
+	}
+	return strings.Join(parts, "/")
+}
+
+func isValidBlockID(id string) bool {
+	if id == "" {
+		return false
+	}
+	for _, r := range id {
+		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-') {
+			return false
+		}
+	}
+	return true
 }
 
 func normalizeHeading(text string) string {
@@ -693,13 +805,40 @@ func normalizeHeading(text string) string {
 	return text
 }
 
-func copyNotesAssets(notesDir, publicDir string) error {
-	sourceDir := filepath.Join(notesDir, "assets")
-	targetDir := filepath.Join(publicDir, "notes", "assets")
-	if err := copyDir(sourceDir, targetDir); err != nil {
-		return fmt.Errorf("复制笔记图片资源: %w", err)
-	}
-	return nil
+func copyAttachments(contentDir, publicDir string, cfg config.AttachmentConfig) error {
+	sourceDir := filepath.Join(contentDir, "attachments")
+	targetDir := filepath.Join(publicDir, "attachments")
+
+	return copyDirFiltered(sourceDir, targetDir, func(relativePath string, entry os.DirEntry) bool {
+		if entry.IsDir() {
+			return false // Don't skip directories entirely yet, allow traversing
+		}
+
+		ext := strings.ToLower(filepath.Ext(entry.Name()))
+		if !obsidian.IsImageExt(ext) && ext != ".pdf" && !obsidian.IsAudioExt(ext) && !obsidian.IsVideoExt(ext) {
+			if entry.Name() != ".gitkeep" {
+				fmt.Printf("[obsidian] unsupported attachment type: %s\n", entry.Name())
+			}
+			return true // Skip unsupported
+		}
+
+		relPath := filepath.ToSlash(relativePath)
+		isRemote := false
+		for _, rdir := range cfg.RemoteDirs {
+			if strings.HasPrefix(relPath, rdir+"/") {
+				isRemote = true
+				break
+			}
+		}
+
+		if isRemote {
+			pubURL := cfg.RemoteBaseURL + "/" + escapeURLPath(relPath)
+			fmt.Printf("[obsidian] remote attachment not copied: %s -> %s\n", relPath, pubURL)
+			return true // Skip remote files
+		}
+
+		return false // Copy local files
+	})
 }
 
 func Serve(publicDir, address string) error {

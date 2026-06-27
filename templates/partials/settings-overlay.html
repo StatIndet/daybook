@@ -1,0 +1,67 @@
+{{define "settings_overlay"}}
+<div id="settings-overlay" class="settings-overlay" role="dialog" aria-modal="true" aria-labelledby="settings-title" aria-hidden="true" inert>
+  <div class="settings-backdrop" data-settings-close aria-label="关闭设置面板"></div>
+  <div class="settings-paper">
+    
+    <h2 id="settings-title" class="settings-title">{{if eq .Lang "en"}}Settings{{else}}设置{{end}}</h2>
+    
+    <div class="settings-content">
+      <label class="settings-checkbox-label">
+        <input type="checkbox" id="setting-system-cursor" class="settings-checkbox-input" />
+        <svg viewBox="0 0 24 24" class="settings-checkbox-svg">
+          <polyline points="5,15 10,19 19,5"></polyline>
+          <line x1="0" y1="0" x2="24" y2="0"></line>
+          <line x1="24" y1="0" x2="24" y2="24"></line>
+          <line x1="0" y1="24" x2="24" y2="24"></line>
+          <line x1="0" y1="0" x2="0" y2="24"></line>
+        </svg>
+        <span class="settings-checkbox-text">
+          {{if eq .Lang "en"}}Use System Cursor{{else}}使用系统默认光标{{end}}
+        </span>
+      </label>
+      
+      <label class="settings-checkbox-label">
+        <input type="checkbox" id="setting-bg-playback" class="settings-checkbox-input" />
+        <svg viewBox="0 0 24 24" class="settings-checkbox-svg">
+          <polyline points="5,15 10,19 19,5"></polyline>
+          <line x1="0" y1="0" x2="24" y2="0"></line>
+          <line x1="24" y1="0" x2="24" y2="24"></line>
+          <line x1="0" y1="24" x2="24" y2="24"></line>
+          <line x1="0" y1="0" x2="0" y2="24"></line>
+        </svg>
+        <span class="settings-checkbox-text">
+          {{if eq .Lang "en"}}Disable Background Playback{{else}}禁用后台播放{{end}}
+        </span>
+      </label>
+
+      <label class="settings-checkbox-label">
+        <input type="checkbox" id="setting-disable-comments" class="settings-checkbox-input" />
+        <svg viewBox="0 0 24 24" class="settings-checkbox-svg">
+          <polyline points="5,15 10,19 19,5"></polyline>
+          <line x1="0" y1="0" x2="24" y2="0"></line>
+          <line x1="24" y1="0" x2="24" y2="24"></line>
+          <line x1="0" y1="24" x2="24" y2="24"></line>
+          <line x1="0" y1="0" x2="0" y2="24"></line>
+        </svg>
+        <span class="settings-checkbox-text">
+          {{if eq .Lang "en"}}Disable Comments{{else}}禁用评论区{{end}}
+        </span>
+      </label>
+
+      <label class="settings-checkbox-label">
+        <input type="checkbox" id="setting-disable-title-transition" class="settings-checkbox-input" />
+        <svg viewBox="0 0 24 24" class="settings-checkbox-svg">
+          <polyline points="5,15 10,19 19,5"></polyline>
+          <line x1="0" y1="0" x2="24" y2="0"></line>
+          <line x1="24" y1="0" x2="24" y2="24"></line>
+          <line x1="0" y1="24" x2="24" y2="24"></line>
+          <line x1="0" y1="0" x2="0" y2="24"></line>
+        </svg>
+        <span class="settings-checkbox-text">
+          {{if eq .Lang "en"}}Disable Title Transition Animation{{else}}禁用标题过渡动画{{end}}
+        </span>
+      </label>
+    </div>
+  </div>
+</div>
+{{end}}

@@ -28,3 +28,4 @@ I raise my head and gaze at the bright moon;
 I lower my head and think of home. 
 ## Note 
 This is not meant to be a literal academic translation. It is a lightweight English rendering for testing Daybook’s bilingual article system. This post should share the same `i18n_key` as the Chinese version. In the English environment, the list page should display this English title, summary, and tags. However, because `listed: false`, it should not appear as a second duplicate article.
+

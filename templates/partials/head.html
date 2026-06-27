@@ -5,6 +5,20 @@
   <meta name="referrer" content="no-referrer">
   <title>{{if .PageTitle}}{{.PageTitle}} - {{end}}{{.Site.Title}}</title>
   <script src="{{.Assets.Path "/js/theme.js"}}"></script>
+  <script>
+    (function() {
+      try {
+        var raw = localStorage.getItem('daybook:user-settings');
+        if (raw) {
+          var settings = JSON.parse(raw);
+          var html = document.documentElement;
+          if (settings.useSystemCursor) html.setAttribute('data-use-system-cursor', 'true');
+          if (settings.disableComments) html.setAttribute('data-comments-disabled', 'true');
+          if (settings.disableTitleTransition) html.setAttribute('data-title-transition-disabled', 'true');
+        }
+      } catch (e) {}
+    })();
+  </script>
   <script src="{{.Assets.Path "/js/code-copy.js"}}" defer></script>
   <script src="{{.Assets.Path "/js/toc.js"}}" defer></script>
   <script src="{{.Assets.Path "/js/heading-anchors.js"}}" defer></script>

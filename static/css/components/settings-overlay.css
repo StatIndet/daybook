@@ -1,0 +1,234 @@
+/* Settings Overlay - Paper Style */
+.settings-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 0.3s, opacity 0.3s;
+  pointer-events: auto;
+}
+
+/* Force default cursor inside the overlay (disable custom cursor) */
+html.has-custom-cursor .settings-overlay,
+html.has-custom-cursor .settings-overlay * {
+  cursor: auto !important;
+}
+
+.settings-overlay.is-open {
+  visibility: visible;
+  opacity: 1;
+}
+
+.settings-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  transition: backdrop-filter 0.3s, -webkit-backdrop-filter 0.3s, background-color 0.3s;
+}
+
+.settings-overlay.is-open .settings-backdrop {
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+@font-face {
+  font-family: 'Cormorant Garamond Settings';
+  src: url('/vendor/fonts/settings/cormorant-garamond-settings.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Noto Serif SC Settings';
+  src: url('/vendor/fonts/settings/noto-serif-sc-settings.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Paper Card (tall narrow strip) */
+.settings-paper {
+  position: relative;
+  width: min(860px, 94vw);
+  min-height: 480px;
+  padding: 50px 50px 70px 50px;
+  background-color: #f8f5e1; /* darker outer rim */
+  background-image: url('../../images/old-wall.png');
+  border: 1px solid #d4c7a7;
+  border-bottom: none; /* torn edge doesn't need a straight border */
+  border-radius: 2px 2px 0 0;
+  filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.15));
+  clip-path: polygon(
+    0% 0%, 0% 93%, 5% 98%, 6% 99%, 8% 95%, 12% 94%, 15% 97%, 17% 93%, 20% 98%,
+    22% 97%, 25% 99%, 31% 94%, 35% 93%, 39% 96%, 43% 93%, 45% 94%, 47% 95%,
+    50% 92%, 52% 96%, 54% 93%, 58% 92%, 60% 95%, 62% 93%, 65% 96%, 69% 93%,
+    72% 93%, 75% 94%, 79% 97%, 81% 94%, 85% 93%, 88% 92%, 90% 95%, 93% 93%,
+    95% 92%, 97% 95%, 100% 97%, 100% 0%
+  );
+  transform: scale(0.96);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: 'Cormorant Garamond Settings', 'Noto Serif SC Settings', serif;
+  color: #3e3832;
+}
+
+/* Slight paper edges effect referenced from paper.html */
+.settings-paper::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
+  background-color: #fcfbf5; /* lighter inner paper */
+  background-image: url('../../images/old-wall.png');
+  background-position: -4px -4px; /* perfectly align texture with parent */
+  border: 1px solid rgba(212, 199, 167, 0.5); /* #d4c7a7 with opacity */
+  pointer-events: none;
+  border-radius: 2px;
+  z-index: -1;
+}
+
+/* Vertical positioning axis line */
+.settings-paper::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 15%; /* middle-left position */
+  width: 1px;
+  background-color: rgba(62, 56, 50, 0.15); /* faint ink color */
+  pointer-events: none;
+  z-index: -1;
+}
+
+.settings-overlay.is-open .settings-paper {
+  transform: scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-overlay, .settings-backdrop, .settings-paper {
+    transition: none !important;
+  }
+}
+
+/* Settings Content */
+.settings-title {
+  margin: 0 0 40px 0;
+  font-size: 1.4rem;
+  font-weight: normal;
+  text-align: center;
+  color: #2c2723;
+  letter-spacing: 0.05em;
+}
+
+.settings-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 35px;
+}
+
+/* SVG Checkbox styles */
+.settings-checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  user-select: none;
+  font-size: 1.05rem;
+  line-height: 1.4;
+  position: relative;
+}
+
+.settings-checkbox-input {
+  appearance: none;
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+}
+
+.settings-checkbox-svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-right: 12px;
+  flex-shrink: 0;
+  fill: transparent;
+  margin-top: 2px;
+}
+
+.settings-checkbox-svg polyline {
+  stroke: #2a2522; /* dark ink */
+  stroke-width: 2px;
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.settings-checkbox-svg line {
+  stroke: rgba(62, 56, 50, 0.75); /* low sat ink border, darker now */
+  stroke-width: 2px;
+  transition: transform 0.2s ease, scale 0.2s ease, translate 0.2s ease;
+}
+
+/* Ensure gap states come BEFORE the checked override */
+.settings-checkbox-label:nth-of-type(1) .settings-checkbox-svg line {
+  transform-origin: center;
+}
+.settings-checkbox-label:nth-of-type(1) .settings-checkbox-svg line:nth-of-type(odd) {
+  scale: 0.7 1;
+}
+.settings-checkbox-label:nth-of-type(1) .settings-checkbox-svg line:nth-of-type(even) {
+  scale: 1 0.7;
+}
+
+.settings-checkbox-label:nth-of-type(2) .settings-checkbox-svg line:nth-of-type(1) {
+  translate: -60% 0;
+}
+.settings-checkbox-label:nth-of-type(2) .settings-checkbox-svg line:nth-of-type(3) {
+  translate: 40% 0;
+}
+
+.settings-checkbox-label:nth-of-type(3) .settings-checkbox-svg line:nth-of-type(1) {
+  translate: -10px 0;
+}
+.settings-checkbox-label:nth-of-type(3) .settings-checkbox-svg line:nth-of-type(2) {
+  translate: 0 10px;
+}
+
+.settings-checkbox-label:nth-of-type(4) .settings-checkbox-svg line:nth-of-type(3) {
+  translate: -10px 0;
+}
+
+/* The checked state must have higher specificity or come AFTER to override the scale/translate above */
+.settings-checkbox-label .settings-checkbox-input:checked + .settings-checkbox-svg polyline {
+  animation: dash 0.4s ease forwards;
+}
+
+.settings-checkbox-label .settings-checkbox-input:checked + .settings-checkbox-svg line {
+  scale: 1;
+  translate: 0;
+}
+
+.settings-checkbox-text {
+  color: #3e3832;
+}

@@ -121,14 +121,14 @@ sudo qemu-img resize /var/lib/libvirt/images/immortalwrt.qcow2 4G
 - 在主力机上使用virt-manager连接。
 打开virt-manager→点击`文件`→添加新连接→如图
 <p align="center">
-  <img src="./assets/add-new-link.png" width="500" alt="添加新连接">
+  <img src="../attachments/add-new-link.png" width="500" alt="添加新连接">
 </p>
 接着 创建虚拟机→导入现有磁盘映像→选择刚刚装的`/var/lib/libvirt/images/immortalwrt.qcow2 4G`，安装步骤最后勾选`安装前自定义配置`。
 在自定义配置里需要注意两点：
 1. 固件选择`UEFI x86_64: /usr/share/OVMF/OVMF_CODE_4M.fd`，使用非 Secure Boot引导。如果使用其他固件将会引导失败。
 2. 网络桥接选择之前桥接好的`br0`如图:
 <p align="center">
-  <img src="./assets/br0.png" width="500" alt="网络桥接">
+  <img src="../attachments/br0.png" width="500" alt="网络桥接">
 </p>
 ### 修改 immortalWRT 网络配置。
 安装好 immortalWRT 后需要更改网络配置让系统联网。
@@ -167,3 +167,5 @@ config dhcp 'lan'
 
 >[!note]
 > openwrt的配置流程不再本次笔记范围内。
+
+

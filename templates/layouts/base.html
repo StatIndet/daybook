@@ -4,6 +4,7 @@
 {{template "head" .}}
 <body class="{{.BodyClass}}" data-page-kind="{{.PageKind}}" data-search-index-url="/search.json">
   {{template "persistent_logo" .}}
+  {{template "settings_overlay" .}}
 
   <div class="page-frame" id="daybook-page" data-daybook-page>
   {{if eq .PageKind "home"}}
@@ -47,6 +48,10 @@
       document.addEventListener("daybook:page-load", () => {
         module.initReadingControls();
       });
+    });
+
+    import("{{.Assets.Path "/js/settings-overlay.js"}}").then(module => {
+      module.initSettingsOverlay();
     });
   </script>
 </body>

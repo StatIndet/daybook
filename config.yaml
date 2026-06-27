@@ -11,3 +11,13 @@ comment:
     commentSorting: "latest"
     search: false
     imageUploader: false
+
+attachments:
+  local_dir: "content/attachments"
+  public_path: "/attachments/"
+  remote_base_url: "https://static.daybook.page"
+  remote_dirs:
+    - "audio"
+    - "video"
+    - "picture"
+    - "pdf"

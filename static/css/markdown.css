@@ -227,55 +227,73 @@
   color: oklch(77% 0.005 298 / 0.8);
 }
 
-.markdown .admonition {
-  --admonition-color: var(--color-accent);
+.markdown .callout {
+  --callout-color: var(--color-accent);
 
-  border-left: 4px solid var(--admonition-color);
+  border-left: 4px solid var(--callout-color);
   color: var(--color-text);
   margin: 28px 0;
   max-width: 64ch;
   padding: 2px 16px;
 }
 
-.markdown .admonition-note {
-  --admonition-color: var(--color-accent);
+.markdown .callout[data-callout="note"],
+.markdown .callout[data-callout="abstract"],
+.markdown .callout[data-callout="info"],
+.markdown .callout[data-callout="todo"] {
+  --callout-color: var(--color-accent);
 }
 
-.markdown .admonition-tip {
-  --admonition-color: #4f6c3f;
+.markdown .callout[data-callout="tip"],
+.markdown .callout[data-callout="success"] {
+  --callout-color: #4f6c3f;
 }
 
-.markdown .admonition-important {
-  --admonition-color: #6f5ea8;
+.markdown .callout[data-callout="important"] {
+  --callout-color: #6f5ea8;
 }
 
-.markdown .admonition-warning {
-  --admonition-color: #9a6a21;
+.markdown .callout[data-callout="warning"],
+.markdown .callout[data-callout="question"] {
+  --callout-color: #9a6a21;
 }
 
-.markdown .admonition-caution {
-  --admonition-color: #9b392f;
+.markdown .callout[data-callout="caution"],
+.markdown .callout[data-callout="failure"],
+.markdown .callout[data-callout="danger"],
+.markdown .callout[data-callout="bug"] {
+  --callout-color: #9b392f;
 }
 
-:root[data-theme="dark"] .markdown .admonition-tip {
-  --admonition-color: #9bb978;
+.markdown .callout[data-callout="example"],
+.markdown .callout[data-callout="quote"] {
+  --callout-color: var(--color-muted);
 }
 
-:root[data-theme="dark"] .markdown .admonition-important {
-  --admonition-color: #b9a7e8;
+:root[data-theme="dark"] .markdown .callout[data-callout="tip"],
+:root[data-theme="dark"] .markdown .callout[data-callout="success"] {
+  --callout-color: #9bb978;
 }
 
-:root[data-theme="dark"] .markdown .admonition-warning {
-  --admonition-color: #d6b56d;
+:root[data-theme="dark"] .markdown .callout[data-callout="important"] {
+  --callout-color: #b9a7e8;
 }
 
-:root[data-theme="dark"] .markdown .admonition-caution {
-  --admonition-color: #ee8f7a;
+:root[data-theme="dark"] .markdown .callout[data-callout="warning"],
+:root[data-theme="dark"] .markdown .callout[data-callout="question"] {
+  --callout-color: #d6b56d;
 }
 
-.markdown .admonition-title {
+:root[data-theme="dark"] .markdown .callout[data-callout="caution"],
+:root[data-theme="dark"] .markdown .callout[data-callout="failure"],
+:root[data-theme="dark"] .markdown .callout[data-callout="danger"],
+:root[data-theme="dark"] .markdown .callout[data-callout="bug"] {
+  --callout-color: #ee8f7a;
+}
+
+.markdown .callout-title {
   align-items: center;
-  color: var(--admonition-color);
+  color: var(--callout-color);
   display: flex;
   font-size: 15px;
   font-weight: 600;
@@ -283,48 +301,58 @@
   margin: 0 0 12px;
 }
 
-.markdown .admonition-title::before {
-  aspect-ratio: 1 / 1;
-  background-color: var(--admonition-color);
-  content: "";
-  display: inline-block;
+.markdown .callout.is-title-only .callout-title {
+  margin-bottom: 0;
+}
+
+.markdown .callout.is-collapsible .callout-title {
+  cursor: pointer;
+  list-style: none;
+}
+
+.markdown .callout.is-collapsible .callout-title::-webkit-details-marker {
+  display: none;
+}
+
+.markdown .callout-icon {
+  font-size: 1.25em;
   margin-right: 8px;
-  vertical-align: text-bottom;
-  width: 16px;
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
 }
 
-.markdown .admonition-note .admonition-title::before {
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z'%3E%3C/path%3E%3C/svg%3E");
+.markdown .callout-title-inner {
+  flex: 1;
 }
 
-.markdown .admonition-tip .admonition-title::before {
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z'%3E%3C/path%3E%3C/svg%3E");
+.markdown .callout-fold-icon {
+  font-size: 1.25em;
+  margin-left: 8px;
+  transform: rotate(-90deg);
+  transition: transform 180ms var(--ease-out);
 }
 
-.markdown .admonition-important .admonition-title::before {
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z'%3E%3C/path%3E%3C/svg%3E");
+.markdown .callout[open] > .callout-title .callout-fold-icon {
+  transform: rotate(0deg);
 }
 
-.markdown .admonition-warning .admonition-title::before {
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z'%3E%3C/path%3E%3C/svg%3E");
-}
-
-.markdown .admonition-caution .admonition-title::before {
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z'%3E%3C/path%3E%3C/svg%3E");
-}
-
-.markdown .admonition-content > :last-child,
+.markdown .callout-content > :last-child,
 .markdown .md-fold-content > :last-child {
   margin-bottom: 0;
 }
 
-.markdown .admonition p,
-.markdown .admonition ul,
-.markdown .admonition ol,
+.markdown .callout p,
+.markdown .callout ul,
+.markdown .callout ol,
 .markdown .md-fold p,
 .markdown .md-fold ul,
 .markdown .md-fold ol {
   max-width: none;
+}
+
+.markdown .callout img,
+.markdown .callout video,
+.markdown .callout iframe {
+  max-width: 100%;
 }
 
 .markdown .md-fold {
@@ -1437,3 +1465,203 @@
   display: none;
 }
 
+/* Obsidian Embeds */
+
+.markdown .obsidian-embed {
+  margin: 32px 0;
+  max-width: 100%;
+}
+
+.markdown .obsidian-image {
+  /* Default behaviors for image embeds */
+}
+
+.markdown .obsidian-image img {
+  border-radius: 4px;
+  width: var(--image-width, auto);
+  max-width: 100%;
+  height: auto;
+}
+
+.markdown .obsidian-image.is-center {
+  text-align: center;
+}
+
+.markdown .obsidian-image.is-center img {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.markdown .obsidian-image.is-left {
+  text-align: left;
+}
+
+.markdown .obsidian-image.is-left img {
+  margin-right: auto;
+}
+
+.markdown .obsidian-image.is-right {
+  text-align: right;
+}
+
+.markdown .obsidian-image.is-right img {
+  margin-left: auto;
+}
+
+.markdown .obsidian-pdf {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.markdown .obsidian-pdf iframe {
+  width: 100%;
+  height: 600px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: var(--color-paper);
+}
+
+@media (max-width: 768px) {
+  .markdown .obsidian-pdf iframe {
+    height: 400px;
+  }
+}
+
+.markdown .obsidian-audio,
+.markdown .obsidian-video {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 24px 0;
+}
+
+.markdown .obsidian-audio audio {
+  width: 100%;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: var(--color-paper);
+}
+
+.markdown .obsidian-video video {
+  max-width: 100%;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: var(--color-paper);
+}
+
+.markdown .obsidian-audio.is-center,
+.markdown .obsidian-video.is-center {
+  align-items: center;
+}
+
+.markdown .obsidian-note-embed {
+  border-left: 2px solid var(--color-accent);
+  color: var(--color-muted);
+  font-style: normal;
+  font-size: 15px;
+  line-height: 1.65;
+  margin: 28px 0;
+  max-width: 64ch;
+  padding: 4px 32px 4px 22px;
+  position: relative;
+}
+
+:root[data-eye-care="false"] .markdown blockquote.obsidian-note-embed {
+  border-left-color: var(--color-accent);
+}
+
+:root[data-eye-care="false"][data-theme="dark"] .markdown blockquote.obsidian-note-embed {
+  border-left-color: var(--color-accent);
+}
+
+.markdown .obsidian-embed-content {
+  color: var(--color-text);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.markdown .obsidian-embed-content > *:first-child {
+  margin-top: 0;
+}
+
+.markdown .obsidian-embed-title {
+  font-size: 1.15rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: var(--color-text);
+}
+
+.markdown .obsidian-embed-summary {
+  color: var(--color-muted);
+}
+
+.markdown .obsidian-embed-summary::first-letter {
+  color: var(--color-accent);
+  float: left;
+  font-family: var(--font-ui);
+  font-size: 3.4em;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 0.92;
+  margin-top: 4px;
+  padding: 4px 10px 0 0;
+}
+
+.markdown .obsidian-embed-link {
+  position: absolute;
+  top: 4px;
+  right: 0;
+  color: var(--color-muted);
+  opacity: 0.6;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 200ms ease, opacity 200ms ease;
+}
+
+.markdown .obsidian-embed-link::after {
+  background: var(--color-tooltip-bg);
+  border-radius: 3px;
+  top: calc(100% + 9px);
+  color: var(--color-tooltip-text);
+  content: attr(data-tooltip);
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  left: 50%;
+  line-height: 1;
+  opacity: 0;
+  padding: 6px 7px;
+  pointer-events: none;
+  position: absolute;
+  transform: translate(-50%, -4px);
+  transition: opacity 160ms ease, transform 160ms ease;
+  white-space: nowrap;
+}
+
+.markdown .obsidian-embed-link:hover,
+.markdown .obsidian-embed-link:focus-visible {
+  color: var(--color-hover-text);
+  opacity: 1;
+  text-decoration: none;
+}
+
+.markdown .obsidian-embed-link:hover::after,
+.markdown .obsidian-embed-link:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.markdown .obsidian-embed-link .material-symbol {
+  font-size: 1.15rem;
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
+.markdown mark,
+.note-content mark {
+  background: var(--color-accent-soft-strong);
+  color: inherit;
+  border-radius: 0.2em;
+  padding: 0.05em 0.18em;
+}
