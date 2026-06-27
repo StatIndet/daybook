@@ -399,6 +399,18 @@ interface DaybookTransitionFinishedDetail {
   function updateHead(newDocument: Document) {
     if (newDocument.title) document.title = newDocument.title;
 
+    const newLang = newDocument.documentElement.lang;
+    const oldLang = document.documentElement.lang;
+    if (newLang && newLang !== oldLang) {
+      document.documentElement.lang = newLang;
+      document.dispatchEvent(new CustomEvent("daybook:lang-change", {
+        detail: {
+          lang: newLang,
+          previousLang: oldLang
+        }
+      }));
+    }
+
     const headSelectors = [
       'meta[name="description"]',
       'link[rel="canonical"]',

@@ -1,9 +1,9 @@
 {{define "settings_overlay"}}
 <div id="settings-overlay" class="settings-overlay" role="dialog" aria-modal="true" aria-labelledby="settings-title" aria-hidden="true" inert>
-  <div class="settings-backdrop" data-settings-close aria-label="关闭设置面板"></div>
+  <div class="settings-backdrop" data-settings-close aria-label="{{if eq .Lang "en"}}Close Settings{{else}}关闭设置面板{{end}}" data-i18n-aria-en="Close Settings" data-i18n-aria-zh="关闭设置面板"></div>
   <div class="settings-paper">
     
-    <h2 id="settings-title" class="settings-title">{{if eq .Lang "en"}}Settings{{else}}设置{{end}}</h2>
+    <h2 id="settings-title" class="settings-title" data-i18n-en="Settings" data-i18n-zh="设置">{{if eq .Lang "en"}}Settings{{else}}设置{{end}}</h2>
     
     <div class="settings-content">
       <label class="settings-checkbox-label">
@@ -15,7 +15,7 @@
           <line x1="0" y1="24" x2="24" y2="24"></line>
           <line x1="0" y1="0" x2="0" y2="24"></line>
         </svg>
-        <span class="settings-checkbox-text">
+        <span class="settings-checkbox-text" data-i18n-en="Use System Cursor" data-i18n-zh="使用系统默认光标">
           {{if eq .Lang "en"}}Use System Cursor{{else}}使用系统默认光标{{end}}
         </span>
       </label>
@@ -29,7 +29,7 @@
           <line x1="0" y1="24" x2="24" y2="24"></line>
           <line x1="0" y1="0" x2="0" y2="24"></line>
         </svg>
-        <span class="settings-checkbox-text">
+        <span class="settings-checkbox-text" data-i18n-en="Disable Background Playback" data-i18n-zh="禁用后台播放">
           {{if eq .Lang "en"}}Disable Background Playback{{else}}禁用后台播放{{end}}
         </span>
       </label>
@@ -43,7 +43,7 @@
           <line x1="0" y1="24" x2="24" y2="24"></line>
           <line x1="0" y1="0" x2="0" y2="24"></line>
         </svg>
-        <span class="settings-checkbox-text">
+        <span class="settings-checkbox-text" data-i18n-en="Disable Comments" data-i18n-zh="禁用评论区">
           {{if eq .Lang "en"}}Disable Comments{{else}}禁用评论区{{end}}
         </span>
       </label>
@@ -57,7 +57,7 @@
           <line x1="0" y1="24" x2="24" y2="24"></line>
           <line x1="0" y1="0" x2="0" y2="24"></line>
         </svg>
-        <span class="settings-checkbox-text">
+        <span class="settings-checkbox-text" data-i18n-en="Disable Title Transition Animation" data-i18n-zh="禁用标题过渡动画">
           {{if eq .Lang "en"}}Disable Title Transition Animation{{else}}禁用标题过渡动画{{end}}
         </span>
       </label>

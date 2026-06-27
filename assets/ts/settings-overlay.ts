@@ -67,4 +67,34 @@ export function initSettingsOverlay() {
   setupCheckbox('setting-bg-playback', 'disableBackgroundPlayback');
   setupCheckbox('setting-disable-comments', 'disableComments');
   setupCheckbox('setting-disable-title-transition', 'disableTitleTransition');
+
+  const syncLanguage = (lang: string) => {
+    // Normalize language string
+    const isEn = lang.toLowerCase().startsWith('en');
+    const textAttr = isEn ? 'data-i18n-en' : 'data-i18n-zh';
+    const ariaAttr = isEn ? 'data-i18n-aria-en' : 'data-i18n-aria-zh';
+
+    const overlay = document.getElementById('settings-overlay');
+    if (!overlay) return;
+
+    overlay.querySelectorAll(`[${textAttr}]`).forEach((el) => {
+      const translation = el.getAttribute(textAttr);
+      if (translation) el.textContent = translation;
+    });
+
+    overlay.querySelectorAll(`[${ariaAttr}]`).forEach((el) => {
+      const translation = el.getAttribute(ariaAttr);
+      if (translation) el.setAttribute('aria-label', translation);
+    });
+  };
+
+  // Sync on initialization
+  syncLanguage(document.documentElement.lang);
+
+  // Sync on dynamic SPA language change
+  document.addEventListener('daybook:lang-change', (e: any) => {
+    if (e.detail && e.detail.lang) {
+      syncLanguage(e.detail.lang);
+    }
+  });
 }

@@ -67,11 +67,13 @@ html.has-custom-cursor .settings-overlay * {
   min-height: 480px;
   padding: 50px 50px 70px 50px;
   background-color: #f8f5e1; /* darker outer rim */
-  background-image: url('../../images/old-wall.png');
+  background-image: url('../../images/0kjMcUe.png');
+  background-size: 1000px;
+  background-position: center right;
   border: 1px solid #d4c7a7;
   border-bottom: none; /* torn edge doesn't need a straight border */
   border-radius: 2px 2px 0 0;
-  filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.15));
+  filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.15)) brightness(0.95) sepia(30%) saturate(80%);
   clip-path: polygon(
     0% 0%, 0% 93%, 5% 98%, 6% 99%, 8% 95%, 12% 94%, 15% 97%, 17% 93%, 20% 98%,
     22% 97%, 25% 99%, 31% 94%, 35% 93%, 39% 96%, 43% 93%, 45% 94%, 47% 95%,
@@ -94,8 +96,9 @@ html.has-custom-cursor .settings-overlay * {
   right: 4px;
   bottom: 4px;
   background-color: #fcfbf5; /* lighter inner paper */
-  background-image: url('../../images/old-wall.png');
-  background-position: -4px -4px; /* perfectly align texture with parent */
+  background-image: url('../../images/0kjMcUe.png');
+  background-size: 1000px;
+  background-position: right -4px center; /* perfectly align texture with parent */
   border: 1px solid rgba(212, 199, 167, 0.5); /* #d4c7a7 with opacity */
   pointer-events: none;
   border-radius: 2px;
@@ -113,6 +116,12 @@ html.has-custom-cursor .settings-overlay * {
   background-color: rgba(62, 56, 50, 0.15); /* faint ink color */
   pointer-events: none;
   z-index: -1;
+}
+
+@media (max-width: 768px) {
+  .settings-paper::after {
+    display: none;
+  }
 }
 
 .settings-overlay.is-open .settings-paper {
