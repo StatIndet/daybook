@@ -38,27 +38,11 @@ func (g *ArticleGroup) SelectVersion(lang string) (*Note, bool) {
 	return nil, false
 }
 
-func (g *ArticleGroup) IsListed(lang string) bool {
-	// 1. If only one version exists, it's listed by default
-	if len(g.Versions) == 1 {
-		for _, note := range g.Versions {
-			if note.Listed != nil {
-				return *note.Listed
-			}
-			return true
-		}
-	}
-
-	// 2. Multiple versions:
-	note, ok := g.Versions[lang]
-	if !ok {
-		return false
-	}
-
-	if note.Listed != nil {
+func (g *ArticleGroup) IsListed() bool {
+	note, _ := g.SelectVersion("zh-CN")
+	if note != nil && note.Listed != nil {
 		return *note.Listed
 	}
-
 	return true
 }
 

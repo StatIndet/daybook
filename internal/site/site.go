@@ -141,7 +141,7 @@ func Build(options Options) (BuildResult, error) {
 				continue
 			}
 
-			if group.IsListed(lang) {
+			if group.IsListed() {
 				langNotes = append(langNotes, *note)
 			}
 
@@ -198,40 +198,45 @@ func Build(options Options) (BuildResult, error) {
 				})
 			}
 
-			// The user said: "同一个 i18n_key = 一个文章节点。当前语言有对应文章标题，则显示当前语言标题。"
-			// Since we iterate through groups, there's exactly one node per group.
-			graphNodes = append(graphNodes, graph.InputNode{
-				ID:          group.I18nKey,
-				Title:       note.Title,
-				URL:         path.Join("/", langPrefix, "notes", note.Slug, "/"),
-				Tags:        tagNodes,
-				Attachments: attachmentNodes,
-				Date:        note.Date,
-			})
-
-			for _, link := range processed.Links {
-				targetID := link.Slug
-				if !link.Exists {
-					targetID = link.Target
-				}
-				// We need to resolve target slug to i18n_key if possible
-				resolvedID := targetID
-				for _, searchGroup := range groups {
-					if targetNote, ok := searchGroup.Versions["zh-CN"]; ok && targetNote.Slug == targetID {
-						resolvedID = searchGroup.I18nKey
-						break
-					}
-					if targetNote, ok := searchGroup.Versions["en"]; ok && targetNote.Slug == targetID {
-						resolvedID = searchGroup.I18nKey
-						break
-					}
-				}
-
-				graphLinks = append(graphLinks, graph.InputLink{
-					Source: group.I18nKey,
-					Target: resolvedID,
-					Exists: link.Exists,
+			if group.IsListed() {
+				graphNodes = append(graphNodes, graph.InputNode{
+					ID:          group.I18nKey,
+					Title:       note.Title,
+					URL:         path.Join("/", langPrefix, "notes", note.Slug, "/"),
+					Tags:        tagNodes,
+					Attachments: attachmentNodes,
+					Date:        note.Date,
 				})
+
+				for _, link := range processed.Links {
+					targetID := link.Slug
+					if !link.Exists {
+						targetID = link.Target
+					}
+					// We need to resolve target slug to i18n_key if possible
+					resolvedID := targetID
+					targetIsListed := true
+					for _, searchGroup := range groups {
+						if targetNote, ok := searchGroup.Versions["zh-CN"]; ok && targetNote.Slug == targetID {
+							resolvedID = searchGroup.I18nKey
+							targetIsListed = searchGroup.IsListed()
+							break
+						}
+						if targetNote, ok := searchGroup.Versions["en"]; ok && targetNote.Slug == targetID {
+							resolvedID = searchGroup.I18nKey
+							targetIsListed = searchGroup.IsListed()
+							break
+						}
+					}
+
+					if targetIsListed {
+						graphLinks = append(graphLinks, graph.InputLink{
+							Source: group.I18nKey,
+							Target: resolvedID,
+							Exists: link.Exists,
+						})
+					}
+				}
 			}
 
 			titleLayoutHTML := titlelayout.GenerateHTML(note.Title, slugToUse)
@@ -257,7 +262,7 @@ func Build(options Options) (BuildResult, error) {
 				DateTransitionName:  dateTransitionName,
 			}
 
-			if group.IsListed(lang) {
+			if group.IsListed() {
 				noteLinks = append(noteLinks, noteLink)
 			}
 
