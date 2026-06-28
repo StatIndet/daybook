@@ -106,6 +106,7 @@
   --golden-guide-shrink-window: 5.0s;
   --golden-hidden-duration: 0.618s;
   --golden-loop-duration: 30.154s;
+  contain: strict;
   inset: 0;
   opacity: 0.9;
   pointer-events: none;
@@ -120,8 +121,15 @@
   width: 100%;
 }
 
+@keyframes golden-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .golden-spiral-stage {
+  animation: golden-spin var(--golden-loop-duration) linear infinite;
   transform-box: view-box;
+  will-change: transform;
 }
 
 .golden-spiral-layer {
@@ -149,16 +157,15 @@
   stroke-dasharray: 0 1;
   stroke-dashoffset: 0;
   stroke-linecap: round;
+  will-change: stroke-dashoffset, opacity;
 }
 
 .golden-rect {
   stroke: var(--color-golden-rect);
-  stroke-width: 1;
 }
 
 .golden-diagonal {
   stroke: var(--color-golden-diagonal);
-  stroke-width: 0.8;
 }
 
 .golden-curve {
@@ -168,7 +175,6 @@
   stroke: var(--color-golden-curve);
   stroke-dasharray: var(--golden-curve-dash-length) var(--golden-curve-dash-length);
   stroke-dashoffset: var(--golden-curve-dash-length);
-  stroke-width: 1.55;
   stroke-linejoin: round;
 }
 

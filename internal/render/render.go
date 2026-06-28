@@ -117,7 +117,11 @@ type goldenSquare struct {
 }
 
 type GoldenLayer struct {
-	Index int
+	Index               int
+	Transform           template.CSS
+	RectStrokeWidth     string
+	DiagonalStrokeWidth string
+	CurveStrokeWidth    string
 }
 
 type GoldenSpiral struct {
@@ -383,9 +387,15 @@ func NewGoldenSpiral() GoldenSpiral {
 	outerQuarterTurns := 0.0
 	spiralPath, spiralStart, spiralEnd := buildSpiralPath(pole, spiralOuterAnchor, spiralInnerQuarterTurns, outerQuarterTurns, math.Pi/180)
 
-	layers := []GoldenLayer{
-		{Index: 0},
-	}
+	layers := make([]GoldenLayer, 0, 1)
+	scale := 1.0
+	layers = append(layers, GoldenLayer{
+		Index:               0,
+		Transform:           "",
+		RectStrokeWidth:     fmt.Sprintf("%.3f", 1.0/scale),
+		DiagonalStrokeWidth: fmt.Sprintf("%.3f", 0.8/scale),
+		CurveStrokeWidth:    fmt.Sprintf("%.3f", 1.55/scale),
+	})
 
 	return GoldenSpiral{
 		PoleX:                   fmt.Sprintf("%.2f", pole.x),
@@ -439,7 +449,7 @@ func subdivideGoldenRect(rect goldenRect, maxSquares int) ([]goldenSquare, point
 	dir := 0
 	for i := 0; i < maxSquares*4; i++ {
 		s := math.Min(cw, ch)
-		if s <= 0.01 {
+		if s <= 2.0 {
 			break
 		}
 
