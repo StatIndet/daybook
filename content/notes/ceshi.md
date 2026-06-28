@@ -10,8 +10,10 @@ summary: 用于检查内嵌外链卡片测试
 draft: false
 toc: false
 ---
-::spotify{url="https://open.spotify.com/track/0HYAsQwJIO6FLqpyTeD3l6"}
+::spotify{url="https://open.spotify.com/artist/4gzpq5DPGxSnKTe4SA8HAU"}
 
-::github{repo="radishzzz/astro-theme-retypeset"}
+::github{repo="StatIndet/daybook"}
 
-::tweet{url="https://x.com/hachi_08/status/1906456524337123549"}
+::tweet{url="https://x.com/ilyamirox/status/2056499039948910760?s=20"}
+
+::netease{type="song" id="1988163085" autostart="false"}

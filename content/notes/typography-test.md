@@ -1,9 +1,11 @@
 ---
-title: "【测试页面】字体迁移测试"
-date: "2026-06-23"
-slug: "typography-test"
-tags: ["测试", "字体"]
-summary: "这是一篇用于人工检查霞鹜文楷与 Maple Mono CN 实际排版与渲染效果的测试笔记。"
+title: 自托管字体测试
+date: 2026-06-23
+slug: typography-test
+tags:
+  - 测试
+  - 字体
+summary: 这是一篇用于人工检查霞鹜文楷与 Maple Mono CN 实际排版与渲染效果的测试笔记。
 draft: false
 ---
 
