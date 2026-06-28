@@ -841,7 +841,7 @@ func buildObsidianIndex(notes []content.Note, contentDir string, cfg config.Atta
 		}
 	}
 
-	return obsidian.NewIndex(targets, attachments), nil
+	return obsidian.NewIndex(targets, attachments, cfg.RemoteDirs, cfg.RemoteBaseURL), nil
 }
 
 func escapeURLPath(p string) string {

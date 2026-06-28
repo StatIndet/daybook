@@ -15,7 +15,7 @@ func TestProcessWikilinks(t *testing.T) {
 				"自动关机脚本": "自动关机脚本",
 			},
 		},
-	}, nil)
+	}, nil, nil, "")
 
 	result := Process("[[安装 Debian SSH Server]]\n[[安装 Debian SSH Server#自动关机脚本|关机脚本]]\n[[不存在]]", index)
 
@@ -53,7 +53,7 @@ func TestProcessImages(t *testing.T) {
 
 <script>alert(1)</script>`
 
-	result := Process(input, NewIndex(nil, nil))
+	result := Process(input, NewIndex(nil, nil, nil, ""))
 	html := RestoreHTML("<p>DAYBOOK_HTML_IMAGE_0</p>", result.HTML)
 
 	if !strings.Contains(result.Text, `![添加新连接](/notes/assets/add-new-link.png)`) {
