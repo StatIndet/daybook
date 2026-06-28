@@ -42,6 +42,7 @@
   --color-line: #d9cfb9;
   --color-accent: #8a4423;
   --color-hover-text: var(--color-accent);
+  --graph-node-attachment: #d4b856;
   --color-paper: #fbf6ec;
   --color-faint: #b8ad9b;
   --color-accent-soft: rgba(138, 68, 35, 0.1);
@@ -83,6 +84,7 @@
   --color-line: #2a2622;
   --color-accent: #c89761;
   --color-hover-text: var(--color-accent);
+  --graph-node-attachment: #d6c776;
   --color-paper: #1a1715;
   --color-faint: #4f4a42;
   --color-accent-soft: rgba(200, 151, 97, 0.12);
@@ -125,6 +127,7 @@
   --color-line: oklch(25% 0.005 298 / 0.16);
   --color-accent: #6750a4;
   --color-hover-text: var(--color-accent);
+  --graph-node-attachment: #c7b34b;
   --color-paper: oklch(98% 0.004 298);
   --color-faint: oklch(40% 0.005 298 / 0.36);
   --color-accent-soft: rgba(103, 80, 164, 0.1);
@@ -167,6 +170,7 @@
   --color-line: oklch(92% 0.005 298 / 0.14);
   --color-accent: #d0bcff;
   --color-hover-text: var(--color-accent);
+  --graph-node-attachment: #d6c776;
   --color-paper: oklch(25% 0.005 298);
   --color-faint: oklch(77% 0.005 298 / 0.34);
   --color-accent-soft: rgba(208, 188, 255, 0.12);

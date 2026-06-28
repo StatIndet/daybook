@@ -38,9 +38,10 @@ type Index struct {
 }
 
 type Result struct {
-	Text  string
-	HTML  map[string]string
-	Links []Link
+	Text        string
+	HTML        map[string]string
+	Links       []Link
+	Attachments []Attachment
 }
 
 type Link struct {
@@ -99,6 +100,20 @@ func Process(input string, index Index) Result {
 	result.Text = replaceImageHTML(result.Text, true, result.HTML)
 	result.Text = replaceImageHTML(result.Text, false, result.HTML)
 	result.Text = rewriteMarkdownImagePaths(result.Text)
+	
+	result.Text = markdownImagePattern.ReplaceAllStringFunc(result.Text, func(match string) string {
+		parts := markdownImagePattern.FindStringSubmatch(match)
+		urlStr := parts[2]
+		basename := filepath.Base(urlStr)
+		if index := strings.IndexAny(basename, "?#"); index >= 0 {
+			basename = basename[:index]
+		}
+		if att, ok := index.findAttachment(basename); ok {
+			result.Attachments = append(result.Attachments, att)
+		}
+		return match
+	})
+	
 	result.Text = wikilinkPattern.ReplaceAllStringFunc(result.Text, func(match string) string {
 		parts := wikilinkPattern.FindStringSubmatch(match)
 		isEmbed := parts[1] == "!"
@@ -111,6 +126,7 @@ func Process(input string, index Index) Result {
 
 		// 1. Check if it's an attachment
 		if att, ok := index.findAttachment(targetText); ok {
+			result.Attachments = append(result.Attachments, att)
 			if isEmbed {
 				html, ok := renderAttachmentEmbed(att, label)
 				if ok {

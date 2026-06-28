@@ -11,14 +11,21 @@ type TagNode struct {
 	Title string `json:"title"`
 }
 
+type AttachmentNode struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+	URL   string `json:"url"`
+}
+
 type Node struct {
-	ID     string    `json:"id"`
-	Title  string    `json:"title"`
-	URL    string    `json:"url"`
-	Tags   []TagNode `json:"tags"`
-	Date   string    `json:"date"`
-	Degree int       `json:"degree"`
-	Exists bool      `json:"exists"`
+	ID          string           `json:"id"`
+	Title       string           `json:"title"`
+	URL         string           `json:"url"`
+	Tags        []TagNode        `json:"tags"`
+	Attachments []AttachmentNode `json:"attachments,omitempty"`
+	Date        string           `json:"date"`
+	Degree      int              `json:"degree"`
+	Exists      bool             `json:"exists"`
 }
 
 type Link struct {
@@ -41,11 +48,12 @@ type Data struct {
 }
 
 type InputNode struct {
-	ID    string
-	Title string
-	URL   string
-	Tags  []TagNode
-	Date  string
+	ID          string
+	Title       string
+	URL         string
+	Tags        []TagNode
+	Attachments []AttachmentNode
+	Date        string
 }
 
 type InputLink struct {
@@ -132,13 +140,14 @@ func BuildJSON(nodes []InputNode, links []InputLink, outputPath string) error {
 	var finalNodes []Node
 	for _, node := range nodes {
 		finalNodes = append(finalNodes, Node{
-			ID:     node.ID,
-			Title:  node.Title,
-			URL:    node.URL,
-			Tags:   node.Tags,
-			Date:   node.Date,
-			Degree: degreeMap[node.ID],
-			Exists: true,
+			ID:          node.ID,
+			Title:       node.Title,
+			URL:         node.URL,
+			Tags:        node.Tags,
+			Attachments: node.Attachments,
+			Date:        node.Date,
+			Degree:      degreeMap[node.ID],
+			Exists:      true,
 		})
 	}
 

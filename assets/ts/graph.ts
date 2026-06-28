@@ -7,6 +7,12 @@ export interface TagNode {
   title: string;
 }
 
+export interface AttachmentNode {
+  id: string;
+  title: string;
+  url: string;
+}
+
 interface RawNode {
   id: string;
   title: string;
@@ -14,6 +20,7 @@ interface RawNode {
   exists: boolean;
   degree: number;
   tags?: TagNode[];
+  attachments?: AttachmentNode[];
 }
 
 interface GraphNode {
@@ -29,7 +36,9 @@ interface GraphNode {
   exists: boolean;
   degree: number;
   tags?: TagNode[];
+  attachments?: AttachmentNode[];
   isTag?: boolean;
+  isAttachment?: boolean;
   radius: number;
 }
 
@@ -57,8 +66,10 @@ interface GraphData {
   let orphanBtn: HTMLElement | null = null;
   let resetBtn: HTMLElement | null = null;
   let tagsBtn: HTMLElement | null = null;
+  let attachmentsBtn: HTMLElement | null = null;
   
   let showTags = false;
+  let showAttachments = false;
   let showOrphans = true;
 
   let rawNodes: RawNode[] = [];
@@ -77,6 +88,7 @@ interface GraphData {
     searchInput = root.querySelector('#graph-search-input');
     searchBtn = root.querySelector('#graph-search-btn');
     tagsBtn = root.querySelector('#graph-tags-btn');
+    attachmentsBtn = root.querySelector('#graph-attachments-btn');
     actionsHorizontal = root.querySelector('.graph-actions-horizontal');
     orphanBtn = root.querySelector('#graph-orphan-btn');
     resetBtn = root.querySelector('#graph-reset');
@@ -252,6 +264,42 @@ interface GraphData {
       links = links.concat(newLinks);
     }
 
+    if (showAttachments) {
+      const attNodesMap = new Map<string, GraphNode>();
+      const newLinks: GraphLink[] = [];
+      
+      nodes.forEach(n => {
+        if (n.attachments && n.attachments.length > 0) {
+          n.attachments.forEach(attObj => {
+            const attId = attObj.id;
+            if (!attNodesMap.has(attId)) {
+              const angle = Math.random() * Math.PI * 2;
+              const offset = 20;
+              attNodesMap.set(attId, {
+                id: attId,
+                title: attObj.title,
+                url: attObj.url,
+                isAttachment: true,
+                exists: true,
+                degree: 1,
+                radius: getRadius(1),
+                x: (n.x || cx) + Math.cos(angle) * offset,
+                y: (n.y || cy) + Math.sin(angle) * offset
+              });
+            } else {
+              const attNode = attNodesMap.get(attId)!;
+              attNode.degree++;
+              attNode.radius = getRadius(attNode.degree);
+            }
+            newLinks.push({ source: n.id, target: attId });
+          });
+        }
+      });
+      
+      nodes = nodes.concat(Array.from(attNodesMap.values()));
+      links = links.concat(newLinks);
+    }
+
     drawGraph(nodes, links, centerNodeId, initialAlpha, currentTransform);
   }
 
@@ -321,7 +369,9 @@ interface GraphData {
       .on('mouseout', handleMouseOut)
       .on('click', (event: any, d: GraphNode) => {
         if (d.url) {
-          if (window.daybookNavigateTo) {
+          if (d.isAttachment) {
+            window.open(d.url, '_blank');
+          } else if (window.daybookNavigateTo) {
             window.daybookNavigateTo(d.url);
           } else {
             window.location.href = d.url;
@@ -335,13 +385,18 @@ interface GraphData {
         let cls = 'graph-node';
         if (d.id === centerNodeId) cls += ' is-center';
         if (d.isTag) cls += ' is-tag';
-        if (!d.exists && !d.isTag) cls += ' is-missing';
+        if (d.isAttachment) cls += ' is-attachment';
+        if (!d.exists && !d.isTag && !d.isAttachment) cls += ' is-missing';
         return cls;
       })
       .attr('r', (d: GraphNode) => d.radius);
 
     const label = nodeGroup.append('text')
-      .attr('class', (d: GraphNode) => d.isTag ? 'graph-label is-tag' : 'graph-label')
+      .attr('class', (d: GraphNode) => {
+        if (d.isTag) return 'graph-label is-tag';
+        if (d.isAttachment) return 'graph-label is-attachment';
+        return 'graph-label';
+      })
       .attr('dy', (d: GraphNode) => d.radius + 12)
       .attr('text-anchor', 'middle')
       .text((d: GraphNode) => d.title);
@@ -489,6 +544,14 @@ interface GraphData {
       tagsBtn.onclick = () => {
         showTags = !showTags;
         tagsBtn!.setAttribute('aria-expanded', String(showTags));
+        render(0.15); // Very soft alpha for sprouting
+      };
+    }
+
+    if (attachmentsBtn) {
+      attachmentsBtn.onclick = () => {
+        showAttachments = !showAttachments;
+        attachmentsBtn!.setAttribute('aria-expanded', String(showAttachments));
         render(0.15); // Very soft alpha for sprouting
       };
     }

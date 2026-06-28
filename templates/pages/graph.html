@@ -20,6 +20,11 @@
             <span class="material-symbol" aria-hidden="true">sell</span>
             <span class="notes-action-text">{{T .Lang "action.tags"}}</span>
           </button>
+
+          <button class="notes-action-button" type="button" aria-label="{{T .Lang "action.attachments"}}" aria-expanded="false" data-tooltip="{{T .Lang "tooltip.attachments"}}" id="graph-attachments-btn">
+            <span class="material-symbol" aria-hidden="true">attach_file</span>
+            <span class="notes-action-text">{{T .Lang "action.attachments"}}</span>
+          </button>
           
           {{template "theme_toggle_action" .}}
           

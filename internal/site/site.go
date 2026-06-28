@@ -184,15 +184,29 @@ func Build(options Options) (BuildResult, error) {
 
 			tags := displayTags
 
-			// Graph node should not be deduplicated strictly unless we want to, wait, we do.
+			var attachmentNodes []graph.AttachmentNode
+			seenAttachments := make(map[string]bool)
+			for _, att := range processed.Attachments {
+				if seenAttachments[att.Name] {
+					continue
+				}
+				seenAttachments[att.Name] = true
+				attachmentNodes = append(attachmentNodes, graph.AttachmentNode{
+					ID:    "attachment:" + att.Name,
+					Title: att.Name,
+					URL:   att.PublicURL,
+				})
+			}
+
 			// The user said: "同一个 i18n_key = 一个文章节点。当前语言有对应文章标题，则显示当前语言标题。"
 			// Since we iterate through groups, there's exactly one node per group.
 			graphNodes = append(graphNodes, graph.InputNode{
-				ID:    group.I18nKey,
-				Title: note.Title,
-				URL:   path.Join("/", langPrefix, "notes", note.Slug, "/"),
-				Tags:  tagNodes,
-				Date:  note.Date,
+				ID:          group.I18nKey,
+				Title:       note.Title,
+				URL:         path.Join("/", langPrefix, "notes", note.Slug, "/"),
+				Tags:        tagNodes,
+				Attachments: attachmentNodes,
+				Date:        note.Date,
 			})
 
 			for _, link := range processed.Links {

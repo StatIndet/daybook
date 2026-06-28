@@ -248,9 +248,49 @@
   fill: var(--syntax-inserted);
 }
 
+/* Attachment Nodes */
+.graph-node.is-attachment {
+  fill: var(--graph-node-attachment);
+  stroke: var(--color-page);
+  stroke-width: 1px;
+}
 
+/* Unconnected attachment nodes should be dimmed */
+.graph-dimmed .graph-node.is-attachment {
+  fill: color-mix(in srgb, var(--graph-node-attachment) 25%, transparent);
+  stroke-opacity: 0.2;
+}
 
-/* Mobile */
+/* Connected attachment nodes stay colored */
+.graph-dimmed .graph-node.is-attachment.is-highlight {
+  fill: var(--graph-node-attachment);
+  stroke-opacity: 1;
+}
+
+/* Directly hovered attachment nodes take the global hover accent color */
+.graph-dimmed .graph-node.is-attachment.is-hovered {
+  fill: var(--color-hover-text);
+  stroke-opacity: 1;
+}
+
+.graph-label.is-attachment {
+  font-size: 11px;
+  fill: var(--color-muted);
+}
+
+/* Highlighted attachment labels stay colored */
+.graph-label.is-attachment.is-highlight {
+  fill: var(--graph-node-attachment);
+}
+
+/* Directly hovered attachment labels take the global hover accent color */
+.graph-dimmed .graph-label.is-attachment.is-hovered {
+  fill: var(--color-hover-text);
+}
+
+.graph-label.is-attachment.is-match {
+  fill: var(--graph-node-attachment);
+}/* Mobile */
 @media (max-width: 960px) {
   .graph-body .page-main {
     padding: 20px;
