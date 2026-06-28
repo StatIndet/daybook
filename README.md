@@ -26,14 +26,17 @@ Daybook 提供了一系列为现代数字花园量身定制的功能：
   * **明暗主题 (Dark Mode)**：支持操作系统自适应和手动切换的暗黑模式。
   * **关系图谱 (`/graph/`)**：全局与局部的节点关系力导向图，呈现知识链路。
   * **快速检索**：全局前端弹窗搜索与标签筛选系统。
+  * **全局控制面板 (Settings Overlay)**：以宣纸质感呈现的沉浸式页面控制层，支持视觉与交互偏好的微调。
+  * **全站双语对照 (i18n Bilingual)**：优雅的英汉双语对照排版及一键双语状态切换。
+  * **边缘访问统计 (D1 Serverless Stats)**：完全零后端依赖的 Cloudflare 边缘计算 + D1 数据库，实现全站独立访客 (UV) 和页面阅读量 (PV) 安全追踪。
 * **丰富的内容扩展**:
-  * 基于 `goldmark` 与定制扩展的 Markdown 渲染。
+  * 基于 `goldmark` 与定制扩展的 Markdown 渲染 (全兼容 Obsidian 语法如嵌入、Callout、双链、Highlight等)。
   * 集成第三方服务的灵活嵌入 (Bilibili, YouTube, GitHub, Spotify 等)。
-  * 优雅的图片查看器 (Lightbox) 与图集组合 (Gallery)。
+  * **全站媒体管理器 (Media Manager)**：原生的灯箱 (Lightbox) 画廊查看体验，动态适配大文件的远程加载。
   * 原生级别的代码高亮与剪贴板复制。
   * 集成 Waline 评论系统。
   * 内置对 Mermaid 图表与 KaTeX 数学公式的渲染支持。
-  * 自动生成的 RSS 订阅流。
+  * 自动生成的 RSS 订阅流与 XML Sitemap。
 
 ---
 

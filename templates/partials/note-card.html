@@ -16,10 +16,10 @@
       <span class="meta-transition-group" data-meta-transition-key="{{.Slug}}">
         <time datetime="{{.Date}}" data-date-transition-key="{{.Slug}}">{{.Date}}</time>
         <span class="reading-time">{{.ReadingMinutes}} {{T .Lang "post.min_read"}}</span>
-        {{if .Updated}}
-          <span class="updated-time">&bull; updated <time datetime="{{.Updated}}">{{.Updated}}</time></span>
-        {{end}}
       </span>
+      {{if .Updated}}
+        <span class="updated-time">&bull; updated <time datetime="{{.Updated}}">{{.Updated}}</time></span>
+      {{end}}
     </p>
   </div>
   {{with .Summary}}<p class="notes-item-summary">{{.}}</p>{{end}}

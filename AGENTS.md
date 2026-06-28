@@ -4,11 +4,9 @@
 
 `daybook` 是一个使用 Go 编写的极简静态博客与 Obsidian 笔记发布工具。
 
-项目目标是将 `content/notes/` 目录中的 Markdown 笔记转换成 `public/` 目录中的静态网站。当前项目已经超过 MVP，已经完成基础页面结构、文章列表、文章详情、persistent logo、side-nav、明暗主题、页面切换动画和基础 Markdown 渲染。
+项目目标是将 `content/notes/` 目录中的 Markdown 笔记转换成 `public/` 目录中的静态网站。当前项目已进入 **维护与重构期 (Maintenance Phase)**，所有核心特性（包括深色模式、共享元素切换动画、全站双语、设置面板、Obsidian 语法全兼容、Waline 评论、D1 Serverless 访问统计等）均已稳定上线。
 
-这个网站刻意保持简单。它没有后端、没有数据库、没有登录系统、没有评论、没有访问统计，也没有后台管理界面。
-
-最终网站将部署到 Cloudflare Pages，并绑定自定义域名：
+这个网站在架构上依然保持轻量纯粹，但在交互与功能上已具备高度现代化特征（如 Edge Functions 边缘计算和零框架前端原生 TypeScript 交互）。最终网站被设计为通过 Cloudflare Pages 部署，并绑定自定义域名：
 
 ```text
 https://daybook.page
@@ -20,35 +18,23 @@ https://daybook.page
 
 修改代码时，优先选择简单、可读、适合初学者理解的实现方式，而不是聪明但复杂的抽象。必要时可以加入简短注释解释关键思路，但不要给显而易见的代码添加过多注释。
 
-## 当前已完成能力
+## 当前已完成核心能力
 
-* 首页 hero；
-* 文章列表页 `/notes/`；
-* 文章详情页 `/notes/{slug}/`；
-* Markdown frontmatter；
-* Markdown / GFM 渲染基础；
-* persistent logo；
-* side-nav；
-* 明暗主题；
-* 页面切换动画；
-* `static/` 资源复制；
-* 本地 `build` / `serve` 命令。
+* **基础与视觉**：首页 Hero、文章列表、文章详情、侧边导航、明暗主题自适应、全局 View Transitions 共享元素切换动画。
+* **Markdown 与 Obsidian 兼容**：原生 GFM、Frontmatter 解析、Obsidian Wikilink 双向链接、嵌入 (Embed)、Callout、代码高亮 (Chroma)、数学公式 (KaTeX)、图表 (Mermaid)。
+* **高级扩展**：全局标签 (`/tags/`)、按年份归档 (`/archive/`)、全局前端检索弹窗、RSS/Sitemap 生成。
+* **交互增强**：全站媒体管理器 (Media Manager, Lightbox/Gallery)、多语言双语对照切换 (i18n)、全局控制面板 (Settings Overlay)。
+* **边缘计算与评论**：基于 Cloudflare Pages Functions 与 D1 数据库的零后端全站访问统计，以及 Waline 评论系统集成。
+* **构建与发布**：动态远端附件推断 (`RemoteDirs`) 支持 R2 大文件挂载，本地 `npm run build` 一键极速输出纯静态资源。
 
-## 已完成的 MVP
+## 项目当前阶段
 
-MVP 已完成，项目现在进入功能增强阶段。
-
-已完成的 MVP 能力包括：
-
-1. 从 `content/notes/` 读取 Markdown 文件；
-2. 解析 YAML frontmatter；
-3. 将 Markdown 正文转换成 HTML；
-4. 为每篇笔记生成一个 HTML 页面；
-5. 生成首页、文章列表页和文章详情页；
-6. 将 `static/` 中的文件复制到 `public/`；
-7. 提供本地预览服务器命令。
-
-后续功能必须一步一步实现。不要一次性实现多个未来功能。
+项目核心特性已经开发完毕并进入**维护与重构期**。
+在此阶段，AI Agent 的主要目标是：
+1. **优先保障现有功能的稳定性**：在修改代码前必须充分考虑对现有特性的影响。
+2. **代码重构与优化**：提升 TypeScript 和 Go 代码的可读性、可维护性。
+3. **修复边界 Bug**：处理极端分辨率下的 UI 瑕疵或罕见的 Markdown 解析边缘情况。
+4. 除非用户明确要求，否则**不再引入**大型新功能或新的外部依赖。
 
 ## 当前项目结构
 
@@ -267,21 +253,11 @@ go run ./cmd/daybook serve
 
 除非明确要求，否则不要重写整个项目。不要在没有解释原因的情况下添加大型依赖。不要一次实现多个未来功能。
 
-## 未来功能
+## 维护期要求
 
-当前未来功能顺序：
+由于项目已处于稳定维护期：
 
-1. 修复并稳定 Markdown/GFM 渲染；
-2. Obsidian wikilink；
-3. Obsidian embed；
-4. Obsidian callout；
-5. backlinks；
-6. graph JSON；
-7. graph 页面；
-8. tags 页面；
-9. archive 页面；
-10. search；
-11. RSS / sitemap；
-12. Cloudflare Pages 部署配置。
-
-每个未来功能都应该作为单独步骤实现。不要一次实现多个未来功能。
+* 对于任何新需求的引入，必须先与用户进行充分的方案确认（`/grill-me`）。
+* **UI/UX 微调**：确保改动不会破坏全局响应式布局及已有的 View Transitions 过渡动画。
+* **后端改动**：保持 `internal` 下各包的独立性，警惕循环依赖。
+* **前端改动**：所有的 TS 修改都必须在 `assets/ts/` 中完成，并通过 `npm run build:js` 编译，绝对不要直接修改 `static/js/`。
