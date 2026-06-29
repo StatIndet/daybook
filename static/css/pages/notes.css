@@ -351,6 +351,7 @@ hr.notes-divider {
   display: inline-flex;
   justify-content: center;
   padding: 0.2rem;
+  text-decoration: none;
   transition: color 160ms ease, background 160ms ease;
 }
 

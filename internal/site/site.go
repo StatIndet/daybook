@@ -23,6 +23,7 @@ import (
 	"github.com/StatIndet/daybook/internal/obsidian"
 	"github.com/StatIndet/daybook/internal/render"
 	"github.com/StatIndet/daybook/internal/search"
+	"github.com/StatIndet/daybook/internal/seo"
 	"github.com/StatIndet/daybook/internal/sitemap"
 	"github.com/StatIndet/daybook/internal/titlelayout"
 )
@@ -39,6 +40,14 @@ type Options struct {
 type BuildResult struct {
 	Notes   []content.Note
 	Skipped []string
+}
+
+func joinURL(parts ...string) string {
+	p := path.Join(parts...)
+	if !strings.HasSuffix(p, "/") {
+		p += "/"
+	}
+	return p
 }
 
 func Build(options Options) (BuildResult, error) {
@@ -205,7 +214,7 @@ func Build(options Options) (BuildResult, error) {
 				graphNodes = append(graphNodes, graph.InputNode{
 					ID:          group.I18nKey,
 					Title:       note.Title,
-					URL:         path.Join("/", langPrefix, "notes", note.Slug, "/"),
+					URL:         joinURL("/", langPrefix, "notes", note.Slug),
 					Tags:        tagNodes,
 					Attachments: attachmentNodes,
 					Date:        note.Date,
@@ -256,7 +265,7 @@ func Build(options Options) (BuildResult, error) {
 				Summary:             note.Summary,
 				Tags:                tags,
 				TagIDs:              tagIDs,
-				URL:                 path.Join("/", langPrefix, "notes", note.Slug, "/"),
+				URL:                 joinURL("/", langPrefix, "notes", note.Slug),
 				Slug:                note.Slug,
 				Pin:                 note.Pin,
 				HasTranslation:      hasTranslation,
@@ -283,9 +292,40 @@ func Build(options Options) (BuildResult, error) {
 				altLang = "zh-CN"
 			}
 			altNote, _ := group.SelectVersion(altLang)
-			altURL := path.Join("/", altLangPrefix, "notes", altNote.Slug, "/")
+			altURL := joinURL("/", altLangPrefix, "notes", altNote.Slug)
 
 			outputPath := filepath.Join(langPublicDir, "notes", note.Slug, "index.html")
+			var noteAlternates []seo.Alternate
+			if hasTranslation {
+				for altL, altNote := range group.Versions {
+					if altNote.Draft {
+						continue
+					}
+					altPrefix := ""
+					if altL == "en" {
+						altPrefix = "/en"
+					}
+					noteAlternates = append(noteAlternates, seo.Alternate{
+						Lang: altL,
+						URL:  joinURL("/", altPrefix, "notes", altNote.Slug),
+					})
+				}
+			} else {
+				noteAlternates = []seo.Alternate{{Lang: lang, URL: joinURL("/", langPrefix, "notes", note.Slug)}}
+			}
+
+			noteSEOArgs := seo.BuilderArgs{
+				Config:      options.Config,
+				Lang:        lang,
+				Title:       note.Title,
+				Description: note.Summary,
+				PageURL:     joinURL("/", langPrefix, "notes", note.Slug),
+				Published:   note.Date,
+				Modified:    note.Updated,
+				Tags:        displayTags,
+				Alternates:  noteAlternates,
+			}
+
 			notePageData := render.NoteData{
 				Site:         siteData,
 				Config:       options.Config,
@@ -297,6 +337,7 @@ func Build(options Options) (BuildResult, error) {
 				Assets:       assets,
 				HasMath:      note.Math,
 				Tags:         tagLinks,
+				SEO:          seo.BuildForNote(noteSEOArgs),
 				Note: render.NotePage{
 					Title:               note.Title,
 					Date:                note.Date,
@@ -308,7 +349,7 @@ func Build(options Options) (BuildResult, error) {
 					Tags:                tags,
 					WordCount:           note.WordCount,
 					ReadingMinutes:      note.ReadingMinutes,
-					CanonicalPath:       path.Join("/", langPrefix, "notes", note.Slug, "/"),
+					CanonicalPath:       joinURL("/", langPrefix, "notes", note.Slug),
 					HTML:                template.HTML(document.HTML),
 					Headings:            renderHeadings(document.Headings),
 					HasMermaid:          document.HasMermaid,
@@ -347,16 +388,27 @@ func Build(options Options) (BuildResult, error) {
 		}
 
 		indexPath := filepath.Join(langPublicDir, "index.html")
+		homeAlternates := []seo.Alternate{{Lang: "zh-CN", URL: "/"}, {Lang: "en", URL: "/en/"}}
+		homeSEOArgs := seo.BuilderArgs{
+			Config:      options.Config,
+			Lang:        lang,
+			Title:       i18n.T(lang, "seo.home.title"),
+			Description: i18n.T(lang, "seo.home.description"),
+			PageURL:     joinURL("/", langPrefix),
+			Alternates:  homeAlternates,
+		}
+
 		indexData := render.IndexData{
 			Site:         siteData,
 			PageTitle:    i18n.T(lang, "nav.home"),
 			PageKind:     "home",
 			BodyClass:    "home-body",
 			Lang:         lang,
-			AlternateURL: path.Join("/", altLangPrefix, "/"),
+			AlternateURL: joinURL("/", altLangPrefix),
 			Assets:       assets,
 			Notes:        noteLinks,
 			Tags:         tagLinks,
+			SEO:          seo.BuildForHome(homeSEOArgs),
 		}
 		if err := renderer.RenderIndex(indexPath, indexData); err != nil {
 			return BuildResult{}, fmt.Errorf("生成首页: %w", err)
@@ -390,35 +442,57 @@ func Build(options Options) (BuildResult, error) {
 		sort.SliceStable(regularNotes, func(i, j int) bool { return sortByUpdated(i, j, regularNotes) })
 
 		notesIndexPath := filepath.Join(langPublicDir, "notes", "index.html")
+		notesAlternates := []seo.Alternate{{Lang: "zh-CN", URL: "/notes/"}, {Lang: "en", URL: "/en/notes/"}}
+		notesSEOArgs := seo.BuilderArgs{
+			Config:      options.Config,
+			Lang:        lang,
+			Title:       i18n.T(lang, "nav.notes"),
+			Description: i18n.T(lang, "seo.notes.description"),
+			PageURL:     joinURL("/", langPrefix, "notes"),
+			Alternates:  notesAlternates,
+		}
+
 		notesData := render.NotesData{
 			Site:         siteData,
 			PageTitle:    i18n.T(lang, "nav.notes"),
 			PageKind:     "notes",
 			BodyClass:    "notes-list-body page-body",
 			Lang:         lang,
-			AlternateURL: path.Join("/", altLangPrefix, "notes", "/"),
+			AlternateURL: joinURL("/", altLangPrefix, "notes"),
 			Assets:       assets,
 			Notes:        noteLinks,
 			PinnedNotes:  pinnedNotes,
 			MonthGroups:  monthGroups(regularNotes),
 			Tags:         tagLinks,
+			SEO:          seo.BuildForCollection(notesSEOArgs),
 		}
 		if err := renderer.RenderNotes(notesIndexPath, notesData); err != nil {
 			return BuildResult{}, fmt.Errorf("生成文章页: %w", err)
 		}
 
 		archivePath := filepath.Join(langPublicDir, "archive", "index.html")
+		archiveAlternates := []seo.Alternate{{Lang: "zh-CN", URL: "/archive/"}, {Lang: "en", URL: "/en/archive/"}}
+		archiveSEOArgs := seo.BuilderArgs{
+			Config:      options.Config,
+			Lang:        lang,
+			Title:       i18n.T(lang, "nav.archive"),
+			Description: i18n.T(lang, "seo.archive.description"),
+			PageURL:     joinURL("/", langPrefix, "archive"),
+			Alternates:  archiveAlternates,
+		}
+
 		archiveData := render.ArchiveData{
 			Site:         siteData,
 			PageTitle:    i18n.T(lang, "nav.archive"),
 			PageKind:     "archive",
 			BodyClass:    "archive-body page-body",
 			Lang:         lang,
-			AlternateURL: path.Join("/", altLangPrefix, "archive", "/"),
+			AlternateURL: joinURL("/", altLangPrefix, "archive"),
 			Assets:       assets,
 			Total:        len(noteLinks),
 			YearGroups:   archiveYearGroups(noteLinks),
 			Tags:         tagLinks,
+			SEO:          seo.BuildForCollection(archiveSEOArgs),
 		}
 		if err := renderer.RenderArchive(archivePath, archiveData); err != nil {
 			return BuildResult{}, fmt.Errorf("生成归档页: %w", err)
@@ -472,13 +546,30 @@ func Build(options Options) (BuildResult, error) {
 			os.WriteFile(aboutFragmentPath, b, 0644)
 		}
 
+		var aboutAlternates []seo.Alternate
+		if aboutHasTranslation {
+			aboutAlternates = []seo.Alternate{{Lang: "zh-CN", URL: "/about/"}, {Lang: "en", URL: "/en/about/"}}
+		} else {
+			aboutAlternates = []seo.Alternate{{Lang: lang, URL: joinURL("/", langPrefix, "about")}}
+		}
+		aboutSEOArgs := seo.BuilderArgs{
+			Config:      options.Config,
+			Lang:        lang,
+			Title:       aboutPage.Title,
+			Description: aboutPage.Summary,
+			PageURL:     joinURL("/", langPrefix, "about"),
+			Published:   aboutPage.Date,
+			Modified:    aboutPage.Updated,
+			Alternates:  aboutAlternates,
+		}
+
 		aboutData := render.AboutData{
 			Site:           siteData,
 			PageTitle:      aboutPage.Title,
 			PageKind:       "about",
 			BodyClass:      "about-body page-body",
 			Lang:           lang,
-			AlternateURL:   path.Join("/", altLangPrefix, "about", "/"),
+			AlternateURL:   joinURL("/", altLangPrefix, "about"),
 			Assets:         assets,
 			Spiral:         render.NewGoldenSpiral(),
 			HasTranslation: aboutHasTranslation,
@@ -490,6 +581,7 @@ func Build(options Options) (BuildResult, error) {
 			WordCount:      aboutPage.WordCount,
 			HTML:           template.HTML(aboutDocument.HTML),
 			Tags:           tagLinks,
+			SEO:            seo.BuildForAbout(aboutSEOArgs),
 		}
 		if err := renderer.RenderAbout(aboutPath, aboutData); err != nil {
 			return BuildResult{}, fmt.Errorf("生成关于页: %w", err)
@@ -501,15 +593,26 @@ func Build(options Options) (BuildResult, error) {
 		}
 
 		graphPath := filepath.Join(langPublicDir, "graph", "index.html")
+		graphAlternates := []seo.Alternate{{Lang: "zh-CN", URL: "/graph/"}, {Lang: "en", URL: "/en/graph/"}}
+		graphSEOArgs := seo.BuilderArgs{
+			Config:      options.Config,
+			Lang:        lang,
+			Title:       i18n.T(lang, "nav.graph"),
+			Description: i18n.T(lang, "seo.graph.description"),
+			PageURL:     joinURL("/", langPrefix, "graph"),
+			Alternates:  graphAlternates,
+		}
+
 		graphData := render.GraphData{
 			Site:         siteData,
 			PageTitle:    i18n.T(lang, "nav.graph"),
 			PageKind:     "graph",
 			BodyClass:    "graph-body page-body",
 			Lang:         lang,
-			AlternateURL: path.Join("/", altLangPrefix, "graph", "/"),
+			AlternateURL: joinURL("/", altLangPrefix, "graph"),
 			Assets:       assets,
 			Tags:         tagLinks,
+			SEO:          seo.BuildForGraph(graphSEOArgs),
 		}
 		if err := renderer.RenderGraph(graphPath, graphData); err != nil {
 			return BuildResult{}, fmt.Errorf("生成图谱页: %w", err)
@@ -519,14 +622,84 @@ func Build(options Options) (BuildResult, error) {
 			return BuildResult{}, err
 		}
 
-		allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: path.Join("/", langPrefix, "/")})
-		allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: path.Join("/", langPrefix, "notes", "/")})
-		allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: path.Join("/", langPrefix, "archive", "/")})
+		for _, tagLink := range tagLinks {
+			var tagNotes []render.NoteLink
+
+			// filter notes
+			for _, n := range noteLinks {
+				for _, displayTag := range n.Tags {
+					if displayTag == tagLink.Name {
+						tagNotes = append(tagNotes, n)
+						break
+					}
+				}
+			}
+			tagAlternates := []seo.Alternate{{Lang: lang, URL: tagLink.URL}}
+
+			hasAlt := false
+			for _, grp := range groups {
+				var altNote *content.Note
+				if lang == "zh-CN" {
+					if n, ok := grp.Versions["en"]; ok {
+						altNote = n
+					}
+				} else if lang == "en" {
+					if n, ok := grp.Versions["zh-CN"]; ok {
+						altNote = n
+					}
+				}
+				if altNote != nil {
+					for _, t := range altNote.Tags {
+						if t == tagLink.Name {
+							hasAlt = true
+							break
+						}
+					}
+				}
+				if hasAlt {
+					break
+				}
+			}
+
+			if hasAlt {
+				tagAlternates = append(tagAlternates, seo.Alternate{Lang: altLangPrefix, URL: joinURL("/", altLangPrefix, "tags", seo.TagSlug(tagLink.Name))})
+			}
+			tagSEOArgs := seo.BuilderArgs{
+				Config:      options.Config,
+				Lang:        lang,
+				Title:       "#" + tagLink.Name,
+				Description: fmt.Sprintf(i18n.T(lang, "seo.tag.description"), tagLink.Name),
+				PageURL:     tagLink.URL,
+				Alternates:  tagAlternates,
+			}
+
+			tagData := render.TagData{
+				Site:         siteData,
+				PageTitle:    "#" + tagLink.Name,
+				PageKind:     "tag",
+				BodyClass:    "tag-body page-body",
+				Lang:         lang,
+				AlternateURL: joinURL("/", altLangPrefix, "tags", seo.TagSlug(tagLink.Name)),
+				Assets:       assets,
+				Notes:        tagNotes,
+				Tags:         tagLinks,
+				SEO:          seo.BuildForTag(tagSEOArgs),
+			}
+
+			tagOut := filepath.Join(langPublicDir, "tags", seo.TagSlug(tagLink.Name), "index.html")
+			if err := renderer.RenderTag(tagOut, tagData); err != nil {
+				return BuildResult{}, fmt.Errorf("生成标签页: %w", err)
+			}
+		}
+
+		allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: joinURL("/", langPrefix)})
+		allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: joinURL("/", langPrefix, "notes")})
+		allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: joinURL("/", langPrefix, "archive")})
 		aboutLastMod := aboutPage.Updated
 		if aboutLastMod == "" {
 			aboutLastMod = aboutPage.Date
 		}
-		allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: path.Join("/", langPrefix, "about", "/"), LastMod: aboutLastMod})
+		allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: joinURL("/", langPrefix, "about"), LastMod: aboutLastMod})
 		for _, tagLink := range tagLinks {
 			allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: tagLink.URL})
 		}
@@ -678,7 +851,7 @@ func collectTagLinksForLang(groups []*content.ArticleGroup, lang string, tagRegi
 		title := tagRegistry.GetTitle(id, lang)
 		links = append(links, render.TagLink{
 			Name:         title,
-			URL:          path.Join("/", langPrefix, "notes") + "/?tag=" + url.QueryEscape(id),
+			URL:          joinURL("/", langPrefix, "tags", seo.TagSlug(title)),
 			Index:        index,
 			ReverseIndex: len(canonicalIDs) - index - 1,
 		})
@@ -749,6 +922,17 @@ func transitionName(prefix, slug string) string {
 		return prefix + "-note"
 	}
 	return name
+}
+
+func hasTag(notes []render.NoteLink, tag string) bool {
+	for _, n := range notes {
+		for _, t := range n.Tags {
+			if t == tag {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func renderHeadings(headings []markdown.Heading) []render.Heading {

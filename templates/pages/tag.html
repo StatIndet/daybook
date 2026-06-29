@@ -1,0 +1,26 @@
+{{define "content"}}
+<div class="notes-page">
+  <section class="notes-list article-stage" aria-label="{{.PageTitle}}">
+    <div class="tag-back-container">
+      <a class="tag-back-btn" aria-label="{{T .Lang "action.back"}}" href="{{if eq .Lang "en"}}/en{{end}}/notes/">
+        <span class="material-symbol" aria-hidden="true">arrow_back</span>
+      </a>
+      <h2 class="tag-back-title">{{.PageTitle}}</h2>
+    </div>
+
+    {{if .Notes}}
+      <div class="notes-month">
+        <div class="notes-month-list">
+          {{range .Notes}}
+            {{template "note_card" .}}
+          {{end}}
+        </div>
+      </div>
+    {{else}}
+      <p class="notes-empty">{{T .Lang "archive.empty"}}</p>
+    {{end}}
+  </section>
+
+  {{template "notes_aside" .}}
+</div>
+{{end}}

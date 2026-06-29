@@ -3,7 +3,42 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
-  <title>{{if .PageTitle}}{{.PageTitle}} - {{end}}{{.Site.Title}}</title>
+  
+  <title>{{.SEO.Title}}</title>
+  {{if .SEO.Description}}
+  <meta name="description" content="{{.SEO.Description}}">
+  {{end}}
+
+  <link rel="canonical" href="{{.SEO.CanonicalURL}}">
+  
+    {{range .SEO.Alternates}}
+  {{if eq .Lang "zh-CN"}}
+  <link rel="alternate" hreflang="zh-CN" href="{{.URL}}">
+  <link rel="alternate" hreflang="x-default" href="{{.URL}}">
+  {{else}}
+  <link rel="alternate" hreflang="{{.Lang}}" href="{{.URL}}">
+  {{end}}
+  {{end}}
+
+  <meta property="og:title" content="{{.SEO.Title}}">
+  {{if .SEO.Description}}<meta property="og:description" content="{{.SEO.Description}}">{{end}}
+  <meta property="og:type" content="{{.SEO.Type}}">
+  <meta property="og:url" content="{{.SEO.CanonicalURL}}">
+  {{if .SEO.Image}}<meta property="og:image" content="{{.SEO.Image}}">{{end}}
+  <meta property="og:site_name" content="{{.SEO.SiteName}}">
+  <meta property="og:locale" content="{{if eq .Lang "en"}}en_US{{else}}zh_CN{{end}}">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{.SEO.Title}}">
+  {{if .SEO.Description}}<meta name="twitter:description" content="{{.SEO.Description}}">{{end}}
+  {{if .SEO.Image}}<meta name="twitter:image" content="{{.SEO.Image}}">{{end}}
+
+  {{if .SEO.JSONLD}}
+  <script type="application/ld+json">
+    {{.SEO.JSONLD}}
+  </script>
+  {{end}}
+
   <script src="{{.Assets.Path "/js/theme.js"}}"></script>
   <script>
     (function() {

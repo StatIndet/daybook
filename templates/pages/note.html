@@ -80,7 +80,7 @@
         <hr class="note-tags-divider">
         <div class="note-tags-list">
           {{range .Note.Tags}}
-          <a href="{{if eq $.Lang "en"}}/en{{end}}/notes/?tag={{urlquery .}}" class="note-tag-capsule">#{{.}}</a>
+          <a href="{{tagURL $.Lang .}}" class="note-tag-capsule">#{{.}}</a>
           {{end}}
         </div>
       </section>

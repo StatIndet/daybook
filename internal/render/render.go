@@ -11,6 +11,7 @@ import (
 
 	"github.com/StatIndet/daybook/internal/config"
 	"github.com/StatIndet/daybook/internal/i18n"
+	"github.com/StatIndet/daybook/internal/seo"
 )
 
 type Renderer struct {
@@ -166,6 +167,7 @@ type IndexData struct {
 	HasMath      bool
 	Notes        []NoteLink
 	Tags         []TagLink
+	SEO          seo.SEOData
 }
 
 type TagLink struct {
@@ -188,6 +190,7 @@ type NotesData struct {
 	PinnedNotes  []NoteLink
 	MonthGroups  []MonthGroup
 	Tags         []TagLink
+	SEO          seo.SEOData
 }
 
 type MonthGroup struct {
@@ -224,6 +227,7 @@ type ArchiveData struct {
 	Total        int
 	YearGroups   []ArchiveYearGroup
 	Tags         []TagLink
+	SEO          seo.SEOData
 }
 
 type NoteData struct {
@@ -238,6 +242,7 @@ type NoteData struct {
 	HasMath      bool
 	Note         NotePage
 	Tags         []TagLink
+	SEO          seo.SEOData
 }
 
 type AboutData struct {
@@ -259,6 +264,7 @@ type AboutData struct {
 	WordCount      int
 	HTML           template.HTML
 	Tags           []TagLink
+	SEO            seo.SEOData
 }
 
 type GraphData struct {
@@ -271,6 +277,21 @@ type GraphData struct {
 	Assets       Assets
 	HasMath      bool
 	Tags         []TagLink
+	SEO          seo.SEOData
+}
+
+type TagData struct {
+	Site         SiteData
+	PageTitle    string
+	PageKind     string
+	BodyClass    string
+	Lang         string
+	AlternateURL string
+	Assets       Assets
+	HasMath      bool
+	Notes        []NoteLink
+	Tags         []TagLink
+	SEO          seo.SEOData
 }
 
 func New(templatesDir string) Renderer {
@@ -299,6 +320,10 @@ func (r Renderer) RenderAbout(outputPath string, data AboutData) error {
 
 func (r Renderer) RenderGraph(outputPath string, data GraphData) error {
 	return r.render(outputPath, "graph.html", data)
+}
+
+func (r Renderer) RenderTag(outputPath string, data TagData) error {
+	return r.render(outputPath, "tag.html", data)
 }
 
 func NewGoldenSpiral() GoldenSpiral {
@@ -625,6 +650,14 @@ func (r Renderer) render(outputPath, pageTemplate string, data any) error {
 			return strings.Join(parts, ",")
 		},
 		"T": i18n.T,
+		"tagURL": func(lang, tag string) template.URL {
+			prefix := ""
+			if lang == "en" {
+				prefix = "/en"
+			}
+			return template.URL(prefix + "/tags/" + seo.TagSlug(tag) + "/")
+		},
+		"tagSlug": seo.TagSlug,
 	})
 	tmpl, err = tmpl.ParseFiles(files...)
 	if err != nil {

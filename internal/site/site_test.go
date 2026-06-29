@@ -79,7 +79,7 @@ func TestCollectTagLinks(t *testing.T) {
 			t.Fatalf("tag %d ReverseIndex = %d, want %d", index, tags[index].ReverseIndex, len(wantNames)-index-1)
 		}
 	}
-	if tags[3].URL != "/notes/?tag=%E8%99%9A%E6%8B%9F%E6%9C%BA" {
+	if tags[3].URL != "/tags/虚拟机/" {
 		t.Fatalf("Chinese tag URL = %q", tags[3].URL)
 	}
 }

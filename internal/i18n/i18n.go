@@ -41,7 +41,13 @@ var dictionary = map[string]map[string]string{
 		"footer.views":        "访问",
 		"footer.words":        "字数",
 		"footer.uptime":       "历时",
-	},
+				"seo.home.title":      "史帙 Daybook | Obsidian 笔记与个人知识库",
+		"seo.home.description": "史帙的 Daybook：一个由 Go 构建、托管 Obsidian 笔记的个人知识库，记录技术实践、博客开发与生活随笔。笑一个吧，功成名就不是目的。",
+		"seo.tag.description":  "浏览 Daybook 中与「%s」相关的文章、笔记与技术记录。",
+		"seo.notes.description": "按时间线浏览 Daybook 的全部文章、笔记与技术记录。",
+		"seo.archive.description": "按时间线浏览 Daybook 的全部文章、笔记与技术记录。",
+		"seo.graph.description": "探索 Daybook 中的知识关联网络。",
+			},
 	"en": {
 		"nav.home":            "Home",
 		"nav.notes":           "Notes",
@@ -82,7 +88,13 @@ var dictionary = map[string]map[string]string{
 		"footer.views":        "Views",
 		"footer.words":        "Words",
 		"footer.uptime":       "Uptime",
-	},
+				"seo.home.title":      "Archirithm's Daybook | Obsidian Notes & Personal Knowledge Base",
+		"seo.home.description": "Archirithm's Daybook: A personal knowledge base built with Go, hosting Obsidian notes, documenting technical practices, blog development, and life essays.",
+		"seo.tag.description":  "Browse articles, notes, and technical records related to '%s' in Daybook.",
+		"seo.notes.description": "Browse all articles, notes, and technical records in Daybook by timeline.",
+		"seo.archive.description": "Browse all articles, notes, and technical records in Daybook by timeline.",
+		"seo.graph.description": "Explore the knowledge association network in Daybook.",
+			},
 }
 
 func T(lang, key string) string {
