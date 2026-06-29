@@ -23,6 +23,7 @@ import (
 	"github.com/StatIndet/daybook/internal/obsidian"
 	"github.com/StatIndet/daybook/internal/render"
 	"github.com/StatIndet/daybook/internal/search"
+	"github.com/StatIndet/daybook/internal/sitemap"
 	"github.com/StatIndet/daybook/internal/titlelayout"
 )
 
@@ -111,6 +112,8 @@ func Build(options Options) (BuildResult, error) {
 	}
 
 	renderer := render.New(options.TemplatesDir)
+
+	var allSiteURLs []sitemap.URL
 
 	langs := []string{"zh-CN", "en"}
 	for _, lang := range langs {
@@ -515,6 +518,32 @@ func Build(options Options) (BuildResult, error) {
 		if err := feed.Write(filepath.Join(langPublicDir, "rss.xml"), options.Config, noteLinks); err != nil {
 			return BuildResult{}, err
 		}
+
+		allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: path.Join("/", langPrefix, "/")})
+		allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: path.Join("/", langPrefix, "notes", "/")})
+		allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: path.Join("/", langPrefix, "archive", "/")})
+		aboutLastMod := aboutPage.Updated
+		if aboutLastMod == "" {
+			aboutLastMod = aboutPage.Date
+		}
+		allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: path.Join("/", langPrefix, "about", "/"), LastMod: aboutLastMod})
+		for _, tagLink := range tagLinks {
+			allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: tagLink.URL})
+		}
+		for _, link := range noteLinks {
+			lastMod := link.Updated
+			if lastMod == "" {
+				lastMod = link.Date
+			}
+			allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: link.URL, LastMod: lastMod})
+		}
+	}
+
+	if err := sitemap.WriteSitemap(filepath.Join(options.PublicDir, "sitemap.xml"), options.Config, allSiteURLs); err != nil {
+		return BuildResult{}, err
+	}
+	if err := sitemap.WriteRobots(filepath.Join(options.PublicDir, "robots.txt"), options.Config); err != nil {
+		return BuildResult{}, err
 	}
 
 	return BuildResult{Notes: allNotes, Skipped: skipped}, nil
