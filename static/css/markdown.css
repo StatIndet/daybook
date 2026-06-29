@@ -217,15 +217,6 @@
   margin-bottom: 0;
 }
 
-:root[data-eye-care="false"] .markdown blockquote {
-  border-left-color: oklch(40% 0.005 298 / 0.25);
-  color: oklch(40% 0.005 298 / 0.8);
-}
-
-:root[data-eye-care="false"][data-theme="dark"] .markdown blockquote {
-  border-left-color: oklch(77% 0.005 298 / 0.25);
-  color: oklch(77% 0.005 298 / 0.8);
-}
 
 .markdown .callout {
   --callout-color: var(--color-accent);
