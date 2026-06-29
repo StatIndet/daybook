@@ -17,3 +17,6 @@ toc: false
 ::tweet{url="https://x.com/ilyamirox/status/2056499039948910760?s=20"}
 
 ::netease{type="song" id="1988163085" autostart="false"}
+
+::codepen{url="https://codepen.io/ste-vg/pen/GqaZbo"}
+
