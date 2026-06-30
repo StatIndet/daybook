@@ -3,11 +3,20 @@ name: Deploy to Cloudflare Pages
 on:
   push:
     branches:
-      - main # 修改为你的主分支名称，比如 master 或 main
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daybook-pages-production
+  cancel-in-progress: true
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -30,8 +39,6 @@ jobs:
         env:
           DAYBOOK_SITE_NAME: ${{ secrets.DAYBOOK_SITE_NAME }}
           DAYBOOK_SITE_URL: ${{ secrets.DAYBOOK_SITE_URL }}
-          DAYBOOK_SITE_AUTHOR: ${{ secrets.DAYBOOK_SITE_AUTHOR }}
-          DAYBOOK_SITE_DESCRIPTION: ${{ secrets.DAYBOOK_SITE_DESCRIPTION }}
           DAYBOOK_WALINE_ENABLED: ${{ secrets.DAYBOOK_WALINE_ENABLED }}
           DAYBOOK_WALINE_SERVER_URL: ${{ secrets.DAYBOOK_WALINE_SERVER_URL }}
           DAYBOOK_R2_BASE_URL: ${{ secrets.DAYBOOK_R2_BASE_URL }}
@@ -42,9 +49,7 @@ jobs:
         run: npm run build
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: 'daybook'
-          directory: 'public'
+        run: npx --yes wrangler@latest pages deploy public --project-name daybook --branch main
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
