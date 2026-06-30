@@ -9,4 +9,4 @@ fi
 
 npm run typecheck
 npm run build:js
-go run ./cmd/daybook build
+npx concurrently "npm run watch:js" "go run ./cmd/daybook serve"

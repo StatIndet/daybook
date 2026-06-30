@@ -43,10 +43,16 @@ async function hitPath(path: string): Promise<StatsResponse | null> {
   const dateStr = getTodayString();
   const dedupeKey = `daybook:hit:${normalized}:${dateStr}`;
 
+  const statsEnabled = document.body.dataset.statsEnabled === "true";
+  if (!statsEnabled) {
+    return null;
+  }
+  const apiBase = (document.body.dataset.statsApiBase || "/api").replace(/\/$/, "");
+
   if (localStorage.getItem(dedupeKey)) {
     // Already hit today, just GET
     try {
-      const res = await fetch(`/api/stats?path=${encodeURIComponent(normalized)}`);
+      const res = await fetch(`${apiBase}/stats?path=${encodeURIComponent(normalized)}`);
       if (res.ok) {
         return (await res.json()) as StatsResponse;
       }
@@ -58,7 +64,7 @@ async function hitPath(path: string): Promise<StatsResponse | null> {
 
   // Need to POST hit
   try {
-    const res = await fetch(`/api/hit`, {
+    const res = await fetch(`${apiBase}/hit`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

@@ -174,13 +174,57 @@ npm run serve
 
 ---
 
-## Cloudflare Pages 部署
+## 部署与配置
 
-导入 Github 仓库后，使用以下配置：
+Daybook 的所有生产服务地址和站点信息均通过 **环境变量** 注入，项目根目录下不再使用 `config.yaml`。
 
-* **Build command**: `npm ci && npm run build`
+所有外部服务（Waline 评论、R2 附件、自定义网易云 API、D1 统计）都属于**实例级私人服务**。别人克隆后必须部署自己的服务端，**切勿使用作者的生产域名**。
+
+### Cloudflare Pages 部署
+
+导入 Github 仓库后，使用以下构建配置：
+
+* **Build command**: `npm ci && scripts/build.sh`
 * **Build output directory**: `public`
 * **Root directory**: `/`
+
+在部署前，务必在 Cloudflare Dashboard (`Settings → Environment variables`) 中添加以下变量：
+
+```env
+DAYBOOK_SITE_NAME=Daybook
+DAYBOOK_SITE_URL=https://example.com
+
+# 评论区（自行部署 Waline 后填写，未配置时将不加载）
+DAYBOOK_WALINE_ENABLED=true
+DAYBOOK_WALINE_SERVER_URL=https://comment.example.com
+
+# 远端媒体存储（未配置时回退使用本地 attachments 目录）
+DAYBOOK_R2_BASE_URL=https://static.example.com
+
+# 自定义网易云解析 API（未配置时卡片优雅降级）
+DAYBOOK_NETEASE_ENABLED=true
+DAYBOOK_NETEASE_API_BASE_URL=https://netease.example.com
+
+# 全站访问统计
+DAYBOOK_STATS_ENABLED=true
+DAYBOOK_STATS_API_BASE=/api
+```
+
+> **注意 (D1 统计)**: 本项目通过 Cloudflare Pages Functions 实现了无后端访问统计。如果你开启了统计，请在 Dashboard 的 `Settings → Functions` 中绑定 D1 数据库，名称设为 `DB`，并在环境变量中增加 `STATS_SALT` 作为防刷盐值。
+
+### 本地开发配置
+
+在本地开发时，你可以将仓库中的 `.env.example` 复制一份并重命名为 `.env`，填入你的个人配置。
+
+启动开发服务器时，使用项目自带的脚本，它会自动加载 `.env` 变量：
+
+```bash
+# 赋予执行权限（首次）
+chmod +x scripts/*.sh
+
+# 启动本地实时预览
+./scripts/serve.sh
+```
 
 ---
 

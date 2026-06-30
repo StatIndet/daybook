@@ -2,7 +2,7 @@
 <!doctype html>
 <html lang="{{if .Lang}}{{.Lang}}{{else}}zh-CN{{end}}">
 {{template "head" .}}
-<body class="{{.BodyClass}}" data-page-kind="{{.PageKind}}" data-search-index-url="/search.json" data-media-manager-active="false">
+<body class="{{.BodyClass}}" data-page-kind="{{.PageKind}}" data-search-index-url="/search.json" data-media-manager-active="false" data-stats-enabled="{{.Config.Stats.Enabled}}" data-stats-api-base="{{.Config.Stats.APIBase}}" data-netease-enabled="{{.Config.Netease.Enabled}}" data-netease-api-base-url="{{.Config.Netease.APIBaseURL}}">
   {{template "persistent_logo" .}}
   {{template "settings_overlay" .}}
   {{template "media_manager" .}}

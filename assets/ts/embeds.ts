@@ -268,12 +268,32 @@ import { daybookMediaManager } from "./media-manager.js";
       }));
     }, 10000);
 
+    const neteaseEnabled = document.body.dataset.neteaseEnabled === "true";
+    const neteaseApiBaseUrl = document.body.dataset.neteaseApiBaseUrl;
+
+    if (!neteaseEnabled || !neteaseApiBaseUrl) {
+      if (isFinished) return;
+      isFinished = true;
+      window.clearTimeout(timer);
+      container.dataset.embedStatus = "error";
+      console.warn("[Daybook] Netease API is disabled or not configured. Netease card will fallback to error state.");
+      container.innerHTML = "";
+      container.appendChild(createFallbackElement({
+        message: "未配置或未启用网易云 API 地址",
+        linkText: "点击前往网易云音乐查看",
+        linkUrl: "https://music.163.com/#/song?id=" + id
+      }));
+      return;
+    }
+
+    const apiBase = neteaseApiBaseUrl.replace(/\/$/, "");
+
     try {
-      var urlRes = await fetch("https://netease.daybook.page/song/url?id=" + id + "&realIP=116.25.146.177");
+      var urlRes = await fetch(apiBase + "/song/url?id=" + id + "&realIP=116.25.146.177");
       var urlData = await urlRes.json();
       var songUrl = urlData.data && urlData.data[0] && urlData.data[0].url;
 
-      var detailRes = await fetch("https://netease.daybook.page/song/detail?ids=" + id);
+      var detailRes = await fetch(apiBase + "/song/detail?ids=" + id);
       var detailData = await detailRes.json();
       var songDetail = detailData.songs && detailData.songs[0];
 

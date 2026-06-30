@@ -1,10 +1,7 @@
 package config
 
 import (
-	"fmt"
 	"os"
-
-	"gopkg.in/yaml.v3"
 )
 
 type WalineConfig struct {
@@ -29,22 +26,43 @@ type AttachmentConfig struct {
 	RemoteDirs    []string `yaml:"remote_dirs"`
 }
 
+type NeteaseConfig struct {
+	Enabled    bool
+	APIBaseURL string
+}
+
+type StatsConfig struct {
+	Enabled bool
+	APIBase string
+}
+
 type Config struct {
 	Title       string           `yaml:"title"`
 	BaseURL     string           `yaml:"baseURL"`
 	StartedAt   string           `yaml:"startedAt"`
 	Comment     CommentConfig    `yaml:"comment"`
 	Attachments AttachmentConfig `yaml:"attachments"`
+	Netease     NeteaseConfig
+	Stats       StatsConfig
 }
 
-func Default() Config {
-	return Config{
-		Title:   "Daybook",
-		BaseURL: "http://localhost:1313",
+func getEnvOrDefault(key, fallback string) string {
+	if val, ok := os.LookupEnv(key); ok {
+		return val
+	}
+	return fallback
+}
+
+func Load() (Config, error) {
+	cfg := Config{
+		Title:     getEnvOrDefault("DAYBOOK_SITE_NAME", "Daybook"),
+		BaseURL:   getEnvOrDefault("DAYBOOK_SITE_URL", "http://localhost:1313"),
+		StartedAt: getEnvOrDefault("DAYBOOK_STARTED_AT", "2026-06-08"),
 		Comment: CommentConfig{
-			Enabled:  false,
+			Enabled:  os.Getenv("DAYBOOK_WALINE_ENABLED") == "true",
 			Provider: "waline",
 			Waline: WalineConfig{
+				ServerURL:      os.Getenv("DAYBOOK_WALINE_SERVER_URL"),
 				Lang:           "zh-CN",
 				PageSize:       10,
 				CommentSorting: "latest",
@@ -55,32 +73,17 @@ func Default() Config {
 		Attachments: AttachmentConfig{
 			LocalDir:      "content/attachments",
 			PublicPath:    "/attachments/",
-			RemoteBaseURL: "https://static.daybook.page",
+			RemoteBaseURL: os.Getenv("DAYBOOK_R2_BASE_URL"),
 			RemoteDirs:    []string{"audio", "video", "picture", "pdf"},
 		},
-	}
-}
-
-func Load(path string) (Config, error) {
-	cfg := Default()
-
-	data, err := os.ReadFile(path)
-	if os.IsNotExist(err) {
-		return cfg, nil
-	}
-	if err != nil {
-		return cfg, fmt.Errorf("读取配置文件: %w", err)
-	}
-
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return cfg, fmt.Errorf("解析配置文件: %w", err)
-	}
-
-	if cfg.Title == "" {
-		cfg.Title = "Daybook"
-	}
-	if cfg.BaseURL == "" {
-		cfg.BaseURL = "http://localhost:1313"
+		Netease: NeteaseConfig{
+			Enabled:    os.Getenv("DAYBOOK_NETEASE_ENABLED") == "true",
+			APIBaseURL: os.Getenv("DAYBOOK_NETEASE_API_BASE_URL"),
+		},
+		Stats: StatsConfig{
+			Enabled: os.Getenv("DAYBOOK_STATS_ENABLED") == "true",
+			APIBase: getEnvOrDefault("DAYBOOK_STATS_API_BASE", "/api"),
+		},
 	}
 
 	return cfg, nil

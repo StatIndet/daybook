@@ -39,6 +39,11 @@ Thumbs.db
 # Local environment
 .env
 .env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+.vercel/
+/config.yaml
 
 # Editors
 .vscode/

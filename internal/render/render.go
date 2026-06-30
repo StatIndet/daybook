@@ -158,6 +158,7 @@ type GoldenSpiral struct {
 
 type IndexData struct {
 	Site         SiteData
+	Config       config.Config
 	PageTitle    string
 	PageKind     string
 	BodyClass    string
@@ -179,6 +180,7 @@ type TagLink struct {
 
 type NotesData struct {
 	Site         SiteData
+	Config       config.Config
 	PageTitle    string
 	PageKind     string
 	BodyClass    string
@@ -217,6 +219,7 @@ type ArchiveYearGroup struct {
 
 type ArchiveData struct {
 	Site         SiteData
+	Config       config.Config
 	PageTitle    string
 	PageKind     string
 	BodyClass    string
@@ -247,6 +250,7 @@ type NoteData struct {
 
 type AboutData struct {
 	Site           SiteData
+	Config         config.Config
 	PageTitle      string
 	PageKind       string
 	BodyClass      string
@@ -269,6 +273,7 @@ type AboutData struct {
 
 type GraphData struct {
 	Site         SiteData
+	Config       config.Config
 	PageTitle    string
 	PageKind     string
 	BodyClass    string
@@ -282,6 +287,7 @@ type GraphData struct {
 
 type TagData struct {
 	Site         SiteData
+	Config       config.Config
 	PageTitle    string
 	PageKind     string
 	BodyClass    string

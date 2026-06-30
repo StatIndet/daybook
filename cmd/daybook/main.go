@@ -20,7 +20,7 @@ func run() error {
 		return fmt.Errorf("用法: go run ./cmd/daybook [build|serve]")
 	}
 
-	cfg, err := config.Load("config.yaml")
+	cfg, err := config.Load()
 	if err != nil {
 		return err
 	}

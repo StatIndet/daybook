@@ -37,6 +37,7 @@ type Index struct {
 	attachments   map[string]Attachment
 	remoteDirs    []string
 	remoteBaseURL string
+	publicPath    string
 }
 
 type Result struct {
@@ -62,12 +63,13 @@ var (
 	attrPattern            = regexp.MustCompile(`(?is)([a-zA-Z][a-zA-Z0-9_-]*)\s*=\s*(?:"([^"]*)"|'([^']*)')`)
 )
 
-func NewIndex(targets []Target, attachments []Attachment, remoteDirs []string, remoteBaseURL string) Index {
+func NewIndex(targets []Target, attachments []Attachment, remoteDirs []string, remoteBaseURL string, publicPath string) Index {
 	index := Index{
 		targets:       make(map[string]Target),
 		attachments:   make(map[string]Attachment),
 		remoteDirs:    remoteDirs,
 		remoteBaseURL: remoteBaseURL,
+		publicPath:    publicPath,
 	}
 	for _, target := range targets {
 		for _, key := range targetKeys(target) {
@@ -271,13 +273,23 @@ func (idx Index) findAttachment(target string) (Attachment, bool) {
 				}
 				escapedTarget := strings.Join(parts, "/")
 				
+				pubURL := ""
+				pubMode := "local"
+				if idx.remoteBaseURL != "" {
+					pubMode = "remote"
+					pubURL = idx.remoteBaseURL + "/" + escapedTarget
+				} else {
+					pubMode = "local"
+					pubURL = idx.publicPath + escapedTarget
+				}
+				
 				return Attachment{
 					Name:        filepath.Base(target),
 					RelPath:     target,
 					Ext:         ext,
 					MediaType:   mediaType,
-					PublishMode: "remote",
-					PublicURL:   idx.remoteBaseURL + "/" + escapedTarget,
+					PublishMode: pubMode,
+					PublicURL:   pubURL,
 				}, true
 			}
 		}

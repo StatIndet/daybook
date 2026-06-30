@@ -11,8 +11,8 @@
     "typecheck": "tsc --noEmit",
     "build:js": "node scripts/build-js.mjs",
     "watch:js": "node scripts/build-js.mjs --watch",
-    "build": "npm run typecheck && npm run build:js && go run ./cmd/daybook build",
-    "serve": "npm run typecheck && npm run build:js && concurrently \"npm run watch:js\" \"go run ./cmd/daybook serve\""
+    "build": "./scripts/build.sh",
+    "serve": "./scripts/serve.sh"
   },
   "dependencies": {
     "jsdom": "^29.1.1",

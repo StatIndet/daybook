@@ -23,7 +23,7 @@ func TestWriteRSS(t *testing.T) {
 		},
 	}
 
-	err := Write(path, config.Config{Title: "Daybook", BaseURL: "https://daybook.page"}, notes)
+	err := Write(path, config.Config{Title: "Daybook", BaseURL: "https://example.com"}, notes)
 	if err != nil {
 		t.Fatalf("Write returned error: %v", err)
 	}
@@ -37,7 +37,7 @@ func TestWriteRSS(t *testing.T) {
 	wantParts := []string{
 		"<rss version=\"2.0\">",
 		"<title>Daybook</title>",
-		"<link>https://daybook.page/notes/example/</link>",
+		"<link>https://example.com/notes/example/</link>",
 		"<description>摘要</description>",
 		"<pubDate>Sun, 14 Jun 2026 00:00:00 +0000</pubDate>",
 	}

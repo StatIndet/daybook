@@ -400,6 +400,7 @@ func Build(options Options) (BuildResult, error) {
 
 		indexData := render.IndexData{
 			Site:         siteData,
+			Config:       options.Config,
 			PageTitle:    i18n.T(lang, "nav.home"),
 			PageKind:     "home",
 			BodyClass:    "home-body",
@@ -454,6 +455,7 @@ func Build(options Options) (BuildResult, error) {
 
 		notesData := render.NotesData{
 			Site:         siteData,
+			Config:       options.Config,
 			PageTitle:    i18n.T(lang, "nav.notes"),
 			PageKind:     "notes",
 			BodyClass:    "notes-list-body page-body",
@@ -483,6 +485,7 @@ func Build(options Options) (BuildResult, error) {
 
 		archiveData := render.ArchiveData{
 			Site:         siteData,
+			Config:       options.Config,
 			PageTitle:    i18n.T(lang, "nav.archive"),
 			PageKind:     "archive",
 			BodyClass:    "archive-body page-body",
@@ -565,6 +568,7 @@ func Build(options Options) (BuildResult, error) {
 
 		aboutData := render.AboutData{
 			Site:           siteData,
+			Config:         options.Config,
 			PageTitle:      aboutPage.Title,
 			PageKind:       "about",
 			BodyClass:      "about-body page-body",
@@ -605,6 +609,7 @@ func Build(options Options) (BuildResult, error) {
 
 		graphData := render.GraphData{
 			Site:         siteData,
+			Config:       options.Config,
 			PageTitle:    i18n.T(lang, "nav.graph"),
 			PageKind:     "graph",
 			BodyClass:    "graph-body page-body",
@@ -675,6 +680,7 @@ func Build(options Options) (BuildResult, error) {
 
 			tagData := render.TagData{
 				Site:         siteData,
+				Config:       options.Config,
 				PageTitle:    "#" + tagLink.Name,
 				PageKind:     "tag",
 				BodyClass:    "tag-body page-body",
@@ -1031,7 +1037,7 @@ func buildObsidianIndex(notes []content.Note, contentDir string, cfg config.Atta
 
 			pubMode := "local"
 			var pubURL string
-			if isRemote {
+			if isRemote && cfg.RemoteBaseURL != "" {
 				pubMode = "remote"
 				pubURL = cfg.RemoteBaseURL + "/" + escapeURLPath(relPath)
 			} else {
@@ -1059,7 +1065,7 @@ func buildObsidianIndex(notes []content.Note, contentDir string, cfg config.Atta
 		}
 	}
 
-	return obsidian.NewIndex(targets, attachments, cfg.RemoteDirs, cfg.RemoteBaseURL), nil
+	return obsidian.NewIndex(targets, attachments, cfg.RemoteDirs, cfg.RemoteBaseURL, cfg.PublicPath), nil
 }
 
 func escapeURLPath(p string) string {
