@@ -653,7 +653,7 @@ body.page-entering .archive-item {
   opacity: 0;
 }
 
-@media (min-width: 769px) {
+@media (min-width: 961px) {
   .note-body .note-meta .meta-transition-group > time { animation-delay: 160ms; }
   .note-body .note-meta .meta-transition-group > .reading-time { animation-delay: 185ms; }
   .note-body .note-meta > .meta-stagger:nth-child(2) { animation-delay: 210ms; }
@@ -661,7 +661,7 @@ body.page-entering .archive-item {
   .note-body .note-updated.meta-stagger { animation-delay: 260ms; }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 960px) {
   .note-body .note-meta .meta-transition-group > time,
   .note-body .note-meta .meta-transition-group > .reading-time {
     animation: none;
@@ -800,7 +800,7 @@ body.page-entering .archive-item {
   animation-delay: 900ms;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 959px) {
   .note-body .post-content > *:nth-child(n + 8) {
     animation: none;
     opacity: 1;

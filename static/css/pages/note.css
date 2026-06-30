@@ -202,7 +202,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 960px) {
   .note-meta {
     font-size: 0.875rem;
     gap: 0.65em;
@@ -363,7 +363,7 @@
   display: none;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 960px) {
   .desktop-reading-controls {
     display: none;
   }

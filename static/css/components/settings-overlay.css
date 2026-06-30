@@ -118,7 +118,7 @@ html.has-custom-cursor .settings-overlay * {
   z-index: -1;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 960px) {
   .settings-paper::after {
     display: none;
   }
@@ -261,7 +261,7 @@ html.has-custom-cursor .settings-close-btn:hover {
   color: #3e3832;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 960px) {
   .setting-item-cursor,
   .setting-item-bg-playback {
     display: none;

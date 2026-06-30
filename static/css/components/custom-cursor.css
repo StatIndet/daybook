@@ -130,7 +130,7 @@
   display: block;
 }
 
-@media (max-width: 768px), (pointer: coarse) {
+@media (max-width: 960px), (pointer: coarse) {
   .daybook-cursor,
   .daybook-cursor-clock {
     display: none !important;

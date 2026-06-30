@@ -62,7 +62,7 @@ body[data-media-manager-active="true"] .mm-btn-close { animation-delay: 80ms; }
   display: block;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 960px) {
   .mm-desktop-ui {
     display: none;
   }

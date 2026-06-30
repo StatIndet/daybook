@@ -167,7 +167,7 @@
 }
 
 /* Mobile layout (vertical) */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 960px) {
   .nm-skeleton {
     flex-direction: column;
     height: auto;

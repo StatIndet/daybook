@@ -1290,7 +1290,7 @@
   border: 1px solid var(--color-border);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 960px) {
   .nm-player {
     height: auto;
     width: 100%;
@@ -1513,7 +1513,7 @@
   background: var(--color-paper);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 960px) {
   .markdown .obsidian-pdf iframe {
     height: 400px;
   }

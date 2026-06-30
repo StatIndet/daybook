@@ -299,7 +299,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 960px) {
   .graph-shell {
     border: none;
     border-radius: 0;

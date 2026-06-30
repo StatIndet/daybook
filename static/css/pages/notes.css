@@ -283,7 +283,7 @@ hr.notes-divider {
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 960px) {
   .notes-page {
     max-width: 100%;
   }
@@ -297,7 +297,7 @@ hr.notes-divider {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 960px) {
   .notes-aside {
     display: none !important;
   }

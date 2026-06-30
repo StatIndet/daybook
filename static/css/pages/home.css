@@ -151,7 +151,7 @@
   display: inline-block;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 960px) {
   .home-hero {
     flex-direction: column;
     gap: 32px;
