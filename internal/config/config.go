@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"os"
+	"strings"
 )
 
 type ProfileConfig struct {
@@ -86,23 +87,36 @@ type Config struct {
 	Profile     ProfileConfig
 }
 
-func getEnvOrDefault(key, fallback string) string {
-	if val, ok := os.LookupEnv(key); ok {
-		return val
+func parseStringEnv(key, fallback string) string {
+	val, ok := os.LookupEnv(key)
+	if !ok {
+		return fallback
 	}
-	return fallback
+	val = strings.TrimSpace(val)
+	val = strings.Trim(val, `"'`)
+	if val == "" {
+		return fallback
+	}
+	return val
+}
+
+func parseBoolEnv(key string) bool {
+	val := strings.TrimSpace(os.Getenv(key))
+	val = strings.Trim(val, `"'`)
+	val = strings.ToLower(val)
+	return val == "true" || val == "1" || val == "on" || val == "yes"
 }
 
 func Load() (Config, error) {
 	cfg := Config{
-		Title:     getEnvOrDefault("DAYBOOK_SITE_NAME", "Daybook"),
-		BaseURL:   getEnvOrDefault("DAYBOOK_SITE_URL", "http://localhost:1313"),
-		StartedAt: getEnvOrDefault("DAYBOOK_STARTED_AT", "2026-06-08"),
+		Title:     parseStringEnv("DAYBOOK_SITE_NAME", "Daybook"),
+		BaseURL:   parseStringEnv("DAYBOOK_SITE_URL", "http://localhost:1313"),
+		StartedAt: parseStringEnv("DAYBOOK_STARTED_AT", "2026-06-08"),
 		Comment: CommentConfig{
-			Enabled:  os.Getenv("DAYBOOK_WALINE_ENABLED") == "true",
+			Enabled:  parseBoolEnv("DAYBOOK_WALINE_ENABLED"),
 			Provider: "waline",
 			Waline: WalineConfig{
-				ServerURL:      os.Getenv("DAYBOOK_WALINE_SERVER_URL"),
+				ServerURL:      parseStringEnv("DAYBOOK_WALINE_SERVER_URL", ""),
 				Lang:           "zh-CN",
 				PageSize:       10,
 				CommentSorting: "latest",
@@ -113,16 +127,16 @@ func Load() (Config, error) {
 		Attachments: AttachmentConfig{
 			LocalDir:      "content/attachments",
 			PublicPath:    "/attachments/",
-			RemoteBaseURL: os.Getenv("DAYBOOK_R2_BASE_URL"),
+			RemoteBaseURL: parseStringEnv("DAYBOOK_R2_BASE_URL", ""),
 			RemoteDirs:    []string{"audio", "video", "picture", "pdf"},
 		},
 		Netease: NeteaseConfig{
-			Enabled:    os.Getenv("DAYBOOK_NETEASE_ENABLED") == "true",
-			APIBaseURL: os.Getenv("DAYBOOK_NETEASE_API_BASE_URL"),
+			Enabled:    parseBoolEnv("DAYBOOK_NETEASE_ENABLED"),
+			APIBaseURL: parseStringEnv("DAYBOOK_NETEASE_API_BASE_URL", ""),
 		},
 		Stats: StatsConfig{
-			Enabled: os.Getenv("DAYBOOK_STATS_ENABLED") == "true",
-			APIBase: getEnvOrDefault("DAYBOOK_STATS_API_BASE", "/api"),
+			Enabled: parseBoolEnv("DAYBOOK_STATS_ENABLED"),
+			APIBase: parseStringEnv("DAYBOOK_STATS_API_BASE", "/api"),
 		},
 	}
 
