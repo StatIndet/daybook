@@ -247,6 +247,7 @@ interface DaybookTransitionFinishedDetail {
       const doSwap = () => {
         emitBeforeSwap(oldUrl, targetUrl.href);
         updateHead(newDocument);
+        syncShellFragments(newDocument);
         swapPage(currentContainer, newContainer, newDocument.body);
 
         if (!isTraverse) {
@@ -394,6 +395,17 @@ interface DaybookTransitionFinishedDetail {
         currentBody.classList.add(c);
       }
     });
+  }
+
+  function syncShellFragments(newDocument: Document) {
+    const fragmentsToSync = ["#mobile-drawer", "#mobile-overlay", "#mobile-drawer-mask", "#mobile-overlay-mask"];
+    for (const selector of fragmentsToSync) {
+      const oldEl = document.querySelector(selector);
+      const newEl = newDocument.querySelector(selector);
+      if (oldEl && newEl) {
+        oldEl.replaceWith(newEl.cloneNode(true));
+      }
+    }
   }
 
   function updateHead(newDocument: Document) {

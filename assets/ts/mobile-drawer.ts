@@ -1,10 +1,18 @@
 (function () {
-  var drawerToggle = document.getElementById("mobile-menu-toggle") as HTMLElement | null;
-  var drawer = document.getElementById("mobile-drawer") as HTMLElement | null;
-  var drawerMask = document.getElementById("mobile-drawer-mask") as HTMLElement | null;
-  
-  if (!drawerToggle || !drawer || !drawerMask) {
-    return;
+  function getDrawerToggle() {
+    return document.getElementById("mobile-menu-toggle");
+  }
+
+  function getDrawer() {
+    return document.getElementById("mobile-drawer");
+  }
+
+  function getDrawerMask() {
+    return document.getElementById("mobile-drawer-mask");
+  }
+
+  function getOverlayMask() {
+    return document.getElementById("mobile-overlay-mask");
   }
 
   function updateScrollLock() {
@@ -20,10 +28,14 @@
   }
 
   function setDrawerOpen(isOpen: boolean) {
+    var drawerToggle = getDrawerToggle();
+    var drawer = getDrawer();
+    var drawerMask = getDrawerMask();
+
     var expanded = isOpen ? "true" : "false";
-    if(drawerToggle) drawerToggle.setAttribute("aria-expanded", expanded);
-    if(drawer) drawer.setAttribute("aria-hidden", !isOpen ? "true" : "false");
-    if(drawerMask) drawerMask.setAttribute("aria-hidden", !isOpen ? "true" : "false");
+    if (drawerToggle) drawerToggle.setAttribute("aria-expanded", expanded);
+    if (drawer) drawer.setAttribute("aria-hidden", !isOpen ? "true" : "false");
+    if (drawerMask) drawerMask.setAttribute("aria-hidden", !isOpen ? "true" : "false");
 
     if (isOpen) {
       document.body.classList.add("is-mobile-drawer-open");
@@ -55,22 +67,6 @@
     updateScrollLock();
   }
 
-  drawerToggle.addEventListener("click", function () {
-    var isOpen = document.body.classList.contains("is-mobile-drawer-open");
-    setDrawerOpen(!isOpen);
-  });
-
-  drawerMask.addEventListener("click", function () {
-    setDrawerOpen(false);
-  });
-
-  var overlayMask = document.getElementById("mobile-overlay-mask");
-  if (overlayMask) {
-    overlayMask.addEventListener("click", function () {
-      closeOverlays();
-    });
-  }
-
   document.addEventListener("keydown", function (event: KeyboardEvent) {
     if (event.key !== "Escape") return;
     
@@ -86,6 +82,24 @@
 
   document.addEventListener("click", function (event: MouseEvent) {
     var evTarget = event.target as HTMLElement;
+
+    var toggleBtn = evTarget.closest("#mobile-menu-toggle");
+    if (toggleBtn) {
+      var isOpen = document.body.classList.contains("is-mobile-drawer-open");
+      setDrawerOpen(!isOpen);
+      return;
+    }
+
+    if (evTarget.closest("#mobile-drawer-mask")) {
+      setDrawerOpen(false);
+      return;
+    }
+
+    if (evTarget.closest("#mobile-overlay-mask")) {
+      closeOverlays();
+      return;
+    }
+
     if (evTarget.closest(".drawer-nav-link[href], .drawer-footer-row a")) {
       setDrawerOpen(false);
       return;
@@ -107,18 +121,19 @@
            openOverlay(target || "");
         } else {
            var opened = false;
+           var drawer = getDrawer();
            var onTransitionEnd = function(e: TransitionEvent) {
              if (e && e.target !== drawer || e.propertyName !== "transform") return;
-             if(drawer) drawer.removeEventListener("transitionend", onTransitionEnd);
+             if (drawer) drawer.removeEventListener("transitionend", onTransitionEnd);
              if (!opened) {
                opened = true;
                openOverlay(target || "");
              }
            };
-           if(drawer) drawer.addEventListener("transitionend", onTransitionEnd);
+           if (drawer) drawer.addEventListener("transitionend", onTransitionEnd);
            window.setTimeout(function() {
              if (!opened) {
-               if(drawer) drawer.removeEventListener("transitionend", onTransitionEnd);
+               if (drawer) drawer.removeEventListener("transitionend", onTransitionEnd);
                opened = true;
                openOverlay(target || "");
              }
