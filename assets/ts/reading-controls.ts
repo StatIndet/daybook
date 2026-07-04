@@ -91,7 +91,7 @@ function updateReadingControls() {
 
   // 2. Auto-hide mobile top bar logic
   if (topBar) {
-    const isMobile = window.innerWidth <= 768;
+    const isMobile = window.innerWidth <= 960;
     
     if (isMobile) {
       const overlaysOpen = document.body.classList.contains('is-mobile-drawer-open') || 
