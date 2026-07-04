@@ -84,6 +84,8 @@ export class IdleClockController {
     const dpr = window.devicePixelRatio || 1;
     this.canvas.width = this.width * dpr;
     this.canvas.height = this.height * dpr;
+    this.canvas.style.width = `${this.width}px`;
+    this.canvas.style.height = `${this.height}px`;
     this.ctx.scale(dpr, dpr);
   }
 

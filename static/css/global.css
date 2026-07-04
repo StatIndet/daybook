@@ -20,6 +20,4 @@ html[data-theme="dark"] {
   color-scheme: dark;
 }
 
-html[data-use-system-cursor="true"] * {
-  cursor: auto !important;
-}
+

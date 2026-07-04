@@ -25,8 +25,8 @@ const selectors = {
 };
 
 function updateCursorPosition() {
-  cursorX += (mouseX - cursorX) * lerpFactor;
-  cursorY += (mouseY - cursorY) * lerpFactor;
+  cursorX = mouseX;
+  cursorY = mouseY;
   
   if (cursorEl) {
     cursorEl.style.transform = `translate3d(${cursorX}px, ${cursorY}px, 0)`;
