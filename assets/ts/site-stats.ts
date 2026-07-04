@@ -26,6 +26,14 @@ function normalizePath(p: string): string {
   try {
     const url = new URL(p, window.location.origin);
     let pathname = url.pathname;
+    
+    // Strip /en prefix to consolidate bilingual stats
+    if (pathname.startsWith('/en/')) {
+      pathname = pathname.substring(3);
+    } else if (pathname === '/en') {
+      pathname = '/';
+    }
+
     pathname = pathname.replace(/\/+/g, '/');
     if (!pathname.startsWith('/')) pathname = '/' + pathname;
     if (pathname !== '/' && !pathname.endsWith('/')) {
