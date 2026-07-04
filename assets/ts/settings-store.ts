@@ -1,5 +1,6 @@
 export interface DaybookSettings {
   useSystemCursor: boolean;
+  enableClockCursor: boolean;
   disableBackgroundPlayback: boolean;
   disableComments: boolean;
   reducedMotion: boolean;
@@ -9,6 +10,7 @@ const STORAGE_KEY = 'daybook:user-settings';
 
 const DEFAULT_SETTINGS: DaybookSettings = {
   useSystemCursor: false,
+  enableClockCursor: true,
   disableBackgroundPlayback: true,
   disableComments: false,
   reducedMotion: false
@@ -51,6 +53,12 @@ export function syncSettingsToDOM() {
     html.setAttribute('data-use-system-cursor', 'true');
   } else {
     html.removeAttribute('data-use-system-cursor');
+  }
+
+  if (currentSettings.enableClockCursor) {
+    html.setAttribute('data-clock-cursor', 'true');
+  } else {
+    html.removeAttribute('data-clock-cursor');
   }
 
   if (currentSettings.disableComments) {

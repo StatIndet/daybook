@@ -64,9 +64,30 @@ export function initSettingsOverlay() {
   };
 
   setupCheckbox('setting-system-cursor', 'useSystemCursor');
+  setupCheckbox('setting-clock-cursor', 'enableClockCursor');
   setupCheckbox('setting-bg-playback', 'disableBackgroundPlayback');
   setupCheckbox('setting-disable-comments', 'disableComments');
   setupCheckbox('setting-reduced-motion', 'reducedMotion');
+
+  const systemCursorCheckbox = document.getElementById('setting-system-cursor') as HTMLInputElement | null;
+  const clockCursorCheckbox = document.getElementById('setting-clock-cursor') as HTMLInputElement | null;
+  const clockCursorLabel = document.querySelector('.setting-item-clock-cursor') as HTMLElement | null;
+
+  if (systemCursorCheckbox && clockCursorCheckbox && clockCursorLabel) {
+    const updateClockCursorState = () => {
+      if (systemCursorCheckbox.checked) {
+        clockCursorLabel.style.opacity = '0.5';
+        clockCursorLabel.style.pointerEvents = 'none';
+        clockCursorCheckbox.disabled = true;
+      } else {
+        clockCursorLabel.style.opacity = '1';
+        clockCursorLabel.style.pointerEvents = 'auto';
+        clockCursorCheckbox.disabled = false;
+      }
+    };
+    systemCursorCheckbox.addEventListener('change', updateClockCursorState);
+    updateClockCursorState();
+  }
 
   const syncLanguage = (lang: string) => {
     // Normalize language string

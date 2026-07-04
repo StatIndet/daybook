@@ -145,6 +145,9 @@ function handleClick(e: MouseEvent) {
   if (path.startsWith("/graph/") || path.startsWith("/about/")) {
     return;
   }
+  if (document.documentElement.getAttribute('data-clock-cursor') !== 'true') {
+    return;
+  }
   if (isClockActive) {
     breakIdleClock(false);
   } else {
