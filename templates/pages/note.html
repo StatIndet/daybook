@@ -68,7 +68,9 @@
       </header>
 
       {{if .Note.TocEnabled}}
-      {{template "toc" .}}
+      <div class="note-toc-wrapper">
+        {{template "toc" .}}
+      </div>
       {{end}}
 
       <div class="markdown post-content">

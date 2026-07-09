@@ -10,14 +10,23 @@
   width: min(var(--note-body-width), 100%);
 }
 
+.note-toc-wrapper {
+  position: absolute;
+  right: calc(100% + clamp(18px, 2.8vw, 34px));
+  top: var(--note-toc-top);
+  bottom: 0;
+  width: var(--note-toc-width);
+  z-index: 10;
+  pointer-events: none;
+}
+
 .note-toc {
   color: var(--color-muted);
   font-family: var(--font-ui);
   font-size: 0.78rem;
   line-height: 1.45;
   opacity: 1;
-  position: absolute;
-  right: calc(100% + clamp(18px, 2.8vw, 34px));
+  position: sticky;
   top: var(--note-toc-top);
   transform: translateY(0);
   transition:
@@ -27,6 +36,7 @@
     visibility 240ms ease;
   visibility: visible;
   width: var(--note-toc-width);
+  pointer-events: auto;
 }
 
 .note {
@@ -158,6 +168,12 @@
 
 
 @media (max-width: 1600px) {
+  .note-toc-wrapper {
+    position: static;
+    width: 100%;
+    pointer-events: auto;
+  }
+  
   .note-toc {
     margin-bottom: clamp(2rem, 5vw, 3.2rem);
     max-width: 100%;
