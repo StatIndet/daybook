@@ -1,22 +1,40 @@
 {{define "toc"}}
 {{if .Note.Headings}}
-<aside class="note-toc is-open" data-note-toc aria-label="文章目录">
-  <div class="note-toc-header">
-    <button class="note-toc-toggle" type="button" aria-expanded="true" aria-controls="note-toc-list" aria-label="展开或收起文章目录">
-      <span class="material-symbol" aria-hidden="true">menu_open</span>
-    </button>
-    <span class="note-toc-title">目录</span>
-  </div>
-  <nav class="note-toc-panel" id="note-toc-list" aria-label="文章目录">
-    <div class="note-toc-indicator" aria-hidden="true"></div>
-    <ol>
-      {{range .Note.Headings}}
-      <li class="note-toc-depth-{{.Level}}">
-        <a href="#{{.ID}}">{{.Text}}</a>
-      </li>
-      {{end}}
-    </ol>
+<div class="note-toc-stage" data-note-toc-stage>
+  <aside class="note-toc is-open" data-note-toc aria-label="文章目录">
+    <div class="note-toc-header">
+      <button class="note-toc-toggle" type="button" aria-expanded="true" aria-controls="note-toc-list" aria-label="展开或收起文章目录">
+        <span class="material-symbol" aria-hidden="true">menu_open</span>
+      </button>
+      <span class="note-toc-title">目录</span>
+    </div>
+    <nav class="note-toc-panel" id="note-toc-list" aria-label="文章目录">
+      <div class="note-toc-indicator" aria-hidden="true"></div>
+      <ol>
+        {{range .Note.Headings}}
+        <li class="note-toc-depth-{{.Level}}">
+          <a href="#{{.ID}}">{{.Text}}</a>
+        </li>
+        {{end}}
+      </ol>
+    </nav>
+  </aside>
+
+  <nav class="reading-toc-rail" data-reading-toc-rail aria-label="{{if eq .Lang "en"}}Reading progress{{else}}阅读进度{{end}}" aria-hidden="true" inert>
+    <svg class="reading-toc-rail-svg" data-reading-toc-rail-svg viewBox="0 0 208 640" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <path class="reading-toc-rail-base" data-reading-toc-rail-base d="M 0 0"></path>
+      <path class="reading-toc-rail-accent" data-reading-toc-rail-accent d="M 0 0"></path>
+      <circle class="reading-toc-rail-marker" data-reading-toc-rail-marker cx="0" cy="0" r="2"></circle>
+    </svg>
+    <div class="reading-toc-rail-dots" data-reading-toc-rail-dots></div>
+    <a class="reading-toc-rail-current" data-reading-toc-rail-label data-reading-toc-rail-link href="#" aria-label="{{if eq .Lang "en"}}Jump to current section{{else}}跳转到当前章节{{end}}">
+      <span class="reading-toc-rail-title-stage">
+        <span class="reading-toc-rail-title is-active" data-reading-toc-rail-title></span>
+        <span class="reading-toc-rail-title" data-reading-toc-rail-title aria-hidden="true"></span>
+      </span>
+      <span class="reading-toc-rail-percent" data-reading-toc-rail-percent>0%</span>
+    </a>
   </nav>
-</aside>
+</div>
 {{end}}
 {{end}}

@@ -11,37 +11,45 @@
 }
 
 .note-toc-wrapper {
-  position: absolute;
-  right: calc(100% + clamp(18px, 2.8vw, 34px));
-  top: var(--note-toc-top);
-  bottom: 0;
-  width: var(--note-toc-width);
-  z-index: 10;
-  pointer-events: none;
+  pointer-events: auto;
+  position: static;
+  width: 100%;
 }
 
 .note-sticky-column {
-  position: sticky;
-  top: var(--note-toc-top);
   display: flex;
   flex-direction: column;
   pointer-events: auto;
+  position: static;
+}
+
+.note-toc-stage {
+  position: relative;
+  width: 100%;
 }
 
 .note-toc {
+  clip-path: inset(0);
   color: var(--color-muted);
   font-family: var(--font-ui);
   font-size: 0.78rem;
   line-height: 1.45;
+  margin-bottom: clamp(2rem, 5vw, 3.2rem);
+  max-width: 100%;
   opacity: 1;
   transform: translateY(0);
   transition:
     color 160ms ease,
-    opacity 240ms var(--ease-out),
-    transform 240ms var(--ease-out),
-    visibility 240ms ease;
+    opacity var(--reading-toc-rail-state-duration) ease,
+    transform var(--reading-toc-rail-state-duration) var(--reading-toc-rail-state-ease),
+    clip-path var(--reading-toc-rail-state-duration) var(--reading-toc-rail-state-ease),
+    visibility 0s linear 0s;
   visibility: visible;
-  width: var(--note-toc-width);
+  width: 100%;
+}
+
+.note-toc-panel {
+  max-height: none;
 }
 
 .note {
@@ -172,29 +180,83 @@
 }
 
 
-@media (max-width: 1600px) {
+@media (min-width: 116rem) {
   .note-toc-wrapper {
-    position: static;
-    width: 100%;
-    pointer-events: auto;
+    --reading-toc-rail-eligible: 1;
+
+    bottom: 0;
+    pointer-events: none;
+    position: absolute;
+    right: calc(100% + clamp(18px, 2.8vw, 34px));
+    top: var(--note-toc-top);
+    width: var(--note-toc-width);
+    z-index: 10;
   }
-  
+
   .note-sticky-column {
-    position: static;
+    pointer-events: auto;
+    position: sticky;
+    top: var(--note-toc-top);
   }
-  
+
+  .note-toc-stage {
+    width: var(--note-toc-width);
+  }
+
   .note-toc {
-    margin-bottom: clamp(2rem, 5vw, 3.2rem);
-    max-width: 100%;
-    opacity: 1;
-    position: static;
-    transform: none;
-    visibility: visible;
-    width: 100%;
+    margin-bottom: 0;
+    max-width: none;
+    width: var(--note-toc-width);
   }
 
   .note-toc-panel {
-    max-height: none;
+    max-height: calc(100vh - 176px);
+  }
+
+  .note-toc-stage.has-reading-rail {
+    height: var(--reading-toc-rail-height);
+  }
+
+  .note-toc-stage.has-reading-rail .note-toc {
+    left: 0;
+    position: absolute;
+    top: 0;
+  }
+
+  .note-toc-stage.has-reading-rail .note-toc-panel {
+    max-height: calc(var(--reading-toc-rail-height) - 3rem);
+  }
+
+  .note-toc-stage.has-reading-rail.is-reading .note-toc {
+    clip-path: inset(0 100% 0 0);
+    opacity: 0;
+    pointer-events: none;
+    transform: translate3d(calc(var(--reading-toc-rail-collapse-shift) * -1), 0, 0);
+    transition:
+      color 160ms ease,
+      opacity var(--reading-toc-rail-state-duration) ease,
+      transform var(--reading-toc-rail-state-duration) var(--reading-toc-rail-state-ease),
+      clip-path var(--reading-toc-rail-state-duration) var(--reading-toc-rail-state-ease),
+      visibility 0s linear var(--reading-toc-rail-state-duration);
+    visibility: hidden;
+  }
+
+  .note-toc-stage[data-rail-direction="-1"].has-reading-rail.is-reading .note-toc {
+    clip-path: inset(0 0 0 100%);
+    transform: translate3d(var(--reading-toc-rail-collapse-shift), 0, 0);
+  }
+
+  .note-toc-stage.has-reading-rail.is-reading .reading-toc-rail {
+    clip-path: inset(0);
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate3d(0, 0, 0);
+    transition:
+      opacity var(--reading-toc-rail-state-duration) ease,
+      transform var(--reading-toc-rail-state-duration) var(--reading-toc-rail-state-ease),
+      clip-path var(--reading-toc-rail-state-duration) var(--reading-toc-rail-state-ease),
+      visibility 0s linear 0s;
+    visibility: visible;
   }
 }
 
@@ -226,6 +288,10 @@
     margin-bottom: 1rem;
     position: static;
   }
+}
+
+html[data-reduced-motion="true"] .note-toc-stage .note-toc {
+  transition: none !important;
 }
 
 @media (max-width: 960px) {
