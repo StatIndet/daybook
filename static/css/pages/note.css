@@ -20,14 +20,20 @@
   pointer-events: none;
 }
 
+.note-sticky-column {
+  position: sticky;
+  top: var(--note-toc-top);
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+}
+
 .note-toc {
   color: var(--color-muted);
   font-family: var(--font-ui);
   font-size: 0.78rem;
   line-height: 1.45;
   opacity: 1;
-  position: sticky;
-  top: var(--note-toc-top);
   transform: translateY(0);
   transition:
     color 160ms ease,
@@ -36,7 +42,6 @@
     visibility 240ms ease;
   visibility: visible;
   width: var(--note-toc-width);
-  pointer-events: auto;
 }
 
 .note {
@@ -174,14 +179,15 @@
     pointer-events: auto;
   }
   
+  .note-sticky-column {
+    position: static;
+  }
+  
   .note-toc {
     margin-bottom: clamp(2rem, 5vw, 3.2rem);
     max-width: 100%;
     opacity: 1;
-    pointer-events: auto;
     position: static;
-    right: auto;
-    top: auto;
     transform: none;
     visibility: visible;
     width: 100%;
@@ -285,97 +291,76 @@
   margin: 0;
 }
 
-/* Desktop Reading Controls */
-.desktop-reading-controls {
+/* Right Reading Controls */
+.note-right-controls {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  position: fixed;
-  bottom: 40px;
-  left: var(--persistent-logo-left);
-  z-index: 900;
+  gap: 16px;
+  margin-top: 16px;
+  padding-left: 2px;
+  opacity: 1;
+  transition: opacity 0.3s ease;
 }
 
-.reading-control-btn {
-  align-items: center;
-  background: var(--color-paper);
-  border: 1px solid var(--color-line);
-  border-radius: 999px;
-  color: var(--color-text);
-  cursor: pointer;
+.note-rc-progress {
   display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.note-rc-ring {
+  transform: rotate(-90deg);
+  width: 24px;
+  height: 24px;
+}
+
+.note-rc-ring-bg {
+  fill: none;
+  stroke: var(--color-line);
+  stroke-width: 2.5;
+}
+
+.note-rc-ring-fg {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2.5;
+  stroke-dasharray: 62.8318;
+  stroke-dashoffset: 62.8318;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.15s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.note-rc-text {
   font-family: var(--font-ui);
   font-size: 0.85rem;
+  color: var(--color-muted);
   font-weight: 500;
-  height: 44px;
-  justify-content: center;
-  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+}
+
+.note-rc-btn {
+  background: transparent;
+  border: none;
   padding: 0;
-  position: relative;
-  transition: color 160ms ease, border-color 160ms ease;
-  width: 44px;
-  animation: mm-fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-muted);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 160ms ease;
+  width: fit-content;
 }
 
-@keyframes mm-fade-in {
-  0% { opacity: 0; transform: translateX(-15px); }
-  100% { opacity: 1; transform: translateX(0); }
+.note-rc-btn:hover,
+.note-rc-btn:focus-visible {
+  color: var(--color-accent);
 }
 
-@keyframes mm-fade-out {
-  0% { opacity: 1; transform: translateX(0); }
-  100% { opacity: 0; transform: translateX(-15px); }
-}
-
-.reading-control-btn.back-to-top-btn { animation-delay: 0ms; }
-.reading-control-btn.reading-progress-btn { animation-delay: 40ms; }
-
-.reading-progress-btn {
-}
-
-.reading-control-btn:hover,
-.reading-control-btn:focus-visible {
-  color: var(--color-page);
-  border-color: var(--color-text);
-}
-
-.reading-control-btn::before {
-  background: var(--color-text);
-  border-radius: 50%;
-  content: "";
-  height: 250%;
-  left: var(--pointer-x, 50%);
-  position: absolute;
-  top: var(--pointer-y, 50%);
-  transform: translate(-50%, -50%) scale(0);
-  transition: transform 400ms cubic-bezier(0.4, 0, 0.2, 1);
-  width: 250%;
-  z-index: 0;
-}
-
-.reading-control-btn.is-hovered::before {
-  transform: translate(-50%, -50%) scale(1);
-}
-
-.reading-control-btn .material-symbol,
-.reading-control-btn .reading-progress-text {
-  position: relative;
-  z-index: 1;
-}
-
-.reading-progress-btn .hover-icon {
-  display: none;
-  font-size: 1.1rem;
-}
-
-.reading-progress-btn:hover .reading-progress-text,
-.reading-progress-btn:focus-visible .reading-progress-text {
-  display: none;
-}
-
-.reading-progress-btn:hover .hover-icon,
-.reading-progress-btn:focus-visible .hover-icon {
-  display: block;
+.note-rc-btn .material-symbol {
+  font-size: 1.15rem;
 }
 
 /* Mobile Reading Controls Unified Fixed Component */
@@ -384,7 +369,7 @@
 }
 
 @media (max-width: 960px) {
-  .desktop-reading-controls {
+  .note-right-controls {
     display: none;
   }
 

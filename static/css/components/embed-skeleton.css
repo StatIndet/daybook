@@ -84,12 +84,11 @@
 .embed-fallback a {
   color: var(--color-accent);
   text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: border-color var(--duration-fast) var(--ease-out);
+  transition: opacity var(--duration-fast) var(--ease-out);
 }
 
 .embed-fallback a:hover {
-  border-bottom-color: var(--color-accent);
+  opacity: 0.8;
 }
 
 /* -----------------------------

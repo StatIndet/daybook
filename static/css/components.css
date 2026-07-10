@@ -356,14 +356,32 @@ body.is-tags-overlay-open .mobile-tags-overlay .notes-tag-link {
 
 .notes-footer-links a {
   color: var(--color-muted);
+  position: relative;
   text-decoration: none;
+  transition: color 180ms ease;
+}
+
+.notes-footer-links a::after {
+  background: currentColor;
+  bottom: -2px;
+  content: "";
+  height: 1px;
+  left: 0;
+  position: absolute;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 180ms ease;
+  width: 100%;
 }
 
 .notes-footer-links a:hover,
 .notes-footer-links a:focus-visible {
   color: var(--color-hover-text);
-  text-decoration: underline;
-  text-underline-offset: 4px;
+}
+
+.notes-footer-links a:hover::after,
+.notes-footer-links a:focus-visible::after {
+  transform: scaleX(1);
 }
 
 .footer-separator {
@@ -488,8 +506,6 @@ body.is-tags-overlay-open .mobile-tags-overlay .notes-tag-link {
 .note-toc-panel a:hover,
 .note-toc-panel a:focus-visible {
   color: var(--color-hover-text);
-  text-decoration: underline;
-  text-underline-offset: 4px;
 }
 
 .note-toc-panel a.is-active {

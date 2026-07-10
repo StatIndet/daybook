@@ -134,7 +134,6 @@
 .archive-entry a:hover,
 .archive-entry a:focus-visible {
   color: var(--color-hover-text);
-  text-decoration: none;
 }
 
 .archive-entry a:focus-visible {
