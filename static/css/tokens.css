@@ -35,11 +35,11 @@
   --note-toc-hide-y: 1.75rem;
   --toc-collapse-duration: 280ms;
   --reading-toc-rail-eligible: 0;
-  --reading-toc-rail-direction: 1;
+  --reading-toc-rail-direction: -1;
   --reading-toc-rail-controls-reserve: 9rem;
   --reading-toc-rail-height: min(70vh, calc(100dvh - var(--note-toc-top) - var(--reading-toc-rail-controls-reserve)));
   --reading-toc-rail-line-width: 1px;
-  --reading-toc-rail-line-inset: 12px;
+  --reading-toc-rail-line-inset: 188px;
   --reading-toc-rail-dot-size: 3px;
   --reading-toc-rail-dot-hit-size: 24px;
   --reading-toc-rail-idle-amplitude: 11px;

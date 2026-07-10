@@ -337,17 +337,10 @@ class NoteTocController {
 
   private readonly handleStageClick = (event: MouseEvent): void => {
     const target = event.target as HTMLElement;
-    const dot = target.closest<HTMLButtonElement>("[data-reading-toc-rail-dot]");
+
     const currentLink = target.closest<HTMLAnchorElement>("[data-reading-toc-rail-link]");
 
-    if (dot) {
-      const index = Number.parseInt(dot.dataset.readingTocRailIndex || "", 10);
-      if (Number.isInteger(index)) {
-        event.preventDefault();
-        this.jumpToHeading(index);
-      }
-      return;
-    }
+
 
     if (currentLink) {
       event.preventDefault();
@@ -400,7 +393,7 @@ class NoteTocController {
     const activationY = this.latestScrollY + metrics.activationLine;
     const activeIndex = upperBoundHeading(this.headings, activationY);
     const shouldRead = this.readingModeFor(activationY, metrics);
-    const tocScrollTop = metrics.tocVisible && !shouldRead
+    const tocScrollTop = metrics.tocVisible
       ? (measuredThisFrame ? metrics.tocListScrollTop : this.tocList.scrollTop)
       : 0;
 
@@ -428,7 +421,7 @@ class NoteTocController {
       activeIndex,
       metrics.tocListTop,
       tocScrollTop,
-      metrics.tocVisible && !shouldRead,
+      metrics.tocVisible,
     );
     this.setReadingMode(shouldRead);
 
@@ -462,11 +455,8 @@ class NoteTocController {
     const safePadding = cssNumber(railStyle, "--reading-toc-rail-safe-padding", 56);
     const cssEligible = cssNumber(stageStyle, "--reading-toc-rail-eligible", 0) === 1;
     const sideRailRight = sideRailRect?.right || 0;
-    const hasHorizontalRoom = direction > 0
-      ? wrapperRect.left + GEOMETRY_EPSILON >= sideRailRight
-        && wrapperRect.right <= noteRect.left + GEOMETRY_EPSILON
-      : wrapperRect.left + GEOMETRY_EPSILON >= noteRect.right
-        && wrapperRect.right <= document.documentElement.clientWidth + GEOMETRY_EPSILON;
+    const hasHorizontalRoom = wrapperRect.left + GEOMETRY_EPSILON >= sideRailRight
+        && wrapperRect.right <= noteRect.left + GEOMETRY_EPSILON;
     const hasVerticalRoom = readableViewport > 0
       && railRect.height >= Math.max(MIN_RAIL_HEIGHT, safePadding * 2 + 1);
     const railEligible = this.railMediaQuery.matches
@@ -557,9 +547,7 @@ class NoteTocController {
     this.stage.classList.remove("has-reading-rail", "is-reading");
     this.stage.removeAttribute("data-rail-direction");
     this.isReadingMode = false;
-    this.toc.inert = false;
     this.toc.removeAttribute("aria-hidden");
-    this.railRoot.inert = true;
     this.railRoot.setAttribute("aria-hidden", "true");
     this.rail?.setInteractive(false);
 
@@ -583,14 +571,12 @@ class NoteTocController {
     this.isReadingMode = reading;
     this.stage.classList.toggle("is-reading", reading);
 
-    this.toc.inert = reading;
     if (reading) {
       this.toc.setAttribute("aria-hidden", "true");
     } else {
       this.toc.removeAttribute("aria-hidden");
     }
 
-    this.railRoot.inert = !reading;
     this.railRoot.setAttribute("aria-hidden", reading ? "false" : "true");
     this.rail?.setInteractive(reading);
   }
@@ -624,21 +610,45 @@ class NoteTocController {
       return;
     }
 
-    const indicatorTop = tocListTop + heading.tocTop - tocScrollTop;
+    const viewportTop = this.latestScrollY;
+    const viewportBottom = viewportTop + window.innerHeight;
+    
+    let firstVis = -1;
+    let lastVis = -1;
+    for (let i = 0; i < this.headings.length; i++) {
+      const h = this.headings[i];
+      if (!h) continue;
+      if (h.documentY >= viewportTop && h.documentY <= viewportBottom) {
+        if (firstVis === -1) firstVis = i;
+        lastVis = i;
+      }
+    }
+
+    const startIdx = index;
+    const endIdx = firstVis !== -1 ? Math.max(index, lastVis) : index;
+    
+    const startHeading = this.headings[startIdx];
+    const endHeading = this.headings[endIdx];
+    
+    if (!startHeading || !endHeading) return;
+
+    const indicatorTop = tocListTop + startHeading.tocTop - tocScrollTop;
+    const indicatorHeight = Math.max(1, endHeading.tocTop + endHeading.tocHeight - startHeading.tocTop);
+
     if (
       !activeChanged
       && !this.indicatorDirty
       && indicatorTop === this.indicatorTop
-      && heading.tocHeight === this.indicatorHeight
+      && indicatorHeight === this.indicatorHeight
     ) {
       return;
     }
 
     this.indicatorDirty = false;
     this.indicatorTop = indicatorTop;
-    this.indicatorHeight = heading.tocHeight;
+    this.indicatorHeight = indicatorHeight;
     this.tocIndicator.style.opacity = "1";
-    this.tocIndicator.style.transform = `translateY(${indicatorTop}px) scaleY(${heading.tocHeight})`;
+    this.tocIndicator.style.transform = `translateY(${indicatorTop}px) scaleY(${indicatorHeight})`;
   }
 }
 

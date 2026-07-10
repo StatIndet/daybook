@@ -227,7 +227,7 @@
     max-height: calc(var(--reading-toc-rail-height) - 3rem);
   }
 
-  .note-toc-stage.has-reading-rail.is-reading .note-toc {
+  .note-toc-stage.has-reading-rail.is-reading:not(:hover) .note-toc {
     clip-path: inset(0 100% 0 0);
     opacity: 0;
     pointer-events: none;
@@ -241,12 +241,7 @@
     visibility: hidden;
   }
 
-  .note-toc-stage[data-rail-direction="-1"].has-reading-rail.is-reading .note-toc {
-    clip-path: inset(0 0 0 100%);
-    transform: translate3d(var(--reading-toc-rail-collapse-shift), 0, 0);
-  }
-
-  .note-toc-stage.has-reading-rail.is-reading .reading-toc-rail {
+  .note-toc-stage.has-reading-rail.is-reading:not(:hover) .reading-toc-rail {
     clip-path: inset(0);
     opacity: 1;
     pointer-events: auto;

@@ -38,6 +38,7 @@ interface CurvePath {
   accentPath: string;
   basePath: string;
   peakX: number;
+  effectiveAmplitude: number;
 }
 
 const DEFAULT_GEOMETRY: ReadingTocRailGeometry = {
@@ -91,8 +92,13 @@ function formatNumber(value: number): string {
 }
 
 function smoothstep(value: number): number {
-  const normalized = clamp(value, 0, 1);
-  return normalized * normalized * (3 - 2 * normalized);
+  const t = clamp(value, 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
+function smootherstep(value: number): number {
+  const t = clamp(value, 0, 1);
+  return t * t * t * (t * (t * 6 - 15) + 10);
 }
 
 function requiredElement<T extends Element>(root: ParentNode, selector: string): T {
@@ -209,7 +215,7 @@ export class ReadingTocRail {
 
   private geometry: ReadingTocRailGeometry = DEFAULT_GEOMETRY;
   private headings: MutableRailHeading[] = [];
-  private dotButtons: HTMLButtonElement[] = [];
+  private dotButtons: HTMLElement[] = [];
   private markerY = makeSpring(DEFAULT_GEOMETRY.safePadding);
   private labelY = makeSpring(DEFAULT_GEOMETRY.safePadding);
   private amplitude = makeSpring(DEFAULT_GEOMETRY.idleAmplitude);
@@ -259,16 +265,12 @@ export class ReadingTocRail {
     this.headings = entries.map(normalizeHeading);
     const fragment = document.createDocumentFragment();
     this.dotButtons = this.headings.map((heading, index) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "reading-toc-rail-dot";
-      button.dataset.readingTocRailDot = "";
-      button.dataset.readingTocRailIndex = String(index);
-      button.dataset.headingLevel = String(heading.level);
-      button.tabIndex = -1;
-      button.setAttribute("aria-label", heading.ariaLabel);
-      fragment.appendChild(button);
-      return button;
+      const dot = document.createElement("div");
+      dot.setAttribute("data-reading-toc-rail-dot", "");
+      dot.setAttribute("data-heading-level", String(heading.level));
+      dot.setAttribute("aria-hidden", "true");
+      fragment.appendChild(dot);
+      return dot;
     });
     this.dotsRoot.replaceChildren(fragment);
 
@@ -580,6 +582,16 @@ export class ReadingTocRail {
       if (this.amplitude.current === maxAmplitude && this.amplitude.velocity > 0) {
         this.amplitude.velocity = 0;
       }
+      
+      const fadeDistance = this.geometry.bulgeHalfHeight * 1.5;
+      const markerMinY = this.geometry.safePadding;
+      const markerMaxY = this.geometry.height - this.geometry.safePadding;
+      const topFactor = smootherstep(clamp((this.markerY.current - markerMinY) / fadeDistance, 0, 1));
+      const bottomFactor = smootherstep(clamp((markerMaxY - this.markerY.current) / fadeDistance, 0, 1));
+      const edgeFactor = Math.min(topFactor, bottomFactor);
+      if (edgeFactor < 0.001) {
+        this.amplitude.velocity = 0;
+      }
     }
   }
 
@@ -592,9 +604,7 @@ export class ReadingTocRail {
   }
 
   private baselineX(): number {
-    return this.geometry.direction > 0
-      ? this.geometry.lineInset
-      : this.geometry.width - this.geometry.lineInset;
+    return this.geometry.lineInset;
   }
 
   private availableAmplitude(): number {
@@ -609,23 +619,36 @@ export class ReadingTocRail {
     const baselineX = this.baselineX();
     const safeMarkerY = clamp(markerY, 0, height);
     const halfHeight = this.geometry.bulgeHalfHeight;
-    const topSpan = Math.min(halfHeight, safeMarkerY);
-    const bottomSpan = Math.min(halfHeight, Math.max(0, height - safeMarkerY));
-    const topRatio = halfHeight > 0 ? topSpan / halfHeight : 0;
-    const bottomRatio = halfHeight > 0 ? bottomSpan / halfHeight : 0;
-    const edgeFactor = smoothstep(Math.min(topRatio, bottomRatio));
+    
+    const visualRailTop = 0;
+    const visualRailBottom = height;
+    const markerMinY = this.geometry.safePadding;
+    const markerMaxY = height - this.geometry.safePadding;
+
+    const topSpan = Math.min(halfHeight, safeMarkerY - visualRailTop);
+    const bottomSpan = Math.min(halfHeight, Math.max(0, visualRailBottom - safeMarkerY));
+    
+    const fadeDistance = halfHeight * 1.5;
+    const topDistance = safeMarkerY - markerMinY;
+    const bottomDistance = markerMaxY - safeMarkerY;
+    
+    const topFactor = smootherstep(clamp(topDistance / fadeDistance, 0, 1));
+    const bottomFactor = smootherstep(clamp(bottomDistance / fadeDistance, 0, 1));
+    const edgeFactor = Math.min(topFactor, bottomFactor);
+
     const effectiveAmplitude = Math.min(
       this.availableAmplitude(),
       Math.max(0, finiteOr(amplitude, this.geometry.idleAmplitude)),
     ) * edgeFactor;
+    
     const peakX = baselineX + this.geometry.direction * effectiveAmplitude;
     const topY = safeMarkerY - topSpan;
     const bottomY = safeMarkerY + bottomSpan;
 
-    const topControlOneY = topY + topSpan * 0.38;
-    const topControlTwoY = safeMarkerY - topSpan * 0.34;
-    const bottomControlOneY = safeMarkerY + bottomSpan * 0.34;
-    const bottomControlTwoY = bottomY - bottomSpan * 0.38;
+    const topControlOneY = topY + topSpan * (1 / 3);
+    const topControlTwoY = safeMarkerY - topSpan * (1 / 3);
+    const bottomControlOneY = safeMarkerY + bottomSpan * (1 / 3);
+    const bottomControlTwoY = bottomY - bottomSpan * (1 / 3);
 
     const curve = [
       `C ${formatNumber(baselineX)} ${formatNumber(topControlOneY)}`,
@@ -645,6 +668,7 @@ export class ReadingTocRail {
         `L ${formatNumber(baselineX)} ${formatNumber(height)}`,
       ].join(" "),
       peakX,
+      effectiveAmplitude,
     };
   }
 
@@ -679,18 +703,33 @@ export class ReadingTocRail {
       this.geometry.safePadding,
       Math.max(this.geometry.safePadding, this.geometry.height - this.geometry.safePadding),
     );
+    
     const path = this.curvePath(markerY, this.clampAmplitude(this.amplitude.current));
     this.basePath.setAttribute("d", path.basePath);
     this.accentPath.setAttribute("d", path.accentPath);
-    this.marker.setAttribute("cx", formatNumber(path.peakX));
-    this.marker.setAttribute("cy", formatNumber(markerY));
+    
+    // Update dots X based on curve
+    const halfHeight = this.geometry.bulgeHalfHeight;
+    this.dotButtons.forEach((button, index) => {
+      const heading = this.headings[index];
+      if (!heading) return;
+      const dotY = this.mapRatioToY(heading.ratio);
+      const distance = Math.abs(dotY - markerY);
+      let offsetX = 0;
+      if (distance < halfHeight) {
+        const ratio = distance / halfHeight;
+        const factor = smoothstep(1 - ratio);
+        offsetX = this.geometry.direction * path.effectiveAmplitude * factor;
+      }
+      button.style.transform = `translate3d(calc(-50% + ${formatNumber(offsetX)}px), -50%, 0)`;
+    });
 
-    const labelX = path.peakX + this.geometry.direction * this.geometry.labelGap;
+    const labelX = path.peakX - this.geometry.labelGap;
     this.label.style.left = "0";
     this.label.style.top = "0";
     this.label.style.transform = [
       `translate3d(${formatNumber(labelX)}px, ${formatNumber(labelY)}px, 0)`,
-      this.geometry.direction < 0 ? "translate(-100%, -50%)" : "translateY(-50%)",
+      "translate(-100%, -50%)",
     ].join(" ");
 
     this.writeLabelContent();
