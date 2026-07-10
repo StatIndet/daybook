@@ -11,8 +11,6 @@ export function initReadingControls() {
     scrollListenerAdded = true;
   }
   
-  initDesktopHoverEffects();
-  
   // Initial update
   if (isNotePage) {
     requestAnimationFrame(updateReadingControls);
@@ -42,7 +40,7 @@ function updateReadingControls() {
   const mobileTexts = document.querySelectorAll('[data-mobile-progress-text]');
   const controlStrips = document.querySelectorAll('.mobile-reading-controls');
   const backToTopBtns = document.querySelectorAll('.back-to-top-btn, .mobile-top-btn');
-  const goToBottomBtns = document.querySelectorAll('.reading-progress-btn, .mobile-bottom-btn');
+  const goToBottomBtns = document.querySelectorAll('.go-to-bottom-btn, .mobile-bottom-btn, .reading-progress-btn');
   
   // Ensure click handlers are attached once per element
   backToTopBtns.forEach(btn => {
@@ -56,7 +54,18 @@ function updateReadingControls() {
   goToBottomBtns.forEach(btn => {
     const htmlBtn = btn as HTMLElement;
     if (!htmlBtn.dataset.rcBound) {
-      htmlBtn.addEventListener('click', () => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' }));
+      htmlBtn.addEventListener('click', () => {
+        const headings = document.querySelectorAll('.post-content h1, .post-content h2, .post-content h3, .post-content h4, .post-content h5, .post-content h6');
+        if (headings.length > 0) {
+          const lastHeading = headings[headings.length - 1];
+          if (lastHeading) {
+            const y = lastHeading.getBoundingClientRect().top + window.scrollY - 100;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+            return;
+          }
+        }
+        window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+      });
       htmlBtn.dataset.rcBound = 'true';
     }
   });
@@ -81,8 +90,15 @@ function updateReadingControls() {
     progress = Math.max(0, Math.min(100, progress));
   }
 
-  desktopTexts.forEach(el => el.textContent = `${progress}`);
+  desktopTexts.forEach(el => el.textContent = `${progress}%`);
   mobileTexts.forEach(el => el.textContent = `${progress}%`);
+  
+  const progressCircles = document.querySelectorAll('[data-progress-circle]');
+  const CIRCLE_CIRCUMFERENCE = 62.8318;
+  progressCircles.forEach(circle => {
+    const offset = CIRCLE_CIRCUMFERENCE - (progress / 100) * CIRCLE_CIRCUMFERENCE;
+    (circle as SVGElement).style.strokeDashoffset = offset.toString();
+  });
   
   const progressStr = `${progress}%`;
   controlStrips.forEach(el => {
@@ -136,36 +152,3 @@ function updateReadingControls() {
   lastScrollY = currentScrollY;
 }
 
-function initDesktopHoverEffects() {
-  const btns = document.querySelectorAll('.reading-control-btn') as NodeListOf<HTMLElement>;
-  
-  btns.forEach(btn => {
-    if (btn.dataset.hoverBound) return;
-    btn.dataset.hoverBound = 'true';
-
-    btn.addEventListener('mouseenter', (e: MouseEvent) => {
-      const rect = btn.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      
-      btn.style.setProperty('--pointer-x', `${x}px`);
-      btn.style.setProperty('--pointer-y', `${y}px`);
-      
-      // Force reflow
-      void btn.offsetHeight;
-      
-      btn.classList.add('is-hovered');
-    });
-
-    btn.addEventListener('mouseleave', (e: MouseEvent) => {
-      const rect = btn.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      
-      btn.style.setProperty('--pointer-x', `${x}px`);
-      btn.style.setProperty('--pointer-y', `${y}px`);
-      
-      btn.classList.remove('is-hovered');
-    });
-  });
-}

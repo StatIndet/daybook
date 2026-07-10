@@ -69,7 +69,10 @@
 
       {{if .Note.TocEnabled}}
       <div class="note-toc-wrapper">
-        {{template "toc" .}}
+        <div class="note-sticky-column">
+          {{template "toc" .}}
+          {{template "reading_controls" .}}
+        </div>
       </div>
       {{end}}
 

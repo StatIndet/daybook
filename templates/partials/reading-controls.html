@@ -1,0 +1,19 @@
+{{define "reading_controls"}}
+<div class="note-right-controls" aria-label="阅读进度控制">
+  <div class="note-rc-progress">
+    <svg class="note-rc-ring" width="24" height="24" viewBox="0 0 24 24">
+      <circle class="note-rc-ring-bg" cx="12" cy="12" r="10" />
+      <circle class="note-rc-ring-fg" cx="12" cy="12" r="10" data-progress-circle />
+    </svg>
+    <span class="note-rc-text" data-desktop-progress-text>0%</span>
+  </div>
+  <button class="note-rc-btn back-to-top-btn" type="button" aria-label="回到顶部">
+    <span class="material-symbol" aria-hidden="true">arrow_upward</span>
+    <span class="note-rc-btn-text">回到顶部</span>
+  </button>
+  <button class="note-rc-btn go-to-bottom-btn" type="button" aria-label="前往底部">
+    <span class="material-symbol" aria-hidden="true">arrow_downward</span>
+    <span class="note-rc-btn-text">前往底部</span>
+  </button>
+</div>
+{{end}}
