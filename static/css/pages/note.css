@@ -193,6 +193,10 @@
 }
 
 @media (max-width: 1280px) {
+  .note-toc-wrapper {
+    display: none;
+  }
+
   .note-detail-page {
     max-width: min(var(--note-body-width), 100%);
   }

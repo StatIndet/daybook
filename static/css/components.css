@@ -431,6 +431,7 @@ body.is-tags-overlay-open .mobile-tags-overlay .notes-tag-link {
   max-height: calc(100vh - 176px);
   opacity: 1;
   overflow: hidden;
+  position: relative;
   transition:
     grid-template-rows var(--toc-collapse-duration) var(--ease-out),
     opacity var(--toc-collapse-duration) ease,
@@ -454,9 +455,23 @@ body.is-tags-overlay-open .mobile-tags-overlay .notes-tag-link {
   margin: 0;
   min-height: 0;
   overflow: auto;
-  padding: 0;
+  padding: 0 0 0 14px;
+  position: relative;
   scrollbar-width: none;
   -ms-overflow-style: none;
+}
+
+.note-toc-indicator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2px;
+  background-color: var(--color-accent);
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease;
+  transform-origin: top;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .note-toc-panel ol::-webkit-scrollbar {
@@ -475,6 +490,10 @@ body.is-tags-overlay-open .mobile-tags-overlay .notes-tag-link {
   color: var(--color-hover-text);
   text-decoration: underline;
   text-underline-offset: 4px;
+}
+
+.note-toc-panel a.is-active {
+  color: var(--color-accent);
 }
 
 .note-toc-depth-3 {
