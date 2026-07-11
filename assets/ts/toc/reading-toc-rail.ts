@@ -639,18 +639,16 @@ export class ReadingTocRail {
       this.geometry.height,
     );
     const hoverState = Math.max(0, Math.min(1, this.hoverSpring.current));
-    const boost = this.interactive ? this.amplitude.current : 0;
-    const breath = this.interactive && !this.reducedMotion
+    const boost = this.amplitude.current;
+    const breath = !this.reducedMotion
       ? BREATH_AMPLITUDE * Math.sin(timestamp / BREATH_PERIOD_MS * Math.PI * 2)
       : 0;
     
-    // Wave amplitude retracts non-linearly to 0 when hovered
-    const waveAmplitude = this.interactive
-      ? Math.max(0, this.geometry.idleAmplitude * (1 - hoverState) + breath + boost)
-      : 0;
+    // Wave amplitude remains constant when hovered, only opacity fades
+    const waveAmplitude = Math.max(0, this.geometry.idleAmplitude + breath + boost);
     const halfHeight = Math.max(
       1,
-      this.geometry.bulgeHalfHeight * (1 - hoverState) + HALF_HEIGHT_SPEED_GAIN * boost,
+      this.geometry.bulgeHalfHeight + HALF_HEIGHT_SPEED_GAIN * boost,
     );
     
     // Opacity fades out based on hoverState, using CSS variable to avoid overriding base CSS
