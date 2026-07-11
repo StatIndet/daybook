@@ -289,6 +289,12 @@ html[data-reduced-motion="true"] .note-toc-stage .note-toc {
   transition: none !important;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .note-toc-stage .note-toc {
+    transition: none !important;
+  }
+}
+
 @media (max-width: 960px) {
   .note-meta {
     font-size: 0.875rem;

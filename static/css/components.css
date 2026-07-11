@@ -563,22 +563,17 @@ body.is-tags-overlay-open .mobile-tags-overlay .notes-tag-link {
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: var(--reading-toc-rail-line-width);
   vector-effect: non-scaling-stroke;
 }
 
 .reading-toc-rail-base {
   stroke: color-mix(in srgb, var(--color-line) 82%, var(--color-muted));
+  stroke-width: var(--reading-toc-rail-line-width);
 }
 
 .reading-toc-rail-accent {
   stroke: var(--color-accent);
-}
-
-.reading-toc-rail-marker {
-  fill: var(--color-accent);
-  pointer-events: none;
-  vector-effect: non-scaling-stroke;
+  stroke-width: var(--reading-toc-rail-accent-line-width);
 }
 
 [data-reading-toc-rail-dot] {

@@ -5,6 +5,9 @@ echo "Running TypeScript checks..."
 npm install
 npm run typecheck
 
+echo "Running reading rail tests..."
+npm run test:reading-rail
+
 echo "Running Go tests..."
 go test ./...
 

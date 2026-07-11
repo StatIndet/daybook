@@ -8,6 +8,7 @@
     "build:decorative-fonts": "bash tools/font-subsets/build.sh",
     "build:all-fonts": "npm run build:vendor-fonts && npm run build:decorative-fonts",
     "render:katex": "node scripts/render-katex.mjs",
+    "test:reading-rail": "node --test test/reading-toc-rail.test.mjs",
     "typecheck": "tsc --noEmit",
     "build:js": "node scripts/build-js.mjs",
     "watch:js": "node scripts/build-js.mjs --watch",

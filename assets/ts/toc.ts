@@ -153,6 +153,8 @@ class NoteTocController {
   private pendingScrollSpeed: number | null = null;
   private snapOnNextFrame = true;
   private railHeadingsReady = false;
+  private readingStateDirty = true;
+  private isStageHovered = false;
   private indicatorDirty = true;
   private indicatorTop = Number.NaN;
   private indicatorHeight = Number.NaN;
@@ -194,6 +196,7 @@ class NoteTocController {
   requestMeasure(snap = false): void {
     if (this.destroyed) return;
     this.needsMeasure = true;
+    this.readingStateDirty = true;
     this.snapOnNextFrame ||= snap;
     this.ensureFrame();
   }
@@ -227,6 +230,8 @@ class NoteTocController {
     window.addEventListener("resize", this.handleResize, { passive: true, signal });
     this.tocList.addEventListener("scroll", this.handleTocListScroll, { passive: true, signal });
     this.stage.addEventListener("click", this.handleStageClick, { signal });
+    this.stage.addEventListener("mouseenter", this.handleStageMouseEnter, { signal });
+    this.stage.addEventListener("mouseleave", this.handleStageMouseLeave, { signal });
     this.postContent.addEventListener("load", this.handleContentLoad, { capture: true, signal });
     document.addEventListener("visibilitychange", this.handleVisibilityChange, { signal });
     document.addEventListener("daybook:settings-change", this.handleMotionChange, { signal });
@@ -279,6 +284,7 @@ class NoteTocController {
     this.latestScrollY = scrollY;
     this.lastScrollY = scrollY;
     this.lastScrollTime = now;
+    this.readingStateDirty = true;
     this.ensureFrame();
   };
 
@@ -292,6 +298,21 @@ class NoteTocController {
 
   private readonly handleTocListScroll = (): void => {
     this.indicatorDirty = true;
+    this.readingStateDirty = true;
+    this.ensureFrame();
+  };
+
+  private readonly handleStageMouseEnter = (): void => {
+    if (this.destroyed || this.isStageHovered) return;
+    this.isStageHovered = true;
+    this.syncReadingPresentation();
+    this.ensureFrame();
+  };
+
+  private readonly handleStageMouseLeave = (): void => {
+    if (this.destroyed || !this.isStageHovered) return;
+    this.isStageHovered = false;
+    this.syncReadingPresentation();
     this.ensureFrame();
   };
 
@@ -331,6 +352,7 @@ class NoteTocController {
     this.lastScrollY = window.scrollY;
     this.lastScrollTime = performance.now();
     this.pendingScrollSpeed = 0;
+    this.readingStateDirty = true;
     this.snapOnNextFrame = true;
     this.requestMeasure(true);
   };
@@ -390,46 +412,49 @@ class NoteTocController {
     const metrics = this.metrics;
     if (!metrics || this.headings.length === 0) return;
 
-    const activationY = this.latestScrollY + metrics.activationLine;
-    const activeIndex = upperBoundHeading(this.headings, activationY);
-    const shouldRead = this.readingModeFor(activationY, metrics);
-    const tocScrollTop = metrics.tocVisible
-      ? (measuredThisFrame ? metrics.tocListScrollTop : this.tocList.scrollTop)
-      : 0;
-
     let railAnimating = false;
-    if (metrics.railEligible && this.rail) {
-      const progress = clamp(
-        (activationY - metrics.contentTop) / metrics.readingTravel,
-        0,
-        1,
-      );
-      const speed = this.pendingScrollSpeed;
-      this.pendingScrollSpeed = null;
+    if (measuredThisFrame || this.readingStateDirty) {
+      this.readingStateDirty = false;
+      const activationY = this.latestScrollY + metrics.activationLine;
+      const activeIndex = upperBoundHeading(this.headings, activationY);
+      const shouldRead = this.readingModeFor(activationY, metrics);
+      const tocScrollTop = metrics.tocVisible
+        ? (measuredThisFrame ? metrics.tocListScrollTop : this.tocList.scrollTop)
+        : 0;
 
-      this.rail.setTargets(progress, activeIndex, speed);
-      if (this.snapOnNextFrame) {
-        this.rail.snapToTargets();
+      if (metrics.railEligible && this.rail) {
+        const progress = clamp(
+          (activationY - metrics.contentTop) / metrics.readingTravel,
+          0,
+          1,
+        );
+        const speed = this.pendingScrollSpeed;
+        this.pendingScrollSpeed = null;
+
+        this.rail.setTargets(progress, activeIndex, speed);
+        if (this.snapOnNextFrame) {
+          this.rail.snapToTargets();
+          this.snapOnNextFrame = false;
+        }
+      } else {
+        this.pendingScrollSpeed = null;
         this.snapOnNextFrame = false;
       }
-    } else {
-      this.pendingScrollSpeed = null;
-      this.snapOnNextFrame = false;
-    }
 
-    this.updateActiveHeading(
-      activeIndex,
-      metrics.tocListTop,
-      tocScrollTop,
-      metrics.tocVisible,
-    );
-    this.setReadingMode(shouldRead);
+      this.updateActiveHeading(
+        activeIndex,
+        metrics.tocListTop,
+        tocScrollTop,
+        metrics.tocVisible,
+      );
+      this.setReadingMode(shouldRead);
+    }
 
     if (metrics.railEligible && this.rail) {
       railAnimating = this.rail.advance(timestamp);
     }
 
-    if (railAnimating || this.needsMeasure) {
+    if (railAnimating || this.needsMeasure || this.readingStateDirty) {
       this.ensureFrame();
     }
   };
@@ -452,13 +477,11 @@ class NoteTocController {
     const readableViewport = window.innerHeight - activationLine - bottomInset;
     const readingTravel = contentHeight - readableViewport;
     const direction = cssNumber(stageStyle, "--reading-toc-rail-direction", 1) < 0 ? -1 : 1;
-    const safePadding = cssNumber(railStyle, "--reading-toc-rail-safe-padding", 56);
     const cssEligible = cssNumber(stageStyle, "--reading-toc-rail-eligible", 0) === 1;
     const sideRailRight = sideRailRect?.right || 0;
     const hasHorizontalRoom = wrapperRect.left + GEOMETRY_EPSILON >= sideRailRight
         && wrapperRect.right <= noteRect.left + GEOMETRY_EPSILON;
-    const hasVerticalRoom = readableViewport > 0
-      && railRect.height >= Math.max(MIN_RAIL_HEIGHT, safePadding * 2 + 1);
+    const hasVerticalRoom = readableViewport > 0 && railRect.height >= MIN_RAIL_HEIGHT;
     const railEligible = this.railMediaQuery.matches
       && cssEligible
       && wrapperStyle.position === "absolute"
@@ -484,11 +507,10 @@ class NoteTocController {
       width: railRect.width,
       height: railRect.height,
       direction,
-      safePadding,
       lineInset: cssNumber(railStyle, "--reading-toc-rail-line-inset", 6),
-      idleAmplitude: cssNumber(railStyle, "--reading-toc-rail-idle-amplitude", 11),
-      maxExtraAmplitude: cssNumber(railStyle, "--reading-toc-rail-max-extra-amplitude", 12),
-      bulgeHalfHeight: cssNumber(railStyle, "--reading-toc-rail-bulge-half-height", 52),
+      idleAmplitude: cssNumber(railStyle, "--reading-toc-rail-idle-amplitude", 10.4),
+      maxExtraAmplitude: cssNumber(railStyle, "--reading-toc-rail-max-extra-amplitude", 14),
+      bulgeHalfHeight: cssNumber(railStyle, "--reading-toc-rail-bulge-half-height", 56),
       labelGap: cssNumber(railStyle, "--reading-toc-rail-label-gap", 12),
     } : null;
 
@@ -541,6 +563,7 @@ class NoteTocController {
     }
 
     this.railRoot.setAttribute("aria-label", english ? "Reading outline" : "阅读目录");
+    this.syncReadingPresentation();
   }
 
   private disableRail(clear: boolean): void {
@@ -548,6 +571,7 @@ class NoteTocController {
     this.stage.removeAttribute("data-rail-direction");
     this.isReadingMode = false;
     this.toc.removeAttribute("aria-hidden");
+    this.toc.inert = false;
     this.railRoot.setAttribute("aria-hidden", "true");
     this.rail?.setInteractive(false);
 
@@ -567,18 +591,25 @@ class NoteTocController {
   }
 
   private setReadingMode(reading: boolean): void {
-    if (reading === this.isReadingMode) return;
-    this.isReadingMode = reading;
-    this.stage.classList.toggle("is-reading", reading);
+    if (reading !== this.isReadingMode) {
+      this.isReadingMode = reading;
+      this.stage.classList.toggle("is-reading", reading);
+    }
+    this.syncReadingPresentation();
+  }
 
-    if (reading) {
+  private syncReadingPresentation(): void {
+    const showRail = this.isReadingMode && !this.isStageHovered;
+    if (showRail) {
       this.toc.setAttribute("aria-hidden", "true");
+      this.toc.inert = true;
     } else {
       this.toc.removeAttribute("aria-hidden");
+      this.toc.inert = false;
     }
 
-    this.railRoot.setAttribute("aria-hidden", reading ? "false" : "true");
-    this.rail?.setInteractive(reading);
+    this.railRoot.setAttribute("aria-hidden", showRail ? "false" : "true");
+    this.rail?.setInteractive(showRail);
   }
 
   private updateActiveHeading(

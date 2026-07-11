@@ -26,8 +26,7 @@
   <nav class="reading-toc-rail" data-reading-toc-rail aria-label="{{if eq .Lang "en"}}Reading progress{{else}}阅读进度{{end}}" aria-hidden="true" inert>
     <svg class="reading-toc-rail-svg" data-reading-toc-rail-svg viewBox="0 0 208 640" preserveAspectRatio="none" aria-hidden="true" focusable="false">
       <path class="reading-toc-rail-base" data-reading-toc-rail-base d="M 0 0"></path>
-      <path class="reading-toc-rail-accent" data-reading-toc-rail-accent d="M 0 0"></path>
-      <circle class="reading-toc-rail-marker" data-reading-toc-rail-marker cx="0" cy="0" r="2" style="display: none;"></circle>
+      <path class="reading-toc-rail-accent" data-reading-toc-rail-accent d="M 0 0" pathLength="1" stroke-dasharray="0.12 0.88" stroke-dashoffset="0.06"></path>
     </svg>
     <div class="reading-toc-rail-dots" data-reading-toc-rail-dots></div>
     <a class="reading-toc-rail-current" data-reading-toc-rail-label data-reading-toc-rail-link href="#" aria-label="{{if eq .Lang "en"}}Jump to current section{{else}}跳转到当前章节{{end}}">

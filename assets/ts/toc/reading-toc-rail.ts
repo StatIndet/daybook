@@ -12,7 +12,6 @@ export interface ReadingTocRailGeometry {
   readonly width: number;
   readonly height: number;
   readonly direction: ReadingTocRailDirection;
-  readonly safePadding: number;
   readonly lineInset: number;
   readonly idleAmplitude: number;
   readonly maxExtraAmplitude: number;
@@ -34,42 +33,42 @@ interface SpringValue {
   velocity: number;
 }
 
-interface CurvePath {
-  accentPath: string;
+export interface ReadingTocRailCurve {
   basePath: string;
   peakX: number;
   effectiveAmplitude: number;
+  effectiveHalfHeight: number;
+  topY: number;
+  bottomY: number;
 }
 
 const DEFAULT_GEOMETRY: ReadingTocRailGeometry = {
   width: 208,
   height: 640,
   direction: 1,
-  safePadding: 56,
   lineInset: 12,
-  idleAmplitude: 11,
-  maxExtraAmplitude: 12,
-  bulgeHalfHeight: 52,
+  idleAmplitude: 10.4,
+  maxExtraAmplitude: 14,
+  bulgeHalfHeight: 56,
   labelGap: 12,
 };
 
-const MARKER_STIFFNESS = 210;
-const MARKER_DAMPING = 29;
-const LABEL_STIFFNESS = 190;
-const LABEL_DAMPING = 27.6;
-const AMPLITUDE_STIFFNESS = 175;
-const AMPLITUDE_DAMPING = 24;
+const AMPLITUDE_STIFFNESS = 90;
+const AMPLITUDE_DAMPING = 2 * Math.sqrt(AMPLITUDE_STIFFNESS) * 0.75;
 
-const MAX_FRAME_STEP = 0.032;
+const MAX_FRAME_STEP = 0.064;
 const MAX_SUBSTEP = 0.016;
 const POSITION_EPSILON = 0.035;
 const VELOCITY_EPSILON = 0.05;
 const AMPLITUDE_EPSILON = 0.025;
-const SPEED_EPSILON = 0.002;
-const SPEED_RESPONSE = 18;
-const SPEED_DECAY = 9;
-const SPEED_DEAD_ZONE = 40;
-const SPEED_SATURATION = 1400;
+const SPEED_EPSILON = 0.5;
+const PROGRESS_RESPONSE_SECONDS = 0.14;
+const SPEED_RESPONSE_SECONDS = 0.08;
+const SPEED_TO_AMPLITUDE = 0.012;
+const HALF_HEIGHT_SPEED_GAIN = 2.2;
+const BREATH_AMPLITUDE = 0.6;
+const BREATH_PERIOD_MS = 9000;
+const MIN_AMPLITUDE_REBOUND = -4;
 const MAX_SCROLL_SPEED = 5000;
 const MIN_DIMENSION = 1;
 
@@ -89,16 +88,6 @@ function approximatelyEqual(a: number, b: number, epsilon = 0.001): boolean {
 function formatNumber(value: number): string {
   if (!Number.isFinite(value)) return "0";
   return String(Math.round(value * 1000) / 1000);
-}
-
-function smoothstep(value: number): number {
-  const t = clamp(value, 0, 1);
-  return t * t * (3 - 2 * t);
-}
-
-function smootherstep(value: number): number {
-  const t = clamp(value, 0, 1);
-  return t * t * t * (t * (t * 6 - 15) + 10);
 }
 
 function requiredElement<T extends Element>(root: ParentNode, selector: string): T {
@@ -150,7 +139,6 @@ function geometryIsEqual(a: ReadingTocRailGeometry, b: ReadingTocRailGeometry): 
   return a.direction === b.direction
     && approximatelyEqual(a.width, b.width)
     && approximatelyEqual(a.height, b.height)
-    && approximatelyEqual(a.safePadding, b.safePadding)
     && approximatelyEqual(a.lineInset, b.lineInset)
     && approximatelyEqual(a.idleAmplitude, b.idleAmplitude)
     && approximatelyEqual(a.maxExtraAmplitude, b.maxExtraAmplitude)
@@ -161,17 +149,11 @@ function geometryIsEqual(a: ReadingTocRailGeometry, b: ReadingTocRailGeometry): 
 function normalizeGeometry(geometry: ReadingTocRailGeometry): ReadingTocRailGeometry {
   const width = Math.max(MIN_DIMENSION, finiteOr(geometry.width, DEFAULT_GEOMETRY.width));
   const height = Math.max(MIN_DIMENSION, finiteOr(geometry.height, DEFAULT_GEOMETRY.height));
-  const safePadding = clamp(
-    finiteOr(geometry.safePadding, DEFAULT_GEOMETRY.safePadding),
-    0,
-    height / 2,
-  );
 
   return {
     width,
     height,
     direction: geometry.direction < 0 ? -1 : 1,
-    safePadding,
     lineInset: clamp(finiteOr(geometry.lineInset, DEFAULT_GEOMETRY.lineInset), 0, width),
     idleAmplitude: Math.max(0, finiteOr(geometry.idleAmplitude, DEFAULT_GEOMETRY.idleAmplitude)),
     maxExtraAmplitude: Math.max(
@@ -184,6 +166,77 @@ function normalizeGeometry(geometry: ReadingTocRailGeometry): ReadingTocRailGeom
     ),
     labelGap: Math.max(0, finiteOr(geometry.labelGap, DEFAULT_GEOMETRY.labelGap)),
   };
+}
+
+/**
+ * Builds the whole rail path. Near an edge only the path endpoints are clipped;
+ * the control points keep their full wave positions, which creates the short
+ * hook visible before the wave settles into a straight line at 0% or 100%.
+ */
+export function buildReadingTocRailCurve(
+  geometry: ReadingTocRailGeometry,
+  markerY: number,
+  amplitude: number,
+  halfHeight = geometry.bulgeHalfHeight,
+): ReadingTocRailCurve {
+  const normalized = normalizeGeometry(geometry);
+  const height = normalized.height;
+  const baselineX = normalized.lineInset;
+  const safeMarkerY = clamp(finiteOr(markerY, 0), 0, height);
+  const safeHalfHeight = Math.max(1, finiteOr(halfHeight, normalized.bulgeHalfHeight));
+  const topY = Math.max(0, safeMarkerY - safeHalfHeight);
+  const bottomY = Math.min(height, safeMarkerY + safeHalfHeight);
+  const edgeFactor = clamp(
+    Math.min(safeMarkerY / safeHalfHeight, (height - safeMarkerY) / safeHalfHeight),
+    0,
+    1,
+  );
+  const availableAmplitude = normalized.direction > 0
+    ? Math.max(0, normalized.width - baselineX)
+    : Math.max(0, baselineX);
+  const effectiveAmplitude = Math.min(
+    availableAmplitude,
+    Math.max(0, finiteOr(amplitude, normalized.idleAmplitude)) * edgeFactor,
+  );
+  const peakX = baselineX + normalized.direction * effectiveAmplitude;
+
+  const curve = [
+    `C ${formatNumber(baselineX)} ${formatNumber(safeMarkerY - 0.45 * safeHalfHeight)}`,
+    `${formatNumber(peakX)} ${formatNumber(safeMarkerY - 0.3 * safeHalfHeight)}`,
+    `${formatNumber(peakX)} ${formatNumber(safeMarkerY)}`,
+    `C ${formatNumber(peakX)} ${formatNumber(safeMarkerY + 0.3 * safeHalfHeight)}`,
+    `${formatNumber(baselineX)} ${formatNumber(safeMarkerY + 0.45 * safeHalfHeight)}`,
+    `${formatNumber(baselineX)} ${formatNumber(bottomY)}`,
+  ].join(" ");
+
+  return {
+    basePath: [
+      `M ${formatNumber(baselineX)} 0`,
+      `L ${formatNumber(baselineX)} ${formatNumber(topY)}`,
+      curve,
+      `L ${formatNumber(baselineX)} ${formatNumber(height)}`,
+    ].join(" "),
+    peakX,
+    effectiveAmplitude,
+    effectiveHalfHeight: safeHalfHeight,
+    topY,
+    bottomY,
+  };
+}
+
+export function readingTocRailDotOffset(
+  dotY: number,
+  markerY: number,
+  halfHeight: number,
+  amplitude: number,
+  direction: ReadingTocRailDirection,
+): number {
+  const safeHalfHeight = Math.max(1, finiteOr(halfHeight, 1));
+  const ratio = Math.abs(finiteOr(dotY, 0) - finiteOr(markerY, 0)) / safeHalfHeight;
+  if (ratio >= 1) return 0;
+
+  const envelope = Math.cos(ratio * Math.PI / 2) ** 2;
+  return direction * Math.max(0, finiteOr(amplitude, 0)) * envelope;
 }
 
 function normalizeHeading(heading: ReadingTocRailHeading): MutableRailHeading {
@@ -206,7 +259,6 @@ export class ReadingTocRail {
   private readonly svg: SVGSVGElement;
   private readonly basePath: SVGPathElement;
   private readonly accentPath: SVGPathElement;
-  private readonly marker: SVGCircleElement;
   private readonly dotsRoot: HTMLElement;
   private readonly label: HTMLElement;
   private readonly currentLink: HTMLAnchorElement;
@@ -216,17 +268,16 @@ export class ReadingTocRail {
   private geometry: ReadingTocRailGeometry = DEFAULT_GEOMETRY;
   private headings: MutableRailHeading[] = [];
   private dotButtons: HTMLElement[] = [];
-  private markerY = makeSpring(DEFAULT_GEOMETRY.safePadding);
-  private labelY = makeSpring(DEFAULT_GEOMETRY.safePadding);
-  private amplitude = makeSpring(DEFAULT_GEOMETRY.idleAmplitude);
+  private markerY = makeSpring(0);
+  private amplitude = makeSpring(0);
   private progressTarget = 0;
   private activeIndex = -1;
   private renderedActiveIndex = -2;
   private renderedPercent = -1;
   private renderedTitle = "";
   private visibleTitleSlot: 0 | 1 = 0;
-  private speedDrive = 0;
-  private speedEnvelope = 0;
+  private speedTarget = 0;
+  private smoothedSpeed = 0;
   private lastTimestamp: number | null = null;
   private frameInitialized = false;
   private reducedMotion = false;
@@ -242,7 +293,6 @@ export class ReadingTocRail {
     this.svg = requiredElement<SVGSVGElement>(root, "[data-reading-toc-rail-svg]");
     this.basePath = requiredElement<SVGPathElement>(root, "[data-reading-toc-rail-base]");
     this.accentPath = requiredElement<SVGPathElement>(root, "[data-reading-toc-rail-accent]");
-    this.marker = requiredElement<SVGCircleElement>(root, "[data-reading-toc-rail-marker]");
     this.dotsRoot = requiredElement<HTMLElement>(root, "[data-reading-toc-rail-dots]");
     this.label = requiredElement<HTMLElement>(root, "[data-reading-toc-rail-label]");
     this.currentLink = requiredElement<HTMLAnchorElement>(root, "[data-reading-toc-rail-link]");
@@ -264,7 +314,7 @@ export class ReadingTocRail {
 
     this.headings = entries.map(normalizeHeading);
     const fragment = document.createDocumentFragment();
-    this.dotButtons = this.headings.map((heading, index) => {
+    this.dotButtons = this.headings.map((heading) => {
       const dot = document.createElement("div");
       dot.setAttribute("data-reading-toc-rail-dot", "");
       dot.setAttribute("data-heading-level", String(heading.level));
@@ -301,50 +351,10 @@ export class ReadingTocRail {
     }
   }
 
-  setGeometry(geometry: ReadingTocRailGeometry): void;
-  setGeometry(
-    width: number,
-    height: number,
-    direction: ReadingTocRailDirection,
-    safePadding: number,
-    lineInset: number,
-    idleAmplitude: number,
-    maxExtraAmplitude: number,
-    bulgeHalfHeight: number,
-    labelGap: number,
-  ): void;
-  setGeometry(
-    geometryOrWidth: ReadingTocRailGeometry | number,
-    height?: number,
-    direction?: ReadingTocRailDirection,
-    safePadding?: number,
-    lineInset?: number,
-    idleAmplitude?: number,
-    maxExtraAmplitude?: number,
-    bulgeHalfHeight?: number,
-    labelGap?: number,
-  ): void {
+  setGeometry(geometry: ReadingTocRailGeometry): void {
     if (this.destroyed) return;
 
-    const nextGeometry = typeof geometryOrWidth === "number"
-      ? normalizeGeometry({
-          width: geometryOrWidth,
-          height: finiteOr(height ?? Number.NaN, this.geometry.height),
-          direction: direction ?? this.geometry.direction,
-          safePadding: finiteOr(safePadding ?? Number.NaN, this.geometry.safePadding),
-          lineInset: finiteOr(lineInset ?? Number.NaN, this.geometry.lineInset),
-          idleAmplitude: finiteOr(idleAmplitude ?? Number.NaN, this.geometry.idleAmplitude),
-          maxExtraAmplitude: finiteOr(
-            maxExtraAmplitude ?? Number.NaN,
-            this.geometry.maxExtraAmplitude,
-          ),
-          bulgeHalfHeight: finiteOr(
-            bulgeHalfHeight ?? Number.NaN,
-            this.geometry.bulgeHalfHeight,
-          ),
-          labelGap: finiteOr(labelGap ?? Number.NaN, this.geometry.labelGap),
-        })
-      : normalizeGeometry(geometryOrWidth);
+    const nextGeometry = normalizeGeometry(geometry);
 
     if (geometryIsEqual(nextGeometry, this.geometry)) return;
 
@@ -352,7 +362,6 @@ export class ReadingTocRail {
     this.refreshPositionTargets();
     this.clampSpringPositions();
     this.amplitude.target = this.targetAmplitude();
-    this.amplitude.current = this.clampAmplitude(this.amplitude.current);
     this.geometryDirty = true;
     this.dotsDirty = true;
   }
@@ -373,10 +382,9 @@ export class ReadingTocRail {
       this.interactionDirty = true;
     }
 
-    if (!this.reducedMotion && scrollSpeed !== null && Number.isFinite(scrollSpeed)) {
-      const normalizedSpeed = this.normalizedSpeed(Math.abs(scrollSpeed));
-      this.speedDrive = Math.max(this.speedDrive, normalizedSpeed);
-    }
+    this.speedTarget = !this.reducedMotion && scrollSpeed !== null
+      ? clamp(Math.abs(finiteOr(scrollSpeed, 0)), 0, MAX_SCROLL_SPEED)
+      : 0;
   }
 
   setReducedMotion(reduced: boolean): void {
@@ -393,6 +401,11 @@ export class ReadingTocRail {
   setInteractive(interactive: boolean): void {
     if (this.destroyed || interactive === this.interactive) return;
     this.interactive = interactive;
+    this.root.inert = !interactive;
+    if (!interactive) {
+      this.speedTarget = 0;
+      this.amplitude.target = 0;
+    }
     this.interactionDirty = true;
   }
 
@@ -416,17 +429,17 @@ export class ReadingTocRail {
       this.stepAnimation(deltaTime);
     }
 
-    const animating = !this.reducedMotion && !this.animationIsSettled();
+    const animating = !this.reducedMotion
+      && (this.interactive || !this.animationIsSettled());
     if (!animating) {
-      this.speedDrive = 0;
-      this.speedEnvelope = 0;
-      this.amplitude.target = this.geometry.idleAmplitude;
+      this.speedTarget = 0;
+      this.smoothedSpeed = 0;
+      this.amplitude.target = 0;
       snapSpring(this.markerY);
-      snapSpring(this.labelY);
       snapSpring(this.amplitude);
     }
 
-    this.writeDOM();
+    this.writeDOM(safeTimestamp);
 
     return animating;
   }
@@ -434,9 +447,9 @@ export class ReadingTocRail {
   /** Snaps state in memory; the following advance() commits it to the DOM. */
   snapToTargets(): void {
     if (this.destroyed) return;
-    this.speedDrive = 0;
-    this.speedEnvelope = 0;
-    this.amplitude.target = this.geometry.idleAmplitude;
+    this.speedTarget = 0;
+    this.smoothedSpeed = 0;
+    this.amplitude.target = 0;
     this.snapRequested = true;
     this.lastTimestamp = null;
   }
@@ -444,24 +457,6 @@ export class ReadingTocRail {
   resumeAfterVisibility(): void {
     if (this.destroyed) return;
     this.snapToTargets();
-  }
-
-  getHeading(index = this.activeIndex): Readonly<ReadingTocRailHeading> | undefined {
-    const heading = this.headings[index];
-    if (!heading) return undefined;
-    return { ...heading };
-  }
-
-  getActiveIndex(): number {
-    return this.activeIndex;
-  }
-
-  focusDot(index = this.activeIndex): boolean {
-    if (this.destroyed || !this.interactive) return false;
-    const dot = this.dotButtons[index];
-    if (!dot) return false;
-    dot.focus({ preventScroll: true });
-    return true;
   }
 
   destroy(): void {
@@ -472,8 +467,6 @@ export class ReadingTocRail {
     this.headings = [];
     this.basePath.setAttribute("d", "M 0 0");
     this.accentPath.setAttribute("d", "M 0 0");
-    this.marker.setAttribute("cx", "0");
-    this.marker.setAttribute("cy", "0");
     this.label.style.left = "";
     this.label.style.top = "";
     this.label.style.transform = "";
@@ -486,23 +479,21 @@ export class ReadingTocRail {
       slot.setAttribute("aria-hidden", "true");
     });
     this.percent.textContent = "0%";
+    this.root.inert = true;
     this.root.dataset.interactive = "false";
     this.root.style.removeProperty("--reading-toc-rail-direction");
     this.lastTimestamp = null;
-    this.speedDrive = 0;
-    this.speedEnvelope = 0;
+    this.speedTarget = 0;
+    this.smoothedSpeed = 0;
   }
 
   private refreshPositionTargets(): void {
     const markerTarget = this.mapRatioToY(this.progressTarget);
     this.markerY.target = markerTarget;
-    this.labelY.target = markerTarget;
   }
 
   private mapRatioToY(ratio: number): number {
-    const start = this.geometry.safePadding;
-    const end = Math.max(start, this.geometry.height - this.geometry.safePadding);
-    return start + (end - start) * clamp(ratio, 0, 1);
+    return this.geometry.height * clamp(ratio, 0, 1);
   }
 
   private normalizeActiveIndex(index: number): number {
@@ -510,169 +501,84 @@ export class ReadingTocRail {
     return Math.round(clamp(index, 0, this.headings.length - 1));
   }
 
-  private normalizedSpeed(speed: number): number {
-    const bounded = clamp(finiteOr(speed, 0), 0, MAX_SCROLL_SPEED);
-    const effective = Math.max(0, bounded - SPEED_DEAD_ZONE);
-    return clamp(1 - Math.exp(-effective / SPEED_SATURATION), 0, 1);
-  }
-
-  private clampAmplitude(value: number): number {
-    return clamp(
-      finiteOr(value, this.geometry.idleAmplitude),
-      this.geometry.idleAmplitude,
-      this.geometry.idleAmplitude + this.geometry.maxExtraAmplitude,
-    );
-  }
-
   private targetAmplitude(): number {
-    if (this.reducedMotion) return this.geometry.idleAmplitude;
-    return this.clampAmplitude(
-      this.geometry.idleAmplitude + this.geometry.maxExtraAmplitude * this.speedEnvelope,
+    if (this.reducedMotion || !this.interactive) return 0;
+    return Math.min(
+      this.geometry.maxExtraAmplitude,
+      SPEED_TO_AMPLITUDE * Math.abs(this.smoothedSpeed),
     );
   }
 
   private clampSpringPositions(): void {
-    const minY = this.geometry.safePadding;
-    const maxY = Math.max(minY, this.geometry.height - this.geometry.safePadding);
-
-    [this.markerY, this.labelY].forEach((spring) => {
-      spring.target = clamp(spring.target, minY, maxY);
-      const clampedCurrent = clamp(spring.current, minY, maxY);
-      if (!approximatelyEqual(clampedCurrent, spring.current)) {
-        spring.current = clampedCurrent;
-        spring.velocity = 0;
-      }
-    });
+    this.markerY.target = clamp(this.markerY.target, 0, this.geometry.height);
+    const clampedCurrent = clamp(this.markerY.current, 0, this.geometry.height);
+    if (!approximatelyEqual(clampedCurrent, this.markerY.current)) {
+      this.markerY.current = clampedCurrent;
+      this.markerY.velocity = 0;
+    }
   }
 
   private applySnap(): void {
     this.refreshPositionTargets();
-    this.speedDrive = 0;
-    this.speedEnvelope = 0;
-    this.amplitude.target = this.geometry.idleAmplitude;
+    this.speedTarget = 0;
+    this.smoothedSpeed = 0;
+    this.amplitude.target = 0;
     snapSpring(this.markerY);
-    snapSpring(this.labelY);
     snapSpring(this.amplitude);
     this.frameInitialized = true;
     this.snapRequested = false;
   }
 
   private stepAnimation(deltaTime: number): void {
+    const progressResponse = Math.min(
+      1,
+      1.4 * (1 - Math.exp(-deltaTime / PROGRESS_RESPONSE_SECONDS)),
+    );
+    this.markerY.current += (this.markerY.target - this.markerY.current) * progressResponse;
+    if (Math.abs(this.markerY.target - this.markerY.current) <= POSITION_EPSILON) {
+      this.markerY.current = this.markerY.target;
+    }
+
+    const speedResponse = Math.min(1, deltaTime / SPEED_RESPONSE_SECONDS);
+    this.smoothedSpeed += (this.speedTarget - this.smoothedSpeed) * speedResponse;
+    this.speedTarget = 0;
+    if (Math.abs(this.smoothedSpeed) <= SPEED_EPSILON && this.speedTarget === 0) {
+      this.smoothedSpeed = 0;
+    }
+    this.amplitude.target = this.targetAmplitude();
+
     const substeps = Math.max(1, Math.ceil(deltaTime / MAX_SUBSTEP));
     const step = deltaTime / substeps;
 
     for (let index = 0; index < substeps; index += 1) {
-      const response = 1 - Math.exp(-SPEED_RESPONSE * step);
-      this.speedEnvelope += (this.speedDrive - this.speedEnvelope) * response;
-      this.speedDrive *= Math.exp(-SPEED_DECAY * step);
-      if (this.speedDrive < SPEED_EPSILON) this.speedDrive = 0;
-      if (this.speedEnvelope < SPEED_EPSILON && this.speedDrive === 0) this.speedEnvelope = 0;
-
-      this.amplitude.target = this.targetAmplitude();
-      stepSpring(this.markerY, MARKER_STIFFNESS, MARKER_DAMPING, step);
-      stepSpring(this.labelY, LABEL_STIFFNESS, LABEL_DAMPING, step);
       stepSpring(this.amplitude, AMPLITUDE_STIFFNESS, AMPLITUDE_DAMPING, step);
-
-      this.clampSpringPositions();
-      this.amplitude.current = this.clampAmplitude(this.amplitude.current);
-      if (this.amplitude.current === this.geometry.idleAmplitude && this.amplitude.velocity < 0) {
-        this.amplitude.velocity = 0;
+      if (this.amplitude.current < MIN_AMPLITUDE_REBOUND) {
+        this.amplitude.current = MIN_AMPLITUDE_REBOUND;
+        if (this.amplitude.velocity < 0) {
+          this.amplitude.velocity = 0;
+        }
       }
-      const maxAmplitude = this.geometry.idleAmplitude + this.geometry.maxExtraAmplitude;
-      if (this.amplitude.current === maxAmplitude && this.amplitude.velocity > 0) {
-        this.amplitude.velocity = 0;
-      }
-      
-      const fadeDistance = this.geometry.bulgeHalfHeight * 1.5;
-      const markerMinY = this.geometry.safePadding;
-      const markerMaxY = this.geometry.height - this.geometry.safePadding;
-      const topFactor = smootherstep(clamp((this.markerY.current - markerMinY) / fadeDistance, 0, 1));
-      const bottomFactor = smootherstep(clamp((markerMaxY - this.markerY.current) / fadeDistance, 0, 1));
-      const edgeFactor = Math.min(topFactor, bottomFactor);
-      if (edgeFactor < 0.001) {
+      if (!Number.isFinite(this.amplitude.current)) {
+        this.amplitude.current = this.amplitude.target;
         this.amplitude.velocity = 0;
       }
     }
+
+    this.clampSpringPositions();
   }
 
   private animationIsSettled(): boolean {
     return springIsSettled(this.markerY, POSITION_EPSILON)
-      && springIsSettled(this.labelY, POSITION_EPSILON)
       && springIsSettled(this.amplitude, AMPLITUDE_EPSILON)
-      && this.speedDrive <= SPEED_EPSILON
-      && this.speedEnvelope <= SPEED_EPSILON;
+      && Math.abs(this.speedTarget) <= SPEED_EPSILON
+      && Math.abs(this.smoothedSpeed) <= SPEED_EPSILON;
   }
 
   private baselineX(): number {
     return this.geometry.lineInset;
   }
 
-  private availableAmplitude(): number {
-    const baseline = this.baselineX();
-    return this.geometry.direction > 0
-      ? Math.max(0, this.geometry.width - baseline)
-      : Math.max(0, baseline);
-  }
-
-  private curvePath(markerY: number, amplitude: number): CurvePath {
-    const height = this.geometry.height;
-    const baselineX = this.baselineX();
-    const safeMarkerY = clamp(markerY, 0, height);
-    const halfHeight = this.geometry.bulgeHalfHeight;
-    
-    const visualRailTop = 0;
-    const visualRailBottom = height;
-    const markerMinY = this.geometry.safePadding;
-    const markerMaxY = height - this.geometry.safePadding;
-
-    const topSpan = Math.min(halfHeight, safeMarkerY - visualRailTop);
-    const bottomSpan = Math.min(halfHeight, Math.max(0, visualRailBottom - safeMarkerY));
-    
-    const fadeDistance = halfHeight * 1.5;
-    const topDistance = safeMarkerY - markerMinY;
-    const bottomDistance = markerMaxY - safeMarkerY;
-    
-    const topFactor = smootherstep(clamp(topDistance / fadeDistance, 0, 1));
-    const bottomFactor = smootherstep(clamp(bottomDistance / fadeDistance, 0, 1));
-    const edgeFactor = Math.min(topFactor, bottomFactor);
-
-    const effectiveAmplitude = Math.min(
-      this.availableAmplitude(),
-      Math.max(0, finiteOr(amplitude, this.geometry.idleAmplitude)),
-    ) * edgeFactor;
-    
-    const peakX = baselineX + this.geometry.direction * effectiveAmplitude;
-    const topY = safeMarkerY - topSpan;
-    const bottomY = safeMarkerY + bottomSpan;
-
-    const topControlOneY = topY + topSpan * (1 / 3);
-    const topControlTwoY = safeMarkerY - topSpan * (1 / 3);
-    const bottomControlOneY = safeMarkerY + bottomSpan * (1 / 3);
-    const bottomControlTwoY = bottomY - bottomSpan * (1 / 3);
-
-    const curve = [
-      `C ${formatNumber(baselineX)} ${formatNumber(topControlOneY)}`,
-      `${formatNumber(peakX)} ${formatNumber(topControlTwoY)}`,
-      `${formatNumber(peakX)} ${formatNumber(safeMarkerY)}`,
-      `C ${formatNumber(peakX)} ${formatNumber(bottomControlOneY)}`,
-      `${formatNumber(baselineX)} ${formatNumber(bottomControlTwoY)}`,
-      `${formatNumber(baselineX)} ${formatNumber(bottomY)}`,
-    ].join(" ");
-
-    return {
-      accentPath: `M ${formatNumber(baselineX)} ${formatNumber(topY)} ${curve}`,
-      basePath: [
-        `M ${formatNumber(baselineX)} 0`,
-        `L ${formatNumber(baselineX)} ${formatNumber(topY)}`,
-        curve,
-        `L ${formatNumber(baselineX)} ${formatNumber(height)}`,
-      ].join(" "),
-      peakX,
-      effectiveAmplitude,
-    };
-  }
-
-  private writeDOM(): void {
+  private writeDOM(timestamp: number): void {
     if (this.geometryDirty) {
       this.svg.setAttribute(
         "viewBox",
@@ -695,40 +601,52 @@ export class ReadingTocRail {
 
     const markerY = clamp(
       finiteOr(this.markerY.current, this.markerY.target),
-      this.geometry.safePadding,
-      Math.max(this.geometry.safePadding, this.geometry.height - this.geometry.safePadding),
+      0,
+      this.geometry.height,
     );
-    const labelY = clamp(
-      finiteOr(this.labelY.current, this.labelY.target),
-      this.geometry.safePadding,
-      Math.max(this.geometry.safePadding, this.geometry.height - this.geometry.safePadding),
+    const boost = this.interactive ? this.amplitude.current : 0;
+    const breath = this.interactive && !this.reducedMotion
+      ? BREATH_AMPLITUDE * Math.sin(timestamp / BREATH_PERIOD_MS * Math.PI * 2)
+      : 0;
+    const waveAmplitude = this.interactive
+      ? Math.max(0, this.geometry.idleAmplitude + breath + boost)
+      : 0;
+    const halfHeight = Math.max(
+      1,
+      this.geometry.bulgeHalfHeight + HALF_HEIGHT_SPEED_GAIN * boost,
     );
-    
-    const path = this.curvePath(markerY, this.clampAmplitude(this.amplitude.current));
+    const path = buildReadingTocRailCurve(
+      this.geometry,
+      markerY,
+      waveAmplitude,
+      halfHeight,
+    );
     this.basePath.setAttribute("d", path.basePath);
-    this.accentPath.setAttribute("d", path.accentPath);
-    
-    // Update dots X based on curve
-    const halfHeight = this.geometry.bulgeHalfHeight;
+    this.accentPath.setAttribute("d", path.basePath);
+    this.accentPath.setAttribute(
+      "stroke-dashoffset",
+      formatNumber(0.06 - markerY / this.geometry.height),
+    );
+
     this.dotButtons.forEach((button, index) => {
       const heading = this.headings[index];
       if (!heading) return;
       const dotY = this.mapRatioToY(heading.ratio);
-      const distance = Math.abs(dotY - markerY);
-      let offsetX = 0;
-      if (distance < halfHeight) {
-        const ratio = distance / halfHeight;
-        const factor = smoothstep(1 - ratio);
-        offsetX = this.geometry.direction * path.effectiveAmplitude * factor;
-      }
+      const offsetX = readingTocRailDotOffset(
+        dotY,
+        markerY,
+        path.effectiveHalfHeight,
+        path.effectiveAmplitude,
+        this.geometry.direction,
+      );
       button.style.transform = `translate3d(calc(-50% + ${formatNumber(offsetX)}px), -50%, 0)`;
     });
 
     const labelX = path.peakX - this.geometry.labelGap;
     this.label.style.left = "0";
-    this.label.style.top = "0";
+    this.label.style.top = `clamp(var(--reading-toc-rail-label-edge-inset), ${formatNumber(markerY)}px, calc(100% - var(--reading-toc-rail-label-edge-inset)))`;
     this.label.style.transform = [
-      `translate3d(${formatNumber(labelX)}px, ${formatNumber(labelY)}px, 0)`,
+      `translate3d(${formatNumber(labelX)}px, 0, 0)`,
       "translate(-100%, -50%)",
     ].join(" ");
 
@@ -801,12 +719,6 @@ export class ReadingTocRail {
     this.dotButtons.forEach((button, index) => {
       const active = index === this.activeIndex;
       button.classList.toggle("is-active", active);
-      button.tabIndex = this.interactive && active ? 0 : -1;
-      if (active) {
-        button.setAttribute("aria-current", "true");
-      } else {
-        button.removeAttribute("aria-current");
-      }
     });
 
     this.currentLink.tabIndex = this.interactive && this.activeIndex >= 0 ? 0 : -1;
