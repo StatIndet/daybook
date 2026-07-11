@@ -530,6 +530,7 @@ body.is-tags-overlay-open .mobile-tags-overlay .notes-tag-link {
   height: var(--reading-toc-rail-height);
   left: -200px;
   opacity: 0;
+  filter: opacity(var(--hover-opacity, 1));
   pointer-events: none;
   position: absolute;
   top: 0;
@@ -537,9 +538,7 @@ body.is-tags-overlay-open .mobile-tags-overlay .notes-tag-link {
   transition:
     opacity var(--reading-toc-rail-state-duration) ease,
     transform var(--reading-toc-rail-state-duration) var(--reading-toc-rail-state-ease),
-    clip-path var(--reading-toc-rail-state-duration) var(--reading-toc-rail-state-ease),
-    visibility 0s linear var(--reading-toc-rail-state-duration);
-  visibility: hidden;
+    clip-path var(--reading-toc-rail-state-duration) var(--reading-toc-rail-state-ease);
   width: calc(100% + 200px);
 }
 

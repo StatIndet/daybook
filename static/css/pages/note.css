@@ -261,17 +261,36 @@
     transform: translate3d(calc(var(--reading-toc-rail-collapse-shift) * -1), var(--indicator-y, 0), 0) scaleY(var(--indicator-scale, 1));
   }
 
-  .note-toc-stage.has-reading-rail.is-reading .reading-toc-rail {
+  /* State: Reading & Not Hovered (Visible, In Place) */
+  .note-toc-stage.has-reading-rail.is-reading:not(.is-hovered) .reading-toc-rail {
     clip-path: inset(0);
-    opacity: var(--hover-opacity, 1);
+    opacity: 1;
     pointer-events: auto;
     transform: translate3d(0, 0, 0);
-    transition:
-      transform var(--reading-toc-rail-state-duration) var(--reading-toc-rail-state-ease),
-      clip-path var(--reading-toc-rail-state-duration) var(--reading-toc-rail-state-ease),
-      visibility 0s linear 0s;
-    visibility: visible;
+    transition: opacity 300ms ease; /* fade in quickly without delay */
   }
+
+  /* State: Reading & Hovered (Invisible, In Place) */
+  .note-toc-stage.has-reading-rail.is-reading.is-hovered .reading-toc-rail {
+    clip-path: inset(0);
+    opacity: 0;
+    pointer-events: none;
+    transform: translate3d(0, 0, 0);
+    transition: opacity 300ms ease; /* fade out instantly when hovered */
+  }
+
+  /* Stagger animation for the rail text */
+  .reading-toc-rail-current {
+    opacity: 0;
+    transition: opacity 300ms ease; /* default exit: instant fade out with the rail */
+  }
+
+  .note-toc-stage.has-reading-rail.is-reading:not(.is-hovered) .reading-toc-rail-current {
+    opacity: 1;
+    transition: opacity 300ms ease 300ms; /* wait 300ms for rail to appear, then fade in */
+  }
+
+}
 
   /* We remove the CSS hover logic for reading-toc-rail, JS will handle it now */
 }
