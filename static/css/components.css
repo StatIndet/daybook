@@ -562,6 +562,7 @@ body.is-tags-overlay-open .mobile-tags-overlay .notes-tag-link {
 .reading-toc-rail-accent {
   fill: none;
   stroke-linecap: round;
+  stroke-dasharray: 0.12 2;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
 }
@@ -625,7 +626,7 @@ body.is-tags-overlay-open .mobile-tags-overlay .notes-tag-link {
 [data-reading-toc-rail-dot].is-active::before,
 [data-reading-toc-rail-dot][aria-current="true"]::before {
   --reading-toc-rail-dot-opacity: 1;
-  --reading-toc-rail-dot-scale: 1.28;
+  --reading-toc-rail-dot-scale: 1;
 
   background: var(--color-accent);
 }

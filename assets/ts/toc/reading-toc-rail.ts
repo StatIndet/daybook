@@ -184,8 +184,8 @@ export function buildReadingTocRailCurve(
   const baselineX = normalized.lineInset;
   const safeMarkerY = clamp(finiteOr(markerY, 0), 0, height);
   const safeHalfHeight = Math.max(1, finiteOr(halfHeight, normalized.bulgeHalfHeight));
-  const topY = Math.max(0, safeMarkerY - safeHalfHeight);
-  const bottomY = Math.min(height, safeMarkerY + safeHalfHeight);
+  const topY = safeMarkerY - safeHalfHeight;
+  const bottomY = safeMarkerY + safeHalfHeight;
   const edgeFactor = clamp(
     Math.min(safeMarkerY / safeHalfHeight, (height - safeMarkerY) / safeHalfHeight),
     0,
@@ -201,20 +201,20 @@ export function buildReadingTocRailCurve(
   const peakX = baselineX + normalized.direction * effectiveAmplitude;
 
   const curve = [
-    `C ${formatNumber(baselineX)} ${formatNumber(safeMarkerY - 0.45 * safeHalfHeight)}`,
+    `C ${formatNumber(baselineX)} ${formatNumber(safeMarkerY - 0.6 * safeHalfHeight)}`,
     `${formatNumber(peakX)} ${formatNumber(safeMarkerY - 0.3 * safeHalfHeight)}`,
     `${formatNumber(peakX)} ${formatNumber(safeMarkerY)}`,
     `C ${formatNumber(peakX)} ${formatNumber(safeMarkerY + 0.3 * safeHalfHeight)}`,
-    `${formatNumber(baselineX)} ${formatNumber(safeMarkerY + 0.45 * safeHalfHeight)}`,
+    `${formatNumber(baselineX)} ${formatNumber(safeMarkerY + 0.6 * safeHalfHeight)}`,
     `${formatNumber(baselineX)} ${formatNumber(bottomY)}`,
   ].join(" ");
 
   return {
     basePath: [
-      `M ${formatNumber(baselineX)} 0`,
+      `M ${formatNumber(baselineX)} ${formatNumber(Math.min(0, topY))}`,
       `L ${formatNumber(baselineX)} ${formatNumber(topY)}`,
       curve,
-      `L ${formatNumber(baselineX)} ${formatNumber(height)}`,
+      `L ${formatNumber(baselineX)} ${formatNumber(Math.max(height, bottomY))}`,
     ].join(" "),
     peakX,
     effectiveAmplitude,
@@ -259,6 +259,10 @@ export class ReadingTocRail {
   private readonly svg: SVGSVGElement;
   private readonly basePath: SVGPathElement;
   private readonly accentPath: SVGPathElement;
+  private readonly baseTop: SVGPathElement;
+  private readonly baseBottom: SVGPathElement;
+  private readonly accentTop: SVGPathElement;
+  private readonly accentBottom: SVGPathElement;
   private readonly dotsRoot: HTMLElement;
   private readonly label: HTMLElement;
   private readonly currentLink: HTMLAnchorElement;
@@ -272,7 +276,9 @@ export class ReadingTocRail {
   private amplitude = makeSpring(0);
   private progressTarget = 0;
   private activeIndex = -1;
+  private endActiveIndex = -1;
   private renderedActiveIndex = -2;
+  private renderedEndActiveIndex = -2;
   private renderedPercent = -1;
   private renderedTitle = "";
   private visibleTitleSlot: 0 | 1 = 0;
@@ -306,6 +312,18 @@ export class ReadingTocRail {
     }
     this.titleSlots = [firstTitle, secondTitle];
 
+    this.baseTop = this.basePath.cloneNode() as SVGPathElement;
+    this.baseBottom = this.basePath.cloneNode() as SVGPathElement;
+    this.accentTop = this.accentPath.cloneNode() as SVGPathElement;
+    this.accentBottom = this.accentPath.cloneNode() as SVGPathElement;
+
+    this.svg.insertBefore(this.baseTop, this.basePath);
+    this.svg.insertBefore(this.baseBottom, this.basePath);
+    this.svg.appendChild(this.accentTop);
+    this.svg.appendChild(this.accentBottom);
+
+    this.svg.style.overflow = "hidden";
+
     this.refreshPositionTargets();
   }
 
@@ -325,7 +343,9 @@ export class ReadingTocRail {
     this.dotsRoot.replaceChildren(fragment);
 
     this.activeIndex = this.normalizeActiveIndex(this.activeIndex);
+    this.endActiveIndex = this.normalizeActiveIndex(this.endActiveIndex);
     this.renderedActiveIndex = -2;
+    this.renderedEndActiveIndex = -2;
     this.renderedTitle = "";
     this.renderedPercent = -1;
     this.dotsDirty = true;
@@ -367,7 +387,7 @@ export class ReadingTocRail {
   }
 
   /** Updates only in-memory targets and is safe to call directly from scroll handlers. */
-  setTargets(progress: number, activeIndex: number, scrollSpeed: number | null = null): void {
+  setTargets(progress: number, activeIndex: number, endActiveIndex: number, scrollSpeed: number | null = null): void {
     if (this.destroyed) return;
 
     const nextProgress = clamp(finiteOr(progress, this.progressTarget), 0, 1);
@@ -377,8 +397,10 @@ export class ReadingTocRail {
     }
 
     const nextActiveIndex = this.normalizeActiveIndex(activeIndex);
-    if (nextActiveIndex !== this.activeIndex) {
+    const nextEndActiveIndex = this.normalizeActiveIndex(endActiveIndex);
+    if (nextActiveIndex !== this.activeIndex || nextEndActiveIndex !== this.endActiveIndex) {
       this.activeIndex = nextActiveIndex;
+      this.endActiveIndex = nextEndActiveIndex;
       this.interactionDirty = true;
     }
 
@@ -467,6 +489,10 @@ export class ReadingTocRail {
     this.headings = [];
     this.basePath.setAttribute("d", "M 0 0");
     this.accentPath.setAttribute("d", "M 0 0");
+    this.baseTop.remove();
+    this.baseBottom.remove();
+    this.accentTop.remove();
+    this.accentBottom.remove();
     this.label.style.left = "";
     this.label.style.top = "";
     this.label.style.transform = "";
@@ -623,10 +649,27 @@ export class ReadingTocRail {
     );
     this.basePath.setAttribute("d", path.basePath);
     this.accentPath.setAttribute("d", path.basePath);
-    this.accentPath.setAttribute(
-      "stroke-dashoffset",
-      formatNumber(0.06 - markerY / this.geometry.height),
-    );
+
+    this.baseTop.setAttribute("d", path.basePath);
+    this.baseTop.setAttribute("transform", "scale(1, -1)");
+    this.accentTop.setAttribute("d", path.basePath);
+    this.accentTop.setAttribute("transform", "scale(1, -1)");
+
+    const bottomTransform = `scale(1, -1) translate(0, -${formatNumber(2 * this.geometry.height)})`;
+    this.baseBottom.setAttribute("d", path.basePath);
+    this.baseBottom.setAttribute("transform", bottomTransform);
+    this.accentBottom.setAttribute("d", path.basePath);
+    this.accentBottom.setAttribute("transform", bottomTransform);
+
+    const pathStartY = Math.min(0, path.topY);
+    const pathEndY = Math.max(this.geometry.height, path.bottomY);
+    const totalLength = pathEndY - pathStartY;
+    const distanceToDot = markerY - pathStartY;
+    const offset = formatNumber(0.06 - distanceToDot / totalLength);
+
+    this.accentPath.setAttribute("stroke-dashoffset", offset);
+    this.accentTop.setAttribute("stroke-dashoffset", offset);
+    this.accentBottom.setAttribute("stroke-dashoffset", offset);
 
     this.dotButtons.forEach((button, index) => {
       const heading = this.headings[index];
@@ -711,13 +754,14 @@ export class ReadingTocRail {
     }
 
     this.renderedActiveIndex = this.activeIndex;
+    this.renderedEndActiveIndex = this.endActiveIndex;
   }
 
   private writeInteractionState(): void {
-    if (!this.interactionDirty && this.renderedActiveIndex === this.activeIndex) return;
+    if (!this.interactionDirty && this.renderedActiveIndex === this.activeIndex && this.renderedEndActiveIndex === this.endActiveIndex) return;
 
     this.dotButtons.forEach((button, index) => {
-      const active = index === this.activeIndex;
+      const active = index >= this.activeIndex && index <= this.endActiveIndex;
       button.classList.toggle("is-active", active);
     });
 

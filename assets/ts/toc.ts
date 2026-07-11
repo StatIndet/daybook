@@ -145,6 +145,7 @@ class NoteTocController {
   private generation = 0;
   private metrics: TocMetrics | null = null;
   private activeIndex = -1;
+  private endActiveIndex = -1;
   private isReadingMode = false;
   private reducedMotion = false;
   private latestScrollY = window.scrollY;
@@ -422,6 +423,20 @@ class NoteTocController {
         ? (measuredThisFrame ? metrics.tocListScrollTop : this.tocList.scrollTop)
         : 0;
 
+      const viewportTop = this.latestScrollY;
+      const viewportBottom = viewportTop + window.innerHeight;
+      let firstVis = -1;
+      let lastVis = -1;
+      for (let i = 0; i < this.headings.length; i++) {
+        const h = this.headings[i];
+        if (!h) continue;
+        if (h.documentY >= viewportTop && h.documentY <= viewportBottom) {
+          if (firstVis === -1) firstVis = i;
+          lastVis = i;
+        }
+      }
+      const endActiveIndex = firstVis !== -1 ? Math.max(activeIndex, lastVis) : activeIndex;
+
       if (metrics.railEligible && this.rail) {
         const progress = clamp(
           (activationY - metrics.contentTop) / metrics.readingTravel,
@@ -431,7 +446,7 @@ class NoteTocController {
         const speed = this.pendingScrollSpeed;
         this.pendingScrollSpeed = null;
 
-        this.rail.setTargets(progress, activeIndex, speed);
+        this.rail.setTargets(progress, activeIndex, endActiveIndex, speed);
         if (this.snapOnNextFrame) {
           this.rail.snapToTargets();
           this.snapOnNextFrame = false;
@@ -443,6 +458,7 @@ class NoteTocController {
 
       this.updateActiveHeading(
         activeIndex,
+        endActiveIndex,
         metrics.tocListTop,
         tocScrollTop,
         metrics.tocVisible,
@@ -614,6 +630,7 @@ class NoteTocController {
 
   private updateActiveHeading(
     index: number,
+    endIndex: number,
     tocListTop: number,
     tocScrollTop: number,
     showIndicator: boolean,
@@ -622,7 +639,7 @@ class NoteTocController {
     if (!heading) return;
 
     let activeChanged = false;
-    if (index !== this.activeIndex) {
+    if (index !== this.activeIndex || endIndex !== this.endActiveIndex) {
       this.headings.forEach((entry, entryIndex) => {
         const active = entryIndex === index;
         entry.link.classList.toggle("is-active", active);
@@ -633,6 +650,7 @@ class NoteTocController {
         }
       });
       this.activeIndex = index;
+      this.endActiveIndex = endIndex;
       activeChanged = true;
     }
 
@@ -641,22 +659,8 @@ class NoteTocController {
       return;
     }
 
-    const viewportTop = this.latestScrollY;
-    const viewportBottom = viewportTop + window.innerHeight;
-    
-    let firstVis = -1;
-    let lastVis = -1;
-    for (let i = 0; i < this.headings.length; i++) {
-      const h = this.headings[i];
-      if (!h) continue;
-      if (h.documentY >= viewportTop && h.documentY <= viewportBottom) {
-        if (firstVis === -1) firstVis = i;
-        lastVis = i;
-      }
-    }
-
     const startIdx = index;
-    const endIdx = firstVis !== -1 ? Math.max(index, lastVis) : index;
+    const endIdx = endIndex;
     
     const startHeading = this.headings[startIdx];
     const endHeading = this.headings[endIdx];
