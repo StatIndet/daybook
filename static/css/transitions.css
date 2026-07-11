@@ -686,12 +686,11 @@ body.page-entering .archive-item {
 
 @media (min-width: 1601px) {
   .note-body .note-toc-header {
-    animation: article-content-enter-mini var(--post-enter-duration) var(--ease-page) 175ms both;
+    animation: article-content-enter-mini var(--post-enter-duration) var(--ease-page) 175ms backwards;
   }
 
   .note-body .note-toc-panel li {
-    animation: article-content-enter var(--post-enter-duration) var(--ease-page) both;
-    opacity: 0;
+    animation: article-content-enter var(--post-enter-duration) var(--ease-page) backwards;
   }
 
   .note-body .note-toc-panel li:nth-child(1) {
@@ -851,8 +850,6 @@ body.page-entering .archive-item {
   .archive-item,
   .note-meta,
   .note-summary,
-  .note-toc-header,
-  .note-toc-panel li,
   .post-content > * {
     animation: none !important;
     opacity: 1 !important;

@@ -227,32 +227,53 @@
     max-height: calc(var(--reading-toc-rail-height) - 3rem);
   }
 
-  .note-toc-stage.has-reading-rail.is-reading:not(:hover) .note-toc {
-    clip-path: inset(0 100% 0 0);
-    opacity: 0;
+  .note-toc-stage.has-reading-rail.is-reading:not(.is-hovered) .note-toc {
     pointer-events: none;
-    transform: translate3d(calc(var(--reading-toc-rail-collapse-shift) * -1), 0, 0);
-    transition:
-      color 160ms ease,
-      opacity var(--reading-toc-rail-state-duration) ease,
-      transform var(--reading-toc-rail-state-duration) var(--reading-toc-rail-state-ease),
-      clip-path var(--reading-toc-rail-state-duration) var(--reading-toc-rail-state-ease),
-      visibility 0s linear var(--reading-toc-rail-state-duration);
+    /* transition visibility to wait for children to animate out */
+    transition: visibility 0s linear calc(var(--reading-toc-rail-state-duration) + 400ms);
     visibility: hidden;
   }
 
-  .note-toc-stage.has-reading-rail.is-reading:not(:hover) .reading-toc-rail {
+  .note-toc-stage.has-reading-rail.is-reading .note-toc-header,
+  .note-toc-stage.has-reading-rail.is-reading .note-toc-indicator,
+  .note-toc-stage.has-reading-rail.is-reading .note-toc-reading-controls {
+    transition:
+      opacity var(--reading-toc-rail-state-duration) ease,
+      transform var(--reading-toc-rail-state-duration) var(--reading-toc-rail-state-ease);
+  }
+
+  .note-toc-stage.has-reading-rail.is-reading .note-toc-panel li {
+    transition:
+      opacity var(--reading-toc-rail-state-duration) ease,
+      transform var(--reading-toc-rail-state-duration) var(--reading-toc-rail-state-ease);
+    transition-delay: calc(var(--toc-index, 0) * 15ms);
+  }
+
+  .note-toc-stage.has-reading-rail.is-reading:not(.is-hovered) .note-toc-header,
+  .note-toc-stage.has-reading-rail.is-reading:not(.is-hovered) .note-toc-reading-controls,
+  .note-toc-stage.has-reading-rail.is-reading:not(.is-hovered) .note-toc-panel li {
+    opacity: 0;
+    transform: translate3d(calc(var(--reading-toc-rail-collapse-shift) * -1), 0, 0);
+  }
+
+  .note-toc-stage.has-reading-rail.is-reading:not(.is-hovered) .note-toc-indicator {
+    opacity: 0;
+    transform: translate3d(calc(var(--reading-toc-rail-collapse-shift) * -1), var(--indicator-y, 0), 0) scaleY(var(--indicator-scale, 1));
+  }
+
+  .note-toc-stage.has-reading-rail.is-reading .reading-toc-rail {
     clip-path: inset(0);
-    opacity: 1;
+    opacity: var(--hover-opacity, 1);
     pointer-events: auto;
     transform: translate3d(0, 0, 0);
     transition:
-      opacity var(--reading-toc-rail-state-duration) ease,
       transform var(--reading-toc-rail-state-duration) var(--reading-toc-rail-state-ease),
       clip-path var(--reading-toc-rail-state-duration) var(--reading-toc-rail-state-ease),
       visibility 0s linear 0s;
     visibility: visible;
   }
+
+  /* We remove the CSS hover logic for reading-toc-rail, JS will handle it now */
 }
 
 @media (max-width: 1280px) {

@@ -487,7 +487,8 @@ body.is-tags-overlay-open .mobile-tags-overlay .notes-tag-link {
   background-color: var(--color-accent);
   transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease;
   transform-origin: top;
-  opacity: 0;
+  opacity: var(--indicator-opacity, 0);
+  transform: translateY(var(--indicator-y, 0)) scaleY(var(--indicator-scale, 1));
   pointer-events: none;
   z-index: 1;
 }

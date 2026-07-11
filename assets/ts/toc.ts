@@ -189,9 +189,14 @@ class NoteTocController {
     syncNoteToc(this.toc);
     this.reducedMotion = this.motionDisabled();
     this.bindPageListeners();
+    this.setupHoverEvents();
     this.observeLayout();
     this.waitForFonts();
     this.requestMeasure(true);
+  }
+
+  private setupHoverEvents(): void {
+    // hover logic is now fully handled by handleStageMouseEnter/Leave via bindPageListeners
   }
 
   requestMeasure(snap = false): void {
@@ -303,18 +308,21 @@ class NoteTocController {
     this.ensureFrame();
   };
 
-  private readonly handleStageMouseEnter = (): void => {
-    if (this.destroyed || this.isStageHovered) return;
-    this.isStageHovered = true;
+  private setStageHovered(hovered: boolean): void {
+    if (this.isStageHovered === hovered) return;
+    this.isStageHovered = hovered;
+    this.stage.classList.toggle("is-hovered", hovered);
+    this.rail?.setHovered(hovered);
     this.syncReadingPresentation();
     this.ensureFrame();
+  }
+
+  private readonly handleStageMouseEnter = (): void => {
+    this.setStageHovered(true);
   };
 
   private readonly handleStageMouseLeave = (): void => {
-    if (this.destroyed || !this.isStageHovered) return;
-    this.isStageHovered = false;
-    this.syncReadingPresentation();
-    this.ensureFrame();
+    this.setStageHovered(false);
   };
 
   private readonly handleContentLoad = (): void => {
@@ -610,6 +618,10 @@ class NoteTocController {
     if (reading !== this.isReadingMode) {
       this.isReadingMode = reading;
       this.stage.classList.toggle("is-reading", reading);
+      
+      // Resync hover state in case the mouse is already over the stage
+      // but mouseenter hasn't fired (or fired before we cared).
+      this.setStageHovered(this.stage.matches(":hover"));
     }
     this.syncReadingPresentation();
   }
@@ -682,8 +694,9 @@ class NoteTocController {
     this.indicatorDirty = false;
     this.indicatorTop = indicatorTop;
     this.indicatorHeight = indicatorHeight;
-    this.tocIndicator.style.opacity = "1";
-    this.tocIndicator.style.transform = `translateY(${indicatorTop}px) scaleY(${indicatorHeight})`;
+    this.tocIndicator.style.setProperty("--indicator-opacity", "1");
+    this.tocIndicator.style.setProperty("--indicator-y", `${indicatorTop}px`);
+    this.tocIndicator.style.setProperty("--indicator-scale", `${indicatorHeight}`);
   }
 }
 

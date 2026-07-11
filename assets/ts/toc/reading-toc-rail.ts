@@ -274,6 +274,7 @@ export class ReadingTocRail {
   private dotButtons: HTMLElement[] = [];
   private markerY = makeSpring(0);
   private amplitude = makeSpring(0);
+  private hoverSpring = makeSpring(0);
   private progressTarget = 0;
   private activeIndex = -1;
   private endActiveIndex = -1;
@@ -429,6 +430,11 @@ export class ReadingTocRail {
       this.amplitude.target = 0;
     }
     this.interactionDirty = true;
+  }
+
+  setHovered(hovered: boolean): void {
+    if (this.destroyed) return;
+    this.hoverSpring.target = hovered ? 1 : 0;
   }
 
   /**
@@ -588,6 +594,7 @@ export class ReadingTocRail {
         this.amplitude.current = this.amplitude.target;
         this.amplitude.velocity = 0;
       }
+      stepSpring(this.hoverSpring, 300, 25, step);
     }
 
     this.clampSpringPositions();
@@ -596,6 +603,7 @@ export class ReadingTocRail {
   private animationIsSettled(): boolean {
     return springIsSettled(this.markerY, POSITION_EPSILON)
       && springIsSettled(this.amplitude, AMPLITUDE_EPSILON)
+      && springIsSettled(this.hoverSpring, AMPLITUDE_EPSILON)
       && Math.abs(this.speedTarget) <= SPEED_EPSILON
       && Math.abs(this.smoothedSpeed) <= SPEED_EPSILON;
   }
@@ -630,17 +638,25 @@ export class ReadingTocRail {
       0,
       this.geometry.height,
     );
+    const hoverState = Math.max(0, Math.min(1, this.hoverSpring.current));
     const boost = this.interactive ? this.amplitude.current : 0;
     const breath = this.interactive && !this.reducedMotion
       ? BREATH_AMPLITUDE * Math.sin(timestamp / BREATH_PERIOD_MS * Math.PI * 2)
       : 0;
+    
+    // Wave amplitude retracts non-linearly to 0 when hovered
     const waveAmplitude = this.interactive
-      ? Math.max(0, this.geometry.idleAmplitude + breath + boost)
+      ? Math.max(0, this.geometry.idleAmplitude * (1 - hoverState) + breath + boost)
       : 0;
     const halfHeight = Math.max(
       1,
-      this.geometry.bulgeHalfHeight + HALF_HEIGHT_SPEED_GAIN * boost,
+      this.geometry.bulgeHalfHeight * (1 - hoverState) + HALF_HEIGHT_SPEED_GAIN * boost,
     );
+    
+    // Opacity fades out based on hoverState, using CSS variable to avoid overriding base CSS
+    this.root.style.setProperty("--hover-opacity", `${1 - Math.pow(hoverState, 2)}`);
+    this.root.style.pointerEvents = hoverState > 0.5 ? "none" : "auto";
+
     const path = buildReadingTocRailCurve(
       this.geometry,
       markerY,
