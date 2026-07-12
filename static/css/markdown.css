@@ -20,7 +20,7 @@
   font-size: var(--note-text-size);
   line-height: 1.75;
   margin: 0 0 24px;
-  max-width: 64ch;
+  max-width: 100%;
 }
 
 .markdown h1,
@@ -103,7 +103,7 @@
 .markdown ul {
   list-style: none;
   margin: 0 0 28px;
-  max-width: 64ch;
+  max-width: 100%;
   padding: 0;
 }
 
@@ -149,7 +149,7 @@
 
 .markdown ol {
   margin: 0 0 28px;
-  max-width: 64ch;
+  max-width: 100%;
   padding-left: 22px;
 }
 
@@ -202,7 +202,7 @@
   font-style: italic;
   line-height: 1.65;
   margin: 28px 0;
-  max-width: 64ch;
+  max-width: 100%;
   padding: 4px 0 4px 22px;
 }
 
@@ -224,7 +224,7 @@
   border-left: 4px solid var(--callout-color);
   color: var(--color-text);
   margin: 28px 0;
-  max-width: 64ch;
+  max-width: 100%;
   padding: 2px 16px;
 }
 
@@ -348,7 +348,7 @@
 
 .markdown .md-fold {
   margin: 28px 0;
-  max-width: 64ch;
+  max-width: 100%;
 }
 
 .markdown .md-fold > summary {
@@ -470,7 +470,7 @@
   border-radius: 6px;
   color: var(--color-text);
   margin: 28px 0;
-  max-width: 64ch;
+  max-width: 100%;
   min-width: 0;
   overflow: hidden;
   transition:
@@ -1553,7 +1553,7 @@
   font-size: 15px;
   line-height: 1.65;
   margin: 28px 0;
-  max-width: 64ch;
+  max-width: 100%;
   padding: 4px 32px 4px 22px;
   position: relative;
 }
