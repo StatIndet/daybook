@@ -237,20 +237,35 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-expanded-
   transform: scale(0.95);
 }
 
-.mm-btn-play-pause {
-  width: 100%;
+.mm-controls-wrapper .mm-btn-play-pause {
+  width: 72px;
   height: 48px;
   border-radius: 24px; /* Pill by default (Paused, shows Play) */
   background-color: var(--color-accent);
   color: var(--color-page);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Use bouncy easing for recovery (width returning to normal) */
+  transition: width 0.3s cubic-bezier(0.42, 1.67, 0.21, 0.9), border-radius 0.3s cubic-bezier(0.42, 1.67, 0.21, 0.9);
 }
 
-.is-playing .mm-btn-play-pause {
+.is-playing .mm-controls-wrapper .mm-btn-play-pause {
   /* Checked radius when playing (shows Pause) */
-  border-radius: 16px;
+  border-radius: 12px;
 }
 
-.mm-btn-play-pause:hover {
+.mm-controls-wrapper .mm-btn-play-pause:active {
+  border-radius: 8px !important;
+  /* Expand width when clicked */
+  width: 96px;
+  /* Fast bouncy deformation */
+  transition: width 0.15s cubic-bezier(0.42, 1.67, 0.21, 0.9), border-radius 0.15s cubic-bezier(0.42, 1.67, 0.21, 0.9);
+}
+
+.mm-controls-wrapper .mm-btn-play-pause:hover {
   filter: brightness(1.1);
 }
 
