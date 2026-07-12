@@ -97,13 +97,27 @@ class MediaManager {
     this.expandedView = this.container.querySelector(".mm-expanded-view");
   }
 
+  private cachedThemeColors = { accent: "#6750a4", accentSoft: "rgba(103, 80, 164, 0.18)", lastCheck: 0 };
+  private getThemeColors() {
+    const now = performance.now();
+    if (now - this.cachedThemeColors.lastCheck > 1000) {
+      const rootStyle = getComputedStyle(document.documentElement);
+      const acc = rootStyle.getPropertyValue('--color-accent').trim();
+      const accSoft = rootStyle.getPropertyValue('--color-accent-soft-strong').trim();
+      if (acc) this.cachedThemeColors.accent = acc;
+      if (accSoft) this.cachedThemeColors.accentSoft = accSoft;
+      this.cachedThemeColors.lastCheck = now;
+    }
+    return this.cachedThemeColors;
+  }
+
   private drawVisualizer(progress: number, phase: number) {
     if (!this.canvasCtx || !this.visualizerCanvas) return;
     const ctx = this.canvasCtx;
     const size = 180;
     const cx = size / 2;
     const cy = size / 2;
-    const radius = 82; // Enclose the cover
+    const radius = 84; // From CircularProgress calculation
     
     ctx.clearRect(0, 0, size, size);
 
@@ -113,13 +127,14 @@ class MediaManager {
     
     // Gap angle calculation (approximate padding + stroke width)
     const gapAngle = (14 / radius); 
+    const colors = this.getThemeColors();
     
     // 1. Draw remaining background track with a gap
     ctx.beginPath();
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.lineWidth = 6;
-    ctx.strokeStyle = "rgba(0, 102, 85, 0.15)";
+    ctx.strokeStyle = colors.accentSoft;
     
     const bgStartAngle = endAngle + gapAngle;
     const bgEndAngle = startAngle + sweepAngle;
@@ -132,14 +147,14 @@ class MediaManager {
 
     // 2. Draw progress arc with waves
     ctx.beginPath();
-    ctx.strokeStyle = "#006655"; // primary color
+    ctx.strokeStyle = colors.accent;
     
     // N = qMax(64, qCeil(radius * drawAngleRad))
     const N = Math.max(64, Math.ceil(radius * (progress * sweepAngle)));
     const dTheta = (progress * sweepAngle) / N;
     
-    // waveAmp is constant, even when paused
-    const waveAmp = 4; 
+    // waveAmp is strokeWidth * amplitudeMultiplier (6 * 0.5)
+    const waveAmp = 3; 
     const waveFreq = 8; // 8 waves for the longer arc
     const arcLen = radius * sweepAngle; // full length of the track
 

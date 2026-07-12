@@ -241,8 +241,8 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-expanded-
   width: 100%;
   height: 48px;
   border-radius: 24px; /* Pill by default (Paused, shows Play) */
-  background-color: var(--color-primary, #006655);
-  color: var(--color-on-primary, #ffffff);
+  background-color: var(--color-accent);
+  color: var(--color-page);
 }
 
 .is-playing .mm-btn-play-pause {
