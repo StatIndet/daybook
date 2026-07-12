@@ -807,13 +807,6 @@ body.page-entering .archive-item {
   animation-delay: 900ms;
 }
 
-@media (max-width: 959px) {
-  .note-body .post-content > *:nth-child(n + 8) {
-    animation: none;
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 
 @media (prefers-reduced-motion: reduce) {
   *,

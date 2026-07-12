@@ -36,7 +36,7 @@ interface ArticleMorphSession {
 }
 
 (() => {
-  const ARTICLE_MOBILE_QUERY = "(max-width: 768px)";
+  const ARTICLE_MOBILE_QUERY = "(max-width: 1280px)";
   let activeArticleMorph: ArticleMorphSession | null = null;
 
   function reducedMotion(): boolean {

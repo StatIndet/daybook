@@ -63,14 +63,14 @@
   }
 
   function clearTitleTransitions(root: Document | HTMLElement) {
-    root.querySelectorAll("[data-title-transition-name]").forEach(function (titleEl) {
+    root.querySelectorAll("[data-title-transition-key]").forEach(function (titleEl) {
       var title = titleEl as HTMLElement;
       title.style.removeProperty("view-transition-name");
     });
   }
 
   function clearMetaTransitions(root: Document | HTMLElement) {
-    root.querySelectorAll("[data-meta-transition-name]").forEach(function (metaEl) {
+    root.querySelectorAll("[data-meta-transition-key]").forEach(function (metaEl) {
       var meta = metaEl as HTMLElement;
       meta.style.removeProperty("view-transition-name");
     });
@@ -90,7 +90,7 @@
   }
 
   function findListTitleForURL(root: Document | HTMLElement, url: URL): HTMLElement | null {
-    var titleLinks = root.querySelectorAll("[data-title-transition-name]");
+    var titleLinks = root.querySelectorAll("[data-title-transition-key]");
     for (var i = 0; i < titleLinks.length; i++) {
       if (titleLinks[i] && linkMatchesURL(titleLinks[i] as Element, url)) {
         return titleLinks[i] as HTMLElement;
@@ -104,13 +104,13 @@
       return null;
     }
     const elemRoot = root as HTMLElement;
-    if (elemRoot.matches && elemRoot.matches("[data-title-transition-name]") && elemRoot.dataset.titleTransitionName === transitionName) {
+    if (elemRoot.matches && elemRoot.matches("[data-title-transition-key]") && elemRoot.dataset.titleTransitionKey === transitionName) {
       return elemRoot;
     }
 
-    var titles = root.querySelectorAll("[data-title-transition-name]");
+    var titles = root.querySelectorAll("[data-title-transition-key]");
     for (var i = 0; i < titles.length; i++) {
-      if ((titles[i] as HTMLElement).dataset.titleTransitionName === transitionName) {
+      if ((titles[i] as HTMLElement).dataset.titleTransitionKey === transitionName) {
         return titles[i] as HTMLElement;
       }
     }
@@ -118,11 +118,11 @@
   }
 
   function findArticleTitle(root: Document | HTMLElement): HTMLElement | null {
-    return root.querySelector(".note-title [data-title-transition-name]");
+    return root.querySelector(".note-title [data-title-transition-key]");
   }
 
   function findArticleMeta(root: Document | HTMLElement): HTMLElement | null {
-    return root.querySelector(".note-meta[data-meta-transition-name]");
+    return root.querySelector(".note-meta[data-meta-transition-key]");
   }
 
   function findMetaForListTitle(titleLink: HTMLElement | null): HTMLElement | null {
@@ -130,7 +130,7 @@
     if (!noteItem) {
       return null;
     }
-    return noteItem.querySelector("[data-meta-transition-name]");
+    return noteItem.querySelector("[data-meta-transition-key]");
   }
 
   function findListMetaForURL(root: Document | HTMLElement, url: URL): HTMLElement | null {
@@ -138,26 +138,26 @@
   }
 
   function setTitleTransitionPair(sourceTitle: HTMLElement | null, targetTitle: HTMLElement | null): boolean {
-    if (!sourceTitle || !targetTitle || !sourceTitle.dataset.titleTransitionName) {
+    if (!sourceTitle || !targetTitle || !sourceTitle.dataset.titleTransitionKey) {
       return false;
     }
-    if (sourceTitle.dataset.titleTransitionName !== targetTitle.dataset.titleTransitionName) {
+    if (sourceTitle.dataset.titleTransitionKey !== targetTitle.dataset.titleTransitionKey) {
       return false;
     }
-    sourceTitle.style.viewTransitionName = sourceTitle.dataset.titleTransitionName;
-    targetTitle.style.viewTransitionName = targetTitle.dataset.titleTransitionName;
+    sourceTitle.style.viewTransitionName = sourceTitle.dataset.titleTransitionKey;
+    targetTitle.style.viewTransitionName = targetTitle.dataset.titleTransitionKey;
     return true;
   }
 
   function setMetaTransitionPair(sourceMeta: HTMLElement | null, targetMeta: HTMLElement | null): boolean {
-    if (!sourceMeta || !targetMeta || !sourceMeta.dataset.metaTransitionName) {
+    if (!sourceMeta || !targetMeta || !sourceMeta.dataset.metaTransitionKey) {
       return false;
     }
-    if (sourceMeta.dataset.metaTransitionName !== targetMeta.dataset.metaTransitionName) {
+    if (sourceMeta.dataset.metaTransitionKey !== targetMeta.dataset.metaTransitionKey) {
       return false;
     }
-    sourceMeta.style.viewTransitionName = sourceMeta.dataset.metaTransitionName;
-    targetMeta.style.viewTransitionName = targetMeta.dataset.metaTransitionName;
+    sourceMeta.style.viewTransitionName = sourceMeta.dataset.metaTransitionKey;
+    targetMeta.style.viewTransitionName = targetMeta.dataset.metaTransitionKey;
     targetMeta.classList.add("meta-shared-target");
     document.documentElement.classList.add("meta-shared-transition");
     return true;
@@ -198,8 +198,8 @@
       return titleLineCount(title);
     }
 
-    var transitionName = title.dataset.titleTransitionName;
-    if (!transitionName) return 0;
+    var transitionKey = title.dataset.titleTransitionKey;
+    if (!transitionKey) return 0;
     var targetPage = title.closest(".notes-page") || title.closest(".article-stage");
     if (!targetPage) {
       return 0;
@@ -219,7 +219,7 @@
 
     pageMain.appendChild(probe);
     try {
-      return titleLineCount(findTitleByTransitionName(probe, transitionName));
+      return titleLineCount(findTitleByTransitionName(probe, transitionKey));
     } finally {
       probe.remove();
     }
@@ -242,7 +242,7 @@
     clearArticleSharedTransitions(nextDocument);
 
     if (isNotesIndex(currentURL) && isNoteDetail(url)) {
-      if (sourceLink && sourceLink.matches("[data-title-transition-name]") && linkMatchesURL(sourceLink, url)) {
+      if (sourceLink && sourceLink.matches("[data-title-transition-key]") && linkMatchesURL(sourceLink, url)) {
         sourceTitle = sourceLink;
       } else {
         sourceTitle = findListTitleForURL(document, url);
