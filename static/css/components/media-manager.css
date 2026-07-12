@@ -1,6 +1,4 @@
-
 /* Hide default reading controls when active */
-/* Note: Desktop reading controls fade out animation is handled in note.css */
 body[data-media-manager-active="true"] .mobile-reading-controls {
   display: none !important;
 }
@@ -8,62 +6,269 @@ body[data-media-manager-active="true"] .mobile-reading-controls {
 .mm-desktop-ui {
   display: flex;
   flex-direction: column;
-  gap: 12px;
   position: fixed;
-  bottom: 160px;
-  left: var(--persistent-logo-left, 3.5rem);
-  z-index: 900;
+  bottom: 3.5rem; /* above footer/bottom spacing */
+  
+  /* --- 尺寸解耦配置区域 --- */
+  --mm-expanded-left: 24px;     /* 展开时，距离屏幕左侧边缘的间距 */
+  --mm-collapsed-visible: 48px; /* 缩回隐藏时，肉眼看到的把手总宽度 (包含上面那个间距) */
+  
+  left: var(--mm-expanded-left); 
+  z-index: 890; /* lower than side-nav if needed */
   pointer-events: none;
+  background-color: var(--m3-surface-container-highest, var(--color-surface-container-high));
+  border-radius: 1.5rem;
+  padding: 0;
+  width: 220px; /* Increased width */
+  height: 390px; /* Height increased by 1.5x */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  
+  /* Initial hidden state completely off-screen */
+  opacity: 0;
+  transform: translateX(-150%);
+  transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1), opacity 0.3s ease;
 }
 
+/* 激活后台播放时，进入“收缩”状态 (露出 48px 的 Tab) */
 body[data-media-manager-active="true"] .mm-desktop-ui {
+  pointer-events: auto;
+  opacity: 1;
+  /* 自动计算推移距离：刚好让卡片的右边缘留在 visible 设定好的像素处 */
+  transform: translateX(calc(var(--mm-collapsed-visible) - var(--mm-expanded-left) - 100%)); 
+}
+
+/* Hover 时完全展开 */
+body[data-media-manager-active="true"] .mm-desktop-ui:hover,
+body[data-media-manager-active="true"] .mm-desktop-ui:focus-within {
+  transform: translateX(0);
+}
+
+/* --- Collapsed Tab View --- */
+.mm-collapsed-tab {
+  position: absolute;
+  top: 0;
+  right: 0;
+  /* 内部元素的盒子宽度等于屏幕上露出的全部白块，这样绝对居中就不会受到原点平移的影响 */
+  width: var(--mm-collapsed-visible);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.2rem 0;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+  pointer-events: none; /* let hover pass to parent */
+  box-sizing: border-box;
+}
+
+body[data-media-manager-active="true"] .mm-desktop-ui:hover .mm-collapsed-tab,
+body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-collapsed-tab {
+  opacity: 0;
+}
+
+.mm-small-cover {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 1rem;
+}
+
+.mm-vertical-title {
+  writing-mode: vertical-lr;
+  font-family: var(--font-headline);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 280px;
+  letter-spacing: 0.05em;
+}
+
+/* --- Expanded Full View --- */
+.mm-expanded-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 1.5rem 1rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  box-sizing: border-box;
+  position: relative;
+}
+
+body[data-media-manager-active="true"] .mm-desktop-ui:hover .mm-expanded-view,
+body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-expanded-view {
+  opacity: 1;
   pointer-events: auto;
 }
 
-.mm-desktop-ui .reading-control-btn {
-  opacity: 0;
-  animation: mm-fade-out 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-body[data-media-manager-active="true"] .mm-desktop-ui .reading-control-btn {
-  animation: mm-fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-/* Entry stagger */
-body[data-media-manager-active="true"] .mm-btn-return { animation-delay: 0ms; }
-body[data-media-manager-active="true"] .mm-btn-play-pause { animation-delay: 40ms; }
-body[data-media-manager-active="true"] .mm-btn-close { animation-delay: 80ms; }
-
-/* Exit stagger */
-.mm-desktop-ui .mm-btn-close { animation-delay: 0ms; }
-.mm-desktop-ui .mm-btn-play-pause { animation-delay: 40ms; }
-.mm-desktop-ui .mm-btn-return { animation-delay: 80ms; }
-
-.mm-progress-text {
-  position: relative;
+/* 动态波浪画板 */
+.mm-visualizer-canvas {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 160px;
+  height: 160px;
+  pointer-events: none;
   z-index: 1;
-  font-family: var(--font-ui);
-  font-size: 0.85rem;
-  font-weight: 500;
 }
 
-.mm-btn-return .hover-icon {
-  display: none;
+.mm-cover-wrapper {
+  position: relative;
+  width: 130px;
+  height: 130px;
+  margin-top: 25px; /* leave space for top wave */
+  margin-bottom: 1.2rem;
+  z-index: 2;
+  /* Cover Spin Animation on Wrapper */
+  animation: mm-spin-cover 23.5s linear infinite;
+  animation-play-state: paused;
+}
+
+.mm-cover-clipper {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  overflow: hidden; /* strictly limit bounding box for WebKit clip-path */
+  contain: paint; /* isolate paint layer */
+  transform: translateZ(0); /* force hardware acceleration */
+  -webkit-clip-path: url(#mm-cookie-clip);
+  clip-path: url(#mm-cookie-clip);
+}
+
+.is-playing .mm-cover-wrapper,
+.mm-expanded-view.is-playing .mm-cover-wrapper {
+  animation-play-state: running;
+}
+
+@keyframes mm-spin-cover {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+.mm-cover-image {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 142%; /* sqrt(2)*100 to cover corners during rotation */
+  height: 142%;
+  max-width: none;
+  max-height: none;
+  object-fit: cover;
+  /* Counter-spin so image stays upright */
+  animation: mm-counter-spin 23.5s linear infinite;
+  animation-play-state: paused;
+  transform: translate(-50%, -50%) rotate(0deg);
+}
+
+.is-playing .mm-cover-image,
+.mm-expanded-view.is-playing .mm-cover-image {
+  animation-play-state: running;
+}
+
+@keyframes mm-counter-spin {
+  from { transform: translate(-50%, -50%) rotate(-360deg); }
+  to { transform: translate(-50%, -50%) rotate(0deg); }
+}
+
+.mm-info-wrapper {
+  text-align: center;
+  margin-bottom: 1.2rem;
+  width: 100%;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
+.mm-title {
+  font-family: var(--font-headline);
   font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-primary, var(--color-on-surface));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0.2rem;
 }
 
-.mm-btn-return:hover .mm-progress-text,
-.mm-btn-return:focus-visible .mm-progress-text {
-  display: none;
+.mm-artist {
+  font-size: 0.85rem;
+  color: var(--color-on-surface-variant);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.mm-btn-return:hover .hover-icon,
-.mm-btn-return:focus-visible .hover-icon {
-  display: block;
+/* 控制按钮组 */
+.mm-controls-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.8rem;
+  width: 100%;
+}
+
+.mm-controls-wrapper button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--color-on-surface);
+  transition: border-radius 0.4s cubic-bezier(0.2, 0, 0, 1), transform 0.2s cubic-bezier(0.2, 0, 0, 1), background-color 0.2s ease, color 0.2s ease;
+}
+
+.mm-controls-wrapper button:active {
+  transform: scale(0.95);
+}
+
+.mm-btn-play-pause {
+  width: 100%;
+  height: 48px;
+  border-radius: 24px; /* Pill by default (Paused, shows Play) */
+  background-color: var(--color-primary, #006655);
+  color: var(--color-on-primary, #ffffff);
+}
+
+.is-playing .mm-btn-play-pause {
+  /* Checked radius when playing (shows Pause) */
+  border-radius: 16px;
+}
+
+.mm-btn-play-pause:hover {
+  filter: brightness(1.1);
+}
+
+/* Morphing SVG Icon */
+.mm-morph-icon {
+  width: 24px;
+  height: 24px;
+  color: currentColor;
+}
+
+.mm-morph-path {
+  /* Play state (default) */
+  d: path('M 8 5 L 13 8.18 L 13 15.82 L 8 19 Z M 13 8.18 L 19 12 L 19 12 L 13 15.82 Z');
+  transition: d 400ms cubic-bezier(0.2, 0, 0, 1);
+  fill: currentColor;
+}
+
+.is-playing .mm-morph-path {
+  /* Pause state */
+  d: path('M 6 5 L 10 5 L 10 19 L 6 19 Z M 14 5 L 18 5 L 18 19 L 14 19 Z');
 }
 
 @media (max-width: 960px) {
   .mm-desktop-ui {
-    display: none;
+    display: none !important;
   }
 }

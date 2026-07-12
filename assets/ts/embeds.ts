@@ -394,7 +394,7 @@ import { daybookMediaManager } from "./media-manager.js";
         playerWrapper.classList.add("is-playing");
         swapIcon("pause");
         
-        daybookMediaManager.notifyPlay(audio, location.href, id as string);
+        daybookMediaManager.notifyPlay(audio, location.href, id as string, title, artist, cover);
         
         lastTime = performance.now();
         if (!reqId) loop(lastTime);

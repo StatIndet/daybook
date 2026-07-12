@@ -7,6 +7,9 @@ class MediaManager {
   private activeAudio: HTMLAudioElement | null = null;
   private currentArticleUrl: string | null = null;
   private currentSourceId: string | null = null;
+  private currentTitle: string | null = null;
+  private currentArtist: string | null = null;
+  private currentCover: string | null = null;
   private isTakeoverActive: boolean = false;
   
   private container: HTMLElement | null = null;
@@ -15,9 +18,16 @@ class MediaManager {
   // Desktop UI elements
   private desktopPlayPauseBtn: HTMLElement | null = null;
   private desktopPlayPauseIcon: HTMLElement | null = null;
-  private desktopReturnBtn: HTMLElement | null = null;
-  private desktopProgressText: HTMLElement | null = null;
-  private desktopCloseBtn: HTMLElement | null = null;
+  private coverImage: HTMLImageElement | null = null;
+  private coverWrapper: HTMLElement | null = null;
+  private titleElement: HTMLElement | null = null;
+  private artistElement: HTMLElement | null = null;
+  private visualizerCanvas: HTMLCanvasElement | null = null;
+  private canvasCtx: CanvasRenderingContext2D | null = null;
+  private smallCoverImage: HTMLImageElement | null = null;
+  private verticalTitleElement: HTMLElement | null = null;
+  private collapsedTab: HTMLElement | null = null;
+  private expandedView: HTMLElement | null = null;
 
   // Event handlers bound to instance
   private onTimeUpdateBound: () => void;
@@ -26,6 +36,12 @@ class MediaManager {
   private onEndedBound: () => void;
   private onErrorBound: () => void;
   private onSettingsChangeBound: (e: Event) => void;
+  
+  private visualizerReqId: number | null = null;
+  private wavePhase: number = 0;
+  private lastTime: number = 0;
+  private smoothedProgress: number = 0;
+  private isVisualizerRunning: boolean = false;
 
   private constructor() {
     this.onTimeUpdateBound = this.onTimeUpdate.bind(this);
@@ -57,28 +73,134 @@ class MediaManager {
 
     this.desktopPlayPauseBtn = this.container.querySelector(".mm-btn-play-pause");
     this.desktopPlayPauseIcon = this.container.querySelector(".mm-btn-play-pause .mm-icon-current");
-    this.desktopReturnBtn = this.container.querySelector(".mm-btn-return");
-    this.desktopProgressText = this.container.querySelector(".mm-progress-text");
-    this.desktopCloseBtn = this.container.querySelector(".mm-btn-close");
-
-    // Add desktop hover effects manually (simulating reading controls)
-    const btns = this.container.querySelectorAll(".reading-control-btn") as NodeListOf<HTMLElement>;
-    btns.forEach(btn => {
-      btn.addEventListener("mouseenter", (e: MouseEvent) => {
-        const rect = btn.getBoundingClientRect();
-        btn.style.setProperty("--pointer-x", `${e.clientX - rect.left}px`);
-        btn.style.setProperty("--pointer-y", `${e.clientY - rect.top}px`);
-        void btn.offsetHeight; // reflow
-        btn.classList.add("is-hovered");
-      });
-      btn.addEventListener("mouseleave", (e: MouseEvent) => {
-        const rect = btn.getBoundingClientRect();
-        btn.style.setProperty("--pointer-x", `${e.clientX - rect.left}px`);
-        btn.style.setProperty("--pointer-y", `${e.clientY - rect.top}px`);
-        btn.classList.remove("is-hovered");
-      });
-    });
+    
+    this.coverImage = this.container.querySelector(".mm-cover-image");
+    this.coverWrapper = this.container.querySelector(".mm-cover-wrapper");
+    this.titleElement = this.container.querySelector(".mm-title");
+    this.artistElement = this.container.querySelector(".mm-artist");
+    this.visualizerCanvas = this.container.querySelector(".mm-visualizer-canvas");
+    if (this.visualizerCanvas) {
+      this.canvasCtx = this.visualizerCanvas.getContext("2d");
+      // Scale canvas for retina display
+      const size = 160;
+      this.visualizerCanvas.width = size * 2;
+      this.visualizerCanvas.height = size * 2;
+      this.visualizerCanvas.style.width = size + "px";
+      this.visualizerCanvas.style.height = size + "px";
+      if (this.canvasCtx) {
+        this.canvasCtx.scale(2, 2);
+      }
+    }
+    this.smallCoverImage = this.container.querySelector(".mm-small-cover");
+    this.verticalTitleElement = this.container.querySelector(".mm-vertical-title");
+    this.collapsedTab = this.container.querySelector(".mm-collapsed-tab");
+    this.expandedView = this.container.querySelector(".mm-expanded-view");
   }
+
+  private drawVisualizer(progress: number, phase: number) {
+    if (!this.canvasCtx || !this.visualizerCanvas) return;
+    const ctx = this.canvasCtx;
+    const size = 160;
+    const cx = size / 2;
+    const cy = size / 2;
+    const radius = 68; // Slightly larger than cover
+    
+    ctx.clearRect(0, 0, size, size);
+
+    const startAngle = Math.PI; // -180 deg
+    const sweepAngle = Math.PI; // 180 deg
+    const endAngle = startAngle + progress * sweepAngle;
+    
+    // Gap angle calculation (approximate padding + stroke width)
+    const gapAngle = (12 / radius); 
+    
+    // 1. Draw remaining background track with a gap
+    ctx.beginPath();
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "rgba(0, 102, 85, 0.15)";
+    
+    const bgStartAngle = endAngle + gapAngle;
+    const bgEndAngle = startAngle + sweepAngle;
+    if (bgStartAngle < bgEndAngle) {
+       ctx.arc(cx, cy, radius, bgStartAngle, bgEndAngle);
+       ctx.stroke();
+    }
+
+    if (progress <= 0) return;
+
+    // 2. Draw progress arc with waves
+    ctx.beginPath();
+    ctx.strokeStyle = "#006655"; // primary color
+    
+    // N = qMax(64, qCeil(radius * drawAngleRad))
+    const N = Math.max(64, Math.ceil(radius * (progress * sweepAngle)));
+    const dTheta = (progress * sweepAngle) / N;
+    
+    // waveAmp is constant, even when paused
+    const waveAmp = 4; 
+    const waveFreq = 4; // 8 waves for full circle, so 4 full waves for half circle (Math.PI)
+    const arcLen = radius * sweepAngle; // full length of the track
+
+    for (let i = 0; i <= N; i++) {
+      const theta = startAngle + i * dTheta;
+      const s = i * dTheta * radius; // distance along arc
+      
+      // QML formula: phi = frequency * 2 * M_PI * (s / len) + phase
+      const phi = waveFreq * 2 * Math.PI * (s / arcLen) + phase;
+      
+      // No edge damping! Ends vibrate!
+      const r = radius + waveAmp * Math.sin(phi);
+      
+      const px = cx + r * Math.cos(theta);
+      const py = cy + r * Math.sin(theta);
+      
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    
+    ctx.stroke();
+    // Do NOT draw a circle thumb, the gap is the indicator!
+  }
+
+  private visualizerLoop = (t: number) => {
+    if (!this.isVisualizerRunning) return;
+    
+    const dt = t - (this.lastTime || t);
+    this.lastTime = t;
+    
+    // Update phase only if playing
+    if (this.activeAudio && !this.activeAudio.paused) {
+      this.wavePhase += dt * 0.003;
+    }
+
+    const targetProgress = (this.activeAudio && this.activeAudio.duration) 
+      ? (this.activeAudio.currentTime / this.activeAudio.duration) 
+      : 0;
+      
+    // Smooth progress
+    this.smoothedProgress += (targetProgress - this.smoothedProgress) * 0.15;
+    
+    this.drawVisualizer(this.smoothedProgress, this.wavePhase);
+
+    // Keep looping if playing or if smoothing hasn't reached target
+    if ((this.activeAudio && !this.activeAudio.paused) || Math.abs(this.smoothedProgress - targetProgress) > 0.001) {
+      this.visualizerReqId = requestAnimationFrame(this.visualizerLoop);
+    } else {
+      this.visualizerReqId = null;
+      this.isVisualizerRunning = false;
+    }
+  }
+
+  private startVisualizer() {
+    if (!this.isVisualizerRunning) {
+      this.isVisualizerRunning = true;
+      this.lastTime = performance.now();
+      this.visualizerReqId = requestAnimationFrame(this.visualizerLoop);
+    }
+  }
+
 
   private bindEvents() {
     const togglePlay = () => {
@@ -90,22 +212,11 @@ class MediaManager {
       }
     };
 
-    const returnToArticle = () => {
-      if (this.currentArticleUrl) {
-        (window as any).daybookNavigate(this.currentArticleUrl);
-      }
-    };
-
-    const closePlayback = () => {
-      this.stopAndRelease();
-    };
-
     this.desktopPlayPauseBtn?.addEventListener("click", togglePlay);
-    this.desktopReturnBtn?.addEventListener("click", returnToArticle);
-    this.desktopCloseBtn?.addEventListener("click", closePlayback);
+    // Return button and close button were removed from UI in this redesign
   }
 
-  public notifyPlay(audio: HTMLAudioElement, articleUrl: string, sourceId: string) {
+  public notifyPlay(audio: HTMLAudioElement, articleUrl: string, sourceId: string, title?: string, artist?: string, cover?: string) {
     // If there's an existing background audio from ANOTHER source, stop it to guarantee singleton playback.
     if (this.activeAudio && this.currentSourceId !== sourceId) {
        // If it's a completely different audio being played, release the old one.
@@ -115,6 +226,9 @@ class MediaManager {
     this.activeAudio = audio;
     this.currentArticleUrl = articleUrl;
     this.currentSourceId = sourceId;
+    if (title) this.currentTitle = title;
+    if (artist) this.currentArtist = artist;
+    if (cover) this.currentCover = cover;
   }
 
   public onBeforeSwap(oldUrl: string, newUrl: string) {
@@ -126,10 +240,9 @@ class MediaManager {
 
     if (oldUrlObj.pathname === sourceUrlObj.pathname) {
       // Leaving the article
-      const settings = getSettings();
       const isMobile = window.innerWidth <= 768;
       
-      if (settings.disableBackgroundPlayback || isMobile) {
+      if (isMobile) {
         this.stopAndRelease();
       } else if (!this.activeAudio.paused) {
         this.takeoverAudio();
@@ -168,6 +281,13 @@ class MediaManager {
     
     document.body.setAttribute("data-media-manager-active", "true");
     
+    // Set metadata UI
+    if (this.coverImage && this.currentCover) this.coverImage.src = this.currentCover;
+    if (this.smallCoverImage && this.currentCover) this.smallCoverImage.src = this.currentCover;
+    if (this.titleElement) this.titleElement.textContent = this.currentTitle || "Unknown Track";
+    if (this.verticalTitleElement) this.verticalTitleElement.textContent = this.currentTitle || "Unknown Track";
+    if (this.artistElement) this.artistElement.textContent = this.currentArtist || "Unknown Artist";
+
     // Initial sync
     this.updateUI();
   }
@@ -212,15 +332,13 @@ class MediaManager {
     }
     this.isTakeoverActive = false;
     document.body.setAttribute("data-media-manager-active", "false");
+    if (this.coverWrapper) this.coverWrapper.classList.remove("is-playing");
+    if (this.collapsedTab) this.collapsedTab.classList.remove("is-playing");
+    if (this.expandedView) this.expandedView.classList.remove("is-playing");
   }
 
   private onSettingsChange(e: Event) {
-    const customEvent = e as CustomEvent;
-    if (customEvent.detail && customEvent.detail.disableBackgroundPlayback) {
-      if (this.isTakeoverActive) {
-        this.stopAndRelease();
-      }
-    }
+    // Currently no settings affect media-manager
   }
 
   private onTimeUpdate() {
@@ -229,15 +347,19 @@ class MediaManager {
 
   private onPlay() {
     this.updatePlayPauseUI(true);
+    this.startVisualizer();
   }
 
   private onPause() {
     this.updatePlayPauseUI(false);
+    // Visualizer will stop automatically when smooth progress reaches target
+    this.startVisualizer(); // trigger one more frame to ensure waveAmp goes to 0
   }
 
   private onEnded() {
     this.updatePlayPauseUI(false);
     this.updateProgressUI(true);
+    this.startVisualizer();
   }
 
   private onError() {
@@ -257,14 +379,19 @@ class MediaManager {
       this.desktopPlayPauseIcon.textContent = iconName;
     }
 
-    const currentStatusIcon = isPlaying ? "play_arrow" : "pause";
-    const actionIcon = isPlaying ? "pause" : "play_arrow";
-
-    if (this.desktopPlayPauseBtn) {
-      const current = this.desktopPlayPauseBtn.querySelector(".mm-icon-current");
-      const hover = this.desktopPlayPauseBtn.querySelector(".mm-icon-hover");
-      if (current) current.textContent = currentStatusIcon;
-      if (hover) hover.textContent = actionIcon;
+    if (this.coverWrapper) {
+      if (isPlaying) this.coverWrapper.classList.add("is-playing");
+      else this.coverWrapper.classList.remove("is-playing");
+    }
+    
+    if (this.collapsedTab) {
+      if (isPlaying) this.collapsedTab.classList.add("is-playing");
+      else this.collapsedTab.classList.remove("is-playing");
+    }
+    
+    if (this.expandedView) {
+      if (isPlaying) this.expandedView.classList.add("is-playing");
+      else this.expandedView.classList.remove("is-playing");
     }
   }
 
@@ -280,14 +407,8 @@ class MediaManager {
        percentage = 100;
     }
 
-    const rounded = Math.round(percentage);
-    const text = isNaN(rounded) ? "--%" : `${rounded}%`;
-
-    if (this.desktopProgressText) {
-      this.desktopProgressText.textContent = text;
-    }
-
-    this.container.style.setProperty("--media-progress", `${percentage}%`);
+    // Always trigger visualizer to ensure it updates during seeking even if paused
+    this.startVisualizer();
   }
 }
 

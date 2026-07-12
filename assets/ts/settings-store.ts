@@ -1,7 +1,6 @@
 export interface DaybookSettings {
   useSystemCursor: boolean;
   enableClockCursor: boolean;
-  disableBackgroundPlayback: boolean;
   disableComments: boolean;
   reducedMotion: boolean;
 }
@@ -11,7 +10,6 @@ const STORAGE_KEY = 'daybook:user-settings';
 const DEFAULT_SETTINGS: DaybookSettings = {
   useSystemCursor: false,
   enableClockCursor: true,
-  disableBackgroundPlayback: true,
   disableComments: false,
   reducedMotion: false
 };
