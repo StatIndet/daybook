@@ -82,7 +82,7 @@ class MediaManager {
     if (this.visualizerCanvas) {
       this.canvasCtx = this.visualizerCanvas.getContext("2d");
       // Scale canvas for retina display
-      const size = 160;
+      const size = 180;
       this.visualizerCanvas.width = size * 2;
       this.visualizerCanvas.height = size * 2;
       this.visualizerCanvas.style.width = size + "px";
@@ -100,25 +100,25 @@ class MediaManager {
   private drawVisualizer(progress: number, phase: number) {
     if (!this.canvasCtx || !this.visualizerCanvas) return;
     const ctx = this.canvasCtx;
-    const size = 160;
+    const size = 180;
     const cx = size / 2;
     const cy = size / 2;
-    const radius = 68; // Slightly larger than cover
+    const radius = 82; // Enclose the cover
     
     ctx.clearRect(0, 0, size, size);
 
-    const startAngle = Math.PI; // -180 deg
-    const sweepAngle = Math.PI; // 180 deg
+    const startAngle = Math.PI; // -180 deg (Starts exactly at horizontal left)
+    const sweepAngle = Math.PI; // 180 deg sweep (Ends exactly at horizontal right)
     const endAngle = startAngle + progress * sweepAngle;
     
     // Gap angle calculation (approximate padding + stroke width)
-    const gapAngle = (12 / radius); 
+    const gapAngle = (14 / radius); 
     
     // 1. Draw remaining background track with a gap
     ctx.beginPath();
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 6;
     ctx.strokeStyle = "rgba(0, 102, 85, 0.15)";
     
     const bgStartAngle = endAngle + gapAngle;
@@ -140,7 +140,7 @@ class MediaManager {
     
     // waveAmp is constant, even when paused
     const waveAmp = 4; 
-    const waveFreq = 4; // 8 waves for full circle, so 4 full waves for half circle (Math.PI)
+    const waveFreq = 8; // 8 waves for the longer arc
     const arcLen = radius * sweepAngle; // full length of the track
 
     for (let i = 0; i <= N; i++) {

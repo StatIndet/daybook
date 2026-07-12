@@ -115,17 +115,17 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-expanded-
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
-  width: 160px;
-  height: 160px;
+  width: 180px;
+  height: 180px;
   pointer-events: none;
   z-index: 1;
 }
 
 .mm-cover-wrapper {
   position: relative;
-  width: 130px;
-  height: 130px;
-  margin-top: 25px; /* leave space for top wave */
+  width: 140px;
+  height: 140px;
+  margin-top: 6px; /* center relative to canvas (24 padding + 6 margin + 70 = 100) */
   margin-bottom: 1.2rem;
   z-index: 2;
   /* Cover Spin Animation on Wrapper */
@@ -137,11 +137,17 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-expanded-
   position: absolute;
   top: 0; left: 0;
   width: 100%; height: 100%;
-  overflow: hidden; /* strictly limit bounding box for WebKit clip-path */
   contain: paint; /* isolate paint layer */
   transform: translateZ(0); /* force hardware acceleration */
   -webkit-clip-path: url(#mm-cookie-clip);
   clip-path: url(#mm-cookie-clip);
+}
+
+.mm-image-container {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  overflow: hidden; /* correctly limit bounding box before clip-path sees it */
 }
 
 .is-playing .mm-cover-wrapper,
