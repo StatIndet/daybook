@@ -40,3 +40,32 @@
 </div>
 {{end}}
 {{end}}
+
+{{/* 移动端专用的独立 TOC 结构 */}}
+{{define "mobile-toc"}}
+{{if .Note.Headings}}
+<button class="mobile-toc-fab" data-mobile-toc-fab aria-label="{{if eq .Lang "en"}}Open Table of Contents{{else}}打开文章目录{{end}}">
+  <span class="material-symbol">format_list_bulleted</span>
+</button>
+
+<div class="mobile-toc-sheet" data-mobile-toc-sheet aria-hidden="true" inert>
+  <div class="mobile-toc-backdrop" data-mobile-toc-backdrop></div>
+  <div class="mobile-toc-panel">
+    <div class="mobile-toc-drag-handle" data-mobile-toc-drag-handle></div>
+    <div class="mobile-toc-header">
+      <span class="note-toc-title">{{if eq .Lang "en"}}Table of Contents{{else}}目录{{end}}</span>
+    </div>
+    <nav class="mobile-toc-nav" aria-label="文章目录">
+      <div class="note-toc-indicator" data-mobile-toc-indicator aria-hidden="true"></div>
+      <ol>
+        {{range $index, $heading := .Note.Headings}}
+        <li class="note-toc-depth-{{$heading.Level}}" style="--toc-index: {{$index}}">
+          <a href="#{{$heading.ID}}">{{$heading.Text}}</a>
+        </li>
+        {{end}}
+      </ol>
+    </nav>
+  </div>
+</div>
+{{end}}
+{{end}}

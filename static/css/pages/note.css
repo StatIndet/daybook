@@ -290,8 +290,6 @@
     transition: opacity 300ms ease 300ms; /* wait 300ms for rail to appear, then fade in */
   }
 
-}
-
   /* We remove the CSS hover logic for reading-toc-rail, JS will handle it now */
 }
 
@@ -631,5 +629,168 @@ html[data-reduced-motion="true"] .note-toc-stage .note-toc {
 @media (prefers-reduced-motion: reduce) {
   .bilingual-char {
     transition: none;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+ * Mobile TOC Bottom Sheet
+ * -------------------------------------------------------------------------- */
+
+.mobile-toc-fab,
+.mobile-toc-sheet {
+  display: none;
+}
+
+@media (max-width: 1280px) {
+  .mobile-toc-fab {
+    align-items: center;
+    background: var(--color-page);
+    border: 1px solid var(--color-line);
+    border-right: none;
+    border-radius: 24px 0 0 24px;
+    bottom: 20%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    color: var(--color-text);
+    cursor: pointer;
+    display: flex;
+    height: 48px;
+    justify-content: center;
+    padding: 0 12px 0 16px;
+    position: fixed;
+    right: 0;
+    transform: translateX(0);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: auto;
+    z-index: 90;
+  }
+
+  .mobile-toc-fab.is-hidden {
+    transform: translateX(100%);
+  }
+
+  .mobile-toc-sheet {
+    display: block;
+    height: 100vh;
+    left: 0;
+    pointer-events: none;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 100;
+  }
+
+  .mobile-toc-backdrop {
+    background: rgba(0, 0, 0, 0.4);
+    height: 100%;
+    left: 0;
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    transition: opacity 0.3s ease;
+    width: 100%;
+  }
+
+  .mobile-toc-sheet.is-open .mobile-toc-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .mobile-toc-panel {
+    background: var(--color-page);
+    border-radius: 24px 24px 0 0;
+    bottom: 0;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    max-height: 85vh;
+    position: absolute;
+    transform: translateY(100%);
+    transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1);
+    width: 100%;
+  }
+
+  .mobile-toc-sheet.is-open .mobile-toc-panel {
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  .mobile-toc-sheet.is-dragging .mobile-toc-panel {
+    transition: none; /* Disable transition during drag */
+  }
+
+  .mobile-toc-drag-handle {
+    background: var(--color-muted);
+    border-radius: 2px;
+    cursor: grab;
+    height: 4px;
+    margin: 12px auto;
+    width: 32px;
+  }
+
+  .mobile-toc-drag-handle:active {
+    cursor: grabbing;
+  }
+
+  .mobile-toc-header {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    padding: 0 16px 16px;
+  }
+
+  .mobile-toc-nav {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0 24px 24px;
+    position: relative;
+  }
+
+  .mobile-toc-nav ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: relative;
+  }
+
+  .mobile-toc-nav li {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 8px 0;
+  }
+
+  .mobile-toc-nav a {
+    color: var(--color-muted);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .mobile-toc-nav li.is-active > a {
+    color: var(--color-accent);
+    font-weight: 500;
+  }
+
+  .mobile-toc-nav .note-toc-indicator {
+    background: var(--color-accent);
+    border-radius: 2px;
+    height: 18px;
+    left: 12px;
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    transform: translateY(var(--indicator-y, 0)) scaleY(var(--indicator-scale, 1));
+    transition:
+      transform 0.3s cubic-bezier(0.2, 0, 0, 1),
+      opacity 0.3s ease;
+    width: 3px;
+  }
+
+  .mobile-toc-nav:hover .note-toc-indicator,
+  .mobile-toc-nav:focus-within .note-toc-indicator {
+    opacity: 0.3;
+  }
+
+  .mobile-toc-nav.has-active .note-toc-indicator {
+    opacity: 1;
   }
 }
