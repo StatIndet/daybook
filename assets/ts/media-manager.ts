@@ -5,8 +5,8 @@ class MediaManager {
   private static instance: MediaManager | null = null;
 
   private activeAudio: HTMLAudioElement | null = null;
-  private articleLink: HTMLAnchorElement | null = null;
-  private articleLinkText: HTMLElement | null = null;
+  private articleLinks: NodeListOf<HTMLAnchorElement> | null = null;
+  private articleLinkTexts: NodeListOf<HTMLElement> | null = null;
   private currentSourceId: string | null = null;
   private currentTitle: string | null = null;
   private currentArtist: string | null = null;
@@ -20,6 +20,21 @@ class MediaManager {
   
   private container: HTMLElement | null = null;
   private audioContainer: HTMLElement | null = null;
+
+  // Mobile UI elements
+  private mobileFab: HTMLElement | null = null;
+  private mobileUI: HTMLElement | null = null;
+  private mobileBackdrop: HTMLElement | null = null;
+  private mobileCover: HTMLImageElement | null = null;
+  private mobileCoverLink: HTMLAnchorElement | null = null;
+  private mobileTitle: HTMLElement | null = null;
+  private mobileArtist: HTMLElement | null = null;
+  private mobilePlayPauseBtn: HTMLElement | null = null;
+  private mobilePlayPauseIcon: HTMLElement | null = null;
+  private mobilePrevBtn: HTMLElement | null = null;
+  private mobileNextBtn: HTMLElement | null = null;
+  
+  private isMobilePanelOpen: boolean = false;
 
   // Desktop UI elements
   private desktopPlayPauseBtn: HTMLElement | null = null;
@@ -100,8 +115,20 @@ private initDOM() {
     if (!this.container) return;
 
     this.audioContainer = this.container.querySelector(".mm-audio-container");
-    this.articleLink = this.container.querySelector(".mm-article-link");
-    this.articleLinkText = this.container.querySelector(".mm-article-link-text");
+    this.articleLinks = this.container.querySelectorAll(".mm-article-link");
+    this.articleLinkTexts = this.container.querySelectorAll(".mm-article-link-text");
+
+    this.mobileFab = this.container.querySelector(".mobile-media-fab");
+    this.mobileUI = this.container.querySelector(".mm-mobile-ui");
+    this.mobileBackdrop = this.container.querySelector(".mm-mobile-backdrop");
+    this.mobileCover = this.container.querySelector(".mm-mobile-cover");
+    this.mobileCoverLink = this.container.querySelector(".mm-mobile-cover-link");
+    this.mobileTitle = this.container.querySelector(".mm-mobile-title");
+    this.mobileArtist = this.container.querySelector(".mm-mobile-artist");
+    this.mobilePlayPauseBtn = this.container.querySelector(".mm-mobile-btn-play-pause");
+    this.mobilePlayPauseIcon = this.container.querySelector(".mm-mobile-btn-play-pause .mm-morph-icon");
+    this.mobilePrevBtn = this.container.querySelector(".mm-mobile-btn-prev");
+    this.mobileNextBtn = this.container.querySelector(".mm-mobile-btn-next");
 
     this.desktopPlayPauseBtn = this.container.querySelector(".mm-btn-play-pause");
     this.desktopPlayPauseIcon = this.container.querySelector(".mm-btn-play-pause .mm-icon-current");
@@ -243,6 +270,10 @@ private initDOM() {
     // Smooth progress
     this.smoothedProgress += (targetProgress - this.smoothedProgress) * 0.15;
     
+    if (this.mobileUI) {
+      this.mobileUI.style.setProperty("--media-progress", `${this.smoothedProgress * 100}%`);
+    }
+    
     this.drawVisualizer(this.smoothedProgress, this.wavePhase);
 
     // Keep looping if playing or if smoothing hasn't reached target
@@ -274,11 +305,39 @@ private initDOM() {
     };
 
     this.desktopPlayPauseBtn?.addEventListener("click", togglePlay);
+    this.mobilePlayPauseBtn?.addEventListener("click", togglePlay);
     
     const prevBtn = this.container?.querySelector(".mm-btn-prev");
     const nextBtn = this.container?.querySelector(".mm-btn-next");
     prevBtn?.addEventListener("click", () => this.playPrev());
     nextBtn?.addEventListener("click", () => this.playNext());
+    
+    this.mobilePrevBtn?.addEventListener("click", () => this.playPrev());
+    this.mobileNextBtn?.addEventListener("click", () => this.playNext());
+    
+    this.mobileFab?.addEventListener("click", () => {
+      this.isMobilePanelOpen = !this.isMobilePanelOpen;
+      if (this.mobileUI) {
+        if (this.isMobilePanelOpen) {
+          this.mobileUI.classList.add("is-open");
+          this.mobileUI.removeAttribute("inert");
+          this.mobileUI.removeAttribute("aria-hidden");
+        } else {
+          this.mobileUI.classList.remove("is-open");
+          this.mobileUI.setAttribute("inert", "");
+          this.mobileUI.setAttribute("aria-hidden", "true");
+        }
+      }
+    });
+    
+    this.mobileBackdrop?.addEventListener("click", () => {
+      this.isMobilePanelOpen = false;
+      if (this.mobileUI) {
+        this.mobileUI.classList.remove("is-open");
+        this.mobileUI.setAttribute("inert", "");
+        this.mobileUI.setAttribute("aria-hidden", "true");
+      }
+    });
 
     document.addEventListener('daybook:embed-play', async (e: any) => {
       const songId = e.detail.songId;
@@ -300,9 +359,14 @@ private initDOM() {
 
       if (this.coverImage && this.currentCover) this.coverImage.src = this.currentCover;
       if (this.smallCoverImage && this.currentCover) this.smallCoverImage.src = this.currentCover;
+      if (this.mobileCover && this.currentCover) this.mobileCover.src = this.currentCover;
+      
       if (this.titleElement) this.titleElement.textContent = this.currentTitle || "Unknown Track";
       if (this.verticalTitleElement) this.verticalTitleElement.textContent = this.currentTitle || "Unknown Track";
+      if (this.mobileTitle) this.mobileTitle.textContent = this.currentTitle || "Unknown Track";
+      
       if (this.artistElement) this.artistElement.textContent = this.currentArtist || "Unknown Artist";
+      if (this.mobileArtist) this.mobileArtist.textContent = this.currentArtist || "Unknown Artist";
       
       // Ensure audio src is loaded so if user clicks play, it works
       const apiBase = document.body.dataset.neteaseApiBaseUrl?.replace(/\/$/, "");
@@ -429,21 +493,32 @@ private initDOM() {
 
       if (this.coverImage && this.currentCover) this.coverImage.src = this.currentCover;
       if (this.smallCoverImage && this.currentCover) this.smallCoverImage.src = this.currentCover;
+      if (this.mobileCover && this.currentCover) this.mobileCover.src = this.currentCover;
+      
       if (this.titleElement) this.titleElement.textContent = this.currentTitle || "Unknown Track";
       if (this.verticalTitleElement) this.verticalTitleElement.textContent = this.currentTitle || "Unknown Track";
-      if (this.artistElement) this.artistElement.textContent = this.currentArtist || "Unknown Artist";
+      if (this.mobileTitle) this.mobileTitle.textContent = this.currentTitle || "Unknown Track";
       
-      if (index !== -1 && this.articleLink && this.articleLinkText) {
+      if (this.artistElement) this.artistElement.textContent = this.currentArtist || "Unknown Artist";
+      if (this.mobileArtist) this.mobileArtist.textContent = this.currentArtist || "Unknown Artist";
+      
+      if (index !== -1 && this.articleLinks && this.articleLinkTexts) {
          const songInfo = this.globalPlaylist[index];
-         if (songInfo) {
-           this.articleLink.href = songInfo.articleUrl;
-           this.articleLinkText.textContent = songInfo.articleTitle;
-           this.articleLink.classList.add("is-visible");
+         if (songInfo && songInfo.articleUrl && songInfo.articleTitle) {
+           this.articleLinks.forEach(link => {
+             link.href = songInfo.articleUrl!;
+             link.classList.add("is-visible");
+           });
+           this.articleLinkTexts.forEach(text => {
+             text.textContent = songInfo.articleTitle!;
+           });
+           if (this.mobileCoverLink) this.mobileCoverLink.href = songInfo.articleUrl;
          } else {
-           this.articleLink.classList.remove("is-visible");
+           this.articleLinks.forEach(link => link.classList.remove("is-visible"));
+           if (this.mobileCoverLink) this.mobileCoverLink.removeAttribute("href");
          }
-      } else if (this.articleLink) {
-         this.articleLink.classList.remove("is-visible");
+      } else if (this.articleLinks) {
+         this.articleLinks.forEach(link => link.classList.remove("is-visible"));
       }
 
       this.updateUI();
@@ -542,6 +617,11 @@ private initDOM() {
     if (this.expandedView) {
       if (isPlaying) this.expandedView.classList.add("is-playing");
       else this.expandedView.classList.remove("is-playing");
+    }
+    
+    if (this.mobileUI) {
+      if (isPlaying) this.mobileUI.classList.add("is-playing");
+      else this.mobileUI.classList.remove("is-playing");
     }
   }
 

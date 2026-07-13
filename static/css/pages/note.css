@@ -648,7 +648,7 @@ html[data-reduced-motion="true"] .note-toc-stage .note-toc {
     border: 1px solid var(--color-line);
     border-right: none;
     border-radius: 24px 0 0 24px;
-    bottom: 20%;
+    bottom: calc(env(safe-area-inset-bottom) + 120px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     color: var(--color-text);
     cursor: pointer;

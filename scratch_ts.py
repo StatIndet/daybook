@@ -3,79 +3,150 @@ import re
 with open("assets/ts/media-manager.ts", "r") as f:
     content = f.read()
 
-# Update globalPlaylist type
-target1 = "private globalPlaylist: string[] = [];"
-replacement1 = """interface GlobalSong {
-  id: string;
-  articleTitle: string;
-  articleUrl: string;
-}
-  private globalPlaylist: GlobalSong[] = [];"""
+# 1. Add DOM variables
+target1 = """  // Desktop UI elements
+  private desktopPlayPauseBtn: HTMLElement | null = null;"""
+replacement1 = """  // Mobile UI elements
+  private mobileFab: HTMLElement | null = null;
+  private mobileUI: HTMLElement | null = null;
+  private mobileBackdrop: HTMLElement | null = null;
+  private mobileCover: HTMLImageElement | null = null;
+  private mobileCoverLink: HTMLAnchorElement | null = null;
+  private mobileTitle: HTMLElement | null = null;
+  private mobileArtist: HTMLElement | null = null;
+  private mobilePlayPauseBtn: HTMLElement | null = null;
+  private mobilePlayPauseIcon: HTMLElement | null = null;
+  private mobilePrevBtn: HTMLElement | null = null;
+  private mobileNextBtn: HTMLElement | null = null;
+  
+  private isMobilePanelOpen: boolean = false;
+
+  // Desktop UI elements
+  private desktopPlayPauseBtn: HTMLElement | null = null;"""
 content = content.replace(target1, replacement1)
 
-# Update DOM properties
-target2 = "private activeAudio: HTMLAudioElement | null = null;"
-replacement2 = """private activeAudio: HTMLAudioElement | null = null;
-  private articleLink: HTMLAnchorElement | null = null;
-  private articleLinkText: HTMLElement | null = null;"""
+# 2. Query DOM variables in initDOM
+target2 = """    this.desktopPlayPauseBtn = this.container.querySelector(".mm-btn-play-pause");"""
+replacement2 = """    this.mobileFab = this.container.querySelector(".mobile-media-fab");
+    this.mobileUI = this.container.querySelector(".mm-mobile-ui");
+    this.mobileBackdrop = this.container.querySelector(".mm-mobile-backdrop");
+    this.mobileCover = this.container.querySelector(".mm-mobile-cover");
+    this.mobileCoverLink = this.container.querySelector(".mm-mobile-cover-link");
+    this.mobileTitle = this.container.querySelector(".mm-mobile-title");
+    this.mobileArtist = this.container.querySelector(".mm-mobile-artist");
+    this.mobilePlayPauseBtn = this.container.querySelector(".mm-mobile-btn-play-pause");
+    this.mobilePlayPauseIcon = this.container.querySelector(".mm-mobile-btn-play-pause .mm-mobile-morph-icon");
+    this.mobilePrevBtn = this.container.querySelector(".mm-mobile-btn-prev");
+    this.mobileNextBtn = this.container.querySelector(".mm-mobile-btn-next");
+
+    this.desktopPlayPauseBtn = this.container.querySelector(".mm-btn-play-pause");"""
 content = content.replace(target2, replacement2)
 
-# Query DOM properties
-target3 = "this.audioContainer = this.container.querySelector(\".mm-audio-container\");"
-replacement3 = """this.audioContainer = this.container.querySelector(".mm-audio-container");
-    this.articleLink = this.container.querySelector(".mm-article-link");
-    this.articleLinkText = this.container.querySelector(".mm-article-link-text");"""
+# 3. bindEvents
+target3 = """    if (this.desktopPlayPauseBtn) {
+      this.desktopPlayPauseBtn.addEventListener("click", () => this.togglePlay());
+    }"""
+replacement3 = """    if (this.desktopPlayPauseBtn) {
+      this.desktopPlayPauseBtn.addEventListener("click", () => this.togglePlay());
+    }
+    
+    if (this.mobilePlayPauseBtn) {
+      this.mobilePlayPauseBtn.addEventListener("click", () => this.togglePlay());
+    }
+    
+    if (this.mobilePrevBtn) {
+      this.mobilePrevBtn.addEventListener("click", () => this.playPrev());
+    }
+    
+    if (this.mobileNextBtn) {
+      this.mobileNextBtn.addEventListener("click", () => this.playNext());
+    }
+    
+    if (this.mobileFab) {
+      this.mobileFab.addEventListener("click", () => {
+        this.isMobilePanelOpen = !this.isMobilePanelOpen;
+        if (this.mobileUI) {
+          if (this.isMobilePanelOpen) {
+            this.mobileUI.classList.add("is-open");
+          } else {
+            this.mobileUI.classList.remove("is-open");
+          }
+        }
+      });
+    }
+    
+    if (this.mobileBackdrop) {
+      this.mobileBackdrop.addEventListener("click", () => {
+        this.isMobilePanelOpen = false;
+        if (this.mobileUI) this.mobileUI.classList.remove("is-open");
+      });
+    }"""
 content = content.replace(target3, replacement3)
 
-# Update getTrackUrl function signature logic if any... wait, there is none.
-
-# Update indexOf logic
-target4 = "const index = this.globalPlaylist.indexOf(songId);"
-replacement4 = "const index = this.globalPlaylist.findIndex(s => s.id === songId);"
+# 4. updateUI inside playTrack
+target4 = """      if (this.coverImage && this.currentCover) this.coverImage.src = this.currentCover;
+      if (this.smallCoverImage && this.currentCover) this.smallCoverImage.src = this.currentCover;
+      if (this.titleElement) this.titleElement.textContent = this.currentTitle || "Unknown Track";
+      if (this.verticalTitleElement) this.verticalTitleElement.textContent = this.currentTitle || "Unknown Track";
+      if (this.artistElement) this.artistElement.textContent = this.currentArtist || "Unknown Artist";"""
+replacement4 = """      if (this.coverImage && this.currentCover) this.coverImage.src = this.currentCover;
+      if (this.smallCoverImage && this.currentCover) this.smallCoverImage.src = this.currentCover;
+      if (this.mobileCover && this.currentCover) this.mobileCover.src = this.currentCover;
+      
+      if (this.titleElement) this.titleElement.textContent = this.currentTitle || "Unknown Track";
+      if (this.verticalTitleElement) this.verticalTitleElement.textContent = this.currentTitle || "Unknown Track";
+      if (this.mobileTitle) this.mobileTitle.textContent = this.currentTitle || "Unknown Track";
+      
+      if (this.artistElement) this.artistElement.textContent = this.currentArtist || "Unknown Artist";
+      if (this.mobileArtist) this.mobileArtist.textContent = this.currentArtist || "Unknown Artist";"""
 content = content.replace(target4, replacement4)
 
-# Update playTrack logic for first item (it passed a string, needs to pass songId)
-target5 = """const firstTrack = this.globalPlaylist[0];
-      if (firstTrack) {
-        this.playTrack(firstTrack, false);
-      }"""
-replacement5 = """const firstTrack = this.globalPlaylist[0];
-      if (firstTrack) {
-        this.playTrack(firstTrack.id, false);
-      }"""
+# 5. articleLink inside playTrack
+target5 = """         if (songInfo) {
+           this.articleLink.href = songInfo.articleUrl;
+           this.articleLinkText.textContent = songInfo.articleTitle;
+           this.articleLink.classList.add("is-visible");
+         } else {
+           this.articleLink.classList.remove("is-visible");
+         }"""
+replacement5 = """         if (songInfo) {
+           this.articleLink.href = songInfo.articleUrl;
+           this.articleLinkText.textContent = songInfo.articleTitle;
+           this.articleLink.classList.add("is-visible");
+           if (this.mobileCoverLink) this.mobileCoverLink.href = songInfo.articleUrl;
+         } else {
+           this.articleLink.classList.remove("is-visible");
+           if (this.mobileCoverLink) this.mobileCoverLink.removeAttribute("href");
+         }"""
 content = content.replace(target5, replacement5)
 
-# Next/Prev logic
-target6 = """const nextTrack = this.globalPlaylist[nextIndex];
-    if (nextTrack) this.playTrack(nextTrack, true);"""
-replacement6 = """const nextTrack = this.globalPlaylist[nextIndex];
-    if (nextTrack) this.playTrack(nextTrack.id, true);"""
+# 6. updatePlayPauseUI
+target6 = """    if (this.desktopPlayPauseBtn) {
+      if (isPlaying) {
+        this.desktopPlayPauseBtn.setAttribute("aria-label", "Pause");
+        this.container?.classList.add("is-playing");
+      } else {
+        this.desktopPlayPauseBtn.setAttribute("aria-label", "Play");
+        this.container?.classList.remove("is-playing");
+      }
+    }"""
+replacement6 = """    if (this.desktopPlayPauseBtn) {
+      if (isPlaying) {
+        this.desktopPlayPauseBtn.setAttribute("aria-label", "Pause");
+        this.container?.classList.add("is-playing");
+      } else {
+        this.desktopPlayPauseBtn.setAttribute("aria-label", "Play");
+        this.container?.classList.remove("is-playing");
+      }
+    }
+    if (this.mobilePlayPauseBtn) {
+      if (isPlaying) {
+        this.mobilePlayPauseBtn.setAttribute("aria-label", "Pause");
+      } else {
+        this.mobilePlayPauseBtn.setAttribute("aria-label", "Play");
+      }
+    }"""
 content = content.replace(target6, replacement6)
-
-target7 = """const prevTrack = this.globalPlaylist[prevIndex];
-    if (prevTrack) this.playTrack(prevTrack, true);"""
-replacement7 = """const prevTrack = this.globalPlaylist[prevIndex];
-    if (prevTrack) this.playTrack(prevTrack.id, true);"""
-content = content.replace(target7, replacement7)
-
-# Update playTrack method signature to add updating article link
-# We need to insert it in `playTrack` and the `daybook:embed-play` listener.
-def insert_after(text, search, addition):
-    idx = text.find(search)
-    if idx == -1: return text
-    return text[:idx + len(search)] + addition + text[idx + len(search):]
-
-addition_ui = """
-      if (index !== -1 && this.articleLink && this.articleLinkText) {
-         const songInfo = this.globalPlaylist[index];
-         this.articleLink.href = songInfo.articleUrl;
-         this.articleLinkText.textContent = songInfo.articleTitle;
-         this.articleLink.classList.add("is-visible");
-      } else if (this.articleLink) {
-         this.articleLink.classList.remove("is-visible");
-      }"""
-
-content = insert_after(content, 'this.artistElement.textContent = this.currentArtist || "Unknown Artist";', addition_ui)
 
 with open("assets/ts/media-manager.ts", "w") as f:
     f.write(content)
