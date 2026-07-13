@@ -5,11 +5,14 @@ class MediaManager {
   private static instance: MediaManager | null = null;
 
   private activeAudio: HTMLAudioElement | null = null;
+  private articleLink: HTMLAnchorElement | null = null;
+  private articleLinkText: HTMLElement | null = null;
   private currentSourceId: string | null = null;
   private currentTitle: string | null = null;
   private currentArtist: string | null = null;
   private currentCover: string | null = null;
-  private globalPlaylist: string[] = [];
+  
+  private globalPlaylist: { id: string; articleTitle: string; articleUrl: string }[] = [];
   private currentGlobalIndex: number = -1;
   
   private currentPlayRequest: symbol | null = null;
@@ -97,6 +100,8 @@ private initDOM() {
     if (!this.container) return;
 
     this.audioContainer = this.container.querySelector(".mm-audio-container");
+    this.articleLink = this.container.querySelector(".mm-article-link");
+    this.articleLinkText = this.container.querySelector(".mm-article-link-text");
 
     this.desktopPlayPauseBtn = this.container.querySelector(".mm-btn-play-pause");
     this.desktopPlayPauseIcon = this.container.querySelector(".mm-btn-play-pause .mm-icon-current");
@@ -133,7 +138,7 @@ private initDOM() {
       // Load first track info
       const firstTrack = this.globalPlaylist[0];
       if (firstTrack) {
-        this.playTrack(firstTrack, false);
+        this.playTrack(firstTrack.id, false);
       }
     }
   }
@@ -343,7 +348,7 @@ private initDOM() {
       this.updateProgressUI(false);
       
       // Also update global index if it's in the list so next/prev works
-      const index = this.globalPlaylist.indexOf(songId);
+      const index = this.globalPlaylist.findIndex(s => s.id === songId);
       if (index !== -1) {
         this.currentGlobalIndex = index;
       }
@@ -354,7 +359,7 @@ private initDOM() {
     if (!songId) return;
     
     // Update global index if it's in the playlist
-    const index = this.globalPlaylist.indexOf(songId);
+    const index = this.globalPlaylist.findIndex(s => s.id === songId);
     if (index !== -1) {
       this.currentGlobalIndex = index;
     }
@@ -428,6 +433,19 @@ private initDOM() {
       if (this.verticalTitleElement) this.verticalTitleElement.textContent = this.currentTitle || "Unknown Track";
       if (this.artistElement) this.artistElement.textContent = this.currentArtist || "Unknown Artist";
       
+      if (index !== -1 && this.articleLink && this.articleLinkText) {
+         const songInfo = this.globalPlaylist[index];
+         if (songInfo) {
+           this.articleLink.href = songInfo.articleUrl;
+           this.articleLinkText.textContent = songInfo.articleTitle;
+           this.articleLink.classList.add("is-visible");
+         } else {
+           this.articleLink.classList.remove("is-visible");
+         }
+      } else if (this.articleLink) {
+         this.articleLink.classList.remove("is-visible");
+      }
+
       this.updateUI();
       
 
@@ -453,7 +471,7 @@ private initDOM() {
     let nextIndex = this.currentGlobalIndex + 1;
     if (nextIndex >= this.globalPlaylist.length) nextIndex = 0;
     const nextTrack = this.globalPlaylist[nextIndex];
-    if (nextTrack) this.playTrack(nextTrack, true);
+    if (nextTrack) this.playTrack(nextTrack.id, true);
   }
 
   private playPrev() {
@@ -461,7 +479,7 @@ private initDOM() {
     let prevIndex = this.currentGlobalIndex - 1;
     if (prevIndex < 0) prevIndex = this.globalPlaylist.length - 1;
     const prevTrack = this.globalPlaylist[prevIndex];
-    if (prevTrack) this.playTrack(prevTrack, true);
+    if (prevTrack) this.playTrack(prevTrack.id, true);
   }
 
   private onSettingsChange(e: Event) {

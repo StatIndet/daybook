@@ -100,7 +100,7 @@ func Build(options Options) (BuildResult, error) {
 		}
 	}
 
-	var neteaseSongIDs []string
+	var neteaseSongs []render.NeteaseSong
 	neteaseRegex := regexp.MustCompile(`(?s)::netease\s*\{[^}]*id="([^"]+)"[^}]*\}`)
 	seenSongs := make(map[string]bool)
 	for _, note := range allNotes {
@@ -110,7 +110,11 @@ func Build(options Options) (BuildResult, error) {
 				id := match[1]
 				if !seenSongs[id] {
 					seenSongs[id] = true
-					neteaseSongIDs = append(neteaseSongIDs, id)
+					neteaseSongs = append(neteaseSongs, render.NeteaseSong{
+						ID:           id,
+						ArticleTitle: note.Title,
+						ArticleURL:   note.URL,
+					})
 				}
 			}
 		}
@@ -120,7 +124,7 @@ func Build(options Options) (BuildResult, error) {
 		Title:          options.Config.Title,
 		StartedAt:      startedAt,
 		TotalWordCount: totalWordCount,
-		NeteaseSongIDs: neteaseSongIDs,
+		NeteaseSongs:   neteaseSongs,
 	}
 
 	searchJSONPath := filepath.Join(options.PublicDir, "search.json")

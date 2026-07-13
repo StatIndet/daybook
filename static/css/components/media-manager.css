@@ -320,3 +320,41 @@ body[data-bg-playback-disabled="true"] .mm-desktop-ui {
   display: none !important;
 }
 
+
+.mm-article-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--color-on-surface-variant, var(--color-text-muted));
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-family: var(--font-ui);
+  transition: color 0.3s ease;
+  margin-top: 4px;
+  opacity: 0;
+  transform: translateY(5px);
+  pointer-events: none;
+}
+
+.mm-article-link.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  transition: color 0.3s ease, opacity 0.4s ease, transform 0.4s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.mm-article-link:hover {
+  color: var(--color-accent);
+}
+
+.mm-article-link .material-symbol {
+  font-size: 1.1rem;
+}
+
+.mm-article-link-text {
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

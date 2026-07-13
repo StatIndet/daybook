@@ -58,7 +58,7 @@
     import("{{.Assets.Path "/js/media-manager.js"}}");
   </script>
   <script>
-    window.GLOBAL_NETEASE_SONGS = [{{range $i, $id := .Site.NeteaseSongIDs}}{{if $i}},{{end}}"{{$id}}"{{end}}];
+    window.GLOBAL_NETEASE_SONGS = [{{range $i, $song := .Site.NeteaseSongs}}{{if $i}},{{end}}{"id": "{{$song.ID}}", "articleTitle": "{{$song.ArticleTitle}}", "articleUrl": "{{$song.ArticleURL}}"}{{end}}];
   </script>
 </body>
 </html>
