@@ -22,6 +22,7 @@ type SiteData struct {
 	Title          string
 	StartedAt      string
 	TotalWordCount int
+	NeteaseSongIDs []string
 }
 
 type Assets struct {

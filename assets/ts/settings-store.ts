@@ -3,6 +3,7 @@ export interface DaybookSettings {
   enableClockCursor: boolean;
   disableComments: boolean;
   reducedMotion: boolean;
+  disableBgPlayback: boolean;
 }
 
 const STORAGE_KEY = 'daybook:user-settings';
@@ -11,7 +12,8 @@ const DEFAULT_SETTINGS: DaybookSettings = {
   useSystemCursor: false,
   enableClockCursor: true,
   disableComments: false,
-  reducedMotion: false
+  reducedMotion: false,
+  disableBgPlayback: true
 };
 
 let currentSettings: DaybookSettings = { ...DEFAULT_SETTINGS };
@@ -69,6 +71,12 @@ export function syncSettingsToDOM() {
     html.setAttribute('data-reduced-motion', 'true');
   } else {
     html.removeAttribute('data-reduced-motion');
+  }
+
+  if (currentSettings.disableBgPlayback) {
+    html.setAttribute('data-bg-playback-disabled', 'true');
+  } else {
+    html.removeAttribute('data-bg-playback-disabled');
   }
 }
 

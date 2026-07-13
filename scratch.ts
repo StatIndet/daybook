@@ -1,0 +1,1 @@
+// Snippet for testing logic

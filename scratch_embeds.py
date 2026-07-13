@@ -1,227 +1,12 @@
-import { createFallbackElement, setupIframeEmbeds } from "./embed-loading.js";
-import { setupImages } from "./image-loader.js";
-import { daybookMediaManager } from "./media-manager.js";
+import re
 
-(function () {
-  var compactNumberFormat = new Intl.NumberFormat("en", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  });
+with open("assets/ts/embeds.ts", "r") as f:
+    content = f.read()
 
-  interface RepoData {
-    owner: { avatar_url: string };
-    description: string;
-    stargazers_count: number;
-    forks_count: number;
-    license: { spdx_id: string } | null;
-  }
+setup_netease_players_start = content.find("function setupNeteasePlayers()")
+setup_netease_players_end = content.find("window.daybookSyncEmbeds = function () {", setup_netease_players_start)
 
-  // Fetch repository data from GitHub API with caching
-  async function fetchRepoData(repo: string): Promise<RepoData | null> {
-    var cacheKey = "github-repo-" + repo;
-
-    // Check session storage for cached data
-    try {
-      var cachedData = sessionStorage.getItem(cacheKey);
-      if (cachedData) {
-        return JSON.parse(cachedData);
-      }
-    } catch (e) {
-      try {
-        sessionStorage.removeItem(cacheKey);
-      } catch (err) {}
-    }
-
-    // Fetch from API if not cached
-    try {
-      var response = await fetch("https://api.github.com/repos/" + repo);
-      if (!response.ok) {
-        console.warn(
-          "[GithubCard] Failed to fetch " +
-            repo +
-            ": " +
-            response.status +
-            " " +
-            response.statusText
-        );
-        return null;
-      }
-
-      var raw = await response.json();
-      var data = {
-        owner: { avatar_url: raw.owner && raw.owner.avatar_url },
-        description: raw.description,
-        stargazers_count: raw.stargazers_count,
-        forks_count: raw.forks_count,
-        license: raw.license ? { spdx_id: raw.license.spdx_id } : null,
-      };
-
-      // Cache the successful response
-      try {
-        sessionStorage.setItem(cacheKey, JSON.stringify(data));
-      } catch (err) {}
-
-      return data;
-    } catch (error) {
-      console.error("[GithubCard] Failed to fetch " + repo + ":", error);
-      return null;
-    }
-  }
-
-  // Update card UI with repository data
-  function updateCardUI(card: HTMLElement, data: RepoData | null) {
-    var setText = function (selector: string, text: string | number) {
-      var el = card.querySelector(selector);
-      if (el) {
-        el.textContent = String(text);
-      }
-    };
-
-    if (!data) {
-      setText(".gc-repo-description", "Failed to load data");
-      return;
-    }
-
-    var avatar = card.querySelector(".gc-owner-avatar");
-    if (avatar && data.owner && data.owner.avatar_url) {
-      (avatar as HTMLElement).style.backgroundImage = "url(" + data.owner.avatar_url + ")";
-      (avatar as HTMLElement).style.backgroundSize = "cover";
-      (avatar as HTMLElement).style.backgroundPosition = "center";
-    }
-
-    setText(".gc-repo-description", data.description || "No description");
-    setText(".gc-stars-count", compactNumberFormat.format(data.stargazers_count || 0));
-    setText(".gc-forks-count", compactNumberFormat.format(data.forks_count || 0));
-    setText(".gc-license-info", (data.license && data.license.spdx_id) || "No License");
-  }
-
-  // Load data for a specific card element
-  async function loadRepoData(card: HTMLElement) {
-    var repo = card.getAttribute("data-repo");
-    if (!repo) {
-      return;
-    }
-
-    card.dataset.embedStatus = "loading";
-
-    // 10s timeout for GitHub API
-    let isFinished = false;
-    let timer = window.setTimeout(() => {
-      if (isFinished) return;
-      isFinished = true;
-      card.dataset.embedStatus = "error";
-      card.innerHTML = "";
-      card.appendChild(createFallbackElement({
-        message: "加载 GitHub 仓库信息超时",
-        linkText: "前往 GitHub 查看",
-        linkUrl: "https://github.com/" + repo
-      }));
-    }, 10000);
-
-    var data = await fetchRepoData(repo);
-    if (isFinished) return;
-    isFinished = true;
-    window.clearTimeout(timer);
-
-    if (!data) {
-      card.dataset.embedStatus = "error";
-      card.innerHTML = "";
-      card.appendChild(createFallbackElement({
-        message: "无法加载 GitHub 仓库信息",
-        linkText: "前往 GitHub 查看",
-        linkUrl: "https://github.com/" + repo
-      }));
-      return;
-    }
-
-    card.dataset.embedStatus = "ready";
-    updateCardUI(card, data);
-  }
-
-  // Initialize all GitHub cards on the page
-  function setupGithubCards() {
-    var cards = document.querySelectorAll(".gc-container");
-    cards.forEach(function (card) {
-      const htmlCard = card as HTMLElement;
-      if (htmlCard.dataset.embedStatus === "loading" || htmlCard.dataset.embedStatus === "ready" || htmlCard.dataset.embedStatus === "error") return;
-      loadRepoData(htmlCard);
-    });
-  }
-
-  // Setup Twitter Widgets
-  function setupTweets() {
-    var tweets = document.querySelectorAll(".twitter-tweet");
-    if (tweets.length === 0) {
-      return;
-    }
-
-    let needsScript = false;
-
-    tweets.forEach(function (tweetEl) {
-      const tweet = tweetEl as HTMLElement;
-      if (tweet.dataset.embedStatus === "loading" || tweet.dataset.embedStatus === "ready" || tweet.dataset.embedStatus === "error") return;
-      
-      tweet.setAttribute("data-theme", "light");
-      tweet.dataset.embedStatus = "loading";
-      needsScript = true;
-
-      // Wrap tweet in a skeleton structure if it's just the blockquote
-      const skeleton = document.createElement("div");
-      skeleton.className = "tweet-skeleton";
-      skeleton.innerHTML = `
-        <div class="tweet-skeleton-header">
-          <div class="tweet-skeleton-avatar"></div>
-          <div class="tweet-skeleton-name"></div>
-        </div>
-        <div class="tweet-skeleton-body1"></div>
-        <div class="tweet-skeleton-body2"></div>
-      `;
-      tweet.appendChild(skeleton);
-
-      let isFinished = false;
-
-      // 15s timeout
-      const timer = window.setTimeout(() => {
-        if (isFinished) return;
-        isFinished = true;
-        tweet.dataset.embedStatus = "error";
-        tweet.innerHTML = "";
-        const href = tweet.querySelector("a")?.href || "https://x.com/";
-        tweet.parentElement?.appendChild(createFallbackElement({
-          message: "无法加载推文",
-          linkText: "前往 X / Twitter 查看",
-          linkUrl: href
-        }));
-        tweet.style.display = "none";
-      }, 15000);
-
-      // We rely on window.twttr events to mark it as ready
-      // If twttr is not available, the timeout will handle it.
-      if (window.twttr && window.twttr.events) {
-        window.twttr.events.bind('rendered', function (event: any) {
-          if (event.target === tweet) {
-            isFinished = true;
-            window.clearTimeout(timer);
-            tweet.dataset.embedStatus = "ready";
-          }
-        });
-      }
-    });
-
-    if (!needsScript) return;
-
-    if (window.twttr && window.twttr.widgets) {
-      window.twttr.widgets.load();
-    } else if (!document.getElementById("twitter-wjs")) {
-      var script = document.createElement("script");
-      script.id = "twitter-wjs";
-      script.src = "https://platform.twitter.com/widgets.js";
-      script.async = true;
-      document.head.appendChild(script);
-    }
-  }
-
-        function setupNeteasePlayers() {
+replacement = """  function setupNeteasePlayers() {
     var players = document.querySelectorAll(".netease-custom-player");
     if (players.length === 0) return;
 
@@ -284,7 +69,7 @@ import { daybookMediaManager } from "./media-manager.js";
         return;
       }
 
-      const apiBase = neteaseApiBaseUrl.replace(/\/$/, "");
+      const apiBase = neteaseApiBaseUrl.replace(/\\/$/, "");
 
       try {
         var urlRes = await fetch(apiBase + "/song/url?id=" + id + "&realIP=116.25.146.177");
@@ -332,7 +117,7 @@ import { daybookMediaManager } from "./media-manager.js";
               </div>
               <div class="nm-playbtn-wrapper">
                 <button class="nm-playbtn" aria-label="Play">
-                  <span class="material-symbol nm-icon">play_arrow</span>
+                  <span class="material-symbols-rounded nm-icon">play_arrow</span>
                 </button>
               </div>
             </div>
@@ -567,26 +352,9 @@ import { daybookMediaManager } from "./media-manager.js";
     });
   }
 
-window.daybookSyncEmbeds = function () {
-    setupGithubCards();
-    setupTweets();
-    setupNeteasePlayers();
-    setupIframeEmbeds();
-    setupImages();
-  };
+"""
 
+new_content = content[:setup_netease_players_start] + replacement + content[setup_netease_players_end:]
 
-
-  document.addEventListener("daybook:page-load", function () {
-    window.daybookSyncEmbeds();
-  });
-
-  document.addEventListener("daybook:article-content-swapped", function () {
-    window.daybookSyncEmbeds();
-  });
-
-  document.addEventListener("daybook:before-swap", function () {
-    // The MediaManager now handles audio takeover or stopping logic.
-  });
-
-})();
+with open("assets/ts/embeds.ts", "w") as f:
+    f.write(new_content)

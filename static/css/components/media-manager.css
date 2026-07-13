@@ -217,6 +217,7 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-expanded-
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 16px;
   margin-bottom: 0.8rem;
   width: 100%;
 }
@@ -234,7 +235,27 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-expanded-
 }
 
 .mm-controls-wrapper button:active {
-  transform: scale(0.95);
+  transform: scale(0.9);
+}
+
+.mm-controls-wrapper .mm-btn-prev,
+.mm-controls-wrapper .mm-btn-next {
+  width: 48px;
+  height: 48px;
+  border-radius: 24px;
+  background-color: transparent;
+  color: var(--color-on-surface);
+  transition: background-color 0.2s ease, transform 0.2s cubic-bezier(0.42, 1.67, 0.21, 0.9), width 0.15s cubic-bezier(0.42, 1.67, 0.21, 0.9);
+}
+
+.mm-controls-wrapper .mm-btn-prev:hover,
+.mm-controls-wrapper .mm-btn-next:hover {
+  background-color: var(--color-surface-variant, rgba(0, 0, 0, 0.05));
+}
+
+.mm-controls-wrapper .mm-btn-prev:active,
+.mm-controls-wrapper .mm-btn-next:active {
+  width: 40px; /* Squish effect */
 }
 
 .mm-controls-wrapper .mm-btn-play-pause {
@@ -293,3 +314,9 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-expanded-
     display: none !important;
   }
 }
+
+/* 禁用后台播放 */
+body[data-bg-playback-disabled="true"] .mm-desktop-ui {
+  display: none !important;
+}
+

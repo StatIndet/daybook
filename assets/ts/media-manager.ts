@@ -5,12 +5,15 @@ class MediaManager {
   private static instance: MediaManager | null = null;
 
   private activeAudio: HTMLAudioElement | null = null;
-  private currentArticleUrl: string | null = null;
   private currentSourceId: string | null = null;
   private currentTitle: string | null = null;
   private currentArtist: string | null = null;
   private currentCover: string | null = null;
-  private isTakeoverActive: boolean = false;
+  private globalPlaylist: string[] = [];
+  private currentGlobalIndex: number = -1;
+  
+  private currentPlayRequest: symbol | null = null;
+  private trackMetadataCache: Map<string, {title: string, artist: string, cover: string}> = new Map();
   
   private container: HTMLElement | null = null;
   private audioContainer: HTMLElement | null = null;
@@ -65,7 +68,31 @@ class MediaManager {
     return MediaManager.instance;
   }
 
-  private initDOM() {
+    private dispatchStateChange() {
+    document.dispatchEvent(new CustomEvent('daybook:media-state-change', {
+      detail: {
+        songId: this.currentSourceId,
+        isPlaying: this.activeAudio ? !this.activeAudio.paused : false,
+        title: this.currentTitle,
+        artist: this.currentArtist,
+        cover: this.currentCover
+      }
+    }));
+  }
+
+  private dispatchTimeUpdate() {
+    if (!this.activeAudio || !this.currentSourceId) return;
+    document.dispatchEvent(new CustomEvent('daybook:media-timeupdate', {
+      detail: {
+        songId: this.currentSourceId,
+        progress: this.activeAudio.duration ? (this.activeAudio.currentTime / this.activeAudio.duration) : 0,
+        currentTime: this.activeAudio.currentTime,
+        duration: this.activeAudio.duration
+      }
+    }));
+  }
+
+private initDOM() {
     this.container = document.getElementById("daybook-media-manager");
     if (!this.container) return;
 
@@ -95,6 +122,20 @@ class MediaManager {
     this.verticalTitleElement = this.container.querySelector(".mm-vertical-title");
     this.collapsedTab = this.container.querySelector(".mm-collapsed-tab");
     this.expandedView = this.container.querySelector(".mm-expanded-view");
+  
+    if ((window as any).GLOBAL_NETEASE_SONGS && Array.isArray((window as any).GLOBAL_NETEASE_SONGS)) {
+      this.globalPlaylist = (window as any).GLOBAL_NETEASE_SONGS;
+    }
+    
+    // Always show background player if there are songs and it's not disabled
+    if (this.globalPlaylist.length > 0) {
+      document.body.setAttribute("data-media-manager-active", "true");
+      // Load first track info
+      const firstTrack = this.globalPlaylist[0];
+      if (firstTrack) {
+        this.playTrack(firstTrack, false);
+      }
+    }
   }
 
   private cachedThemeColors = { accent: "#6750a4", accentSoft: "rgba(103, 80, 164, 0.18)", lastCheck: 0 };
@@ -217,7 +258,7 @@ class MediaManager {
   }
 
 
-  private bindEvents() {
+    private bindEvents() {
     const togglePlay = () => {
       if (!this.activeAudio) return;
       if (this.activeAudio.paused) {
@@ -228,128 +269,199 @@ class MediaManager {
     };
 
     this.desktopPlayPauseBtn?.addEventListener("click", togglePlay);
-    // Return button and close button were removed from UI in this redesign
-  }
+    
+    const prevBtn = this.container?.querySelector(".mm-btn-prev");
+    const nextBtn = this.container?.querySelector(".mm-btn-next");
+    prevBtn?.addEventListener("click", () => this.playPrev());
+    nextBtn?.addEventListener("click", () => this.playNext());
 
-  public notifyPlay(audio: HTMLAudioElement, articleUrl: string, sourceId: string, title?: string, artist?: string, cover?: string) {
-    // If there's an existing background audio from ANOTHER source, stop it to guarantee singleton playback.
-    if (this.activeAudio && this.currentSourceId !== sourceId) {
-       // If it's a completely different audio being played, release the old one.
-       this.stopAndRelease();
-    }
-
-    this.activeAudio = audio;
-    this.currentArticleUrl = articleUrl;
-    this.currentSourceId = sourceId;
-    if (title) this.currentTitle = title;
-    if (artist) this.currentArtist = artist;
-    if (cover) this.currentCover = cover;
-  }
-
-  public onBeforeSwap(oldUrl: string, newUrl: string) {
-    if (!this.activeAudio || !this.currentArticleUrl || !this.currentSourceId) return;
-
-    // Check if we are currently at the article containing the audio, and leaving it
-    const oldUrlObj = new URL(oldUrl, location.origin);
-    const sourceUrlObj = new URL(this.currentArticleUrl, location.origin);
-
-    if (oldUrlObj.pathname === sourceUrlObj.pathname) {
-      // Leaving the article
-      const isMobile = window.innerWidth <= 768;
+    document.addEventListener('daybook:embed-play', async (e: any) => {
+      const songId = e.detail.songId;
+      if (!songId) return;
       
-      if (isMobile) {
-        this.stopAndRelease();
-      } else if (!this.activeAudio.paused) {
-        this.takeoverAudio();
+      // Pause self if playing
+      if (this.activeAudio && !this.activeAudio.paused) {
+        this.activeAudio.pause();
+      }
+
+      // Load metadata and set UI, but do NOT play
+      const meta = await this.getTrackMetadata(songId);
+      if (!meta) return;
+      
+      this.currentSourceId = songId;
+      this.currentTitle = meta.title;
+      this.currentArtist = meta.artist;
+      this.currentCover = meta.cover;
+
+      if (this.coverImage && this.currentCover) this.coverImage.src = this.currentCover;
+      if (this.smallCoverImage && this.currentCover) this.smallCoverImage.src = this.currentCover;
+      if (this.titleElement) this.titleElement.textContent = this.currentTitle || "Unknown Track";
+      if (this.verticalTitleElement) this.verticalTitleElement.textContent = this.currentTitle || "Unknown Track";
+      if (this.artistElement) this.artistElement.textContent = this.currentArtist || "Unknown Artist";
+      
+      // Ensure audio src is loaded so if user clicks play, it works
+      const apiBase = document.body.dataset.neteaseApiBaseUrl?.replace(/\/$/, "");
+      if (!apiBase) return;
+
+      const playRequest = Symbol("playRequest");
+      this.currentPlayRequest = playRequest;
+
+      const urlRes = await fetch(`${apiBase}/song/url?id=${songId}&realIP=116.25.146.177`);
+      const urlData = await urlRes.json();
+      const songUrl = urlData.data?.[0]?.url;
+
+      if (this.currentPlayRequest !== playRequest) return;
+      if (!songUrl) return;
+      
+      if (this.activeAudio) {
+        this.activeAudio.pause();
+        if (this.activeAudio.parentElement === this.audioContainer) {
+          this.activeAudio.remove();
+        }
+      }
+
+      const audio = document.createElement("audio");
+      audio.src = songUrl;
+      audio.crossOrigin = "anonymous";
+      
+      if (this.audioContainer) {
+         this.audioContainer.innerHTML = "";
+         this.audioContainer.appendChild(audio);
+      }
+      
+      this.activeAudio = audio;
+      this.activeAudio.addEventListener("timeupdate", this.onTimeUpdateBound);
+      this.activeAudio.addEventListener("play", this.onPlayBound);
+      this.activeAudio.addEventListener("pause", this.onPauseBound);
+      this.activeAudio.addEventListener("ended", this.onEndedBound);
+      this.activeAudio.addEventListener("error", this.onErrorBound);
+
+      document.body.setAttribute("data-media-manager-active", "true");
+      
+      // Update UI but it's paused and at time 0
+      this.updatePlayPauseUI(false);
+      this.updateProgressUI(false);
+      
+      // Also update global index if it's in the list so next/prev works
+      const index = this.globalPlaylist.indexOf(songId);
+      if (index !== -1) {
+        this.currentGlobalIndex = index;
+      }
+    });
+  }
+
+  public async playTrack(songId: string, autoplay: boolean = true) {
+    if (!songId) return;
+    
+    // Update global index if it's in the playlist
+    const index = this.globalPlaylist.indexOf(songId);
+    if (index !== -1) {
+      this.currentGlobalIndex = index;
+    }
+
+    if (this.currentSourceId === songId && this.activeAudio) {
+      // Toggle play/pause if it's the same song
+      if (this.activeAudio.paused) {
+        this.activeAudio.play().catch(e => console.warn(e));
       } else {
-         // If it's paused when leaving, we just release it. We only takeover playing audio.
-         this.stopAndRelease();
+        this.activeAudio.pause();
       }
+      return;
     }
-  }
+    
+    const apiBase = document.body.dataset.neteaseApiBaseUrl?.replace(/\/$/, "");
+    if (!apiBase) return;
+    
+    const playRequest = Symbol("playRequest");
+    this.currentPlayRequest = playRequest;
 
-  public onArticleContentSwapped() {
-    // Check if we returned to the article URL
-    if (this.isTakeoverActive && this.currentArticleUrl && this.currentSourceId) {
-      const currentUrlObj = new URL(location.href);
-      const sourceUrlObj = new URL(this.currentArticleUrl, location.origin);
-
-      if (currentUrlObj.pathname === sourceUrlObj.pathname) {
-        this.trySyncBack();
+    try {
+      if (this.activeAudio) {
+        this.activeAudio.pause();
+        if (this.activeAudio.parentElement === this.audioContainer) {
+          this.activeAudio.remove();
+        }
       }
+
+      const urlRes = await fetch(`${apiBase}/song/url?id=${songId}&realIP=116.25.146.177`);
+      const urlData = await urlRes.json();
+      const songUrl = urlData.data?.[0]?.url;
+
+      const meta = await this.getTrackMetadata(songId);
+
+      // Check for race condition
+      if (this.currentPlayRequest !== playRequest) {
+         return; // Abort if another request was made
+      }
+
+      if (!songUrl || !meta) return;
+
+      const title = meta.title;
+      const artist = meta.artist;
+      const cover = meta.cover;
+
+      const audio = document.createElement("audio");
+      audio.src = songUrl;
+      audio.crossOrigin = "anonymous";
+      
+      if (this.audioContainer) {
+         this.audioContainer.innerHTML = "";
+         this.audioContainer.appendChild(audio);
+      }
+      
+      this.activeAudio = audio;
+      this.currentSourceId = songId || null;
+      this.currentTitle = title || null;
+      this.currentArtist = artist || null;
+      this.currentCover = cover || null;
+      document.body.setAttribute("data-media-manager-active", "true");
+      
+      this.activeAudio.addEventListener("timeupdate", this.onTimeUpdateBound);
+      this.activeAudio.addEventListener("play", this.onPlayBound);
+      this.activeAudio.addEventListener("pause", this.onPauseBound);
+      this.activeAudio.addEventListener("ended", this.onEndedBound);
+      this.activeAudio.addEventListener("error", this.onErrorBound);
+
+      if (this.coverImage && this.currentCover) this.coverImage.src = this.currentCover;
+      if (this.smallCoverImage && this.currentCover) this.smallCoverImage.src = this.currentCover;
+      if (this.titleElement) this.titleElement.textContent = this.currentTitle || "Unknown Track";
+      if (this.verticalTitleElement) this.verticalTitleElement.textContent = this.currentTitle || "Unknown Track";
+      if (this.artistElement) this.artistElement.textContent = this.currentArtist || "Unknown Artist";
+      
+      this.updateUI();
+      
+
+      if (autoplay) {
+        audio.play().catch(e => console.warn(e));
+      }
+    } catch(err) {
+       console.error("Failed to load global track", err);
     }
   }
 
-  private takeoverAudio() {
-    if (!this.activeAudio || !this.audioContainer) return;
-    
-    // Reparent audio to MediaManager
-    this.audioContainer.appendChild(this.activeAudio);
-    
-    this.activeAudio.addEventListener("timeupdate", this.onTimeUpdateBound);
-    this.activeAudio.addEventListener("play", this.onPlayBound);
-    this.activeAudio.addEventListener("pause", this.onPauseBound);
-    this.activeAudio.addEventListener("ended", this.onEndedBound);
-    this.activeAudio.addEventListener("error", this.onErrorBound);
-
-    this.isTakeoverActive = true;
-    
-    document.body.setAttribute("data-media-manager-active", "true");
-    
-    // Set metadata UI
-    if (this.coverImage && this.currentCover) this.coverImage.src = this.currentCover;
-    if (this.smallCoverImage && this.currentCover) this.smallCoverImage.src = this.currentCover;
-    if (this.titleElement) this.titleElement.textContent = this.currentTitle || "Unknown Track";
-    if (this.verticalTitleElement) this.verticalTitleElement.textContent = this.currentTitle || "Unknown Track";
-    if (this.artistElement) this.artistElement.textContent = this.currentArtist || "Unknown Artist";
-
-    // Initial sync
-    this.updateUI();
-  }
-
-  public claimAudio(sourceId: string): HTMLAudioElement | null {
-    if (this.isTakeoverActive && this.activeAudio && this.currentSourceId === sourceId) {
-      const audio = this.activeAudio;
-      this.releaseTakeoverState();
-      return audio;
-    }
-    return null;
-  }
-
-  private trySyncBack() {
-    // If the new article player claims the audio, it will call `claimAudio`.
-    // So we don't need to do anything proactively here unless we want to clean up if it WASN'T claimed.
-    // But since the new player renders after DOM swap, and setupNeteasePlayers is called synchronously after,
-    // claimAudio will be called immediately.
-  }
-
-  private stopAndRelease() {
-    if (this.activeAudio) {
+  public togglePlay() {
+    if (!this.activeAudio) return;
+    if (this.activeAudio.paused) {
+      this.activeAudio.play().catch(e => console.warn(e));
+    } else {
       this.activeAudio.pause();
     }
-    this.releaseTakeoverState();
-    this.activeAudio = null;
-    this.currentArticleUrl = null;
-    this.currentSourceId = null;
   }
 
-  private releaseTakeoverState() {
-    if (this.activeAudio) {
-      this.activeAudio.removeEventListener("timeupdate", this.onTimeUpdateBound);
-      this.activeAudio.removeEventListener("play", this.onPlayBound);
-      this.activeAudio.removeEventListener("pause", this.onPauseBound);
-      this.activeAudio.removeEventListener("ended", this.onEndedBound);
-      this.activeAudio.removeEventListener("error", this.onErrorBound);
-      
-      if (this.activeAudio.parentElement === this.audioContainer) {
-          this.activeAudio.remove(); // just remove from our hidden container
-      }
-    }
-    this.isTakeoverActive = false;
-    document.body.setAttribute("data-media-manager-active", "false");
-    if (this.coverWrapper) this.coverWrapper.classList.remove("is-playing");
-    if (this.collapsedTab) this.collapsedTab.classList.remove("is-playing");
-    if (this.expandedView) this.expandedView.classList.remove("is-playing");
+  private playNext() {
+    if (this.globalPlaylist.length === 0) return;
+    let nextIndex = this.currentGlobalIndex + 1;
+    if (nextIndex >= this.globalPlaylist.length) nextIndex = 0;
+    const nextTrack = this.globalPlaylist[nextIndex];
+    if (nextTrack) this.playTrack(nextTrack, true);
+  }
+
+  private playPrev() {
+    if (this.globalPlaylist.length === 0) return;
+    let prevIndex = this.currentGlobalIndex - 1;
+    if (prevIndex < 0) prevIndex = this.globalPlaylist.length - 1;
+    const prevTrack = this.globalPlaylist[prevIndex];
+    if (prevTrack) this.playTrack(prevTrack, true);
   }
 
   private onSettingsChange(e: Event) {
@@ -358,27 +470,32 @@ class MediaManager {
 
   private onTimeUpdate() {
     this.updateProgressUI();
+    
   }
 
   private onPlay() {
     this.updatePlayPauseUI(true);
     this.startVisualizer();
+    document.dispatchEvent(new CustomEvent('daybook:global-play'));
   }
 
   private onPause() {
     this.updatePlayPauseUI(false);
-    // Visualizer will stop automatically when smooth progress reaches target
-    this.startVisualizer(); // trigger one more frame to ensure waveAmp goes to 0
+    this.startVisualizer();
+    
   }
 
   private onEnded() {
     this.updatePlayPauseUI(false);
     this.updateProgressUI(true);
     this.startVisualizer();
+    this.playNext();
   }
 
   private onError() {
-    this.stopAndRelease();
+    if (this.activeAudio) {
+      this.activeAudio.pause();
+    }
   }
 
   private updateUI() {
@@ -412,37 +529,50 @@ class MediaManager {
 
   private updateProgressUI(forceEnded: boolean = false) {
     if (!this.activeAudio || !this.container) return;
-
-    let percentage = 0;
-    if (this.activeAudio.duration) {
-       percentage = (this.activeAudio.currentTime / this.activeAudio.duration) * 100;
-    }
-    
-    if (forceEnded) {
-       percentage = 100;
-    }
-
-    // Always trigger visualizer to ensure it updates during seeking even if paused
     this.startVisualizer();
+  }
+  
+  public getCurrentSongId() {
+    return this.currentSourceId;
+  }
+  
+  public isPlaying() {
+    return this.activeAudio ? !this.activeAudio.paused : false;
+  }
+  public async getTrackMetadata(songId: string) {
+    if (this.trackMetadataCache.has(songId)) {
+      return this.trackMetadataCache.get(songId);
+    }
+    const apiBase = document.body.dataset.neteaseApiBaseUrl?.replace(/\/$/, "");
+    if (!apiBase) return null;
+    try {
+      const detailRes = await fetch(`${apiBase}/song/detail?ids=${songId}`);
+      const detailData = await detailRes.json();
+      const songDetail = detailData.songs?.[0];
+      if (!songDetail) return null;
+      const meta = {
+        title: songDetail.name,
+        artist: songDetail.ar?.[0]?.name,
+        cover: songDetail.al?.picUrl
+      };
+      this.trackMetadataCache.set(songId, meta);
+      return meta;
+    } catch (e) {
+      console.error("Failed to fetch track metadata", e);
+      return null;
+    }
+  }
+
+  public getProgress(songId: string): { currentTime: number, duration: number, progress: number } | null {
+    if (this.currentSourceId !== songId || !this.activeAudio) return null;
+    return {
+      currentTime: this.activeAudio.currentTime,
+      duration: this.activeAudio.duration,
+      progress: this.activeAudio.duration ? this.activeAudio.currentTime / this.activeAudio.duration : 0
+    };
   }
 }
 
 export const daybookMediaManager = MediaManager.getInstance();
 
-document.addEventListener("daybook:before-swap", (e: Event) => {
-  const ce = e as CustomEvent;
-  daybookMediaManager.onBeforeSwap(ce.detail.oldUrl, ce.detail.newUrl);
-});
-
-document.addEventListener("daybook:article-content-swapped", () => {
-  daybookMediaManager.onArticleContentSwapped();
-});
-
-// Also trigger on page-load in case of traversing back/forward
-document.addEventListener("daybook:page-load", (e: Event) => {
-  const ce = e as CustomEvent;
-  // page-load event might happen on initial load, or traverse
-  if (ce.detail.navigationType === "traverse") {
-    daybookMediaManager.onArticleContentSwapped();
-  }
-});
+(window as any).daybookMediaManager = daybookMediaManager;

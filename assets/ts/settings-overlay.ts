@@ -65,8 +65,7 @@ export function initSettingsOverlay() {
 
   setupCheckbox('setting-system-cursor', 'useSystemCursor');
   setupCheckbox('setting-clock-cursor', 'enableClockCursor');
-  // Background playback feature will be refactored
-  // setupCheckbox('setting-bg-playback', 'disableBackgroundPlayback');
+  setupCheckbox('setting-bg-playback', 'disableBgPlayback');
   setupCheckbox('setting-disable-comments', 'disableComments');
   setupCheckbox('setting-reduced-motion', 'reducedMotion');
 

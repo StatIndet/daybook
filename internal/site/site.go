@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"unicode"
@@ -99,10 +100,27 @@ func Build(options Options) (BuildResult, error) {
 		}
 	}
 
+	var neteaseSongIDs []string
+	neteaseRegex := regexp.MustCompile(`(?s)::netease\s*\{[^}]*id="([^"]+)"[^}]*\}`)
+	seenSongs := make(map[string]bool)
+	for _, note := range allNotes {
+		matches := neteaseRegex.FindAllStringSubmatch(note.Body, -1)
+		for _, match := range matches {
+			if len(match) > 1 {
+				id := match[1]
+				if !seenSongs[id] {
+					seenSongs[id] = true
+					neteaseSongIDs = append(neteaseSongIDs, id)
+				}
+			}
+		}
+	}
+
 	siteData := render.SiteData{
 		Title:          options.Config.Title,
 		StartedAt:      startedAt,
 		TotalWordCount: totalWordCount,
+		NeteaseSongIDs: neteaseSongIDs,
 	}
 
 	searchJSONPath := filepath.Join(options.PublicDir, "search.json")
