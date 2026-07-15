@@ -11,7 +11,7 @@ export function applyExtends(config, cwd, mergeExtends, _shim) {
         let pathToDefault = null;
         if (!isPath) {
             try {
-                pathToDefault = require.resolve(config.extends);
+                pathToDefault = import.meta.resolve(config.extends);
             }
             catch (_err) {
                 return config;
@@ -24,7 +24,7 @@ export function applyExtends(config, cwd, mergeExtends, _shim) {
         previouslyVisitedConfigs.push(pathToDefault);
         defaultConfig = isPath
             ? JSON.parse(shim.readFileSync(pathToDefault, 'utf8'))
-            : require(config.extends);
+            : _shim.require(config.extends);
         delete config.extends;
         defaultConfig = applyExtends(defaultConfig, shim.path.dirname(pathToDefault), mergeExtends, shim);
     }

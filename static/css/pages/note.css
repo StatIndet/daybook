@@ -670,8 +670,10 @@ html[data-reduced-motion="true"] .note-toc-stage .note-toc {
 
   .mobile-toc-sheet {
     display: block;
-    height: 100vh;
+    height: 100%;
+    height: 100dvh;
     left: 0;
+    overflow: hidden;
     pointer-events: none;
     position: fixed;
     top: 0;

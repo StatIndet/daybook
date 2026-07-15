@@ -23,8 +23,10 @@
       <div class="mm-vertical-title">--</div>
     </div>
 
-    <!-- Expanded Full View -->
-    <div class="mm-expanded-view">
+    <!-- Expanded Full View (3D Flip Container) -->
+    <div class="mm-card-inner">
+      <!-- Front side: Player Controls -->
+      <div class="mm-expanded-view mm-card-front">
       <!-- Dynamic Canvas for Wavy Progress -->
       <canvas class="mm-visualizer-canvas"></canvas>
       
@@ -61,7 +63,27 @@
         <span class="material-symbol">menu_book</span>
         <span class="mm-article-link-text">--</span>
       </a>
+
+      <!-- Playlist Toggle Button -->
+      <button class="mm-btn-open-playlist" type="button" aria-label="Open Playlist">
+        <span class="material-symbol">format_list_bulleted</span>
+        <span class="mm-playlist-text" data-i18n-en="Playlist" data-i18n-zh="列表">{{if eq .Lang "en"}}Playlist{{else}}列表{{end}}</span>
+      </button>
     </div>
+
+    <!-- Back side: Playlist -->
+    <div class="mm-playlist-view mm-card-back">
+      <div class="mm-playlist-header">
+        <button class="mm-btn-close-playlist" type="button" aria-label="Back to Player">
+          <span class="material-symbol">arrow_back</span>
+        </button>
+        <span class="mm-playlist-header-title" data-i18n-en="Playlist" data-i18n-zh="播放列表">{{if eq .Lang "en"}}Playlist{{else}}播放列表{{end}}</span>
+      </div>
+      <ul class="mm-playlist-list">
+        <!-- Dynamically populated by JS -->
+      </ul>
+    </div>
+  </div>
   </div>
 
 

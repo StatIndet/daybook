@@ -5,6 +5,7 @@
   line-height: 1.75;
   overflow-wrap: anywhere;
   word-wrap: break-word;
+  overflow-x: clip;
 }
 
 .markdown > * {

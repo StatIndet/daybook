@@ -254,94 +254,53 @@ import { daybookMediaManager } from "./media-manager.js";
       var autostart = container.getAttribute("data-autostart") === "true";
       if (!id) return;
 
-      let isFinished = false;
-      let timer = window.setTimeout(() => {
-        if (isFinished) return;
-        isFinished = true;
+      const globalSongs = (window as any).GLOBAL_NETEASE_SONGS || [];
+      const songData = globalSongs.find((s: any) => s.id === id);
+
+      if (!songData || !songData.audioURL) {
         container.dataset.embedStatus = "error";
         container.innerHTML = "";
         container.appendChild(createFallbackElement({
-          message: "加载网易云播放器超时",
-          linkText: "点击前往网易云音乐查看",
-          linkUrl: "https://music.163.com/#/song?id=" + id
-        }));
-      }, 10000);
-
-      const neteaseEnabled = document.body.dataset.neteaseEnabled === "true";
-      const neteaseApiBaseUrl = document.body.dataset.neteaseApiBaseUrl;
-
-      if (!neteaseEnabled || !neteaseApiBaseUrl) {
-        if (isFinished) return;
-        isFinished = true;
-        window.clearTimeout(timer);
-        container.dataset.embedStatus = "error";
-        container.innerHTML = "";
-        container.appendChild(createFallbackElement({
-          message: "未配置或未启用网易云 API 地址",
+          message: "无法加载该歌曲音频",
           linkText: "点击前往网易云音乐查看",
           linkUrl: "https://music.163.com/#/song?id=" + id
         }));
         return;
       }
 
-      const apiBase = neteaseApiBaseUrl.replace(/\/$/, "");
+      var title = songData.title || id;
+      var artist = songData.artistText || "Unknown Artist";
+      var cover = songData.coverURL || "";
+      var songUrl = songData.audioURL;
 
-      try {
-        var urlRes = await fetch(apiBase + "/song/url?id=" + id + "&realIP=116.25.146.177");
-        var urlData = await urlRes.json();
-        var songUrl = urlData.data && urlData.data[0] && urlData.data[0].url;
-
-        var detailRes = await fetch(apiBase + "/song/detail?ids=" + id);
-        var detailData = await detailRes.json();
-        var songDetail = detailData.songs && detailData.songs[0];
-
-        if (isFinished) return;
-        isFinished = true;
-        window.clearTimeout(timer);
-
-        if (!songUrl || !songDetail) {
-          container.dataset.embedStatus = "error";
-          container.innerHTML = "";
-          container.appendChild(createFallbackElement({
-            message: "无法加载该歌曲音频",
-            linkText: "点击前往网易云音乐查看",
-            linkUrl: "https://music.163.com/#/song?id=" + id
-          }));
-          return;
-        }
-
-        var title = songDetail.name;
-        var artist = songDetail.ar && songDetail.ar[0] && songDetail.ar[0].name;
-        var cover = songDetail.al && songDetail.al.picUrl;
-
-        container.innerHTML = `
-          <div class="nm-player">
-            <div class="nm-bg" style="background-image: url('${cover}?param=500y500')"></div>
-            <div class="nm-overlay"></div>
-            <div class="nm-inner">
-              <img class="nm-cover" src="${cover}?param=200y200" alt="Cover" crossorigin="anonymous" />
-              <div class="nm-body">
-                <div class="nm-text">
-                  <div class="nm-title">${title}</div>
-                  <div class="nm-artist">${artist}</div>
-                </div>
-                <div class="nm-time">0:00 / 0:00</div>
-                <div class="nm-bottom">
-                  <canvas class="nm-canvas"></canvas>
-                </div>
+      container.innerHTML = `
+        <div class="nm-player">
+          <div class="nm-bg" style="background-image: url('${cover}?param=500y500')"></div>
+          <div class="nm-overlay"></div>
+          <div class="nm-inner">
+            <img class="nm-cover" src="${cover}?param=200y200" alt="Cover" />
+            <div class="nm-body">
+              <div class="nm-text">
+                <div class="nm-title">${title}</div>
+                <div class="nm-artist">${artist}</div>
               </div>
-              <div class="nm-playbtn-wrapper">
-                <button class="nm-playbtn" aria-label="Play">
-                  <span class="material-symbol nm-icon">play_arrow</span>
-                </button>
+              <div class="nm-time">0:00 / 0:00</div>
+              <div class="nm-bottom">
+                <canvas class="nm-canvas"></canvas>
               </div>
             </div>
-            <audio src="${songUrl}" crossorigin="anonymous"></audio>
+            <div class="nm-playbtn-wrapper">
+              <button class="nm-playbtn" aria-label="Play">
+                <span class="material-symbol nm-icon">play_arrow</span>
+              </button>
+            </div>
           </div>
-        `;
+          <audio src="${songUrl}"></audio>
+        </div>
+      `;
 
-        var playerWrapper = container.querySelector(".nm-player") as HTMLElement;
-        var audio = container.querySelector("audio") as HTMLAudioElement;
+      var playerWrapper = container.querySelector(".nm-player") as HTMLElement;
+      var audio = container.querySelector("audio") as HTMLAudioElement;
         var playBtn = container.querySelector(".nm-playbtn") as HTMLButtonElement;
         var iconSpan = container.querySelector(".nm-icon") as HTMLElement;
         var timeDiv = container.querySelector(".nm-time") as HTMLElement;
@@ -551,19 +510,16 @@ import { daybookMediaManager } from "./media-manager.js";
           }
         });
         
-      } catch (err) {
-        if (isFinished) return;
-        isFinished = true;
-        window.clearTimeout(timer);
-        console.error("Netease player error:", err);
-        container.dataset.embedStatus = "error";
-        container.innerHTML = "";
-        container.appendChild(createFallbackElement({
-          message: "无法加载网易云播放器",
-          linkText: "点击前往网易云音乐查看",
-          linkUrl: "https://music.163.com/#/song?id=" + id
-        }));
-      }
+        audio.addEventListener('error', () => {
+          console.error("Netease audio error for ID:", id);
+          container.dataset.embedStatus = "error";
+          container.innerHTML = "";
+          container.appendChild(createFallbackElement({
+            message: "无法加载网易云播放器",
+            linkText: "点击前往网易云音乐查看",
+            linkUrl: "https://music.163.com/#/song?id=" + id
+          }));
+        });
     });
   }
 

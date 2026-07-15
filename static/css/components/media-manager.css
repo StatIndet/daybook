@@ -17,9 +17,10 @@
   border-radius: 1.5rem;
   padding: 0;
   width: 220px; /* Increased width */
-  height: 390px; /* Height increased by 1.5x */
+  height: 430px; /* Increased to fit playlist button without squishing */
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
+  /* overflow: hidden; Removed to allow 3D flip without clipping/flattening */
+
   
   /* Initial hidden state completely off-screen */
   opacity: 0;
@@ -135,7 +136,7 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-expanded-
   top: 0; left: 0;
   width: 100%; height: 100%;
   contain: paint; /* isolate paint layer */
-  transform: translateZ(0); /* force hardware acceleration */
+  /* transform: translateZ(0); Removed to prevent 3D bleed-through when flipped */
   -webkit-clip-path: url(#mm-cookie-clip);
   clip-path: url(#mm-cookie-clip);
 }
@@ -359,3 +360,194 @@ body[data-bg-playback-disabled="true"] .mm-desktop-ui {
 /* -------------------------------------- */
 
 
+
+/* --- 3D Flip Structure --- */
+.mm-card-inner {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+  border-radius: inherit;
+}
+
+body[data-media-manager-active="true"] .mm-desktop-ui.is-flipped .mm-card-inner {
+  transform: rotateY(-180deg);
+}
+
+.mm-card-front, .mm-card-back {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: inherit; /* Apply border-radius here to contain children without container overflow:hidden */
+  overflow: hidden;
+}
+
+.mm-card-front {
+  transform: rotateY(0deg); /* Explicitly defined for Safari 3D rendering */
+}
+
+.mm-card-back {
+  transform: rotateY(180deg);
+}
+
+/* --- Playlist Toggle Button (Front) --- */
+.mm-btn-open-playlist {
+  margin-top: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-on-surface-variant);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  padding: 8px 16px;
+  border-radius: 20px;
+  transition: background-color 0.2s, color 0.2s;
+  pointer-events: auto; /* Since parent might be pointer-events: none */
+}
+
+.mm-btn-open-playlist:hover {
+  background-color: var(--color-surface-variant);
+  color: var(--color-on-surface);
+}
+
+/* --- Playlist View (Back) --- */
+.mm-playlist-view {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface-elevated, var(--color-page));
+}
+
+.mm-playlist-header {
+  display: flex;
+  align-items: center;
+  padding: 1.2rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.mm-btn-close-playlist {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-on-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  margin-right: 12px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.mm-btn-close-playlist:hover {
+  background-color: var(--color-surface-variant);
+}
+
+.mm-playlist-header-title {
+  font-family: var(--font-headline);
+  font-weight: 600;
+  color: var(--color-on-surface);
+}
+
+.mm-playlist-list {
+  flex: 1;
+  overflow-y: auto;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  /* Custom scrollbar */
+}
+
+.mm-playlist-list::-webkit-scrollbar {
+  width: 6px;
+}
+.mm-playlist-list::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+.mm-playlist-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin: 4px 8px;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden; /* For translating text without horizontal overflow */
+}
+
+.mm-playlist-item:hover {
+  background-color: var(--color-surface-variant);
+}
+
+.mm-playlist-item.is-active {
+  background-color: var(--color-accent-soft, var(--color-surface-variant));
+}
+
+.mm-playlist-item-info {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(0);
+  transition: transform 0.35s cubic-bezier(0.42, 1.67, 0.21, 0.9);
+}
+
+.mm-playlist-item.is-active .mm-playlist-item-info {
+  transform: translateX(28px);
+}
+
+.mm-playlist-item-title {
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mm-playlist-item.is-active .mm-playlist-item-title {
+  color: var(--color-accent);
+}
+
+.mm-playlist-item-artist {
+  font-size: 0.75rem;
+  color: var(--color-on-surface-variant);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* Micro animation for active state */
+
+/* Checkmark Animation */
+.mm-checkmark-container {
+  position: absolute;
+  left: 14px;
+  display: flex;
+  align-items: center;
+  color: var(--color-accent);
+  transform-origin: left center;
+  transform: scale(0);
+  opacity: 0;
+  transition: transform 0.35s cubic-bezier(0.38, 1.21, 0.22, 1),
+              opacity 0.2s ease-out;
+}
+
+.mm-playlist-item.is-active .mm-checkmark-container {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.mm-checkmark-container .material-symbol {
+  font-size: 20px;
+}

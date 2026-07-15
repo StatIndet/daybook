@@ -128,7 +128,7 @@ func Load() (Config, error) {
 			LocalDir:      "content/attachments",
 			PublicPath:    "/attachments/",
 			RemoteBaseURL: parseStringEnv("DAYBOOK_R2_BASE_URL", ""),
-			RemoteDirs:    []string{"audio", "video", "picture", "pdf"},
+			RemoteDirs:    []string{"audio", "video", "picture", "pdf", "netease"},
 		},
 		Netease: NeteaseConfig{
 			Enabled:    parseBoolEnv("DAYBOOK_NETEASE_ENABLED"),

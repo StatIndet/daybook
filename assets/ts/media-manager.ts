@@ -35,6 +35,12 @@ class MediaManager {
   private collapsedTab: HTMLElement | null = null;
   private expandedView: HTMLElement | null = null;
 
+  // Playlist elements
+  private desktopUi: HTMLElement | null = null;
+  private btnOpenPlaylist: HTMLElement | null = null;
+  private btnClosePlaylist: HTMLElement | null = null;
+  private playlistContainer: HTMLElement | null = null;
+
   // Event handlers bound to instance
   private onTimeUpdateBound: () => void;
   private onPlayBound: () => void;
@@ -127,6 +133,11 @@ private initDOM() {
     this.verticalTitleElement = this.container.querySelector(".mm-vertical-title");
     this.collapsedTab = this.container.querySelector(".mm-collapsed-tab");
     this.expandedView = this.container.querySelector(".mm-expanded-view");
+    this.desktopUi = this.container.querySelector(".mm-desktop-ui");
+    
+    this.btnOpenPlaylist = this.container.querySelector(".mm-btn-open-playlist");
+    this.btnClosePlaylist = this.container.querySelector(".mm-btn-close-playlist");
+    this.playlistContainer = this.container.querySelector(".mm-playlist-list");
   
     if ((window as any).GLOBAL_NETEASE_SONGS && Array.isArray((window as any).GLOBAL_NETEASE_SONGS)) {
       this.globalPlaylist = (window as any).GLOBAL_NETEASE_SONGS;
@@ -279,6 +290,13 @@ private initDOM() {
     prevBtn?.addEventListener("click", () => this.playPrev());
     nextBtn?.addEventListener("click", () => this.playNext());
 
+    this.btnOpenPlaylist?.addEventListener("click", () => {
+      this.desktopUi?.classList.add("is-flipped");
+    });
+    this.btnClosePlaylist?.addEventListener("click", () => {
+      this.desktopUi?.classList.remove("is-flipped");
+    });
+
     document.addEventListener('daybook:embed-play', async (e: any) => {
       const songId = e.detail.songId;
       if (!songId) return;
@@ -305,18 +323,10 @@ private initDOM() {
       
       if (this.artistElement) this.artistElement.textContent = this.currentArtist || "Unknown Artist";
       
-      // Ensure audio src is loaded so if user clicks play, it works
-      const apiBase = document.body.dataset.neteaseApiBaseUrl?.replace(/\/$/, "");
-      if (!apiBase) return;
+      const globalSongs = (window as any).GLOBAL_NETEASE_SONGS || [];
+      const songData = globalSongs.find((s: any) => s.id === songId);
+      const songUrl = songData ? songData.audioURL : null;
 
-      const playRequest = Symbol("playRequest");
-      this.currentPlayRequest = playRequest;
-
-      const urlRes = await fetch(`${apiBase}/song/url?id=${songId}&realIP=116.25.146.177`);
-      const urlData = await urlRes.json();
-      const songUrl = urlData.data?.[0]?.url;
-
-      if (this.currentPlayRequest !== playRequest) return;
       if (!songUrl) return;
       
       if (this.activeAudio) {
@@ -328,7 +338,6 @@ private initDOM() {
 
       const audio = document.createElement("audio");
       audio.src = songUrl;
-      audio.crossOrigin = "anonymous";
       
       if (this.audioContainer) {
          this.audioContainer.innerHTML = "";
@@ -347,6 +356,7 @@ private initDOM() {
       // Update UI but it's paused and at time 0
       this.updatePlayPauseUI(false);
       this.updateProgressUI(false);
+      this.updatePlaylistUI();
       
       // Also update global index if it's in the list so next/prev works
       const index = this.globalPlaylist.findIndex(s => s.id === songId);
@@ -375,9 +385,6 @@ private initDOM() {
       return;
     }
     
-    const apiBase = document.body.dataset.neteaseApiBaseUrl?.replace(/\/$/, "");
-    if (!apiBase) return;
-    
     const playRequest = Symbol("playRequest");
     this.currentPlayRequest = playRequest;
 
@@ -389,9 +396,9 @@ private initDOM() {
         }
       }
 
-      const urlRes = await fetch(`${apiBase}/song/url?id=${songId}&realIP=116.25.146.177`);
-      const urlData = await urlRes.json();
-      const songUrl = urlData.data?.[0]?.url;
+      const globalSongs = (window as any).GLOBAL_NETEASE_SONGS || [];
+      const songData = globalSongs.find((s: any) => s.id === songId);
+      const songUrl = songData ? songData.audioURL : null;
 
       const meta = await this.getTrackMetadata(songId);
 
@@ -408,7 +415,6 @@ private initDOM() {
 
       const audio = document.createElement("audio");
       audio.src = songUrl;
-      audio.crossOrigin = "anonymous";
       
       if (this.audioContainer) {
          this.audioContainer.innerHTML = "";
@@ -454,8 +460,8 @@ private initDOM() {
       }
 
       this.updateUI();
+      this.updatePlaylistUI();
       
-
       if (autoplay) {
         audio.play().catch(e => console.warn(e));
       }
@@ -521,6 +527,65 @@ private initDOM() {
     if (this.activeAudio) {
       this.activeAudio.pause();
     }
+    this.updatePlayPauseUI(false);
+    if (this.titleElement) {
+       this.titleElement.textContent = "Error Loading Audio";
+    }
+  }
+
+  private updatePlaylistUI() {
+    if (!this.playlistContainer) return;
+    
+    // If list already exists, just toggle classes for smooth CSS animations
+    if (this.playlistContainer.children.length === this.globalPlaylist.length) {
+      this.globalPlaylist.forEach((song, index) => {
+        const isActive = (this.currentSourceId === song.id);
+        const li = this.playlistContainer!.children[index];
+        if (li) {
+          if (isActive) {
+            li.classList.add("is-active");
+          } else {
+            li.classList.remove("is-active");
+          }
+        }
+      });
+      return;
+    }
+
+    this.playlistContainer.innerHTML = "";
+    
+    this.globalPlaylist.forEach((song, index) => {
+      const isActive = (this.currentSourceId === song.id);
+      
+      const li = document.createElement("li");
+      li.className = "mm-playlist-item";
+      if (isActive) li.classList.add("is-active");
+      
+      // Checkmark animation
+      const checkmark = document.createElement("div");
+      checkmark.className = "mm-checkmark-container";
+      checkmark.innerHTML = `<span class="material-symbol" style="font-weight: 600;">check</span>`;
+      
+      const info = document.createElement("div");
+      info.className = "mm-playlist-item-info";
+      
+      const title = document.createElement("div");
+      title.className = "mm-playlist-item-title";
+      // Find metadata from cache
+      const cached = this.trackMetadataCache.get(song.id);
+      title.textContent = cached ? cached.title : (song as any).title || song.id;
+      
+      info.appendChild(title);
+      
+      li.appendChild(checkmark);
+      li.appendChild(info);
+      
+      li.addEventListener("click", () => {
+        this.playTrack(song.id, true);
+      });
+      
+      this.playlistContainer!.appendChild(li);
+    });
   }
 
   private updateUI() {
@@ -568,24 +633,17 @@ private initDOM() {
     if (this.trackMetadataCache.has(songId)) {
       return this.trackMetadataCache.get(songId);
     }
-    const apiBase = document.body.dataset.neteaseApiBaseUrl?.replace(/\/$/, "");
-    if (!apiBase) return null;
-    try {
-      const detailRes = await fetch(`${apiBase}/song/detail?ids=${songId}`);
-      const detailData = await detailRes.json();
-      const songDetail = detailData.songs?.[0];
-      if (!songDetail) return null;
-      const meta = {
-        title: songDetail.name,
-        artist: songDetail.ar?.[0]?.name,
-        cover: songDetail.al?.picUrl
-      };
-      this.trackMetadataCache.set(songId, meta);
-      return meta;
-    } catch (e) {
-      console.error("Failed to fetch track metadata", e);
-      return null;
-    }
+    const globalSongs = (window as any).GLOBAL_NETEASE_SONGS || [];
+    const songData = globalSongs.find((s: any) => s.id === songId);
+    if (!songData) return null;
+    
+    const meta = {
+      title: songData.title || songId,
+      artist: songData.artistText || "Unknown Artist",
+      cover: songData.coverURL || ""
+    };
+    this.trackMetadataCache.set(songId, meta);
+    return meta;
   }
 
   public getProgress(songId: string): { currentTime: number, duration: number, progress: number } | null {

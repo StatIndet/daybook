@@ -255,13 +255,13 @@ interface DaybookTransitionFinishedDetail {
         }
 
         if (isTraverse) {
-          window.scrollTo(newState.scrollX, newState.scrollY);
+          window.scrollTo({ left: newState.scrollX, top: newState.scrollY, behavior: "instant" });
         } else if (targetUrl.hash) {
           const el = document.getElementById(targetUrl.hash.slice(1));
-          if (el) el.scrollIntoView();
-          else window.scrollTo(0, 0);
+          if (el) el.scrollIntoView({ behavior: "instant" });
+          else window.scrollTo({ left: 0, top: 0, behavior: "instant" });
         } else {
-          window.scrollTo(0, 0);
+          window.scrollTo({ left: 0, top: 0, behavior: "instant" });
         }
 
         // Force layout calculation to ensure synchronous scroll and layout are applied before view transition snapshots

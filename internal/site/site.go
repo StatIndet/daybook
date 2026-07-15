@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/StatIndet/daybook/internal/config"
@@ -102,15 +103,28 @@ func Build(options Options) (BuildResult, error) {
 
 	var neteaseSongs []render.NeteaseSong
 	neteaseRegex := regexp.MustCompile(`(?s)::netease\s*\{[^}]*id="([^"]+)"[^}]*\}`)
+	
+	var refs []neteaseRef
 	seenSongs := make(map[string]bool)
 	for _, note := range allNotes {
 		matches := neteaseRegex.FindAllStringSubmatch(note.Body, -1)
 		for _, match := range matches {
 			if len(match) > 1 {
 				id := match[1]
+				isDigit := true
+				for _, r := range id {
+					if r < '0' || r > '9' {
+						isDigit = false
+						break
+					}
+				}
+				if !isDigit {
+					continue
+				}
+				
 				if !seenSongs[id] {
 					seenSongs[id] = true
-					neteaseSongs = append(neteaseSongs, render.NeteaseSong{
+					refs = append(refs, neteaseRef{
 						ID:           id,
 						ArticleTitle: note.Title,
 						ArticleURL:   note.URL,
@@ -119,12 +133,16 @@ func Build(options Options) (BuildResult, error) {
 			}
 		}
 	}
+	
+	neteaseSongs = fetchNeteaseMetadata(refs, options.Config.Netease.APIBaseURL, options.Config.Attachments.RemoteBaseURL)
+	neteaseSongsJSONBytes, _ := json.Marshal(neteaseSongs)
 
 	siteData := render.SiteData{
-		Title:          options.Config.Title,
-		StartedAt:      startedAt,
-		TotalWordCount: totalWordCount,
-		NeteaseSongs:   neteaseSongs,
+		Title:            options.Config.Title,
+		StartedAt:        startedAt,
+		TotalWordCount:   totalWordCount,
+		NeteaseSongs:     neteaseSongs,
+		NeteaseSongsJSON: template.JS(neteaseSongsJSONBytes),
 	}
 
 	searchJSONPath := filepath.Join(options.PublicDir, "search.json")
@@ -1240,4 +1258,125 @@ func copyFile(sourcePath, targetPath string) error {
 	}
 
 	return nil
+}
+
+type neteaseRef struct {
+	ID           string
+	ArticleTitle string
+	ArticleURL   string
+}
+
+type neteaseCacheEntry struct {
+	ID         string   `json:"id"`
+	Title      string   `json:"title"`
+	Artists    []string `json:"artists"`
+	ArtistText string   `json:"artistText"`
+	CoverURL   string   `json:"coverURL"`
+	UpdatedAt  string   `json:"updatedAt"`
+}
+
+func fetchNeteaseMetadata(refs []neteaseRef, apiBase string, r2Base string) []render.NeteaseSong {
+	cachePath := "data/netease-metadata.json"
+	cache := make(map[string]neteaseCacheEntry)
+	
+	if b, err := os.ReadFile(cachePath); err == nil {
+		_ = json.Unmarshal(b, &cache)
+	}
+
+	apiBase = strings.TrimRight(apiBase, "/")
+	r2Base = strings.TrimRight(r2Base, "/")
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	var result []render.NeteaseSong
+
+	for _, ref := range refs {
+		id := ref.ID
+		var entry neteaseCacheEntry
+		cached, hasCache := cache[id]
+		entry = cached
+
+		if !hasCache && apiBase != "" {
+			reqURL := fmt.Sprintf("%s/song/detail?ids=%s", apiBase, id)
+			resp, err := client.Get(reqURL)
+			if err == nil {
+				defer resp.Body.Close()
+				if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+					var data struct {
+						Songs []struct {
+							ID   int64  `json:"id"`
+							Name string `json:"name"`
+							Ar   []struct {
+								Name string `json:"name"`
+							} `json:"ar"`
+							Al struct {
+								PicURL string `json:"picUrl"`
+							} `json:"al"`
+						} `json:"songs"`
+					}
+					if err := json.NewDecoder(resp.Body).Decode(&data); err == nil && len(data.Songs) > 0 {
+						songData := data.Songs[0]
+						if fmt.Sprintf("%d", songData.ID) == id {
+							entry.ID = id
+							entry.Title = songData.Name
+							var artists []string
+							for _, ar := range songData.Ar {
+								artists = append(artists, ar.Name)
+							}
+							entry.Artists = artists
+							entry.ArtistText = strings.Join(artists, "/")
+							entry.CoverURL = songData.Al.PicURL
+							entry.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+							cache[id] = entry
+							hasCache = true
+						} else {
+							fmt.Printf("[netease] warning: API returned mismatched ID for %s\n", id)
+						}
+					} else {
+						fmt.Printf("[netease] warning: failed to decode JSON or empty songs for %s\n", id)
+					}
+				} else {
+					fmt.Printf("[netease] warning: API returned status %d for %s\n", resp.StatusCode, id)
+				}
+			} else {
+				fmt.Printf("[netease] warning: API request failed for %s: %v\n", id, err)
+			}
+		}
+
+		if !hasCache {
+			fmt.Printf("[netease] warning: no metadata available for %s, using defaults\n", id)
+			entry.ID = id
+			entry.Title = id
+			entry.Artists = []string{}
+			entry.ArtistText = ""
+			entry.CoverURL = ""
+		}
+
+		audioURL := ""
+		if r2Base != "" {
+			audioURL = fmt.Sprintf("%s/netease/%s.flac", r2Base, id)
+		}
+
+		result = append(result, render.NeteaseSong{
+			ID:           entry.ID,
+			Title:        entry.Title,
+			Artists:      entry.Artists,
+			ArtistText:   entry.ArtistText,
+			CoverURL:     entry.CoverURL,
+			AudioURL:     audioURL,
+			ExternalURL:  fmt.Sprintf("https://music.163.com/#/song?id=%s", id),
+			ArticleTitle: ref.ArticleTitle,
+			ArticleURL:   ref.ArticleURL,
+		})
+	}
+
+	if len(cache) > 0 {
+		os.MkdirAll(filepath.Dir(cachePath), 0755)
+		if b, err := json.MarshalIndent(cache, "", "  "); err == nil {
+			os.WriteFile(cachePath, b, 0644)
+		} else {
+			fmt.Printf("[netease] warning: failed to write cache: %v\n", err)
+		}
+	}
+
+	return result
 }

@@ -203,7 +203,8 @@ func renderNeteaseEmbed(attrs map[string]string) (string, bool) {
 
 	switch neteaseType {
 	case "song":
-		html := fmt.Sprintf(`<div class="netease-custom-player" data-id="%s" data-autostart="%s"></div>`, escapeAttr(id), autostart)
+		href := "https://music.163.com/#/song?id=" + escapeAttr(id)
+		html := fmt.Sprintf(`<div class="netease-custom-player" data-id="%s" data-autostart="%s"><a href="%s" target="_blank" rel="noopener noreferrer" style="display:none;">View on Netease</a></div>`, escapeAttr(id), autostart, href)
 		return html, true
 	default:
 		// User specifically requested to not support playlist or album anymore.

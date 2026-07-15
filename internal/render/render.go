@@ -19,16 +19,23 @@ type Renderer struct {
 }
 
 type NeteaseSong struct {
-	ID           string `json:"id"`
-	ArticleTitle string `json:"articleTitle"`
-	ArticleURL   string `json:"articleUrl"`
+	ID           string   `json:"id"`
+	Title        string   `json:"title"`
+	Artists      []string `json:"artists"`
+	ArtistText   string   `json:"artistText"`
+	CoverURL     string   `json:"coverURL"`
+	AudioURL     string   `json:"audioURL"`
+	ExternalURL  string   `json:"externalURL"`
+	ArticleTitle string   `json:"articleTitle"`
+	ArticleURL   string   `json:"articleUrl"`
 }
 
 type SiteData struct {
-	Title          string
-	StartedAt      string
-	TotalWordCount int
-	NeteaseSongs   []NeteaseSong
+	Title            string
+	StartedAt        string
+	TotalWordCount   int
+	NeteaseSongs     []NeteaseSong
+	NeteaseSongsJSON template.JS
 }
 
 type Assets struct {
