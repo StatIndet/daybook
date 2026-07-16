@@ -28,12 +28,14 @@ content/attachments/audio/**
 content/attachments/video/**
 content/attachments/picture/**
 content/attachments/pdf/**
+content/attachments/netease/**
 
 # Keep directory placeholders
 !content/attachments/audio/.gitkeep
 !content/attachments/video/.gitkeep
 !content/attachments/picture/.gitkeep
 !content/attachments/pdf/.gitkeep
+!content/attachments/netease/.gitkeep
 Thumbs.db
 
 # Local environment
