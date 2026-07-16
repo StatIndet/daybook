@@ -26,8 +26,9 @@ type NeteaseSong struct {
 	CoverURL     string   `json:"coverURL"`
 	AudioURL     string   `json:"audioURL"`
 	ExternalURL  string   `json:"externalURL"`
-	ArticleTitle string   `json:"articleTitle"`
-	ArticleURL   string   `json:"articleUrl"`
+	ArticleTitle     string            `json:"articleTitle"`
+	ArticleTitleI18n map[string]string `json:"articleTitleI18n"`
+	ArticleURL       string            `json:"articleUrl"`
 }
 
 type SiteData struct {

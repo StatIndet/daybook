@@ -179,7 +179,9 @@ interface DaybookTransitionFinishedDetail {
     document.body.classList.remove("is-mobile-drawer-open");
     document.body.classList.remove("is-search-overlay-open");
     document.body.classList.remove("is-tags-overlay-open");
+    document.body.classList.remove("is-media-overlay-open");
     document.body.classList.remove("is-mobile-scroll-locked");
+    document.getElementById("daybook-media-manager")?.classList.remove("is-mobile-active");
   }
 
   async function navigate(urlStr: string, isTraverse = false, targetState: RouterState | null = null, sourceLink: HTMLElement | null = null) {

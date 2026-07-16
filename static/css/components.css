@@ -807,11 +807,12 @@ body.is-mobile-drawer-open .mobile-menu-toggle .icon-close {
   display: none;
   left: 0;
   opacity: 0;
+  pointer-events: none;
   position: fixed;
   right: 0;
-  top: var(--mobile-topbar-height, 0);
+  top: 0;
   transition: opacity 320ms cubic-bezier(0.2, 0.78, 0.24, 1);
-  z-index: 1900;
+  z-index: 2005;
 }
 
 @media (max-width: 960px) {
@@ -832,15 +833,15 @@ body.is-mobile-drawer-open .mobile-menu-toggle .icon-close {
   bottom: 0;
   display: none;
   height: calc(100dvh - var(--mobile-topbar-height, 0));
-  max-width: 360px;
+  max-width: 400px;
   position: fixed;
   right: 0;
   top: var(--mobile-topbar-height, 0);
   transform: translateX(100%);
-  transition: transform 420ms cubic-bezier(0.2, 0.78, 0.24, 1), visibility 0s linear 420ms;
+  transition: transform 320ms cubic-bezier(0.2, 0.78, 0.24, 1), visibility 0s linear 320ms;
   visibility: hidden;
   width: 82vw;
-  z-index: 1901;
+  z-index: 2006;
 }
 
 @media (max-width: 960px) {

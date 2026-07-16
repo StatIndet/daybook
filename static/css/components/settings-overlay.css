@@ -243,7 +243,7 @@ html.has-custom-cursor .settings-close-btn:hover {
 
 @media (max-width: 960px) {
   .setting-item-cursor,
-  .setting-item-bg-playback {
+  .setting-item-clock-cursor {
     display: none;
   }
 }

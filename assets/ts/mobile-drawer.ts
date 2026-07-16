@@ -19,8 +19,9 @@
     var isDrawerOpen = document.body.classList.contains("is-mobile-drawer-open");
     var isTagsOpen = document.body.classList.contains("is-tags-overlay-open");
     var isSearchOpen = document.body.classList.contains("is-search-overlay-open");
+    var isMediaOpen = document.body.classList.contains("is-media-overlay-open");
     
-    if (isDrawerOpen || isTagsOpen || isSearchOpen) {
+    if (isDrawerOpen || isTagsOpen || isSearchOpen || isMediaOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -48,7 +49,7 @@
   function openOverlay(overlayTarget: string) {
     var overlayClass = "is-" + overlayTarget + "-overlay-open";
     
-    document.body.classList.remove("is-tags-overlay-open", "is-search-overlay-open");
+    document.body.classList.remove("is-tags-overlay-open", "is-search-overlay-open", "is-media-overlay-open");
     document.body.classList.add(overlayClass);
     updateScrollLock();
 

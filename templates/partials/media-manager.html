@@ -96,7 +96,7 @@
   <div class="mm-mobile-ui" aria-label="Mobile Music Player" aria-hidden="true">
     <!-- Mobile Close Button -->
     <button class="mm-btn-close-mobile" type="button" aria-label="Close Mobile Player">
-      <span class="material-symbol">keyboard_arrow_down</span>
+      <span class="material-symbol">close</span>
     </button>
 
     <!-- Center Section: Artwork and Info -->
@@ -147,19 +147,19 @@
         <span class="mm-playlist-text" data-i18n-en="Playlist" data-i18n-zh="列表">{{if eq .Lang "en"}}Playlist{{else}}列表{{end}}</span>
       </button>
     </div>
+  </div>
 
-    <!-- Mobile Playlist Overlay -->
-    <div class="mm-mobile-playlist-view">
-      <div class="mm-playlist-header">
-        <button class="mm-btn-close-playlist" type="button" aria-label="Back to Player">
-          <span class="material-symbol">arrow_back</span>
-        </button>
-        <span class="mm-playlist-header-title" data-i18n-en="Playlist" data-i18n-zh="播放列表">{{if eq .Lang "en"}}Playlist{{else}}播放列表{{end}}</span>
-      </div>
-      <ul class="mm-playlist-list">
-        <!-- Dynamically populated by JS -->
-      </ul>
+  <!-- Mobile Playlist Overlay (Moved outside to avoid transform clipping) -->
+  <div class="mm-mobile-playlist-view">
+    <div class="mm-playlist-header">
+      <button class="mm-btn-close-playlist" type="button" aria-label="Back to Player">
+        <span class="material-symbol">arrow_back</span>
+      </button>
+      <span class="mm-playlist-header-title" data-i18n-en="Playlist" data-i18n-zh="播放列表">{{if eq .Lang "en"}}Playlist{{else}}播放列表{{end}}</span>
     </div>
+    <ul class="mm-playlist-list">
+      <!-- Dynamically populated by JS -->
+    </ul>
   </div>
 </div>
 {{end}}

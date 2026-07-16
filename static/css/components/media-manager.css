@@ -1,4 +1,15 @@
+.media-manager-container {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
 
+.mm-hidden-svg {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
 
 .mm-desktop-ui {
   display: flex;
@@ -345,7 +356,7 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-expanded-
 }
 
 /* 禁用后台播放 */
-body[data-bg-playback-disabled="true"] .mm-desktop-ui {
+html[data-bg-playback-disabled="true"] .media-manager-container {
   display: none !important;
 }
 
@@ -384,7 +395,7 @@ body[data-bg-playback-disabled="true"] .mm-desktop-ui {
 .mm-article-link-text {
   max-width: 140px;
   white-space: nowrap;
-  /* overflow: hidden; */
+  overflow: hidden;
   text-overflow: ellipsis;
 }
 
@@ -452,6 +463,15 @@ body[data-media-manager-active="true"] .mm-desktop-ui.is-flipped .mm-card-inner 
   display: flex;
   flex-direction: column;
   background: var(--color-surface-elevated, var(--color-page));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+body[data-media-manager-active="true"] .mm-desktop-ui:hover .mm-playlist-view,
+body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-playlist-view {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .mm-playlist-header {
@@ -558,65 +578,88 @@ body[data-media-manager-active="true"] .mm-desktop-ui.is-flipped .mm-card-inner 
   margin-top: 2px;
 }
 
-/* Micro animation for active state */
-
-/* Checkmark Animation */
-.mm-checkmark-container {
+/* Equalizer Animation for Active Track */
+.mm-eq-indicator {
   position: absolute;
   left: 14px;
   display: flex;
-  align-items: center;
-  color: var(--color-accent);
-  transform-origin: left center;
-  transform: scale(0);
+  align-items: center; /* Center vertically */
+  gap: 2px;
+  height: 16px;
   opacity: 0;
+  transform: scale(0);
+  transform-origin: left center;
   transition: transform 0.35s cubic-bezier(0.38, 1.21, 0.22, 1),
               opacity 0.2s ease-out;
 }
 
-.mm-playlist-item.is-active .mm-checkmark-container {
-  transform: scale(1);
+.mm-playlist-item.is-active .mm-eq-indicator {
   opacity: 1;
+  transform: scale(1);
 }
 
-.mm-checkmark-container .material-symbol {
-  font-size: 20px;
+.mm-eq-bar {
+  display: block;
+  width: 4px;
+  border-radius: 2px;
+  background-color: var(--color-accent);
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
 }
+
+.mm-eq-bar:nth-child(1) { animation-name: mm-eq-1; animation-duration: 0.45s; }
+.mm-eq-bar:nth-child(2) { animation-name: mm-eq-2; animation-duration: 0.55s; animation-delay: 0.1s; }
+.mm-eq-bar:nth-child(3) { animation-name: mm-eq-3; animation-duration: 0.5s; animation-delay: 0.2s; }
+.mm-eq-bar:nth-child(4) { animation-name: mm-eq-4; animation-duration: 0.45s; animation-delay: 0.3s; }
+
+/* Pause the equalizer when audio is paused */
+.media-manager-container:not(.is-playing) .mm-eq-bar {
+  animation-play-state: paused;
+}
+
+@keyframes mm-eq-1 { 0% { height: 4px; } 100% { height: 12px; } }
+@keyframes mm-eq-2 { 0% { height: 6px; } 100% { height: 16px; } }
+@keyframes mm-eq-3 { 0% { height: 8px; } 100% { height: 14px; } }
+@keyframes mm-eq-4 { 0% { height: 5px; } 100% { height: 10px; } }
 
 /* ==========================================================================
    Mobile UI (Fullscreen & FAB)
    ========================================================================== */
 
 /* Hide mobile elements on desktop */
-@media (min-width: 801px) {
+@media (min-width: 961px) {
   .mobile-media-fab,
   .mm-btn-close-mobile {
     display: none !important;
   }
+
+  .mm-mobile-ui {
+    display: none !important;
+  }
 }
 
-@media (max-width: 800px) {
-  /* Mobile FAB */
+@media (max-width: 960px) {
+  /* Mobile FAB — mirrors .mobile-toc-fab dimensions */
   .mobile-media-fab {
     display: flex;
     align-items: center;
     justify-content: center;
     position: fixed;
     right: 0;
-    /* Position slightly above the TOC fab if it exists */
-    bottom: calc(max(24px, env(safe-area-inset-bottom)) + 70px);
-    width: 44px;
-    height: 64px;
-    border-radius: 32px 0 0 32px;
-    background-color: var(--color-surface-elevated, var(--color-page));
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    border: 1px solid var(--color-border);
+    /* Sit directly above the TOC fab (TOC bottom ≈ 120px, TOC height = 48px, gap = 8px) */
+    bottom: calc(env(safe-area-inset-bottom) + 176px);
+    height: 48px;
+    width: auto;
+    padding: 0 12px 0 16px;
+    border-radius: 24px 0 0 24px;
+    background: var(--color-page);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--color-line);
     border-right: none;
     z-index: 90;
     cursor: pointer;
-    /* overflow: hidden; */
-    padding: 0;
-    padding-left: 8px;
+    color: var(--color-text);
     transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1), opacity 0.3s;
   }
 
@@ -627,48 +670,44 @@ body[data-media-manager-active="true"] .mm-desktop-ui.is-flipped .mm-card-inner 
   }
 
   .mobile-media-fab-cover {
-    width: 32px;
-    height: 32px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     object-fit: cover;
-    animation: mm-spin-slow 10s linear infinite;
+    /* No spin animation */
   }
 
-  body[data-media-manager-active="false"] .mobile-media-fab-cover {
-    animation-play-state: paused;
-  }
-
-  @keyframes mm-spin-slow {
-    100% { transform: rotate(360deg); }
-  }
-
-  /* Mobile Close Button */
   .mm-btn-close-mobile {
     position: absolute;
     top: 24px;
-    left: 24px;
-    width: 44px;
-    height: 44px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(128, 128, 128, 0.1);
+    background: transparent;
     border: none;
     border-radius: 50%;
-    color: var(--color-on-surface);
+    color: var(--color-muted);
     z-index: 10;
     cursor: pointer;
-    backdrop-filter: blur(4px);
+    transition: color 160ms ease;
   }
-
-  .mm-mobile-ui {
-    display: none !important;
+  .mm-btn-close-mobile:hover,
+  .mm-btn-close-mobile:focus-visible {
+    color: var(--color-hover-text);
+  }
+  .mm-btn-close-mobile .material-symbol {
+    font-size: 1.5rem;
   }
 }
 
-/* Hide desktop UI on smaller screens */
+/* Hide desktop UI on tablet and smaller screens */
 @media (max-width: 960px) {
   .mm-desktop-ui {
     display: none !important;
   }
 }
+
+

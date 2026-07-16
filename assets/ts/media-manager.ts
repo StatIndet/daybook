@@ -333,32 +333,26 @@ private initDOM() {
 
     const btnCloseMobile = this.container?.querySelector(".mm-btn-close-mobile");
     btnCloseMobile?.addEventListener("click", () => {
-      this.container?.classList.remove("is-mobile-active");
+      document.body.classList.remove("is-media-overlay-open");
       document.body.style.overflow = "";
+      document.body.classList.remove("is-mobile-scroll-locked");
     });
 
     if (this.articleLinks) {
       this.articleLinks.forEach(link => {
         link.addEventListener("click", () => {
-          this.container?.classList.remove("is-mobile-active");
+          document.body.classList.remove("is-media-overlay-open");
           document.body.style.overflow = "";
+          document.body.classList.remove("is-mobile-scroll-locked");
         });
       });
     }
 
     if (this.mobileFab) {
       this.mobileFab.addEventListener("click", () => {
-        this.container?.classList.add("is-mobile-active");
+        document.body.classList.add("is-media-overlay-open");
         document.body.style.overflow = "hidden"; // Prevent scrolling
-      });
-    }
-
-    if (this.drawerMusicBtn) {
-      this.drawerMusicBtn.addEventListener("click", () => {
-        this.container?.classList.add("is-mobile-active");
-        document.body.style.overflow = "hidden";
-        // Close drawer if it's open
-        document.body.classList.remove("mobile-drawer-open");
+        document.body.classList.add("is-mobile-scroll-locked");
       });
     }
 
@@ -571,7 +565,12 @@ private initDOM() {
   }
 
   private onSettingsChange(e: Event) {
-    // Currently no settings affect media-manager
+    const customEvent = e as CustomEvent;
+    if (customEvent.detail && customEvent.detail.disableBgPlayback) {
+      if (this.activeAudio && !this.activeAudio.paused) {
+        this.activeAudio.pause();
+      }
+    }
   }
 
   private onTimeUpdate() {
@@ -635,10 +634,10 @@ private initDOM() {
         li.className = "mm-playlist-item";
         if (isActive) li.classList.add("is-active");
         
-        // Checkmark animation
-        const checkmark = document.createElement("div");
-        checkmark.className = "mm-checkmark-container";
-        checkmark.innerHTML = `<span class="material-symbol" style="font-weight: 600;">check</span>`;
+        // Equalizer animation for active track
+        const indicator = document.createElement("div");
+        indicator.className = "mm-eq-indicator";
+        indicator.innerHTML = `<span class="mm-eq-bar"></span><span class="mm-eq-bar"></span><span class="mm-eq-bar"></span><span class="mm-eq-bar"></span>`;
         
         const info = document.createElement("div");
         info.className = "mm-playlist-item-info";
@@ -651,7 +650,7 @@ private initDOM() {
         
         info.appendChild(title);
         
-        li.appendChild(checkmark);
+        li.appendChild(indicator);
         li.appendChild(info);
         
         li.addEventListener("click", () => {

@@ -106,30 +106,59 @@ func Build(options Options) (BuildResult, error) {
 	
 	var refs []neteaseRef
 	seenSongs := make(map[string]bool)
-	for _, note := range allNotes {
-		matches := neteaseRegex.FindAllStringSubmatch(note.Body, -1)
-		for _, match := range matches {
-			if len(match) > 1 {
-				id := match[1]
-				isDigit := true
-				for _, r := range id {
-					if r < '0' || r > '9' {
-						isDigit = false
+	for _, group := range groups {
+		groupSongIDs := make(map[string]bool)
+
+		// Collect all unique songs in this article group
+		for _, note := range group.Versions {
+			matches := neteaseRegex.FindAllStringSubmatch(note.Body, -1)
+			for _, match := range matches {
+				if len(match) > 1 {
+					id := match[1]
+					isDigit := true
+					for _, r := range id {
+						if r < '0' || r > '9' {
+							isDigit = false
+							break
+						}
+					}
+					if isDigit {
+						groupSongIDs[id] = true
+					}
+				}
+			}
+		}
+
+		for id := range groupSongIDs {
+			if !seenSongs[id] {
+				seenSongs[id] = true
+				
+				// Build the ArticleTitleI18n map
+				titleI18n := make(map[string]string)
+				for lang, note := range group.Versions {
+					titleI18n[lang] = note.Title
+				}
+				
+				// Fallback to zh-CN or en or whatever for default ArticleTitle
+				defaultTitle := ""
+				defaultURL := ""
+				if note, ok := group.Versions["zh-CN"]; ok {
+					defaultTitle = note.Title
+					defaultURL = note.URL
+				} else {
+					for _, note := range group.Versions {
+						defaultTitle = note.Title
+						defaultURL = note.URL
 						break
 					}
 				}
-				if !isDigit {
-					continue
-				}
-				
-				if !seenSongs[id] {
-					seenSongs[id] = true
-					refs = append(refs, neteaseRef{
-						ID:           id,
-						ArticleTitle: note.Title,
-						ArticleURL:   note.URL,
-					})
-				}
+
+				refs = append(refs, neteaseRef{
+					ID:               id,
+					ArticleTitle:     defaultTitle,
+					ArticleTitleI18n: titleI18n,
+					ArticleURL:       defaultURL,
+				})
 			}
 		}
 	}
@@ -1261,9 +1290,10 @@ func copyFile(sourcePath, targetPath string) error {
 }
 
 type neteaseRef struct {
-	ID           string
-	ArticleTitle string
-	ArticleURL   string
+	ID               string
+	ArticleTitle     string
+	ArticleTitleI18n map[string]string
+	ArticleURL       string
 }
 
 type neteaseCacheEntry struct {
@@ -1357,15 +1387,16 @@ func fetchNeteaseMetadata(refs []neteaseRef, apiBase string, r2Base string) []re
 		}
 
 		result = append(result, render.NeteaseSong{
-			ID:           entry.ID,
-			Title:        entry.Title,
-			Artists:      entry.Artists,
-			ArtistText:   entry.ArtistText,
-			CoverURL:     entry.CoverURL,
-			AudioURL:     audioURL,
-			ExternalURL:  fmt.Sprintf("https://music.163.com/#/song?id=%s", id),
-			ArticleTitle: ref.ArticleTitle,
-			ArticleURL:   ref.ArticleURL,
+			ID:               entry.ID,
+			Title:            entry.Title,
+			Artists:          entry.Artists,
+			ArtistText:       entry.ArtistText,
+			CoverURL:         entry.CoverURL,
+			AudioURL:         audioURL,
+			ExternalURL:      fmt.Sprintf("https://music.163.com/#/song?id=%s", id),
+			ArticleTitle:     ref.ArticleTitle,
+			ArticleTitleI18n: ref.ArticleTitleI18n,
+			ArticleURL:       ref.ArticleURL,
 		})
 	}
 
