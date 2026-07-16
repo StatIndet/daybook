@@ -24,12 +24,11 @@ class MediaManager {
   // Desktop UI elements
   private desktopPlayPauseBtn: HTMLElement | null = null;
   private desktopPlayPauseIcon: HTMLElement | null = null;
-  private coverImage: HTMLImageElement | null = null;
-  private coverWrapper: HTMLElement | null = null;
-  private titleElement: HTMLElement | null = null;
-  private artistElement: HTMLElement | null = null;
-  private visualizerCanvas: HTMLCanvasElement | null = null;
-  private canvasCtx: CanvasRenderingContext2D | null = null;
+  private coverImages: NodeListOf<HTMLImageElement> | null = null;
+  private coverWrappers: NodeListOf<HTMLElement> | null = null;
+  private titleElements: NodeListOf<HTMLElement> | null = null;
+  private artistElements: NodeListOf<HTMLElement> | null = null;
+  private canvases: Array<{canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D}> = [];
   private smallCoverImage: HTMLImageElement | null = null;
   private verticalTitleElement: HTMLElement | null = null;
   private collapsedTab: HTMLElement | null = null;
@@ -39,7 +38,12 @@ class MediaManager {
   private desktopUi: HTMLElement | null = null;
   private btnOpenPlaylist: HTMLElement | null = null;
   private btnClosePlaylist: HTMLElement | null = null;
-  private playlistContainer: HTMLElement | null = null;
+  private playlistContainers: NodeListOf<HTMLElement> | null = null;
+
+  // Mobile elements
+  private mobileFab: HTMLElement | null = null;
+  private mobileFabCover: HTMLImageElement | null = null;
+  private drawerMusicBtn: HTMLElement | null = null;
 
   // Event handlers bound to instance
   private onTimeUpdateBound: () => void;
@@ -112,32 +116,37 @@ private initDOM() {
     this.desktopPlayPauseBtn = this.container.querySelector(".mm-btn-play-pause");
     this.desktopPlayPauseIcon = this.container.querySelector(".mm-btn-play-pause .mm-icon-current");
     
-    this.coverImage = this.container.querySelector(".mm-cover-image");
-    this.coverWrapper = this.container.querySelector(".mm-cover-wrapper");
-    this.titleElement = this.container.querySelector(".mm-title");
-    this.artistElement = this.container.querySelector(".mm-artist");
-    this.visualizerCanvas = this.container.querySelector(".mm-visualizer-canvas");
-    if (this.visualizerCanvas) {
-      this.canvasCtx = this.visualizerCanvas.getContext("2d");
-      // Scale canvas for retina display
-      const size = 180;
-      this.visualizerCanvas.width = size * 2;
-      this.visualizerCanvas.height = size * 2;
-      this.visualizerCanvas.style.width = size + "px";
-      this.visualizerCanvas.style.height = size + "px";
-      if (this.canvasCtx) {
-        this.canvasCtx.scale(2, 2);
+    this.coverImages = this.container.querySelectorAll(".mm-cover-image");
+    this.coverWrappers = this.container.querySelectorAll(".mm-cover-wrapper");
+    this.titleElements = this.container.querySelectorAll(".mm-title");
+    this.artistElements = this.container.querySelectorAll(".mm-artist");
+    const canvasEls = this.container.querySelectorAll<HTMLCanvasElement>(".mm-visualizer-canvas, .mm-mobile-visualizer-canvas");
+    canvasEls.forEach(canvas => {
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        const size = 180;
+        canvas.width = size * 2;
+        canvas.height = size * 2;
+        canvas.style.width = size + "px";
+        canvas.style.height = size + "px";
+        ctx.scale(2, 2);
+        this.canvases.push({ canvas, ctx });
       }
-    }
+    });
     this.smallCoverImage = this.container.querySelector(".mm-small-cover");
     this.verticalTitleElement = this.container.querySelector(".mm-vertical-title");
     this.collapsedTab = this.container.querySelector(".mm-collapsed-tab");
     this.expandedView = this.container.querySelector(".mm-expanded-view");
     this.desktopUi = this.container.querySelector(".mm-desktop-ui");
     
+    this.playlistContainers = this.container.querySelectorAll(".mm-playlist-list");
     this.btnOpenPlaylist = this.container.querySelector(".mm-btn-open-playlist");
     this.btnClosePlaylist = this.container.querySelector(".mm-btn-close-playlist");
-    this.playlistContainer = this.container.querySelector(".mm-playlist-list");
+    
+    // Mobile specific
+    this.mobileFab = this.container.querySelector(".mobile-media-fab");
+    this.mobileFabCover = this.container.querySelector(".mobile-media-fab-cover");
+    this.drawerMusicBtn = document.getElementById("drawer-music-btn");
   
     if ((window as any).GLOBAL_NETEASE_SONGS && Array.isArray((window as any).GLOBAL_NETEASE_SONGS)) {
       this.globalPlaylist = (window as any).GLOBAL_NETEASE_SONGS;
@@ -169,71 +178,73 @@ private initDOM() {
   }
 
   private drawVisualizer(progress: number, phase: number) {
-    if (!this.canvasCtx || !this.visualizerCanvas) return;
-    const ctx = this.canvasCtx;
-    const size = 180;
-    const cx = size / 2;
-    const cy = size / 2;
-    const radius = 84; // From CircularProgress calculation
+    if (this.canvases.length === 0) return;
     
-    ctx.clearRect(0, 0, size, size);
-
-    const startAngle = Math.PI; // -180 deg (Starts exactly at horizontal left)
-    const sweepAngle = Math.PI; // 180 deg sweep (Ends exactly at horizontal right)
-    const endAngle = startAngle + progress * sweepAngle;
-    
-    // Gap angle calculation (approximate padding + stroke width)
-    const gapAngle = (14 / radius); 
-    const colors = this.getThemeColors();
-    
-    // 1. Draw remaining background track with a gap
-    ctx.beginPath();
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = colors.accentSoft;
-    
-    const bgStartAngle = endAngle + gapAngle;
-    const bgEndAngle = startAngle + sweepAngle;
-    if (bgStartAngle < bgEndAngle) {
-       ctx.arc(cx, cy, radius, bgStartAngle, bgEndAngle);
-       ctx.stroke();
-    }
-
-    if (progress <= 0) return;
-
-    // 2. Draw progress arc with waves
-    ctx.beginPath();
-    ctx.strokeStyle = colors.accent;
-    
-    // N = qMax(64, qCeil(radius * drawAngleRad))
-    const N = Math.max(64, Math.ceil(radius * (progress * sweepAngle)));
-    const dTheta = (progress * sweepAngle) / N;
-    
-    // waveAmp is strokeWidth * amplitudeMultiplier (6 * 0.5)
-    const waveAmp = 3; 
-    const waveFreq = 8; // 8 waves for the longer arc
-    const arcLen = radius * sweepAngle; // full length of the track
-
-    for (let i = 0; i <= N; i++) {
-      const theta = startAngle + i * dTheta;
-      const s = i * dTheta * radius; // distance along arc
+    this.canvases.forEach(({ canvas, ctx }) => {
+      const size = 180;
+      const cx = size / 2;
+      const cy = size / 2;
+      const radius = 84; // From CircularProgress calculation
       
-      // QML formula: phi = frequency * 2 * M_PI * (s / len) + phase
-      const phi = waveFreq * 2 * Math.PI * (s / arcLen) + phase;
+      ctx.clearRect(0, 0, size, size);
+
+      const startAngle = Math.PI; // -180 deg (Starts exactly at horizontal left)
+      const sweepAngle = Math.PI; // 180 deg sweep (Ends exactly at horizontal right)
+      const endAngle = startAngle + progress * sweepAngle;
       
-      // No edge damping! Ends vibrate!
-      const r = radius + waveAmp * Math.sin(phi);
+      // Gap angle calculation (approximate padding + stroke width)
+      const gapAngle = (14 / radius); 
+      const colors = this.getThemeColors();
       
-      const px = cx + r * Math.cos(theta);
-      const py = cy + r * Math.sin(theta);
+      // 1. Draw remaining background track with a gap
+      ctx.beginPath();
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = colors.accentSoft;
       
-      if (i === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
-    }
-    
-    ctx.stroke();
-    // Do NOT draw a circle thumb, the gap is the indicator!
+      const bgStartAngle = endAngle + gapAngle;
+      const bgEndAngle = startAngle + sweepAngle;
+      if (bgStartAngle < bgEndAngle) {
+         ctx.arc(cx, cy, radius, bgStartAngle, bgEndAngle);
+         ctx.stroke();
+      }
+
+      if (progress > 0) {
+        // 2. Draw progress arc with waves
+        ctx.beginPath();
+        ctx.strokeStyle = colors.accent;
+        
+        // N = qMax(64, qCeil(radius * drawAngleRad))
+        const N = Math.max(64, Math.ceil(radius * (progress * sweepAngle)));
+        const dTheta = (progress * sweepAngle) / N;
+        
+        // waveAmp is strokeWidth * amplitudeMultiplier (6 * 0.5)
+        const waveAmp = 3; 
+        const waveFreq = 8; // 8 waves for the longer arc
+        const arcLen = radius * sweepAngle; // full length of the track
+
+        for (let i = 0; i <= N; i++) {
+          const theta = startAngle + i * dTheta;
+          const s = i * dTheta * radius; // distance along arc
+          
+          // QML formula: phi = frequency * 2 * M_PI * (s / len) + phase
+          const phi = waveFreq * 2 * Math.PI * (s / arcLen) + phase;
+          
+          // No edge damping! Ends vibrate!
+          const r = radius + waveAmp * Math.sin(phi);
+          
+          const px = cx + r * Math.cos(theta);
+          const py = cy + r * Math.sin(theta);
+          
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        
+        ctx.stroke();
+        // Do NOT draw a circle thumb, the gap is the indicator!
+      }
+    });
   }
 
   private visualizerLoop = (t: number) => {
@@ -283,19 +294,73 @@ private initDOM() {
       }
     };
 
-    this.desktopPlayPauseBtn?.addEventListener("click", togglePlay);
+    const playPauseBtns = this.container?.querySelectorAll(".mm-btn-play-pause");
     
-    const prevBtn = this.container?.querySelector(".mm-btn-prev");
-    const nextBtn = this.container?.querySelector(".mm-btn-next");
-    prevBtn?.addEventListener("click", () => this.playPrev());
-    nextBtn?.addEventListener("click", () => this.playNext());
+    const setupActiveState = (btn: Element) => {
+      btn.addEventListener("pointerdown", () => btn.classList.add("is-pressed"));
+      btn.addEventListener("pointerup", () => btn.classList.remove("is-pressed"));
+      btn.addEventListener("pointercancel", () => btn.classList.remove("is-pressed"));
+      btn.addEventListener("pointerleave", () => btn.classList.remove("is-pressed"));
+    };
 
-    this.btnOpenPlaylist?.addEventListener("click", () => {
+    playPauseBtns?.forEach(btn => {
+      btn.addEventListener("click", togglePlay);
+      setupActiveState(btn);
+    });
+    
+    const prevBtns = this.container?.querySelectorAll(".mm-btn-prev");
+    const nextBtns = this.container?.querySelectorAll(".mm-btn-next");
+    prevBtns?.forEach(btn => {
+      btn.addEventListener("click", () => this.playPrev());
+      setupActiveState(btn);
+    });
+    nextBtns?.forEach(btn => {
+      btn.addEventListener("click", () => this.playNext());
+      setupActiveState(btn);
+    });
+
+    const btnOpenPlaylists = this.container?.querySelectorAll(".mm-btn-open-playlist");
+    btnOpenPlaylists?.forEach(btn => btn.addEventListener("click", () => {
       this.desktopUi?.classList.add("is-flipped");
-    });
-    this.btnClosePlaylist?.addEventListener("click", () => {
+      this.container?.classList.add("show-mobile-playlist");
+    }));
+    
+    const btnClosePlaylists = this.container?.querySelectorAll(".mm-btn-close-playlist");
+    btnClosePlaylists?.forEach(btn => btn.addEventListener("click", () => {
       this.desktopUi?.classList.remove("is-flipped");
+      this.container?.classList.remove("show-mobile-playlist");
+    }));
+
+    const btnCloseMobile = this.container?.querySelector(".mm-btn-close-mobile");
+    btnCloseMobile?.addEventListener("click", () => {
+      this.container?.classList.remove("is-mobile-active");
+      document.body.style.overflow = "";
     });
+
+    if (this.articleLinks) {
+      this.articleLinks.forEach(link => {
+        link.addEventListener("click", () => {
+          this.container?.classList.remove("is-mobile-active");
+          document.body.style.overflow = "";
+        });
+      });
+    }
+
+    if (this.mobileFab) {
+      this.mobileFab.addEventListener("click", () => {
+        this.container?.classList.add("is-mobile-active");
+        document.body.style.overflow = "hidden"; // Prevent scrolling
+      });
+    }
+
+    if (this.drawerMusicBtn) {
+      this.drawerMusicBtn.addEventListener("click", () => {
+        this.container?.classList.add("is-mobile-active");
+        document.body.style.overflow = "hidden";
+        // Close drawer if it's open
+        document.body.classList.remove("mobile-drawer-open");
+      });
+    }
 
     document.addEventListener('daybook:embed-play', async (e: any) => {
       const songId = e.detail.songId;
@@ -315,13 +380,18 @@ private initDOM() {
       this.currentArtist = meta.artist;
       this.currentCover = meta.cover;
 
-      if (this.coverImage && this.currentCover) this.coverImage.src = this.currentCover;
+      if (this.currentCover) this.coverImages?.forEach(img => img.src = this.currentCover!);
       if (this.smallCoverImage && this.currentCover) this.smallCoverImage.src = this.currentCover;
+      if (this.mobileFabCover && this.currentCover) this.mobileFabCover.src = this.currentCover;
+      if (this.mobileFab) {
+        this.mobileFab.style.display = "";
+        this.mobileFab.classList.remove("is-hidden");
+      }
       
-      if (this.titleElement) this.titleElement.textContent = this.currentTitle || "Unknown Track";
+      this.titleElements?.forEach(el => el.textContent = this.currentTitle || "Unknown Track");
       if (this.verticalTitleElement) this.verticalTitleElement.textContent = this.currentTitle || "Unknown Track";
       
-      if (this.artistElement) this.artistElement.textContent = this.currentArtist || "Unknown Artist";
+      this.artistElements?.forEach(el => el.textContent = this.currentArtist || "Unknown Artist");
       
       const globalSongs = (window as any).GLOBAL_NETEASE_SONGS || [];
       const songData = globalSongs.find((s: any) => s.id === songId);
@@ -434,13 +504,18 @@ private initDOM() {
       this.activeAudio.addEventListener("ended", this.onEndedBound);
       this.activeAudio.addEventListener("error", this.onErrorBound);
 
-      if (this.coverImage && this.currentCover) this.coverImage.src = this.currentCover;
+      if (this.currentCover) this.coverImages?.forEach(img => img.src = this.currentCover!);
       if (this.smallCoverImage && this.currentCover) this.smallCoverImage.src = this.currentCover;
+      if (this.mobileFabCover && this.currentCover) this.mobileFabCover.src = this.currentCover;
+      if (this.mobileFab) {
+        this.mobileFab.style.display = "";
+        this.mobileFab.classList.remove("is-hidden");
+      }
       
-      if (this.titleElement) this.titleElement.textContent = this.currentTitle || "Unknown Track";
+      this.titleElements?.forEach(el => el.textContent = this.currentTitle || "Unknown Track");
       if (this.verticalTitleElement) this.verticalTitleElement.textContent = this.currentTitle || "Unknown Track";
       
-      if (this.artistElement) this.artistElement.textContent = this.currentArtist || "Unknown Artist";
+      this.artistElements?.forEach(el => el.textContent = this.currentArtist || "Unknown Artist");
       
       if (index !== -1 && this.articleLinks && this.articleLinkTexts) {
          const songInfo = this.globalPlaylist[index];
@@ -528,63 +603,63 @@ private initDOM() {
       this.activeAudio.pause();
     }
     this.updatePlayPauseUI(false);
-    if (this.titleElement) {
-       this.titleElement.textContent = "Error Loading Audio";
-    }
+    this.titleElements?.forEach(el => el.textContent = "Error Loading Audio");
   }
 
   private updatePlaylistUI() {
-    if (!this.playlistContainer) return;
+    if (!this.playlistContainers || this.playlistContainers.length === 0) return;
     
-    // If list already exists, just toggle classes for smooth CSS animations
-    if (this.playlistContainer.children.length === this.globalPlaylist.length) {
-      this.globalPlaylist.forEach((song, index) => {
-        const isActive = (this.currentSourceId === song.id);
-        const li = this.playlistContainer!.children[index];
-        if (li) {
-          if (isActive) {
-            li.classList.add("is-active");
-          } else {
-            li.classList.remove("is-active");
+    this.playlistContainers.forEach(container => {
+      // If list already exists, just toggle classes for smooth CSS animations
+      if (container.children.length === this.globalPlaylist.length) {
+        this.globalPlaylist.forEach((song, index) => {
+          const isActive = (this.currentSourceId === song.id);
+          const li = container.children[index];
+          if (li) {
+            if (isActive) {
+              li.classList.add("is-active");
+            } else {
+              li.classList.remove("is-active");
+            }
           }
-        }
-      });
-      return;
-    }
+        });
+        return;
+      }
 
-    this.playlistContainer.innerHTML = "";
-    
-    this.globalPlaylist.forEach((song, index) => {
-      const isActive = (this.currentSourceId === song.id);
+      container.innerHTML = "";
       
-      const li = document.createElement("li");
-      li.className = "mm-playlist-item";
-      if (isActive) li.classList.add("is-active");
-      
-      // Checkmark animation
-      const checkmark = document.createElement("div");
-      checkmark.className = "mm-checkmark-container";
-      checkmark.innerHTML = `<span class="material-symbol" style="font-weight: 600;">check</span>`;
-      
-      const info = document.createElement("div");
-      info.className = "mm-playlist-item-info";
-      
-      const title = document.createElement("div");
-      title.className = "mm-playlist-item-title";
-      // Find metadata from cache
-      const cached = this.trackMetadataCache.get(song.id);
-      title.textContent = cached ? cached.title : (song as any).title || song.id;
-      
-      info.appendChild(title);
-      
-      li.appendChild(checkmark);
-      li.appendChild(info);
-      
-      li.addEventListener("click", () => {
-        this.playTrack(song.id, true);
+      this.globalPlaylist.forEach((song) => {
+        const isActive = (this.currentSourceId === song.id);
+        
+        const li = document.createElement("li");
+        li.className = "mm-playlist-item";
+        if (isActive) li.classList.add("is-active");
+        
+        // Checkmark animation
+        const checkmark = document.createElement("div");
+        checkmark.className = "mm-checkmark-container";
+        checkmark.innerHTML = `<span class="material-symbol" style="font-weight: 600;">check</span>`;
+        
+        const info = document.createElement("div");
+        info.className = "mm-playlist-item-info";
+        
+        const title = document.createElement("div");
+        title.className = "mm-playlist-item-title";
+        // Find metadata from cache
+        const cached = this.trackMetadataCache.get(song.id);
+        title.textContent = cached ? cached.title : (song as any).title || song.id;
+        
+        info.appendChild(title);
+        
+        li.appendChild(checkmark);
+        li.appendChild(info);
+        
+        li.addEventListener("click", () => {
+          this.playTrack(song.id, true);
+        });
+        
+        container.appendChild(li);
       });
-      
-      this.playlistContainer!.appendChild(li);
     });
   }
 
@@ -601,10 +676,10 @@ private initDOM() {
       this.desktopPlayPauseIcon.textContent = iconName;
     }
 
-    if (this.coverWrapper) {
-      if (isPlaying) this.coverWrapper.classList.add("is-playing");
-      else this.coverWrapper.classList.remove("is-playing");
-    }
+    this.coverWrappers?.forEach(wrapper => {
+      if (isPlaying) wrapper.classList.add("is-playing");
+      else wrapper.classList.remove("is-playing");
+    });
     
     if (this.collapsedTab) {
       if (isPlaying) this.collapsedTab.classList.add("is-playing");

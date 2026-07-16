@@ -19,7 +19,7 @@
   width: 220px; /* Increased width */
   height: 430px; /* Increased to fit playlist button without squishing */
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  /* overflow: hidden; Removed to allow 3D flip without clipping/flattening */
+  /* /* overflow: hidden; */ Removed to allow 3D flip without clipping/flattening */
 
   
   /* Initial hidden state completely off-screen */
@@ -80,7 +80,7 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-collapsed
   font-weight: 600;
   color: var(--color-on-surface);
   white-space: nowrap;
-  overflow: hidden;
+  /* overflow: hidden; */
   text-overflow: ellipsis;
   max-height: 280px;
   letter-spacing: 0.05em;
@@ -107,24 +107,35 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-expanded-
   pointer-events: auto;
 }
 
+/* 艺术组合区域 (画布 + 封面) */
+.mm-art-group {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  margin-top: 6px;
+  margin-bottom: 1.2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 /* 动态波浪画板 */
 .mm-visualizer-canvas {
   position: absolute;
-  top: 10px;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
-  width: 180px;
-  height: 180px;
+  transform: translate(-50%, -50%);
+  width: 128.57% !important; /* 180px / 140px ≈ 128.57% */
+  height: 128.57% !important;
   pointer-events: none;
   z-index: 1;
 }
 
 .mm-cover-wrapper {
   position: relative;
-  width: 140px;
-  height: 140px;
-  margin-top: 6px; /* center relative to canvas (24 padding + 6 margin + 70 = 100) */
-  margin-bottom: 1.2rem;
+  width: 100%;
+  height: 100%;
+  margin: 0;
   z-index: 2;
   /* Cover Spin Animation on Wrapper */
   animation: mm-spin-cover 23.5s linear infinite;
@@ -145,7 +156,6 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-expanded-
   position: absolute;
   top: 0; left: 0;
   width: 100%; height: 100%;
-  overflow: hidden; /* correctly limit bounding box before clip-path sees it */
 }
 
 .is-playing .mm-cover-wrapper,
@@ -197,7 +207,7 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-expanded-
   font-weight: 700;
   color: var(--color-primary, var(--color-on-surface));
   white-space: nowrap;
-  overflow: hidden;
+  /* overflow: hidden; */
   text-overflow: ellipsis;
   margin-bottom: 0.2rem;
 }
@@ -206,7 +216,7 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-expanded-
   font-size: 0.85rem;
   color: var(--color-on-surface-variant);
   white-space: nowrap;
-  overflow: hidden;
+  /* overflow: hidden; */
   text-overflow: ellipsis;
 }
 
@@ -246,14 +256,8 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-expanded-
   transition: background-color 0.2s ease, transform 0.2s cubic-bezier(0.42, 1.67, 0.21, 0.9), width 0.15s cubic-bezier(0.42, 1.67, 0.21, 0.9);
 }
 
-.mm-controls-wrapper .mm-btn-prev:hover,
-.mm-controls-wrapper .mm-btn-next:hover {
-  background-color: var(--color-surface-variant, rgba(0, 0, 0, 0.05));
-}
-
-.mm-controls-wrapper .mm-btn-prev:active,
-.mm-controls-wrapper .mm-btn-next:active {
-  width: 40px; /* Squish effect */
+.mm-controls-wrapper button {
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mm-controls-wrapper .mm-btn-play-pause {
@@ -276,16 +280,41 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-expanded-
   border-radius: 12px;
 }
 
-.mm-controls-wrapper .mm-btn-play-pause:active {
+@media (hover: hover) and (pointer: fine) {
+  .mm-controls-wrapper .mm-btn-prev:hover,
+  .mm-controls-wrapper .mm-btn-next:hover {
+    background-color: var(--color-surface-variant, rgba(0, 0, 0, 0.05));
+  }
+
+  .mm-controls-wrapper .mm-btn-play-pause:hover {
+    filter: brightness(1.1);
+  }
+
+  /* Only use pure CSS :active on desktop, because iOS Safari has sticky :active bugs */
+  .mm-controls-wrapper .mm-btn-prev:active,
+  .mm-controls-wrapper .mm-btn-next:active {
+    width: 40px;
+  }
+
+  .mm-controls-wrapper .mm-btn-play-pause:active {
+    border-radius: 8px !important;
+    width: 96px;
+    transition: width 0.15s cubic-bezier(0.42, 1.67, 0.21, 0.9), border-radius 0.15s cubic-bezier(0.42, 1.67, 0.21, 0.9);
+  }
+}
+
+/* Global JS-triggered fallback for all devices (especially touch devices) */
+.mm-controls-wrapper .mm-btn-prev.is-pressed,
+.mm-controls-wrapper .mm-btn-next.is-pressed {
+  width: 40px; /* Squish effect */
+}
+
+.mm-controls-wrapper .mm-btn-play-pause.is-pressed {
   border-radius: 8px !important;
   /* Expand width when clicked */
   width: 96px;
   /* Fast bouncy deformation */
   transition: width 0.15s cubic-bezier(0.42, 1.67, 0.21, 0.9), border-radius 0.15s cubic-bezier(0.42, 1.67, 0.21, 0.9);
-}
-
-.mm-controls-wrapper .mm-btn-play-pause:hover {
-  filter: brightness(1.1);
 }
 
 /* Morphing SVG Icon */
@@ -298,8 +327,10 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-expanded-
 .mm-morph-path {
   /* Play state (default) */
   d: path('M 8 5 L 13 8.18 L 13 15.82 L 8 19 Z M 13 8.18 L 19 12 L 19 12 L 13 15.82 Z');
+  -webkit-transition: d 400ms cubic-bezier(0.2, 0, 0, 1);
   transition: d 400ms cubic-bezier(0.2, 0, 0, 1);
   fill: currentColor;
+  will-change: d;
 }
 
 .is-playing .mm-morph-path {
@@ -353,7 +384,7 @@ body[data-bg-playback-disabled="true"] .mm-desktop-ui {
 .mm-article-link-text {
   max-width: 140px;
   white-space: nowrap;
-  overflow: hidden;
+  /* overflow: hidden; */
   text-overflow: ellipsis;
 }
 
@@ -382,7 +413,7 @@ body[data-media-manager-active="true"] .mm-desktop-ui.is-flipped .mm-card-inner 
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   border-radius: inherit; /* Apply border-radius here to contain children without container overflow:hidden */
-  overflow: hidden;
+  /* overflow: hidden; */
 }
 
 .mm-card-front {
@@ -480,7 +511,7 @@ body[data-media-manager-active="true"] .mm-desktop-ui.is-flipped .mm-card-inner 
   margin: 4px 8px;
   border-radius: 8px;
   position: relative;
-  overflow: hidden; /* For translating text without horizontal overflow */
+  /* overflow: hidden; */ /* For translating text without horizontal overflow */
 }
 
 .mm-playlist-item:hover {
@@ -493,7 +524,7 @@ body[data-media-manager-active="true"] .mm-desktop-ui.is-flipped .mm-card-inner 
 
 .mm-playlist-item-info {
   flex: 1;
-  overflow: hidden;
+  /* overflow: hidden; */
   display: flex;
   flex-direction: column;
   transform: translateX(0);
@@ -510,7 +541,7 @@ body[data-media-manager-active="true"] .mm-desktop-ui.is-flipped .mm-card-inner 
   font-weight: 600;
   color: var(--color-on-surface);
   white-space: nowrap;
-  overflow: hidden;
+  /* overflow: hidden; */
   text-overflow: ellipsis;
 }
 
@@ -522,7 +553,7 @@ body[data-media-manager-active="true"] .mm-desktop-ui.is-flipped .mm-card-inner 
   font-size: 0.75rem;
   color: var(--color-on-surface-variant);
   white-space: nowrap;
-  overflow: hidden;
+  /* overflow: hidden; */
   text-overflow: ellipsis;
   margin-top: 2px;
 }
@@ -550,4 +581,94 @@ body[data-media-manager-active="true"] .mm-desktop-ui.is-flipped .mm-card-inner 
 
 .mm-checkmark-container .material-symbol {
   font-size: 20px;
+}
+
+/* ==========================================================================
+   Mobile UI (Fullscreen & FAB)
+   ========================================================================== */
+
+/* Hide mobile elements on desktop */
+@media (min-width: 801px) {
+  .mobile-media-fab,
+  .mm-btn-close-mobile {
+    display: none !important;
+  }
+}
+
+@media (max-width: 800px) {
+  /* Mobile FAB */
+  .mobile-media-fab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    right: 0;
+    /* Position slightly above the TOC fab if it exists */
+    bottom: calc(max(24px, env(safe-area-inset-bottom)) + 70px);
+    width: 44px;
+    height: 64px;
+    border-radius: 32px 0 0 32px;
+    background-color: var(--color-surface-elevated, var(--color-page));
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--color-border);
+    border-right: none;
+    z-index: 90;
+    cursor: pointer;
+    /* overflow: hidden; */
+    padding: 0;
+    padding-left: 8px;
+    transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1), opacity 0.3s;
+  }
+
+  .mobile-media-fab.is-hidden {
+    transform: translateX(100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .mobile-media-fab-cover {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    animation: mm-spin-slow 10s linear infinite;
+  }
+
+  body[data-media-manager-active="false"] .mobile-media-fab-cover {
+    animation-play-state: paused;
+  }
+
+  @keyframes mm-spin-slow {
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Mobile Close Button */
+  .mm-btn-close-mobile {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(128, 128, 128, 0.1);
+    border: none;
+    border-radius: 50%;
+    color: var(--color-on-surface);
+    z-index: 10;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+  }
+
+  .mm-mobile-ui {
+    display: none !important;
+  }
+}
+
+/* Hide desktop UI on smaller screens */
+@media (max-width: 960px) {
+  .mm-desktop-ui {
+    display: none !important;
+  }
 }
