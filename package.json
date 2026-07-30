@@ -4,18 +4,19 @@
   "type": "module",
   "scripts": {
     "build:vendor-fonts": "node scripts/build-vendor-fonts.mjs",
-    "fetch:font-sources": "bash tools/font-subsets/fetch-font-sources.sh",
-    "build:decorative-fonts": "bash tools/font-subsets/build.sh",
-    "build:all-fonts": "npm run build:vendor-fonts && npm run build:decorative-fonts",
+    "build:all-fonts": "npm run build:vendor-fonts",
     "render:katex": "node scripts/render-katex.mjs",
     "test:reading-rail": "node --test test/reading-toc-rail.test.mjs",
     "typecheck": "tsc --noEmit",
     "build:js": "node scripts/build-js.mjs",
     "watch:js": "node scripts/build-js.mjs --watch",
     "build": "./scripts/build.sh",
-    "serve": "./scripts/serve.sh"
+    "server": "./scripts/serve.sh"
   },
   "dependencies": {
+    "@fontsource/allura": "^5.3.0",
+    "@fontsource/cormorant-garamond": "^5.3.0",
+    "@fontsource/fraunces": "^5.3.0",
     "jsdom": "^29.1.1",
     "katex": "^0.16.10",
     "puppeteer": "^25.1.0"

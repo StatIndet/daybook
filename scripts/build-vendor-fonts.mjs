@@ -56,70 +56,28 @@ await copyFileClean(
   path.join(root, "static", "vendor", "fonts", "material-symbols", "material-symbols-rounded.woff2"),
 );
 
-// Subset Cormorant Garamond Italic
-async function subsetCormorantGaramond() {
-  const fontDir = path.join(root, "static", "vendor", "fonts", "cormorant-garamond");
-  const tempTtf = path.join(root, "tools", "font-subsets", "source", "cormorant-garamond", "CormorantGaramond-Italic.ttf");
-  const targetWoff2 = path.join(fontDir, "cormorant-garamond-meta.woff2");
+// Copy Cormorant Garamond Meta (Italic)
+await copyFileClean(
+  path.join(root, "node_modules", "@fontsource", "cormorant-garamond", "files", "cormorant-garamond-latin-400-italic.woff2"),
+  path.join(root, "static", "vendor", "fonts", "cormorant-garamond", "cormorant-garamond-latin-400-italic.woff2"),
+);
 
-  await mkdir(fontDir, { recursive: true });
+// Copy Cormorant Garamond Settings (Normal)
+await copyFileClean(
+  path.join(root, "node_modules", "@fontsource", "cormorant-garamond", "files", "cormorant-garamond-latin-400-normal.woff2"),
+  path.join(root, "static", "vendor", "fonts", "settings", "cormorant-garamond-latin-400-normal.woff2"),
+);
 
-  console.log("Subsetting Cormorant Garamond...");
-  const chars = (await readFile(path.join(root, "tools", "font-subsets", "glyphs", "cormorant-garamond-meta.txt"), "utf-8")).trim();
-  await new Promise((resolve, reject) => {
-    const subset = spawn("pyftsubset", [
-      tempTtf,
-      `--text=${chars}`,
-      "--flavor=woff2",
-      `--output-file=${targetWoff2}`
-    ], { stdio: "inherit" });
-    subset.on("close", (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`pyftsubset failed with code ${code}`));
-    });
-  });
-  console.log(`Subsampled Cormorant Garamond -> ${targetWoff2}`);
-}
+// Copy Fraunces (Italic)
+await copyFileClean(
+  path.join(root, "node_modules", "@fontsource", "fraunces", "files", "fraunces-latin-400-italic.woff2"),
+  path.join(root, "static", "vendor", "fonts", "decorative", "fraunces-latin-400-italic.woff2"),
+);
 
-async function subsetSettingsFonts() {
-  const fontDir = path.join(root, "static", "vendor", "fonts", "settings");
-  const tempEng = path.join(root, "tools", "font-subsets", "source", "cormorant-garamond", "CormorantGaramond.ttf");
-  const tempZh = path.join(root, "tools", "font-subsets", "source", "noto-serif-sc", "NotoSerifSC.ttf");
-  
-  const targetEng = path.join(fontDir, "cormorant-garamond-settings.woff2");
-  const targetZh = path.join(fontDir, "noto-serif-sc-settings.woff2");
-
-  await mkdir(fontDir, { recursive: true });
-
-  console.log("Subsetting settings fonts...");
-  
-  // English: basic ASCII
-  await new Promise((resolve, reject) => {
-    const subset = spawn("pyftsubset", [
-      tempEng,
-      "--unicodes=U+0020-007F",
-      "--flavor=woff2",
-      `--output-file=${targetEng}`
-    ], { stdio: "inherit" });
-    subset.on("close", (code) => code === 0 ? resolve() : reject(new Error(`pyftsubset failed with code ${code}`)));
-  });
-  console.log(`Subsampled Settings Eng -> ${targetEng}`);
-
-  // Chinese: exact subset from settings-overlay.html
-  const zhChars = (await readFile(path.join(root, "tools", "font-subsets", "glyphs", "noto-serif-sc-settings.txt"), "utf-8")).trim();
-  await new Promise((resolve, reject) => {
-    const subset = spawn("pyftsubset", [
-      tempZh,
-      `--text=${zhChars}`,
-      "--flavor=woff2",
-      `--output-file=${targetZh}`
-    ], { stdio: "inherit" });
-    subset.on("close", (code) => code === 0 ? resolve() : reject(new Error(`pyftsubset failed with code ${code}`)));
-  });
-  console.log(`Subsampled Settings Zh -> ${targetZh}`);
-}
-
-await subsetCormorantGaramond();
-await subsetSettingsFonts();
+// Copy Allura (Normal)
+await copyFileClean(
+  path.join(root, "node_modules", "@fontsource", "allura", "files", "allura-latin-400-normal.woff2"),
+  path.join(root, "static", "vendor", "fonts", "decorative", "allura-latin-400-normal.woff2"),
+);
 
 console.log("Vendor fonts copied successfully.");

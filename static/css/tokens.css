@@ -5,7 +5,7 @@
   --font-mono: "Maple Mono CN", "Maple Mono", "SFMono-Regular", "Cascadia Code", "JetBrains Mono", ui-monospace, monospace;
   --font-icon: "Material Symbols Rounded";
   --font-meta: "Cormorant Garamond Meta", "LXGW WenKai Screen", serif;
-  --font-signature-cn: "Daybook Zhi Mang Xing", cursive;
+  --font-signature-cn: var(--font-ui);
   --font-signature-en: "Daybook Allura", cursive;
   --side-rail-width: 220px;
   --persistent-logo-left: 40px;

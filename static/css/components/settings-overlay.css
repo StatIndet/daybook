@@ -52,13 +52,6 @@ html.has-custom-cursor .settings-overlay * {
   font-display: swap;
 }
 
-@font-face {
-  font-family: 'Noto Serif SC Settings';
-  src: url('/vendor/fonts/settings/noto-serif-sc-settings.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
 
 /* Paper Card (tall narrow strip) */
 .settings-paper {
@@ -81,7 +74,7 @@ html.has-custom-cursor .settings-overlay * {
   );
   transform: scale(0.96);
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  font-family: 'Cormorant Garamond Settings', 'Noto Serif SC Settings', serif;
+  font-family: 'Cormorant Garamond Settings', var(--font-ui);
   color: #3e3832;
 }
 
