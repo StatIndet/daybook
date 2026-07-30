@@ -1,7 +1,6 @@
 ---
 title: 在n150小主机上安装Debian并配置为SSH Server
 date: 2026-06-10
-slug: debian-ssh-server
 tags:
   - debian
   - ssh

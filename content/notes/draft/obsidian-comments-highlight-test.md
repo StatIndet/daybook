@@ -1,7 +1,6 @@
 ---
 title: Obsidian 注释与高亮测试
 date: 2026-06-27
-slug: obsidian-comments-highlight-test
 tags:
   - daybook
   - obsidian

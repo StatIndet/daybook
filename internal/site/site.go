@@ -253,7 +253,7 @@ func Build(options Options) (BuildResult, error) {
 				}
 				seenTags[canonicalID] = true
 
-				displayTag := tagRegistry.GetTitle(canonicalID, lang)
+				displayTag := tagRegistry.GetTitle(canonicalID)
 				displayTags = append(displayTags, displayTag)
 				tagIDs = append(tagIDs, canonicalID)
 
@@ -347,7 +347,7 @@ func Build(options Options) (BuildResult, error) {
 				noteLinks = append(noteLinks, noteLink)
 			}
 
-			commentEnabled := options.Config.Comment.Enabled
+			commentEnabled := options.Config.Comment.Waline.ServerURL != ""
 			if note.Comment != nil {
 				commentEnabled = *note.Comment
 			}
@@ -908,8 +908,8 @@ func collectTagLinksForLang(groups []*content.ArticleGroup, lang string, tagRegi
 	}
 
 	sort.SliceStable(canonicalIDs, func(i, j int) bool {
-		leftTitle := strings.ToLower(tagRegistry.GetTitle(canonicalIDs[i], lang))
-		rightTitle := strings.ToLower(tagRegistry.GetTitle(canonicalIDs[j], lang))
+		leftTitle := strings.ToLower(tagRegistry.GetTitle(canonicalIDs[i]))
+		rightTitle := strings.ToLower(tagRegistry.GetTitle(canonicalIDs[j]))
 		if leftTitle == rightTitle {
 			return canonicalIDs[i] < canonicalIDs[j]
 		}
@@ -923,7 +923,7 @@ func collectTagLinksForLang(groups []*content.ArticleGroup, lang string, tagRegi
 
 	links := make([]render.TagLink, 0, len(canonicalIDs))
 	for index, id := range canonicalIDs {
-		title := tagRegistry.GetTitle(id, lang)
+		title := tagRegistry.GetTitle(id)
 		links = append(links, render.TagLink{
 			Name:         title,
 			URL:          joinURL("/", langPrefix, "tags", seo.TagSlug(title)),

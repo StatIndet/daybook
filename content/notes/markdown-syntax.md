@@ -1,9 +1,10 @@
 ---
-title: "Markdown 语法说明"
-date: "2026-06-28"
-slug: "markdown-syntax"
-tags: ["Markdown", "Obsidian"]
-summary: "关于 Daybook 所支持的标准 Markdown 以及 Obsidian 扩展语法特性的完整参考指南。"
+title: Markdown 语法说明
+date: 2026-06-28
+tags:
+  - Markdown
+  - Obsidian
+summary: 关于 Daybook 所支持的标准 Markdown 以及 Obsidian 扩展语法特性的完整参考指南。
 draft: false
 math: true
 ---
@@ -158,7 +159,7 @@ Daybook 完整兼容了 Obsidian 的双链附件引用语法，并支持区分�
 
 **页面整体嵌入**：
 语法：`![[english test]]`
-![[english test]]
+![[thoughts-in-a-quiet-night]]
 
 **小节标题嵌入**：
 语法：`![[obsidian-embed-test#可被标题嵌入的小节]]`

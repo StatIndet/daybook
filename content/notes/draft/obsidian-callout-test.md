@@ -1,7 +1,6 @@
 ---
 title: Obsidian Callout 测试
 date: 2026-06-27
-slug: obsidian-callout-test
 tags:
   - daybook
   - obsidian

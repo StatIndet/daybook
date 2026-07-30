@@ -1,114 +1,113 @@
 ---
-title: Markdown 扩展语法测试页
+title: Markdown Extended Syntax Test Page
 date: 2026-06-16
-slug: markdown-extended-demo
 pin: true
 tags:
   - Markdown
   - Test
-summary: 用于检查 daybook Markdown 扩展语法、嵌入组件、Lightbox、Mermaid 和嵌套任务列表渲染。
+summary: Used to test the rendering of Daybook’s extended Markdown syntax, embedded components, Lightbox, Mermaid, and nested task lists.
 draft: false
-toc: false
+toc: true
 i18n_key: markdown-extended-demo
-lang: zh-CN
+lang: en
 ---
+This article introduces extended Markdown features, including syntax examples and rendered previews.
 
-本文介绍 Markdown 扩展功能，包括语法示例与效果展示。
-*示例取自 [Retypeset](https://retypeset.radishzz.cc/en/posts/markdown-extended-features/)*
+_Examples are taken from [Retypeset](https://retypeset.radishzz.cc/en/posts/markdown-extended-features/)._
 
-## 图注
+## Figure Captions
 
-使用标准的 Markdown 图像语法 `![alt](src)`，即可自动生成图注。在 `alt` 前添加下划线 `_` 或留空 `alt`，即可隐藏图注。
+To create automatic figure captions, use the standard Markdown image syntax `![alt](src)`. To hide the caption, add an underscore `_` before the `alt` text or leave the `alt` text empty.
 
-### 语法
+### Syntax
 
 ```
-![图片描述](https://image.radishzz.cc/image/gallery/06.webp)
+![Image description](https://image.radishzz.cc/image/gallery/06.webp)
 
-![_图片描述](https://image.radishzz.cc/image/gallery/06.webp)
+![_Image description](https://image.radishzz.cc/image/gallery/06.webp)
 ```
 
-### 效果
+### Output
 
-![图片描述](https://image.radishzz.cc/image/gallery/06.webp)
+![Image description](https://image.radishzz.cc/image/gallery/06.webp)
 
-![_图片描述](https://image.radishzz.cc/image/gallery/06.webp)
+![_Image description](https://image.radishzz.cc/image/gallery/06.webp)
 
-## 提示块
+## Admonition Blocks
 
-使用 GitHub 语法 `> [!TYPE]` 或三冒号语法 `:::type`，即可创建提示块。支持 `note`、`tip`、`important`、`warning`、`caution` 五种类型。
+To create admonition blocks, use the GitHub syntax `> [!TYPE]` or the container directive `:::type`. The following types are supported: `note`, `tip`, `important`, `warning`, and `caution`.
 
-### 语法
+### Syntax
 
 ```
 > [!NOTE]
-> 即使快速浏览，也值得用户留意的信息。
+> Useful information that users should know, even when skimming content.
 
 > [!TIP]
-> 可选信息，可帮助用户更轻松地完成操作。
+> Helpful advice for doing things better or more easily.
 
 > [!IMPORTANT]
-> 用户成功所需的关键信息。
+> Key information users need to know to achieve their goal.
 
 :::warning
-由于存在潜在风险，需要用户立即关注的关键内容。
+Urgent info that needs immediate user attention to avoid problems.
 :::
 
 :::caution
-某些操作可能带来的负面后果。
+Advises about risks or negative outcomes of certain actions.
 :::
 
-:::note[自定义标题]
-这是一个自定义标题的提示块。
+:::note[YOUR CUSTOM TITLE]
+This is a note with a custom title.
 :::
 ```
 
-### 效果
+### Output
 
-> [!NOTE]-
-> 即使快速浏览，也值得用户留意的信息。
+> [!NOTE]
+> Useful information that users should know, even when skimming content.
 
 > [!TIP]
-> 可选信息，可帮助用户更轻松地完成操作。
+> Helpful advice for doing things better or more easily.
 
 > [!IMPORTANT]
-> 用户成功所需的关键信息。
+> Key information users need to know to achieve their goal.
 
 :::warning
-由于存在潜在风险，需要用户立即关注的关键内容。
+Urgent info that needs immediate user attention to avoid problems.
 :::
 
 :::caution
-某些操作可能带来的负面后果。
+Advises about risks or negative outcomes of certain actions.
 :::
 
-:::note[自定义标题]
-这是一个自定义标题的提示块。
+:::note[YOUR CUSTOM TITLE]
+This is a note with a custom title.
 :::
 
-## 折叠块
+## Collapsible Sections
 
-使用三冒号语法 `:::fold[title]`，即可创建折叠块。点击标题可以展开或收起。
+To create collapsible sections, use the container directive syntax `:::fold[title]`. Click the title to expand or collapse.
 
-### 语法
+### Syntax
 
 ```
-:::fold[使用提示]
-如果需要添加并非所有读者都会感兴趣的内容，可以将其放在折叠块中。
+:::fold[Usage Tips]
+Content that may not interest all readers can be placed in a collapsible section.
 :::
 ```
 
-### 效果
+### Output
 
-:::fold[使用提示]
-如果需要添加并非所有读者都会感兴趣的内容，可以将其放在折叠块中。
+:::fold[Usage Tips]
+Content that may not interest all readers can be placed in a collapsible section.
 :::
 
-## Mermaid 图表
+## Mermaid Diagrams
 
-使用代码块包裹 Mermaid 语法，并标注语言类型 `mermaid`，即可创建 Mermaid 图表。
+To create Mermaid diagrams, wrap Mermaid syntax in code blocks and specify the language type as `mermaid`.
 
-### 语法
+### Syntax
 
 ``````
 ```mermaid
@@ -120,7 +119,7 @@ graph TD;
 ```
 ``````
 
-### 效果
+### Output
 
 ```mermaid
 graph TD;
@@ -130,51 +129,51 @@ graph TD;
     C-->D;
 ```
 
-## 画廊
+## Galleries
 
-使用三冒号语法 `:::gallery`，即可创建图片画廊。水平滚动以查看更多图片。
+To create image galleries, use the container directive `:::gallery`. Scroll horizontally to view more images.
 
-### 语法
+### Syntax
 
 ```
 :::gallery
-![羊驼](https://image.radishzz.cc/image/gallery/sheep-1.jpg)
-![转头](https://image.radishzz.cc/image/gallery/sheep-2.jpg)
-![对视](https://image.radishzz.cc/image/gallery/sheep-3.jpg)
-![小羊驼](https://image.radishzz.cc/image/gallery/sheep-4.jpg)
-![可爱捏](https://image.radishzz.cc/image/gallery/sheep-5.jpg)
+![Alpaca](https://image.radishzz.cc/image/gallery/sheep-1.jpg)
+![Turning head](https://image.radishzz.cc/image/gallery/sheep-2.jpg)
+![Eye contact](https://image.radishzz.cc/image/gallery/sheep-3.jpg)
+![Baby alpaca](https://image.radishzz.cc/image/gallery/sheep-4.jpg)
+![Aww, so cute!](https://image.radishzz.cc/image/gallery/sheep-5.jpg)
 :::
 ```
 
-### 效果
+### Output
 
 :::gallery
-![羊驼](https://image.radishzz.cc/image/gallery/sheep-1.jpg)
-![转头](https://image.radishzz.cc/image/gallery/sheep-2.jpg)
-![对视](https://image.radishzz.cc/image/gallery/sheep-3.jpg)
-![小羊驼](https://image.radishzz.cc/image/gallery/sheep-4.jpg)
-![可爱捏](https://image.radishzz.cc/image/gallery/sheep-5.jpg)
+![Alpaca](https://image.radishzz.cc/image/gallery/sheep-1.jpg)
+![Turning head](https://image.radishzz.cc/image/gallery/sheep-2.jpg)
+![Eye contact](https://image.radishzz.cc/image/gallery/sheep-3.jpg)
+![Baby alpaca](https://image.radishzz.cc/image/gallery/sheep-4.jpg)
+![Aww, so cute!](https://image.radishzz.cc/image/gallery/sheep-5.jpg)
 :::
 
-## GitHub 仓库
+## GitHub Repositories
 
-使用双冒号语法 `::github{repo="owner/repo"}`，即可嵌入 GitHub 仓库。
+To embed GitHub repositories, use the leaf directive `::github{repo="owner/repo"}`.
 
-### 语法
+### Syntax
 
 ```
 ::github{repo="radishzzz/astro-theme-retypeset"}
 ```
 
-### 效果
+### Output
 
 ::github{repo="radishzzz/astro-theme-retypeset"}
 
-## 视频
+## Videos
 
-使用双冒号语法 `::youtube{id="video-id"}`，即可嵌入视频。
+To embed videos, use the leaf directive `::youtube{id="video-id"}`.
 
-### 语法
+### Syntax
 
 ```
 ::youtube{id="9pP0pIgP2kE"}
@@ -182,7 +181,7 @@ graph TD;
 ::bilibili{id="BV1sK4y1Z7KG"}
 ```
 
-### 效果
+### Output
 
 ::youtube{id="9pP0pIgP2kE"}
 
@@ -190,9 +189,9 @@ graph TD;
 
 ## Spotify
 
-使用双冒号语法 `::spotify{url="spotify-url"}`，即可嵌入 Spotify 内容。
+To embed Spotify content, use the leaf directive `::spotify{url="spotify-url"}`.
 
-### 语法
+### Syntax
 
 ```
 ::spotify{url="https://open.spotify.com/track/0HYAsQwJIO6FLqpyTeD3l6"}
@@ -200,69 +199,78 @@ graph TD;
 ::spotify{url="https://open.spotify.com/album/03QiFOKDh6xMiSTkOnsmMG"}
 ```
 
-### 效果
+### Output
 
 ::spotify{url="https://open.spotify.com/track/0HYAsQwJIO6FLqpyTeD3l6"}
 
 ::spotify{url="https://open.spotify.com/album/03QiFOKDh6xMiSTkOnsmMG"}
 
-## X 推文
+## Tweets
 
-使用双冒号语法 `::tweet{url="tweet-url"}`，即可嵌入 X 推文。
+To embed tweets, use the leaf directive `::tweet{url="tweet-url"}`.
 
-### 语法
+### Syntax
 
 ```
 ::tweet{url="https://x.com/hachi_08/status/1906456524337123549"}
 ```
 
-### 效果
+### Output
 
 ::tweet{url="https://x.com/hachi_08/status/1906456524337123549"}
 
 ## CodePen
 
-使用双冒号语法 `::codepen{url="codepen-url"}`，即可嵌入 CodePen 演示。
+To embed CodePen demos, use the leaf directive `::codepen{url="codepen-url"}`.
 
-### 语法
+### Syntax
 
 ```
 ::codepen{url="https://codepen.io/jh3y/pen/NWdNMBJ"}
 ```
 
-### 效果
+### Output
 
 ::codepen{url="https://codepen.io/jh3y/pen/NWdNMBJ"}
 
-## 网易云
+## NetEase Cloud Music
 
-使用双冒号语法 `::netease{type="song"id="歌曲id"}`，即可嵌入 网易云网易播放器。也可通过bool值来控制是否自动播放。
+Use the double-colon syntax `::netease{type="song" id="song id"}` to embed a NetEase Cloud Music player. You can also use a boolean value to control whether autoplay is enabled.
 
-### 语法
+### Syntax
 
 ```
 ::netease{type="song" id="1406633327" autostart="false"}
 ```
 
-### 效果（该演示卡片没有启用自动播放）
+### Preview
 
-::netease{type="song" id="1406633327" autostart="false"}
+_(Autoplay is disabled for this demo card.)_
 
-## 普通列表
+## Unordered List
 
-- 普通一级列表
-  - 普通二级列表
-    - 普通三级列表
+- First-level unordered list
+    
+    - Second-level unordered list
+        
+        - Third-level unordered list
+            
 
-## 有序列表
+## Ordered List
 
-1. 一级有序列表
-   1. 二级有序列表
-      1. 三级有序列表
+1. First-level ordered list
+    
+    1. Second-level ordered list
+        
+        1. Third-level ordered list
+            
 
-## 嵌套任务列表
+## Nested Task List
 
-- [ ] 一级任务
-  - [ ] 二级任务
-    - [ ] 三级任务
-- [x] 已完成任务
+-  First-level task
+    
+    -  Second-level task
+        
+        -  Third-level task
+            
+-  Completed task

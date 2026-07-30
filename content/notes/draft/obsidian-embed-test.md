@@ -1,7 +1,6 @@
 ---
 title: Obsidian 嵌入语法测试
 date: 2026-06-26
-slug: obsidian-embed-test
 tags:
   - daybook
   - obsidian
@@ -30,7 +29,7 @@ listed: false
 
 ![[obsidian-embed-test#可被标题嵌入的小节]]
 
-![[english test]]
+![[thoughts-in-a-quiet-night]]
 ## 缺失目标测试
 
 ![[不存在的测试文章]]

@@ -1,7 +1,6 @@
 ---
 title: clavis-shell编译安装方法（临时版）
 date: 2026-06-16
-slug: clavis-shell
 tags:
   - quickshell
   - clavis

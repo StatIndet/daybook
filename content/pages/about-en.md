@@ -1,7 +1,6 @@
 ---
 title: About / 关于
 date: 2026-06-14
-slug:
 tags:
 summary: Hello，welcome to my daybook！你好，欢迎来到我的博客！This is a static blog built with Go, and also my personal knowledge base for hosting my Obsidian notes.
 draft: false

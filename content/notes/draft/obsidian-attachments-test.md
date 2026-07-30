@@ -1,7 +1,6 @@
 ---
 title: Obsidian 附件系统测试
 date: 2026-06-26
-slug: obsidian-attachments-test
 tags:
   - daybook
   - obsidian

@@ -1,7 +1,6 @@
 ---
 title: 在Debian SSH Server上安装虚拟机
 date: 2026-06-10
-slug: immortalWRT
 tags:
   - debian
   - ssh

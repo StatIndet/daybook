@@ -1,7 +1,6 @@
 ---
 title: 自托管字体测试
 date: 2026-06-23
-slug: typography-test
 tags:
   - 测试
   - 字体

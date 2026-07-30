@@ -1,7 +1,6 @@
 ---
 title: About / 关于
 date: 2026-06-14
-slug:
 tags:
 summary: Hello，welcome to my daybook！你好，欢迎来到我的博客！这是一个由 Go 构建的静态博客，也是我用来托管 Obsidian 笔记的个人知识库。
 draft: false

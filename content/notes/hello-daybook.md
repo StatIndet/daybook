@@ -1,7 +1,6 @@
 ---
 title: 你好，Daybook
 date: 2004-05-16
-slug: hello-daybook
 tags:
   - Go
   - Markdown

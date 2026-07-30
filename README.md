@@ -139,7 +139,7 @@ npm ci
 3. 启动开发服务器：
 ```bash
 # 启动本地开发环境，包含前端 esbuild 的增量编译监听和 Go 本地预览服务
-npm run serve
+npm run server
 ```
 访问 `http://localhost:1313` 进行预览。  
 
@@ -150,7 +150,7 @@ npm run serve
 * `npm run typecheck`: 运行 TypeScript 编译器，对 `assets/ts/` 下的代码进行静态类型校验，不生成任何输出。
 * `npm run build:js`: 使用 `esbuild` 将 TypeScript 源码编译、打包并压缩，输出到 `static/js/` 目录。
 * `npm run build`: 生产环境完整构建命令。依次执行类型校验、前端资源打包，最后运行 `go run` 读取 Markdown 并生成最终静态 HTML 文件到 `public/` 目录。
-* `npm run serve`: 启动并发环境，一边监听前端 TS 文件的修改自动打包，一边运行 Go 的本地 Web 服务进行预览。
+* `npm run server`: 启动并发环境，一边监听前端 TS 文件的修改自动打包，一边运行 Go 的本地 Web 服务进行预览。
 
 ### 字体构建
 
@@ -195,18 +195,15 @@ DAYBOOK_SITE_NAME=Daybook
 DAYBOOK_SITE_URL=https://example.com
 
 # 评论区（自行部署 Waline 后填写，未配置时将不加载）
-DAYBOOK_WALINE_ENABLED=true
 DAYBOOK_WALINE_SERVER_URL=https://comment.example.com
 
 # 远端媒体存储（未配置时回退使用本地 attachments 目录）
 DAYBOOK_R2_BASE_URL=https://static.example.com
 
 # 自定义网易云解析 API（未配置时卡片优雅降级）
-DAYBOOK_NETEASE_ENABLED=true
 DAYBOOK_NETEASE_API_BASE_URL=https://netease.example.com
 
 # 全站访问统计
-DAYBOOK_STATS_ENABLED=true
 DAYBOOK_STATS_API_BASE=/api
 ```
 
@@ -228,7 +225,7 @@ cp .env.example .env
 
 ```bash
 # 启动本地实时预览
-npm run serve
+npm run server
 ```
 
 ---
@@ -250,7 +247,7 @@ npm run serve
   * `homeTitle`: 浏览器标签页标题及搜索引擎索引标题。
   * `homeDescription`: 网站的 Meta Description 介绍，对搜素引擎和社交媒体卡片预览至关重要。
 
-修改保存后，直接执行 `npm run build` 或 `npm run serve`，你的个人信息就会自动生效并更新到所有页面。
+修改保存后，直接执行 `npm run build` 或 `npm run server`，你的个人信息就会自动生效并更新到所有页面。
 
 ---
 

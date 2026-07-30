@@ -1,7 +1,6 @@
 ---
 title: Whale Song
 date: 2026-06-21
-slug: whale-song
 tags:
   - memos
   - whale-song
@@ -11,9 +10,6 @@ pin: true
 updated: 2026-06-30
 i18n_key: whale-song
 lang: en
-tags_zh:
-  - 碎片
-  - 鲸歌
 ---
 ::netease{type="song" id="474667755"}
 

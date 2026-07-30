@@ -18,8 +18,6 @@ type Note struct {
 	Updated        string
 	Slug           string
 	Tags           []string
-	TagsZh         []string
-	TagsEn         []string
 	Summary        string
 	Draft          bool
 	Listed         *bool
@@ -41,13 +39,10 @@ type frontmatter struct {
 	Title   string   `yaml:"title"`
 	Date    string   `yaml:"date"`
 	Updated string   `yaml:"updated"`
-	Slug    string   `yaml:"slug"`
 	Lang    string   `yaml:"lang"`
 	I18nKey string   `yaml:"i18n_key"`
 	Listed  *bool    `yaml:"listed"`
 	Tags    []string `yaml:"tags"`
-	TagsZh  []string `yaml:"tags_zh"`
-	TagsEn  []string `yaml:"tags_en"`
 	Summary string   `yaml:"summary"`
 	Draft   bool     `yaml:"draft"`
 	Math    bool     `yaml:"math"`
@@ -123,12 +118,10 @@ func Parse(sourcePath, text string) (Note, error) {
 		Title:      strings.TrimSpace(meta.Title),
 		Date:       strings.TrimSpace(meta.Date),
 		Updated:    strings.TrimSpace(meta.Updated),
-		Slug:       strings.TrimSpace(meta.Slug),
+		Slug:       strings.TrimSuffix(filepath.Base(sourcePath), filepath.Ext(sourcePath)),
 		Lang:       strings.TrimSpace(meta.Lang),
 		I18nKey:    strings.TrimSpace(meta.I18nKey),
 		Tags:       meta.Tags,
-		TagsZh:     meta.TagsZh,
-		TagsEn:     meta.TagsEn,
 		Summary:    strings.TrimSpace(meta.Summary),
 		Draft:      meta.Draft,
 		Listed:     meta.Listed,
@@ -181,20 +174,8 @@ func validate(note Note) error {
 	if note.Date == "" {
 		return fmt.Errorf("缺少必填字段 date")
 	}
-	if note.Slug == "" {
-		return fmt.Errorf("缺少必填字段 slug")
-	}
-	if strings.Contains(note.Slug, "/") || strings.Contains(note.Slug, "\\") || strings.Contains(note.Slug, "..") {
-		return fmt.Errorf("slug 不能包含路径分隔符或 ..")
-	}
 	if note.Lang != "zh-CN" && note.Lang != "en" {
 		return fmt.Errorf("lang 必须是 zh-CN 或 en，当前为 %s", note.Lang)
-	}
-	if len(note.TagsZh) > 0 && len(note.TagsZh) != len(note.Tags) {
-		return fmt.Errorf("tags_zh 长度 (%d) 必须与 tags (%d) 一致", len(note.TagsZh), len(note.Tags))
-	}
-	if len(note.TagsEn) > 0 && len(note.TagsEn) != len(note.Tags) {
-		return fmt.Errorf("tags_en 长度 (%d) 必须与 tags (%d) 一致", len(note.TagsEn), len(note.Tags))
 	}
 
 	return nil

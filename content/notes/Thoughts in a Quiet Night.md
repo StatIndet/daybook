@@ -1,17 +1,12 @@
 ---
 title: Thoughts in a Quiet Night
 date: 2026-06-25
-slug: thoughts-in-a-quiet-night
 lang: en
 i18n_key: thoughts-in-a-quiet-night
 tags:
   - Poetry
   - Tang-Poetry
   - Li-Bai
-tags_zh:
-  - 诗歌
-  - 唐诗
-  - 李白
 summary: summary A short English rendering of Li Bai’s famous poem about moonlight, homesickness, and a traveler’s quiet longing.
 draft: false
 math: false

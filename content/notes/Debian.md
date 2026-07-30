@@ -1,7 +1,6 @@
 ---
 title: 安装 Debian SSH 服务器记录
 date: 2026-06-09
-slug: Debian
 tags:
   - debian
   - ssh
@@ -28,7 +27,7 @@ pin: true
 | 网络  | 动态公网 IPv4                                      | 用于后续 DDNS 和公网访问 |
 | 域名  | 若干域名                                           | 用于反向代理和服务访问     |
 - 总目标
-- [ ] 在小主机上[[安装 Debian SSH Server]]。
+- [ ] 在小主机上[[debian-ssh-server]]。
 - [ ] 在局域网内通过 SSH 远程管理 Debian 主机。
 - [ ] 在 Debian 上部署虚拟机、Docker 服务、DDNS、备份和同步服务
 > 尽量保证服务可迁移、可备份、可恢复。
@@ -36,7 +35,7 @@ pin: true
 	- [ ] 在小主机上安装Debian ssh server系统。在局域网内通过ssh连接管理。
 		- [ ] 换源，添加docker代理。
 		- [ ] 配置开机自启动，包括虚拟机和docker应用。
-		- [ ] 自动关机脚本[[安装 Debian SSH Server#自动关机脚本]]
+		- [ ] 自动关机脚本[[debian-ssh-server#自动关机脚本]]
 		- [ ] 部署`DDNS`服务。
 	- [ ] 最小化安装`kvm/qemu`虚拟机，
 		- [ ] 在主力机Arch Linux上使用`virt-manager`通过ssh连接进行管理。
