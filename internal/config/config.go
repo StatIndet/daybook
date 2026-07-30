@@ -54,7 +54,6 @@ type WalineConfig struct {
 }
 
 type CommentConfig struct {
-	Enabled  bool         `yaml:"enabled"`
 	Provider string       `yaml:"provider"`
 	Waline   WalineConfig `yaml:"waline"`
 }
@@ -67,12 +66,10 @@ type AttachmentConfig struct {
 }
 
 type NeteaseConfig struct {
-	Enabled    bool
 	APIBaseURL string
 }
 
 type StatsConfig struct {
-	Enabled bool
 	APIBase string
 }
 
@@ -113,7 +110,6 @@ func Load() (Config, error) {
 		BaseURL:   parseStringEnv("DAYBOOK_SITE_URL", "http://localhost:1313"),
 		StartedAt: parseStringEnv("DAYBOOK_STARTED_AT", "2026-06-08"),
 		Comment: CommentConfig{
-			Enabled:  parseBoolEnv("DAYBOOK_WALINE_ENABLED"),
 			Provider: "waline",
 			Waline: WalineConfig{
 				ServerURL:      parseStringEnv("DAYBOOK_WALINE_SERVER_URL", ""),
@@ -131,11 +127,9 @@ func Load() (Config, error) {
 			RemoteDirs:    []string{"audio", "video", "picture", "pdf", "netease"},
 		},
 		Netease: NeteaseConfig{
-			Enabled:    parseBoolEnv("DAYBOOK_NETEASE_ENABLED"),
 			APIBaseURL: parseStringEnv("DAYBOOK_NETEASE_API_BASE_URL", ""),
 		},
 		Stats: StatsConfig{
-			Enabled: parseBoolEnv("DAYBOOK_STATS_ENABLED"),
 			APIBase: parseStringEnv("DAYBOOK_STATS_API_BASE", "/api"),
 		},
 	}

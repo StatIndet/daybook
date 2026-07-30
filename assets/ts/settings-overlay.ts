@@ -65,7 +65,6 @@ export function initSettingsOverlay() {
 
   setupCheckbox('setting-system-cursor', 'useSystemCursor');
   setupCheckbox('setting-clock-cursor', 'enableClockCursor');
-  setupCheckbox('setting-bg-playback', 'disableBgPlayback');
   setupCheckbox('setting-disable-comments', 'disableComments');
   setupCheckbox('setting-reduced-motion', 'reducedMotion');
 

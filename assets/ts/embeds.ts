@@ -1,6 +1,5 @@
 import { createFallbackElement, setupIframeEmbeds } from "./embed-loading.js";
 import { setupImages } from "./image-loader.js";
-import { daybookMediaManager } from "./media-manager.js";
 
 (function () {
   var compactNumberFormat = new Intl.NumberFormat("en", {

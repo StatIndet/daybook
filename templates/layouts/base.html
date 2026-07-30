@@ -2,10 +2,9 @@
 <!doctype html>
 <html lang="{{if .Lang}}{{.Lang}}{{else}}zh-CN{{end}}">
 {{template "head" .}}
-<body class="{{.BodyClass}}" data-page-kind="{{.PageKind}}" data-search-index-url="/search.json" data-media-manager-active="false" data-stats-enabled="{{.Config.Stats.Enabled}}" data-stats-api-base="{{.Config.Stats.APIBase}}" data-netease-enabled="{{.Config.Netease.Enabled}}" data-netease-api-base-url="{{.Config.Netease.APIBaseURL}}">
+<body class="{{.BodyClass}}" data-page-kind="{{.PageKind}}" data-search-index-url="/search.json" data-stats-enabled="{{if .Config.Stats.APIBase}}true{{else}}false{{end}}" data-stats-api-base="{{.Config.Stats.APIBase}}" data-netease-enabled="{{if .Config.Netease.APIBaseURL}}true{{else}}false{{end}}" data-netease-api-base-url="{{.Config.Netease.APIBaseURL}}">
   {{template "persistent_logo" .}}
   {{template "settings_overlay" .}}
-  {{template "media_manager" .}}
 
   <div class="page-frame" id="daybook-page" data-daybook-page>
   {{if eq .PageKind "home"}}
@@ -55,7 +54,8 @@
       module.initSettingsOverlay();
     });
 
-    import("{{.Assets.Path "/js/media-manager.js"}}");
+    import("{{.Assets.Path "/js/image-loader.js"}}");
+    import("{{.Assets.Path "/js/lightbox.js"}}");
   </script>
   <script>
     window.GLOBAL_NETEASE_SONGS = {{if .Site.NeteaseSongsJSON}}{{.Site.NeteaseSongsJSON}}{{else}}[]{{end}};
