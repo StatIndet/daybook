@@ -269,12 +269,10 @@ interface DaybookTransitionFinishedDetail {
         // Force layout calculation to ensure synchronous scroll and layout are applied before view transition snapshots
         void document.body.offsetHeight;
 
-        requestAnimationFrame(() => {
-          currentRouterUrl = targetUrl.href;
-          emitPageLoad(isTraverse ? "traverse" : "push", oldUrl, targetUrl.href);
-          initSiteStats();
-          initSiteUptime();
-        });
+        currentRouterUrl = targetUrl.href;
+        emitPageLoad(isTraverse ? "traverse" : "push", oldUrl, targetUrl.href);
+        initSiteStats();
+        initSiteUptime();
       };
 
       const engine = window.DaybookTransitionEngine;
