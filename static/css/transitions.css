@@ -849,9 +849,6 @@ html.article-transition::view-transition-image-pair(.article-title-glyph) {
 
 html.article-transition::view-transition-old(.article-title-glyph),
 html.article-transition::view-transition-new(.article-title-glyph) {
-  /* Reduce crossfade for title glyphs to make them look like continuous morphs */
-  /* new fades in, old fades out slightly faster but with morph it looks smooth */
-  animation-duration: inherit;
-  animation-timing-function: inherit;
-  mix-blend-mode: normal;
+  animation: none;
+  opacity: 1;
 }

@@ -37,11 +37,11 @@
 
       if (isNotesIndex(currentURL) && isNoteDetail(targetURL)) {
         const parts = cleanPath(targetURL).split("/");
-        return { direction: "to-detail", slug: parts[parts.length - 1] || "" };
+        return { direction: "to-detail", slug: decodeURIComponent(parts[parts.length - 1] || "") };
       }
       if (isNoteDetail(currentURL) && isNotesIndex(targetURL)) {
         const parts = cleanPath(currentURL).split("/");
-        return { direction: "to-list", slug: parts[parts.length - 1] || "" };
+        return { direction: "to-list", slug: decodeURIComponent(parts[parts.length - 1] || "") };
       }
     } catch {
       return null;
@@ -106,12 +106,12 @@
       
       sourceGlyphs.forEach((el) => {
         const sg = el as HTMLElement;
-        sg.style.viewTransitionName = `title-${info.slug}-${sg.dataset.glyphIndex}`;
+        sg.style.viewTransitionName = `title-glyph-${sg.dataset.glyphIndex}`;
       });
       
       targetGlyphs.forEach((el) => {
         const tg = el as HTMLElement;
-        tg.style.viewTransitionName = `title-${info.slug}-${tg.dataset.glyphIndex}`;
+        tg.style.viewTransitionName = `title-glyph-${tg.dataset.glyphIndex}`;
       });
     }
 
@@ -120,8 +120,8 @@
     
     if (sourceMeta && targetMeta) {
       // Use meta- prefix to avoid slug-only collision!
-      sourceMeta.style.viewTransitionName = "meta-" + info.slug;
-      targetMeta.style.viewTransitionName = "meta-" + info.slug;
+      sourceMeta.style.viewTransitionName = "meta-item-shared";
+      targetMeta.style.viewTransitionName = "meta-item-shared";
       targetMeta.classList.add("meta-shared-target");
       document.documentElement.classList.add("meta-shared-transition");
     }

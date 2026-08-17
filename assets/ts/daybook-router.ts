@@ -280,8 +280,6 @@ interface DaybookTransitionFinishedDetail {
       const engine = window.DaybookTransitionEngine;
       const useMotion = engine && !engine.reducedMotion();
       const articleTransition = engine && engine.isArticleTransition(oldUrl, targetUrl.href);
-      let articleMorph: any = null;
-
       if (engine) {
         engine.clearTransitionClasses();
         engine.clearArticleSharedTransitions(document);
@@ -291,9 +289,7 @@ interface DaybookTransitionFinishedDetail {
         document.documentElement.classList.add("is-transitioning");
         if (articleTransition) {
           document.documentElement.classList.add("article-transition");
-          articleMorph = engine.prepareArticleMorph
-            ? engine.prepareArticleMorph(newDocument, oldUrl, targetUrl.href, sourceLink)
-            : engine.prepareArticleSharedTransition(newDocument, oldUrl, targetUrl.href, sourceLink);
+          engine.prepareArticleSharedTransition(newDocument, oldUrl, targetUrl.href, sourceLink);
         } else if (!isTraverse) { // Push transition
           document.body.classList.add(engine.exitClassName(document.body));
           if (engine.shouldAnimateIdentityExit(newDocument)) {
@@ -303,21 +299,7 @@ interface DaybookTransitionFinishedDetail {
         }
       }
 
-      if (useMotion && articleTransition) {
-        doSwap();
-
-        const morphFinished = articleMorph && engine.playArticleMorph
-          ? engine.playArticleMorph(articleMorph)
-          : Promise.resolve();
-
-        morphFinished.catch(() => {}).finally(() => {
-          if (engine) {
-            engine.clearTransitionClasses();
-            engine.clearArticleSharedTransitions(document);
-          }
-          emitTransitionFinished(oldUrl, targetUrl.href);
-        });
-      } else if (useMotion && document.startViewTransition) {
+      if (useMotion && document.startViewTransition) {
         const transition = document.startViewTransition(() => {
           doSwap();
           if (!articleTransition && !isTraverse && engine) {
