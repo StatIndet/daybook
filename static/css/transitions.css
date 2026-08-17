@@ -835,7 +835,7 @@ body.page-entering .archive-item {
   margin: 0;
   padding: 0;
   border: 0;
-  display: inline;
+  display: inline-block;
 }
 
 html.article-transition::view-transition-group(.article-title-glyph) {
