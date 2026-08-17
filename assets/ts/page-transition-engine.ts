@@ -86,47 +86,51 @@
     });
   }
 
-  function prepareArticleSharedTransition(nextDocument: Document, currentUrlStr: string, targetUrlStr: string, sourceLink?: HTMLElement | null): any {
+  function prepareArticleTransitionSource(currentUrlStr: string, targetUrlStr: string, sourceLink?: HTMLElement | null): any {
     clearArticleSharedTransitions(document);
-    clearArticleSharedTransitions(nextDocument);
-
+    
     const info = articleTransitionInfo(currentUrlStr, targetUrlStr);
     if (!info || !info.slug) return null;
 
     let sourceTitle = findTitleBySlug(document, info.slug);
-    let targetTitle = findTitleBySlug(nextDocument, info.slug);
-
     if (sourceLink && sourceLink.matches("[data-title-transition-key]")) {
       sourceTitle = sourceLink;
     }
 
-    if (sourceTitle && targetTitle) {
+    if (sourceTitle) {
       const sourceGlyphs = sourceTitle.querySelectorAll(".title-glyph");
-      const targetGlyphs = targetTitle.querySelectorAll(".title-glyph");
-      
       sourceGlyphs.forEach((el) => {
         const sg = el as HTMLElement;
         sg.style.viewTransitionName = `title-glyph-${sg.dataset.glyphIndex}`;
       });
-      
+    }
+
+    const sourceMeta = findMetaBySlug(document, info.slug);
+    if (sourceMeta) {
+      sourceMeta.style.viewTransitionName = "meta-item-shared";
+      document.documentElement.classList.add("meta-shared-transition");
+    }
+
+    return info;
+  }
+
+  function prepareArticleTransitionTarget(info: any) {
+    if (!info || !info.slug) return;
+    
+    let targetTitle = findTitleBySlug(document, info.slug);
+    if (targetTitle) {
+      const targetGlyphs = targetTitle.querySelectorAll(".title-glyph");
       targetGlyphs.forEach((el) => {
         const tg = el as HTMLElement;
         tg.style.viewTransitionName = `title-glyph-${tg.dataset.glyphIndex}`;
       });
     }
 
-    const sourceMeta = findMetaBySlug(document, info.slug);
-    const targetMeta = findMetaBySlug(nextDocument, info.slug);
-    
-    if (sourceMeta && targetMeta) {
-      // Use meta- prefix to avoid slug-only collision!
-      sourceMeta.style.viewTransitionName = "meta-item-shared";
+    const targetMeta = findMetaBySlug(document, info.slug);
+    if (targetMeta) {
       targetMeta.style.viewTransitionName = "meta-item-shared";
       targetMeta.classList.add("meta-shared-target");
-      document.documentElement.classList.add("meta-shared-transition");
     }
-
-    return null; // Force daybook-router to NOT call playArticleMorph
   }
 
   function hasSiteIdentity(root: Document | HTMLElement): boolean {
@@ -163,7 +167,8 @@
     reducedMotion,
     cssDuration,
     isArticleTransition,
-    prepareArticleSharedTransition,
+    prepareArticleTransitionSource,
+    prepareArticleTransitionTarget,
     clearArticleSharedTransitions,
     shouldAnimateIdentityExit,
     exitClassName,

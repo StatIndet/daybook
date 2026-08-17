@@ -285,11 +285,12 @@ interface DaybookTransitionFinishedDetail {
         engine.clearArticleSharedTransitions(document);
       }
 
+      let transitionInfo: any = null;
       if (useMotion) {
         document.documentElement.classList.add("is-transitioning");
         if (articleTransition) {
           document.documentElement.classList.add("article-transition");
-          engine.prepareArticleSharedTransition(newDocument, oldUrl, targetUrl.href, sourceLink);
+          transitionInfo = engine.prepareArticleTransitionSource(oldUrl, targetUrl.href, sourceLink);
         } else if (!isTraverse) { // Push transition
           document.body.classList.add(engine.exitClassName(document.body));
           if (engine.shouldAnimateIdentityExit(newDocument)) {
@@ -302,6 +303,9 @@ interface DaybookTransitionFinishedDetail {
       if (useMotion && document.startViewTransition) {
         const transition = document.startViewTransition(() => {
           doSwap();
+          if (articleTransition && transitionInfo) {
+            engine.prepareArticleTransitionTarget(transitionInfo);
+          }
           if (!articleTransition && !isTraverse && engine) {
             document.body.classList.add(engine.enterClassName(document.body));
           }
