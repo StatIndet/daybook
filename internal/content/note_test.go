@@ -22,8 +22,8 @@ draft: false
 	if note.Title != "示例笔记" {
 		t.Fatalf("Title = %q, want %q", note.Title, "示例笔记")
 	}
-	if note.URL != "/notes/example-note/" {
-		t.Fatalf("URL = %q, want %q", note.URL, "/notes/example-note/")
+	if note.URL != "/notes/example/" {
+		t.Fatalf("URL = %q, want %q", note.URL, "/notes/example/")
 	}
 	if len(note.Tags) != 2 {
 		t.Fatalf("Tags length = %d, want 2", len(note.Tags))

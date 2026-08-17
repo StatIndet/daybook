@@ -533,48 +533,17 @@ html.article-transition [data-meta-transition-key] {
   view-transition-name: none !important;
 }
 
-.article-morph-layer {
-  inset: 0;
-  overflow: visible;
-  pointer-events: none;
-  position: fixed;
-  z-index: 2600;
-}
 
-.article-morph-clone {
-  display: block;
-  margin: 0;
-  max-width: none;
-  min-width: 0;
-  overflow: visible;
-  pointer-events: none;
-  position: absolute;
-  transform: none;
-  transform-origin: 0 0;
-  will-change: left, top, width, font-size, font-weight, line-height, color;
-}
 
-.article-morph-clone-title {
-  hyphens: auto;
-  overflow-wrap: anywhere;
-  white-space: normal;
-  word-break: normal;
-}
 
-.article-morph-token {
-  overflow-wrap: normal;
-  white-space: pre;
-  width: auto;
-  word-break: normal;
-}
 
-.article-morph-clone-meta {
-  white-space: nowrap;
-}
 
-.article-morph-hidden {
-  visibility: hidden !important;
-}
+
+
+
+
+
+
 
 html:not(.article-transition) body.page-entering.page-body .side-nav .nav-link {
   animation: side-nav-enter var(--duration-normal) var(--ease-out) both;
@@ -859,4 +828,30 @@ body.page-entering .archive-item {
     transform: none !important;
     visibility: hidden !important;
   }
+}
+
+.title-glyph {
+  view-transition-class: article-title-glyph;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: inline;
+}
+
+html.article-transition::view-transition-group(.article-title-glyph) {
+  animation-duration: var(--duration-shared, 500ms);
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html.article-transition::view-transition-image-pair(.article-title-glyph) {
+  isolation: auto;
+}
+
+html.article-transition::view-transition-old(.article-title-glyph),
+html.article-transition::view-transition-new(.article-title-glyph) {
+  /* Reduce crossfade for title glyphs to make them look like continuous morphs */
+  /* new fades in, old fades out slightly faster but with morph it looks smooth */
+  animation-duration: inherit;
+  animation-timing-function: inherit;
+  mix-blend-mode: normal;
 }

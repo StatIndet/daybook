@@ -63,6 +63,9 @@
   }
 
   function clearTitleTransitions(root: Document | HTMLElement) {
+    root.querySelectorAll(".title-glyph").forEach(function (el) {
+      (el as HTMLElement).style.removeProperty("view-transition-name");
+    });
     root.querySelectorAll("[data-title-transition-key]").forEach(function (titleEl) {
       var title = titleEl as HTMLElement;
       title.style.removeProperty("view-transition-name");
@@ -144,8 +147,21 @@
     if (sourceTitle.dataset.titleTransitionKey !== targetTitle.dataset.titleTransitionKey) {
       return false;
     }
-    sourceTitle.style.viewTransitionName = sourceTitle.dataset.titleTransitionKey;
-    targetTitle.style.viewTransitionName = targetTitle.dataset.titleTransitionKey;
+    var slug = sourceTitle.dataset.titleTransitionKey;
+    var sourceGlyphs = sourceTitle.querySelectorAll(".title-glyph");
+    var targetGlyphs = targetTitle.querySelectorAll(".title-glyph");
+    
+    sourceGlyphs.forEach(function (el) {
+      var sg = el as HTMLElement;
+      var index = sg.dataset.glyphIndex;
+      sg.style.viewTransitionName = "title-" + slug + "-" + index;
+    });
+    
+    targetGlyphs.forEach(function (el) {
+      var tg = el as HTMLElement;
+      var index = tg.dataset.glyphIndex;
+      tg.style.viewTransitionName = "title-" + slug + "-" + index;
+    });
     return true;
   }
 
@@ -161,74 +177,6 @@
     targetMeta.classList.add("meta-shared-target");
     document.documentElement.classList.add("meta-shared-transition");
     return true;
-  }
-
-  function lineHeightFor(element: Element): number {
-    var style = window.getComputedStyle(element);
-    var lineHeight = Number.parseFloat(style.lineHeight);
-    if (Number.isFinite(lineHeight) && lineHeight > 0) {
-      return lineHeight;
-    }
-
-    var fontSize = Number.parseFloat(style.fontSize);
-    if (Number.isFinite(fontSize) && fontSize > 0) {
-      return fontSize * 1.2;
-    }
-    return 0;
-  }
-
-  function titleLineCount(title: HTMLElement | null): number {
-    if (!title) {
-      return 0;
-    }
-
-    var lineHeight = lineHeightFor(title);
-    var height = title.getBoundingClientRect().height;
-    if (!lineHeight || height <= 0) {
-      return 0;
-    }
-    return Math.max(1, Math.round(height / lineHeight));
-  }
-
-  function clonedTitleLineCount(nextDocument: Document, title: HTMLElement | null): number {
-    if (!title) {
-      return 0;
-    }
-    if (title.ownerDocument === document) {
-      return titleLineCount(title);
-    }
-
-    var transitionKey = title.dataset.titleTransitionKey;
-    if (!transitionKey) return 0;
-    var targetPage = title.closest(".notes-page") || title.closest(".article-stage");
-    if (!targetPage) {
-      return 0;
-    }
-
-    var probe = targetPage.cloneNode(true) as HTMLElement;
-    var pageMain = document.querySelector(".page-main") || document.body;
-    var pageMainRect = pageMain.getBoundingClientRect();
-
-    probe.style.position = "fixed";
-    probe.style.left = pageMainRect.left + "px";
-    probe.style.top = pageMainRect.top + "px";
-    probe.style.width = pageMainRect.width + "px";
-    probe.style.visibility = "hidden";
-    probe.style.pointerEvents = "none";
-    probe.style.zIndex = "-1";
-
-    pageMain.appendChild(probe);
-    try {
-      return titleLineCount(findTitleByTransitionName(probe, transitionKey));
-    } finally {
-      probe.remove();
-    }
-  }
-
-  function titleLineCountsMatch(sourceTitle: HTMLElement | null, targetTitle: HTMLElement | null, nextDocument: Document): boolean {
-    var sourceLines = titleLineCount(sourceTitle);
-    var targetLines = clonedTitleLineCount(nextDocument, targetTitle);
-    return sourceLines > 0 && targetLines > 0 && sourceLines === targetLines;
   }
 
   function prepareArticleSharedTransition(nextDocument: Document, url: URL, sourceLink: HTMLElement | null) {
@@ -259,9 +207,7 @@
       return;
     }
 
-    if (titleLineCountsMatch(sourceTitle, targetTitle, nextDocument) && setTitleTransitionPair(sourceTitle, targetTitle)) {
-      return;
-    }
+    setTitleTransitionPair(sourceTitle, targetTitle);
     setMetaTransitionPair(sourceMeta, targetMeta);
   }
 

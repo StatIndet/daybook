@@ -1194,7 +1194,4 @@ body.is-search-overlay-open .mobile-search-overlay {
 
 
 /* Article Title Morphable Layout */
-.article-title--morphable .title-token {
-  display: inline-block;
-  white-space: pre;
-}
+
