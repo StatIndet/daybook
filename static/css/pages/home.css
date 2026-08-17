@@ -49,6 +49,7 @@
   align-items: baseline;
   display: flex;
   flex-wrap: wrap;
+  font-weight: normal;
   gap: 0.28em;
   line-height: 0.94;
   margin: 0;
@@ -57,7 +58,10 @@
 .hero-name-cn {
   font-family: var(--font-signature-cn);
   font-size: clamp(3.4rem, 5.5vw, 5.8rem);
+  font-weight: 400;
   font-variant-ligatures: common-ligatures;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   display: inline-block;
   align-self: baseline;
   width: auto;

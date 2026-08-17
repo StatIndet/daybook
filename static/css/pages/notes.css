@@ -141,6 +141,7 @@ hr.notes-divider {
   align-items: baseline;
   display: flex;
   flex-wrap: wrap;
+  font-weight: normal;
   gap: 0.25em;
   line-height: 0.95;
   margin: 0;
@@ -149,6 +150,10 @@ hr.notes-divider {
 .notes-brand-cn {
   font-family: var(--font-signature-cn);
   font-size: clamp(2.2rem, 3vw, 3rem);
+  font-weight: 400;
+  font-variant-ligatures: common-ligatures;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   display: inline-block;
   align-self: baseline;
   width: auto;
