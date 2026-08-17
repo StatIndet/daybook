@@ -57,6 +57,7 @@
 .hero-name-cn {
   font-family: var(--font-signature-cn);
   font-size: clamp(3.4rem, 5.5vw, 5.8rem);
+  font-variant-ligatures: common-ligatures;
   display: inline-block;
   align-self: baseline;
   width: auto;
