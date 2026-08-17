@@ -83,6 +83,7 @@ type NotePage struct {
 	Summary             string
 	URL                 string
 	Slug                string
+	I18nKey             string
 	Tags                []string
 	WordCount           int
 	ReadingMinutes      int

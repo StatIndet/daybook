@@ -414,7 +414,8 @@ func Build(options Options) (BuildResult, error) {
 					ReadingTime:         readingTime,
 					Summary:             note.Summary,
 					URL:                 noteLink.URL,
-					Slug:                group.I18nKey, // use I18nKey for Waline path
+					Slug:                note.Slug,
+					I18nKey:             group.I18nKey,
 					Tags:                tags,
 					WordCount:           note.WordCount,
 					ReadingMinutes:      note.ReadingMinutes,

@@ -47,12 +47,12 @@
             <span>{{formatNum .Note.WordCount}} {{T .Lang "post.words"}}</span>
           </span>
           <span class="meta-stagger">
-            <span data-page-views data-path="/notes/{{.Note.Slug}}/">--</span>
-            <span data-page-views-label data-path="/notes/{{.Note.Slug}}/">views</span>
+            <span data-page-views data-path="/notes/{{.Note.I18nKey}}/">--</span>
+            <span data-page-views-label data-path="/notes/{{.Note.I18nKey}}/">views</span>
           </span>
           {{if .Note.HasTranslation}}
           <span class="meta-stagger note-bilingual-wrapper">
-            <button type="button" class="bilingual-toggle-btn" aria-label="Toggle Bilingual Translation" data-current-lang="{{.Lang}}" data-alt-fragment-url="{{if eq .Lang "en"}}/notes/{{.Note.Slug}}/fragment.json{{else}}/en/notes/{{.Note.Slug}}/fragment.json{{end}}">
+            <button type="button" class="bilingual-toggle-btn" aria-label="Toggle Bilingual Translation" data-current-lang="{{.Lang}}" data-alt-fragment-url="{{.AlternateURL}}fragment.json">
               <span class="bilingual-char bilingual-zh">中</span>
               <span class="bilingual-char bilingual-en">En</span>
             </button>
@@ -104,7 +104,7 @@
              data-comment-sorting="{{$.Config.Comment.Waline.CommentSorting}}"
              data-search="{{$.Config.Comment.Waline.Search}}"
              data-image-uploader="{{$.Config.Comment.Waline.ImageUploader}}"
-             data-path="/notes/{{.Note.Slug}}/"></div>
+             data-path="/notes/{{.Note.I18nKey}}/"></div>
         <link rel="stylesheet" href="/vendor/waline/waline.css">
         <link rel="stylesheet" href="{{.Assets.Path "/css/components/waline-theme.css"}}">
       </section>
