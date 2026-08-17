@@ -7,7 +7,7 @@
   <div class="hero-content">
     <div class="hero-identity">
       <h1 class="hero-name">
-        <span class="hero-name-cn{{if .Config.Profile.Author.SignatureImage}} has-signature-image{{end}}" {{if .Config.Profile.Author.SignatureImage}}style="--signature-url: url('{{.Config.Profile.Author.SignatureImage}}');"{{end}}>{{.Config.Profile.Author.Name}}</span>
+        <span class="hero-name-cn{{if .Config.Profile.HasSignatureFont}} use-signature-font{{end}}">{{.Config.Profile.Author.Name}}</span>
         <span class="hero-name-en">{{.Config.Profile.Author.NameEn}}</span>
       </h1>
 

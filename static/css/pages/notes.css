@@ -151,34 +151,16 @@ hr.notes-divider {
   font-family: var(--font-signature-cn);
   font-size: clamp(2.2rem, 3vw, 3rem);
   font-weight: 400;
+  display: inline-block;
+  align-self: baseline;
+  color: var(--color-text);
+}
+
+.notes-brand-cn.use-signature-font {
+  font-family: "ShiZhi", var(--font-signature-cn);
   font-variant-ligatures: common-ligatures;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  display: inline-block;
-  align-self: baseline;
-  width: auto;
-  height: auto;
-  color: var(--color-text);
-  background-color: transparent;
-  -webkit-mask-image: none;
-  mask-image: none;
-  user-select: auto;
-}
-
-.notes-brand-cn.has-signature-image {
-  width: 1.8em;
-  height: 0.85em;
-  background-color: var(--color-text);
-  -webkit-mask-image: var(--signature-url);
-  -webkit-mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-image: var(--signature-url);
-  mask-size: contain;
-  mask-repeat: no-repeat;
-  mask-position: center;
-  color: transparent;
-  user-select: none;
 }
 
 .notes-brand-en {

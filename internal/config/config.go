@@ -8,17 +8,35 @@ import (
 
 type ProfileConfig struct {
 	Author struct {
-		Name           string `json:"name"`
-		NameEn         string `json:"nameEn"`
-		Avatar         string `json:"avatar"`
-		SignatureImage string `json:"signatureImage"`
-		AboutUrl       string `json:"aboutUrl"`
+		Name     string `json:"name"`
+		NameEn   string `json:"nameEn"`
+		LogoText string `json:"logoText"`
+		Avatar   string `json:"avatar"`
+		AboutUrl string `json:"aboutUrl"`
 	} `json:"author"`
 	Slogan map[string]string `json:"slogan"`
 	SEO    struct {
 		HomeTitle       map[string]string `json:"homeTitle"`
 		HomeDescription map[string]string `json:"homeDescription"`
 	} `json:"seo"`
+}
+
+// HasSignatureFont reports whether the author name is "史帙",
+// which is the only name that has a custom handwriting woff2 font.
+func (p ProfileConfig) HasSignatureFont() bool {
+	return p.Author.Name == "史帙"
+}
+
+// GetLogoText returns the persistent logo text.
+// Falls back to NameEn, then Name if logoText is empty.
+func (p ProfileConfig) GetLogoText() string {
+	if p.Author.LogoText != "" {
+		return p.Author.LogoText
+	}
+	if p.Author.NameEn != "" {
+		return p.Author.NameEn
+	}
+	return p.Author.Name
 }
 
 func (p ProfileConfig) getMultilingualString(dict map[string]string, lang string) string {

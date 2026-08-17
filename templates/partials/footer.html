@@ -14,7 +14,7 @@
 <aside class="notes-aside" aria-label="站点信息">
   <div class="notes-brand notes-aside-identity">
     <h1 class="notes-brand-name">
-      <span class="notes-brand-cn{{if .Config.Profile.Author.SignatureImage}} has-signature-image{{end}}" {{if .Config.Profile.Author.SignatureImage}}style="--signature-url: url('{{.Config.Profile.Author.SignatureImage}}');"{{end}}>{{.Config.Profile.Author.Name}}</span>
+      <span class="notes-brand-cn{{if .Config.Profile.HasSignatureFont}} use-signature-font{{end}}">{{.Config.Profile.Author.Name}}</span>
       <span class="notes-brand-en">{{.Config.Profile.Author.NameEn}}</span>
     </h1>
     <p>{{.Config.Profile.GetSlogan .Lang}}</p>

@@ -2,8 +2,8 @@
   "author": {
     "name": "史帙",
     "nameEn": "Daybook",
+    "logoText": "Daybook",
     "avatar": "/images/avatar/shelby.jpg",
-    "signatureImage": "",
     "aboutUrl": "/about/"
   },
   "seo": {
