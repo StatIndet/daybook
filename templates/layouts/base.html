@@ -2,7 +2,7 @@
 <!doctype html>
 <html lang="{{if .Lang}}{{.Lang}}{{else}}zh-CN{{end}}">
 {{template "head" .}}
-<body class="{{.BodyClass}}" data-page-kind="{{.PageKind}}" data-search-index-url="/search.json" data-stats-enabled="{{if .Config.Stats.APIBase}}true{{else}}false{{end}}" data-stats-api-base="{{.Config.Stats.APIBase}}" data-netease-enabled="{{if .Config.Netease.APIBaseURL}}true{{else}}false{{end}}" data-netease-api-base-url="{{.Config.Netease.APIBaseURL}}">
+<body class="{{.BodyClass}}" data-page-kind="{{.PageKind}}" data-search-index-url="/search.json" data-stats-enabled="{{if .Config.Stats.APIBase}}true{{else}}false{{end}}" data-stats-api-base="{{.Config.Stats.APIBase}}">
   {{template "persistent_logo" .}}
   {{template "settings_overlay" .}}
 
@@ -56,9 +56,6 @@
 
     import("{{.Assets.Path "/js/image-loader.js"}}");
     import("{{.Assets.Path "/js/lightbox.js"}}");
-  </script>
-  <script>
-    window.GLOBAL_NETEASE_SONGS = {{if .Site.NeteaseSongsJSON}}{{.Site.NeteaseSongsJSON}}{{else}}[]{{end}};
   </script>
 </body>
 </html>

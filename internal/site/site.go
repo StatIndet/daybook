@@ -13,7 +13,6 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"time"
 	"unicode"
 
 	"github.com/StatIndet/daybook/internal/config"
@@ -22,6 +21,7 @@ import (
 	"github.com/StatIndet/daybook/internal/graph"
 	"github.com/StatIndet/daybook/internal/i18n"
 	"github.com/StatIndet/daybook/internal/markdown"
+	"github.com/StatIndet/daybook/internal/media"
 	"github.com/StatIndet/daybook/internal/obsidian"
 	"github.com/StatIndet/daybook/internal/render"
 	"github.com/StatIndet/daybook/internal/search"
@@ -101,77 +101,40 @@ func Build(options Options) (BuildResult, error) {
 		}
 	}
 
-	var neteaseSongs []render.NeteaseSong
-	neteaseRegex := regexp.MustCompile(`(?s)::netease\s*\{[^}]*id="([^"]+)"[^}]*\}`)
-	
-	var refs []neteaseRef
-	seenSongs := make(map[string]bool)
+	musicRegex := regexp.MustCompile(`(?s)::music\s*\{[^}]*url="([^"]+)"[^}]*\}`)
+	musicUrls := make(map[string]bool)
 	for _, group := range groups {
-		groupSongIDs := make(map[string]bool)
-
-		// Collect all unique songs in this article group
 		for _, note := range group.Versions {
-			matches := neteaseRegex.FindAllStringSubmatch(note.Body, -1)
+			matches := musicRegex.FindAllStringSubmatch(note.Body, -1)
 			for _, match := range matches {
 				if len(match) > 1 {
-					id := match[1]
-					isDigit := true
-					for _, r := range id {
-						if r < '0' || r > '9' {
-							isDigit = false
-							break
-						}
-					}
-					if isDigit {
-						groupSongIDs[id] = true
-					}
+					musicUrls[match[1]] = true
 				}
-			}
-		}
-
-		for id := range groupSongIDs {
-			if !seenSongs[id] {
-				seenSongs[id] = true
-				
-				// Build the ArticleTitleI18n map
-				titleI18n := make(map[string]string)
-				for lang, note := range group.Versions {
-					titleI18n[lang] = note.Title
-				}
-				
-				// Fallback to zh-CN or en or whatever for default ArticleTitle
-				defaultTitle := ""
-				defaultURL := ""
-				if note, ok := group.Versions["zh-CN"]; ok {
-					defaultTitle = note.Title
-					defaultURL = note.URL
-				} else {
-					for _, note := range group.Versions {
-						defaultTitle = note.Title
-						defaultURL = note.URL
-						break
-					}
-				}
-
-				refs = append(refs, neteaseRef{
-					ID:               id,
-					ArticleTitle:     defaultTitle,
-					ArticleTitleI18n: titleI18n,
-					ArticleURL:       defaultURL,
-				})
 			}
 		}
 	}
-	
-	neteaseSongs = fetchNeteaseMetadata(refs, options.Config.Netease.APIBaseURL, options.Config.Attachments.RemoteBaseURL)
-	neteaseSongsJSONBytes, _ := json.Marshal(neteaseSongs)
+
+	musicMetadataMap := make(map[string]media.MusicMetadata)
+	for u := range musicUrls {
+		meta, err := media.FetchMusicMetadata(u, options.PublicDir)
+		if err != nil {
+			fmt.Printf("[music] warning: failed to fetch metadata for %s: %v\n", u, err)
+			continue
+		}
+		musicMetadataMap[u] = meta
+	}
+
+	// Write the metadata to data/music-metadata.json for reference
+	if metaBytes, err := json.MarshalIndent(musicMetadataMap, "", "  "); err == nil {
+		_ = os.WriteFile("data/music-metadata.json", metaBytes, 0644)
+	}
+
+	markdown.SetMusicMetadataRegistry(musicMetadataMap)
 
 	siteData := render.SiteData{
-		Title:            options.Config.Title,
-		StartedAt:        startedAt,
-		TotalWordCount:   totalWordCount,
-		NeteaseSongs:     neteaseSongs,
-		NeteaseSongsJSON: template.JS(neteaseSongsJSONBytes),
+		Title:          options.Config.Title,
+		StartedAt:      startedAt,
+		TotalWordCount: totalWordCount,
 	}
 
 	searchJSONPath := filepath.Join(options.PublicDir, "search.json")
@@ -1097,26 +1060,11 @@ func buildObsidianIndex(notes []content.Note, contentDir string, cfg config.Atta
 				return nil
 			}
 
-			isRemote := false
-			for _, rdir := range cfg.RemoteDirs {
-				if strings.HasPrefix(relPath, rdir+"/") {
-					isRemote = true
-					break
-				}
-			}
-
 			pubMode := "local"
-			var pubURL string
-			if isRemote && cfg.RemoteBaseURL != "" {
-				pubMode = "remote"
-				pubURL = cfg.RemoteBaseURL + "/" + escapeURLPath(relPath)
-			} else {
-				pubMode = "local"
-				pubURL = cfg.PublicPath + escapeURLPath(relPath)
-				info, err := d.Info()
-				if err == nil && info.Size() > 25*1024*1024 {
-					fmt.Printf("[obsidian] local attachment may exceed Pages single-file limit: %s\n", d.Name())
-				}
+			pubURL := cfg.PublicPath + escapeURLPath(relPath)
+			info, err := d.Info()
+			if err == nil && info.Size() > 25*1024*1024 {
+				fmt.Printf("[obsidian] local attachment may exceed Pages single-file limit: %s\n", d.Name())
 			}
 
 			attachments = append(attachments, obsidian.Attachment{
@@ -1135,7 +1083,18 @@ func buildObsidianIndex(notes []content.Note, contentDir string, cfg config.Atta
 		}
 	}
 
-	return obsidian.NewIndex(targets, attachments, cfg.RemoteDirs, cfg.RemoteBaseURL, cfg.PublicPath), nil
+	appJSONPath := filepath.Join(contentDir, ".obsidian", "app.json")
+	var appJSON struct {
+		AttachmentFolderPath string `json:"attachmentFolderPath"`
+	}
+	if b, err := os.ReadFile(appJSONPath); err == nil {
+		_ = json.Unmarshal(b, &appJSON)
+	}
+	if appJSON.AttachmentFolderPath == "" {
+		appJSON.AttachmentFolderPath = "attachments"
+	}
+
+	return obsidian.NewIndex(targets, attachments, cfg.PublicPath, appJSON.AttachmentFolderPath), nil
 }
 
 func escapeURLPath(p string) string {
@@ -1168,9 +1127,6 @@ func copyAttachments(contentDir, publicDir string, cfg config.AttachmentConfig) 
 	sourceDir := filepath.Join(contentDir, "attachments")
 	targetDir := filepath.Join(publicDir, "attachments")
 
-	var remoteSkipCount int
-	const maxRemoteSkipLogs = 3
-
 	err := copyDirFiltered(sourceDir, targetDir, func(relativePath string, entry os.DirEntry) bool {
 		if entry.IsDir() {
 			return false // Don't skip directories entirely yet, allow traversing
@@ -1184,29 +1140,8 @@ func copyAttachments(contentDir, publicDir string, cfg config.AttachmentConfig) 
 			return true // Skip unsupported
 		}
 
-		relPath := filepath.ToSlash(relativePath)
-		isRemote := false
-		for _, rdir := range cfg.RemoteDirs {
-			if strings.HasPrefix(relPath, rdir+"/") {
-				isRemote = true
-				break
-			}
-		}
-
-		if isRemote {
-			if remoteSkipCount < maxRemoteSkipLogs {
-				fmt.Printf("[obsidian] skip remote: %s\n", relPath)
-			}
-			remoteSkipCount++
-			return true // Skip remote files
-		}
-
 		return false // Copy local files
 	})
-
-	if remoteSkipCount > maxRemoteSkipLogs {
-		fmt.Printf("[obsidian] ... 以及另外 %d 个远程附件已被跳过\n", remoteSkipCount-maxRemoteSkipLogs)
-	}
 
 	return err
 }
@@ -1290,125 +1225,4 @@ func copyFile(sourcePath, targetPath string) error {
 	return nil
 }
 
-type neteaseRef struct {
-	ID               string
-	ArticleTitle     string
-	ArticleTitleI18n map[string]string
-	ArticleURL       string
-}
 
-type neteaseCacheEntry struct {
-	ID         string   `json:"id"`
-	Title      string   `json:"title"`
-	Artists    []string `json:"artists"`
-	ArtistText string   `json:"artistText"`
-	CoverURL   string   `json:"coverURL"`
-	UpdatedAt  string   `json:"updatedAt"`
-}
-
-func fetchNeteaseMetadata(refs []neteaseRef, apiBase string, r2Base string) []render.NeteaseSong {
-	cachePath := "data/netease-metadata.json"
-	cache := make(map[string]neteaseCacheEntry)
-	
-	if b, err := os.ReadFile(cachePath); err == nil {
-		_ = json.Unmarshal(b, &cache)
-	}
-
-	apiBase = strings.TrimRight(apiBase, "/")
-	r2Base = strings.TrimRight(r2Base, "/")
-
-	client := &http.Client{Timeout: 5 * time.Second}
-	var result []render.NeteaseSong
-
-	for _, ref := range refs {
-		id := ref.ID
-		var entry neteaseCacheEntry
-		cached, hasCache := cache[id]
-		entry = cached
-
-		if !hasCache && apiBase != "" {
-			reqURL := fmt.Sprintf("%s/song/detail?ids=%s", apiBase, id)
-			resp, err := client.Get(reqURL)
-			if err == nil {
-				defer resp.Body.Close()
-				if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-					var data struct {
-						Songs []struct {
-							ID   int64  `json:"id"`
-							Name string `json:"name"`
-							Ar   []struct {
-								Name string `json:"name"`
-							} `json:"ar"`
-							Al struct {
-								PicURL string `json:"picUrl"`
-							} `json:"al"`
-						} `json:"songs"`
-					}
-					if err := json.NewDecoder(resp.Body).Decode(&data); err == nil && len(data.Songs) > 0 {
-						songData := data.Songs[0]
-						if fmt.Sprintf("%d", songData.ID) == id {
-							entry.ID = id
-							entry.Title = songData.Name
-							var artists []string
-							for _, ar := range songData.Ar {
-								artists = append(artists, ar.Name)
-							}
-							entry.Artists = artists
-							entry.ArtistText = strings.Join(artists, "/")
-							entry.CoverURL = songData.Al.PicURL
-							entry.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
-							cache[id] = entry
-							hasCache = true
-						} else {
-							fmt.Printf("[netease] warning: API returned mismatched ID for %s\n", id)
-						}
-					} else {
-						fmt.Printf("[netease] warning: failed to decode JSON or empty songs for %s\n", id)
-					}
-				} else {
-					fmt.Printf("[netease] warning: API returned status %d for %s\n", resp.StatusCode, id)
-				}
-			} else {
-				fmt.Printf("[netease] warning: API request failed for %s: %v\n", id, err)
-			}
-		}
-
-		if !hasCache {
-			fmt.Printf("[netease] warning: no metadata available for %s, using defaults\n", id)
-			entry.ID = id
-			entry.Title = id
-			entry.Artists = []string{}
-			entry.ArtistText = ""
-			entry.CoverURL = ""
-		}
-
-		audioURL := ""
-		if r2Base != "" {
-			audioURL = fmt.Sprintf("%s/netease/%s.flac", r2Base, id)
-		}
-
-		result = append(result, render.NeteaseSong{
-			ID:               entry.ID,
-			Title:            entry.Title,
-			Artists:          entry.Artists,
-			ArtistText:       entry.ArtistText,
-			CoverURL:         entry.CoverURL,
-			AudioURL:         audioURL,
-			ExternalURL:      fmt.Sprintf("https://music.163.com/#/song?id=%s", id),
-			ArticleTitle:     ref.ArticleTitle,
-			ArticleTitleI18n: ref.ArticleTitleI18n,
-			ArticleURL:       ref.ArticleURL,
-		})
-	}
-
-	if len(cache) > 0 {
-		os.MkdirAll(filepath.Dir(cachePath), 0755)
-		if b, err := json.MarshalIndent(cache, "", "  "); err == nil {
-			os.WriteFile(cachePath, b, 0644)
-		} else {
-			fmt.Printf("[netease] warning: failed to write cache: %v\n", err)
-		}
-	}
-
-	return result
-}

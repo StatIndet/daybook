@@ -71,13 +71,13 @@ func main() {
 
 ---
 
-## Obsidian 附件系统与远程加载
+## 本地附件系统
 
-Daybook 完整兼容了 Obsidian 的双链附件引用语法，并支持区分本地与 Cloudflare R2 远程对象存储加载。
+Daybook 完整兼容了 Obsidian 的双链附件引用语法。
 
 ### 图片嵌入与排版
 
-你可以使用 `![[filename.jpg]]` 语法插入图片，并可以通过管道符 `|` 添加宽度和对齐方式参数。支持的语法格式包括：
+你可以使用 `![[filename.jpg]]` 语法插入本地图片，并可以通过管道符 `|` 添加宽度和对齐方式参数。支持的语法格式包括：
 - 默认图片：`![[shi-li.jpg]]`
 - 指定宽度：`![[shi-li.jpg|200]]`
 - 指定宽高：`![[shi-li.jpg|640x480]]`
@@ -87,21 +87,47 @@ Daybook 完整兼容了 Obsidian 的双链附件引用语法，并支持区分�
 **渲染示例**：
 ![[shi-li.jpg|center|300]]
 
-### 远程音视频与 PDF 挂载
+### 音视频与 PDF 嵌入
 
-除了本地附件，Daybook 支持将存放在如 `audio/`、`video/`、`pdf/` 等特定子目录下的文件，自动重定向至预设的 R2 远程存储域名。
+所有的本地 PDF, Audio, Video 都被当作普通的附件处理，自动在构建时复制：
 
 **PDF 预览**：
-语法：`![[pdf/shi-jian-lun.pdf]]`
-![[pdf/shi-jian-lun.pdf]]
+语法：`![[shi-jian-lun.pdf]]`
 
 **音频播放**：
-语法：`![[audio/JayChou-ai-zai-xi-yuan-qian.FLAC]]`
-![[audio/JayChou-ai-zai-xi-yuan-qian.FLAC]]
+语法：`![[JayChou.FLAC]]`
 
 **视频播放**：
-语法：`![[video/1130650335-1-208.mp4|center|720]]`
-![[video/1130650335-1-208.mp4|center|720]]
+语法：`![[1130650335.mp4|center|720]]`
+
+---
+
+## 远程富媒体与音乐播放器
+
+Daybook 提供了自有的 `::type` directive 语法用于加载远程媒体资源。
+
+### 远程媒体组件
+
+你可以使用以下语法直接挂载任何 HTTP(S) URL 媒体：
+
+- `::image{url="https://..." align="center" width="400" caption="Image Caption"}`
+- `::video{url="https://..." align="center" width="720" autoplay="true" loop="true"}`
+- `::audio{url="https://..."}`
+- `::pdf{url="https://..." height="800"}`
+
+### 无缝音乐播放器
+
+使用 `::music` 指令，Daybook 会在构建阶段按需请求远程 FLAC 文件的开头部分以提取 `STREAMINFO`, `VORBIS_COMMENT`, 和 `PICTURE`。它能自动获取歌曲的时长、歌名、歌手和封面，生成并内嵌出一个美观的音乐播放器：
+
+```markdown
+::music{url="https://example.com/audio/song.flac" loop="true"}
+```
+
+你也可以手动覆盖音乐信息：
+
+```markdown
+::music{url="https://example.com/audio/song.mp3" title="自定义标题" artist="自定义歌手" cover="https://example.com/cover.jpg"}
+```
 
 ---
 

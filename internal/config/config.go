@@ -79,13 +79,8 @@ type CommentConfig struct {
 type AttachmentConfig struct {
 	LocalDir      string   `yaml:"local_dir"`
 	PublicPath    string   `yaml:"public_path"`
-	RemoteBaseURL string   `yaml:"remote_base_url"`
-	RemoteDirs    []string `yaml:"remote_dirs"`
 }
 
-type NeteaseConfig struct {
-	APIBaseURL string
-}
 
 type StatsConfig struct {
 	APIBase string
@@ -97,7 +92,6 @@ type Config struct {
 	StartedAt   string           `yaml:"startedAt"`
 	Comment     CommentConfig    `yaml:"comment"`
 	Attachments AttachmentConfig `yaml:"attachments"`
-	Netease     NeteaseConfig
 	Stats       StatsConfig
 	Profile     ProfileConfig
 }
@@ -141,11 +135,6 @@ func Load() (Config, error) {
 		Attachments: AttachmentConfig{
 			LocalDir:      "content/attachments",
 			PublicPath:    "/attachments/",
-			RemoteBaseURL: parseStringEnv("DAYBOOK_R2_BASE_URL", ""),
-			RemoteDirs:    []string{"audio", "video", "picture", "pdf", "netease"},
-		},
-		Netease: NeteaseConfig{
-			APIBaseURL: parseStringEnv("DAYBOOK_NETEASE_API_BASE_URL", ""),
 		},
 		Stats: StatsConfig{
 			APIBase: parseStringEnv("DAYBOOK_STATS_API_BASE", "/api"),

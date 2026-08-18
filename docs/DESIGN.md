@@ -32,5 +32,5 @@ daybook 的当前视觉结构已经稳定，本文件只记录维护边界。
 ### 2. 动态 R2 附件挂载推断 (Dynamic Remote Resolution)
 为了解决大型音视频、PDF 及图片文件体积过大、拖慢 Git 仓库的问题，项目实现了动态的 Obsidian 附件推断。
 - **解耦机制**：在 `.gitignore` 中忽略子目录（如 `audio/`, `video/`）的大文件提交。
-- **运行时推断**：在 Markdown 解析器 (`internal/obsidian/obsidian.go`) 中拦截文件缺失错误。若发现请求路径命中了 `config.yaml` 定义的 `RemoteDirs`，解析引擎会自动将其推断为合法文件，并无缝拼接 `RemoteBaseURL` 指向 Cloudflare R2。
+
 - **结果**：完全本地化的双链书写体验 + 零成本的远程大型对象存储托管，且不会在 CI 部署阶段引发“文件丢失”报错。

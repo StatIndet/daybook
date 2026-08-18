@@ -31,10 +31,18 @@ func renderLeafEmbed(name string, attrs map[string]string) (string, bool) {
 		return renderSpotifyEmbed(attrs)
 	case "codepen":
 		return renderCodePenEmbed(attrs)
-	case "netease":
-		return renderNeteaseEmbed(attrs)
 	case "tweet":
 		return renderTweetEmbed(attrs)
+	case "image":
+		return renderImageEmbed(attrs)
+	case "video":
+		return renderVideoEmbed(attrs)
+	case "audio":
+		return renderAudioEmbed(attrs)
+	case "pdf":
+		return renderPDFEmbed(attrs)
+	case "music":
+		return renderMusicEmbed(attrs)
 	default:
 		return "", false
 	}
@@ -188,29 +196,228 @@ func renderCodePenEmbed(attrs map[string]string) (string, bool) {
 	src := "https://codepen.io/" + user + "/embed/" + slug + "?default-tab=result"
 	return fixedHeightIframe("embed-frame-codepen", src, "CodePen embed", "420", ``), true
 }
-
-func renderNeteaseEmbed(attrs map[string]string) (string, bool) {
-	neteaseType := strings.TrimSpace(attrs["type"])
-	id := strings.TrimSpace(attrs["id"])
-	if !digitsPattern.MatchString(id) {
-		return "", false
+func parseDimension(val string) string {
+	val = strings.TrimSpace(val)
+	if digitsPattern.MatchString(val) {
+		return val
 	}
+	return ""
+}
 
-	autostart := "false"
-	if strings.TrimSpace(attrs["autostart"]) == "true" {
-		autostart = "true"
-	}
-
-	switch neteaseType {
-	case "song":
-		href := "https://music.163.com/#/song?id=" + escapeAttr(id)
-		html := fmt.Sprintf(`<div class="netease-custom-player" data-id="%s" data-autostart="%s"><a href="%s" target="_blank" rel="noopener noreferrer" style="display:none;">View on Netease</a></div>`, escapeAttr(id), autostart, href)
-		return html, true
+func parseAlign(val string) string {
+	val = strings.TrimSpace(strings.ToLower(val))
+	switch val {
+	case "left", "center", "right":
+		return val
 	default:
-		// User specifically requested to not support playlist or album anymore.
-		return "", false
+		return ""
 	}
 }
+
+func parseBool(val string) bool {
+	val = strings.TrimSpace(strings.ToLower(val))
+	return val == "true" || val == "1" || val == "on" || val == "yes"
+}
+
+func isValidRemoteURL(rawURL string) bool {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	scheme := strings.ToLower(u.Scheme)
+	return scheme == "http" || scheme == "https"
+}
+
+func renderImageEmbed(attrs map[string]string) (string, bool) {
+	rawURL := strings.TrimSpace(attrs["url"])
+	if !isValidRemoteURL(rawURL) {
+		return "", false
+	}
+
+	width := parseDimension(attrs["width"])
+	align := parseAlign(attrs["align"])
+	alt := escapeAttr(attrs["alt"])
+	caption := escapeText(attrs["caption"])
+
+	style := ""
+	if width != "" {
+		style += fmt.Sprintf("max-width: min(%spx, 100%%); height: auto;", width)
+	}
+
+	imgTag := fmt.Sprintf(`<img src="%s" alt="%s" loading="lazy" decoding="async"`, escapeAttr(rawURL), alt)
+	if style != "" {
+		imgTag += fmt.Sprintf(` style="%s"`, style)
+	}
+	imgTag += ">"
+
+	figClass := "remote-image"
+	if align != "" {
+		figClass += " align-" + align
+	}
+
+	html := fmt.Sprintf(`<figure class="%s">%s`, figClass, imgTag)
+	if caption != "" {
+		html += fmt.Sprintf(`<figcaption>%s</figcaption>`, caption)
+	}
+	html += `</figure>`
+
+	return html, true
+}
+
+func renderVideoEmbed(attrs map[string]string) (string, bool) {
+	rawURL := strings.TrimSpace(attrs["url"])
+	if !isValidRemoteURL(rawURL) {
+		return "", false
+	}
+
+	width := parseDimension(attrs["width"])
+	align := parseAlign(attrs["align"])
+	poster := escapeAttr(attrs["poster"])
+	
+	autoplay := parseBool(attrs["autoplay"])
+	muted := parseBool(attrs["muted"])
+	loop := parseBool(attrs["loop"])
+
+	style := ""
+	if width != "" {
+		style += fmt.Sprintf("max-width: min(%spx, 100%%); height: auto;", width)
+	}
+
+	videoAttrs := `controls preload="metadata" playsinline`
+	if poster != "" {
+		videoAttrs += fmt.Sprintf(` poster="%s"`, poster)
+	}
+	if autoplay {
+		videoAttrs += " autoplay"
+	}
+	if muted {
+		videoAttrs += " muted"
+	}
+	if loop {
+		videoAttrs += " loop"
+	}
+	if style != "" {
+		videoAttrs += fmt.Sprintf(` style="%s"`, style)
+	}
+
+	videoTag := fmt.Sprintf(`<video src="%s" %s></video>`, escapeAttr(rawURL), videoAttrs)
+
+	figClass := "remote-video"
+	if align != "" {
+		figClass += " align-" + align
+	}
+
+	return fmt.Sprintf(`<figure class="%s">%s</figure>`, figClass, videoTag), true
+}
+
+func renderAudioEmbed(attrs map[string]string) (string, bool) {
+	rawURL := strings.TrimSpace(attrs["url"])
+	if !isValidRemoteURL(rawURL) {
+		return "", false
+	}
+
+	audioAttrs := `controls preload="metadata"`
+	if parseBool(attrs["autoplay"]) {
+		audioAttrs += " autoplay"
+	}
+	if parseBool(attrs["loop"]) {
+		audioAttrs += " loop"
+	}
+
+	return fmt.Sprintf(`<div class="remote-audio"><audio src="%s" %s></audio></div>`, escapeAttr(rawURL), audioAttrs), true
+}
+
+func renderPDFEmbed(attrs map[string]string) (string, bool) {
+	rawURL := strings.TrimSpace(attrs["url"])
+	if !isValidRemoteURL(rawURL) {
+		return "", false
+	}
+
+	height := parseDimension(attrs["height"])
+	if height == "" {
+		height = "720"
+	}
+	title := escapeAttr(attrs["title"])
+	if title == "" {
+		title = "PDF Document"
+	}
+
+	html := fmt.Sprintf(`<iframe src="%s" title="%s" width="100%%" height="%spx" loading="lazy" class="remote-pdf"></iframe>`, escapeAttr(rawURL), title, height)
+	return html, true
+}
+
+func renderMusicEmbed(attrs map[string]string) (string, bool) {
+	rawURL := strings.TrimSpace(attrs["url"])
+	if !isValidRemoteURL(rawURL) {
+		return "", false
+	}
+
+	meta, ok := GetMusicMetadata(rawURL)
+	if !ok {
+		// fallback
+		meta.Title = "Unknown Title"
+		meta.Artist = "Unknown Artist"
+	}
+
+	if t := strings.TrimSpace(attrs["title"]); t != "" {
+		meta.Title = t
+	}
+	if a := strings.TrimSpace(attrs["artist"]); a != "" {
+		meta.Artist = a
+	}
+	if c := strings.TrimSpace(attrs["cover"]); c != "" {
+		if isValidRemoteURL(c) {
+			meta.Cover = c
+		}
+	}
+	
+	if meta.Cover == "" {
+		meta.Cover = "/images/default-music-cover.jpg" // Fallback cover
+	}
+
+	loopAttr := ""
+	if parseBool(attrs["loop"]) {
+		loopAttr = " loop"
+	}
+
+	html := fmt.Sprintf(`
+		<div class="music-custom-player" data-status="ready">
+			<div class="music-player">
+				<div class="music-bg" style="background-image: url('%s')"></div>
+				<div class="music-overlay"></div>
+				<div class="music-inner">
+					<img class="music-cover" src="%s" alt="%s" />
+					<div class="music-body">
+						<div class="music-text">
+							<div class="music-title">%s</div>
+							<div class="music-artist">%s</div>
+						</div>
+						<div class="music-time">0:00 / 0:00</div>
+						<div class="music-bottom">
+							<canvas class="music-canvas"></canvas>
+						</div>
+					</div>
+					<div class="music-playbtn-wrapper">
+						<button class="music-playbtn" aria-label="Play">
+							<span class="material-symbol music-icon">play_arrow</span>
+						</button>
+					</div>
+				</div>
+				<audio src="%s" preload="metadata"%s></audio>
+			</div>
+		</div>`,
+		escapeAttr(meta.Cover),
+		escapeAttr(meta.Cover),
+		escapeAttr(meta.Title),
+		escapeText(meta.Title),
+		escapeText(meta.Artist),
+		escapeAttr(rawURL),
+		loopAttr,
+	)
+	
+	return html, true
+}
+
 
 func renderTweetEmbed(attrs map[string]string) (string, bool) {
 	rawURL := strings.TrimSpace(attrs["url"])

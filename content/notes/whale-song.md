@@ -4,14 +4,14 @@ date: 2026-06-21
 tags:
   - memos
   - whale-song
-summary: A long time ago, I came across Alice’s story in the comment section of NetEase Cloud Music. I have remembered it for many years, and now I am writing it down to record how I felt back then. At the same time, this article is mainly used to test the effect of the embedded NetEase Cloud Music player card.
+summary: A long time ago, I came across Alice’s story in the comment section of a music app. I have remembered it for many years, and now I am writing it down to record how I felt back then. At the same time, this article is mainly used to test the effect of the embedded Daybook Music player card.
 draft: false
 pin: true
 updated: 2026-06-30
 i18n_key: whale-song
 lang: en
 ---
-::netease{type="song" id="474667755"}
+::music{url="https://static.daybook.page/music/474667755.flac" title="Alice" artist="网易云音乐评论"}
 
 >In the 1980s, the Woods Hole Oceanographic Institution in the United States detected a mysterious sound at 52 Hz in the North Pacific. The U.S. Navy later tracked it and confirmed that the sound came from a baleen whale. Its vocal frequency was far higher than the hearing range of its own kind, and so it wandered alone, singing for more than twenty years without ever finding a single listener.
 

@@ -5,7 +5,7 @@ tags:
   - daybook
   - obsidian
 summary: 测试 Daybook 对本地附件和 Cloudflare R2 远程附件的图片、PDF、音频、视频嵌入支持。
-draft: true
+draft: false
 ---
 
 # Obsidian 本地与远程附件测试
@@ -32,29 +32,17 @@ draft: true
 
 ![[周杰伦 - 牛仔很忙.FLAC]]
 
-## 远程图片：picture/shelby.jpg
+## 远程附件
 
-![[picture/shelby.jpg]]
+::pdf{url="https://static.daybook.page/pdf/shi-jian-lun.pdf"} 
 
-## 远程图片：居中并指定宽度
+::video{url="https://static.daybook.page/video/1130650335-1-208.mp4" width="720" align="center"} 
 
-![[picture/shelby.jpg|center|500]]
+::audio{url="https://static.daybook.page/audio/JayChou-ai-zai-xi-yuan-qian.FLAC"} 
 
-## 远程 PDF：pdf/shi-jian-lun.pdf
+::image{url="https://static.daybook.page/picture/shelby.jpg" width="720" align="center"} 
 
-![[pdf/shi-jian-lun.pdf]]
-
-## 远程音频：audio/JayChou-ai-zai-xi-yuan-qian.FLAC
-
-![[audio/JayChou-ai-zai-xi-yuan-qian.FLAC]]
-
-## 远程视频：video/1130650335-1-208.mp4
-
-![[video/1130650335-1-208.mp4]]
-
-## 远程视频：居中并指定宽度
-
-![[video/1130650335-1-208.mp4|center|720]]
+::music{url="https://static.daybook.page/music/1406633327.flac"}
 
 ## 缺失本地附件测试
 

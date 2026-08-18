@@ -25,7 +25,7 @@ https://daybook.page
 * **高级扩展**：全局标签 (`/tags/`)、按年份归档 (`/archive/`)、全局前端检索弹窗、RSS/Sitemap 生成。
 * **交互增强**：全站媒体管理器 (Media Manager, Lightbox/Gallery)、多语言双语对照切换 (i18n)、全局控制面板 (Settings Overlay)。
 * **边缘计算与评论**：基于 Cloudflare Pages Functions 与 D1 数据库的零后端全站访问统计，以及 Waline 评论系统集成。
-* **构建与发布**：动态远端附件推断 (`RemoteDirs`) 支持 R2 大文件挂载，本地 `npm run build` 一键极速输出纯静态资源。
+* **构建与发布**：本地 `npm run build` 一键极速输出纯静态资源，本地附件原生兼容。
 
 ## 项目当前阶段
 

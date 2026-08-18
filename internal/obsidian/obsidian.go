@@ -33,11 +33,10 @@ type Attachment struct {
 }
 
 type Index struct {
-	targets       map[string]Target
-	attachments   map[string]Attachment
-	remoteDirs    []string
-	remoteBaseURL string
-	publicPath    string
+	targets             map[string]Target
+	attachments         map[string]Attachment
+	publicPath          string
+	appAttachmentFolder string
 }
 
 type Result struct {
@@ -63,13 +62,12 @@ var (
 	attrPattern            = regexp.MustCompile(`(?is)([a-zA-Z][a-zA-Z0-9_-]*)\s*=\s*(?:"([^"]*)"|'([^']*)')`)
 )
 
-func NewIndex(targets []Target, attachments []Attachment, remoteDirs []string, remoteBaseURL string, publicPath string) Index {
+func NewIndex(targets []Target, attachments []Attachment, publicPath string, appAttachmentFolder string) Index {
 	index := Index{
-		targets:       make(map[string]Target),
-		attachments:   make(map[string]Attachment),
-		remoteDirs:    remoteDirs,
-		remoteBaseURL: remoteBaseURL,
-		publicPath:    publicPath,
+		targets:             make(map[string]Target),
+		attachments:         make(map[string]Attachment),
+		publicPath:          publicPath,
+		appAttachmentFolder: appAttachmentFolder,
 	}
 	for _, target := range targets {
 		for _, key := range targetKeys(target) {
@@ -243,56 +241,6 @@ func (idx Index) findAttachment(target string) (Attachment, bool) {
 			return Attachment{}, false
 		}
 		return att, true
-	}
-
-	// Dynamic fallback for missing remote attachments
-	// target should be the relative path inside content/attachments/
-	// (e.g., "audio/JayChou.flac")
-	for _, rdir := range idx.remoteDirs {
-		// Because target might be normalized or not, we check prefix on original target.
-		// Normalize usually makes it lowercase and trims spaces.
-		if strings.HasPrefix(target, rdir+"/") || strings.HasPrefix(normTarget, rdir+"/") {
-			ext := strings.ToLower(filepath.Ext(target))
-			mediaType := ""
-			switch {
-			case IsImageExt(ext):
-				mediaType = "image"
-			case ext == ".pdf":
-				mediaType = "pdf"
-			case IsAudioExt(ext):
-				mediaType = "audio"
-			case IsVideoExt(ext):
-				mediaType = "video"
-			}
-			
-			// We only synthesize if we can determine the type
-			if mediaType != "" {
-				parts := strings.Split(target, "/")
-				for i, part := range parts {
-					parts[i] = url.PathEscape(part)
-				}
-				escapedTarget := strings.Join(parts, "/")
-				
-				pubURL := ""
-				pubMode := "local"
-				if idx.remoteBaseURL != "" {
-					pubMode = "remote"
-					pubURL = idx.remoteBaseURL + "/" + escapedTarget
-				} else {
-					pubMode = "local"
-					pubURL = idx.publicPath + escapedTarget
-				}
-				
-				return Attachment{
-					Name:        filepath.Base(target),
-					RelPath:     target,
-					Ext:         ext,
-					MediaType:   mediaType,
-					PublishMode: pubMode,
-					PublicURL:   pubURL,
-				}, true
-			}
-		}
 	}
 
 	return Attachment{}, false

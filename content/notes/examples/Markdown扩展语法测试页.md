@@ -233,19 +233,10 @@ graph TD;
 
 ::codepen{url="https://codepen.io/jh3y/pen/NWdNMBJ"}
 
-## 网易云
-
-使用双冒号语法 `::netease{type="song"id="歌曲id"}`，即可嵌入 网易云网易播放器。也可通过bool值来控制是否自动播放。
-
-### 语法
-
-```
-::netease{type="song" id="1406633327" autostart="false"}
-```
 
 ### 效果（该演示卡片没有启用自动播放）
 
-::netease{type="song" id="1406633327" autostart="false"}
+::music{url="https://static.daybook.page/music/1406633327.flac"}
 
 ## 普通列表
 

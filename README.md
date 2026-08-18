@@ -64,12 +64,10 @@ Daybook 是一个由 Go 和 TypeScript 编写的静态博客生成器。它的�
   * **双语对照 (i18n Bilingual)**：英汉双语对照及状态切换。
   * **访问统计 (D1 Serverless Stats)**：基于 Cloudflare 边缘计算与 D1 数据库，实现访客 (UV) 和阅读量 (PV) 追踪。
 * **内容扩展**:
-  * 基于 `goldmark` 的 Markdown 渲染，兼容 Obsidian 语法（嵌入、Callout、双链、Highlight等）。具体说明见 [Markdown 语法说明](https://daybook.page/notes/markdown-syntax/)。
-  * 第三方服务嵌入 (Bilibili, YouTube, GitHub, Spotify 等)。
-  * **媒体管理器 (Media Manager)**：灯箱 (Lightbox) 画廊查看，支持远程文件加载。
+  * **Markdown 与 Obsidian 兼容**：原生 GFM、Frontmatter 解析、Obsidian Wikilink 双向链接、嵌入 (Embed)、Callout、代码高亮 (Chroma)、数学公式 (KaTeX)、图表 (Mermaid)。
+  * **富媒体组件**：支持原生 `::image`、`::video`、`::audio`、`::pdf`，以及支持读取 FLAC ID3 Metadata 并直接内联生成的无缝音乐播放器 `::music`。
   * 代码高亮与剪贴板复制。
   * 集成 Waline 评论系统。
-  * Mermaid 图表与 KaTeX 数学公式渲染。
   * 生成 RSS 订阅与 XML Sitemap。
 
 ---
@@ -196,12 +194,6 @@ DAYBOOK_SITE_URL=https://example.com
 
 # 评论区（自行部署 Waline 后填写，未配置时将不加载）
 DAYBOOK_WALINE_SERVER_URL=https://comment.example.com
-
-# 远端媒体存储（未配置时回退使用本地 attachments 目录）
-DAYBOOK_R2_BASE_URL=https://static.example.com
-
-# 自定义网易云解析 API（未配置时卡片优雅降级）
-DAYBOOK_NETEASE_API_BASE_URL=https://netease.example.com
 
 # 全站访问统计
 DAYBOOK_STATS_API_BASE=/api

@@ -92,16 +92,16 @@
 }
 
 /* -----------------------------
-   3. Netease Custom Player Skeleton
+   3. Music Custom Player Skeleton
    ----------------------------- */
 
-/* Container for Netease */
-.netease-custom-player[data-embed-status="loading"] {
-  display: block;
+/* Container for Music Player */
+.music-custom-player[data-embed-status="loading"] {
+  margin: 32px 0;
 }
 
 /* We define a specific skeleton wrapper inside the container */
-.nm-skeleton {
+.music-skeleton {
   display: flex;
   background: var(--color-paper);
   border: 1px solid var(--color-line);
@@ -115,7 +115,7 @@
 }
 
 /* Desktop layout (horizontal) */
-.nm-skeleton-cover {
+.music-skeleton-cover {
   width: 128px;
   height: 128px;
   flex-shrink: 0;
@@ -124,7 +124,7 @@
   margin-right: 16px;
 }
 
-.nm-skeleton-body {
+.music-skeleton-body {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
@@ -133,14 +133,14 @@
   gap: 0.5rem;
 }
 
-.nm-skeleton-title {
+.music-skeleton-title {
   width: 40%;
   height: 1rem;
   background: color-mix(in srgb, var(--color-text) 8%, transparent);
   border-radius: 4px;
 }
 
-.nm-skeleton-artist {
+.music-skeleton-artist {
   width: 25%;
   height: 0.75rem;
   background: color-mix(in srgb, var(--color-text) 5%, transparent);
@@ -148,14 +148,14 @@
   margin-bottom: 0.25rem;
 }
 
-.nm-skeleton-progress {
+.music-skeleton-progress {
   width: 100%;
   height: 4px;
   background: color-mix(in srgb, var(--color-text) 3%, transparent);
   border-radius: 2px;
 }
 
-.nm-skeleton-playbtn {
+.music-skeleton-playbtn {
   width: 45px;
   height: 45px;
   border-radius: 50%;
@@ -167,7 +167,7 @@
 
 /* Mobile layout (vertical) */
 @media screen and (max-width: 960px) {
-  .nm-skeleton {
+  .music-skeleton {
     flex-direction: column;
     height: auto;
     padding: 20px 18px;
@@ -176,23 +176,23 @@
     text-align: center;
     gap: 10px;
   }
-  .nm-skeleton-cover {
+  .music-skeleton-cover {
     width: min(68vw, 220px);
     height: min(68vw, 220px);
     margin-right: 0;
   }
-  .nm-skeleton-body {
+  .music-skeleton-body {
     width: 100%;
     padding: 0;
     align-items: center;
   }
-  .nm-skeleton-title {
+  .music-skeleton-title {
     width: 60%;
   }
-  .nm-skeleton-artist {
+  .music-skeleton-artist {
     width: 40%;
   }
-  .nm-skeleton-playbtn {
+  .music-skeleton-playbtn {
     margin: 10px 0 0 0;
     width: 45px;
     height: 45px;

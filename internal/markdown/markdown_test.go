@@ -146,7 +146,7 @@ func TestToHTMLWithLeafEmbeds(t *testing.T) {
 		`::bilibili{id="BV1sK4y1Z7KG"}`,
 		`::spotify{url="https://open.spotify.com/track/0HYAsQwJIO6FLqpyTeD3l6"}`,
 		`::codepen{url="https://codepen.io/jh3y/pen/NWdNMBJ"}`,
-		`::netease{type="song" id="28310930"}`,
+		`::music{url="https://example.com/audio.mp3" title="Test Song"}`,
 		`::tweet{url="https://x.com/hachi_08/status/1906456524337123549"}`,
 	}, "\n\n")
 
@@ -163,8 +163,9 @@ func TestToHTMLWithLeafEmbeds(t *testing.T) {
 		`bvid=BV1sK4y1Z7KG`,
 		`open.spotify.com/embed/track/0HYAsQwJIO6FLqpyTeD3l6`,
 		`codepen.io/jh3y/embed/NWdNMBJ?default-tab=result`,
-		`class="netease-custom-player"`,
-		`data-id="28310930"`,
+		`class="music-custom-player"`,
+		`https://example.com/audio.mp3`,
+		`Test Song`,
 		`class="twitter-tweet"`,
 		`status/1906456524337123549`,
 	}

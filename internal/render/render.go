@@ -18,25 +18,10 @@ type Renderer struct {
 	TemplatesDir string
 }
 
-type NeteaseSong struct {
-	ID           string   `json:"id"`
-	Title        string   `json:"title"`
-	Artists      []string `json:"artists"`
-	ArtistText   string   `json:"artistText"`
-	CoverURL     string   `json:"coverURL"`
-	AudioURL     string   `json:"audioURL"`
-	ExternalURL  string   `json:"externalURL"`
-	ArticleTitle     string            `json:"articleTitle"`
-	ArticleTitleI18n map[string]string `json:"articleTitleI18n"`
-	ArticleURL       string            `json:"articleUrl"`
-}
-
 type SiteData struct {
 	Title            string
 	StartedAt        string
 	TotalWordCount   int
-	NeteaseSongs     []NeteaseSong
-	NeteaseSongsJSON template.JS
 }
 
 type Assets struct {

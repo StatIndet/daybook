@@ -233,14 +233,14 @@ To embed CodePen demos, use the leaf directive `::codepen{url="codepen-url"}`.
 
 ::codepen{url="https://codepen.io/jh3y/pen/NWdNMBJ"}
 
-## NetEase Cloud Music
+## Daybook Music Player
 
-Use the double-colon syntax `::netease{type="song" id="song id"}` to embed a NetEase Cloud Music player. You can also use a boolean value to control whether autoplay is enabled.
+Use the double-colon syntax `::music{url="https://example.com/audio.flac"}` to embed a seamless music player. Daybook will automatically parse the FLAC metadata.
 
 ### Syntax
 
 ```
-::netease{type="song" id="1406633327" autostart="false"}
+::music{https://static.daybook.page/music/1406633327.flac}
 ```
 
 ### Preview
