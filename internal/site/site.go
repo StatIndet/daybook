@@ -10,7 +10,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
 	"unicode"
@@ -79,7 +78,7 @@ func Build(options Options) (BuildResult, error) {
 	if err != nil {
 		return BuildResult{}, err
 	}
-	if err := copyAttachments(options.ContentDir, options.PublicDir, options.Config.Attachments); err != nil {
+	if err := copyAttachments(options.ContentDir, options.PublicDir); err != nil {
 		return BuildResult{}, err
 	}
 
@@ -101,15 +100,12 @@ func Build(options Options) (BuildResult, error) {
 		}
 	}
 
-	musicRegex := regexp.MustCompile(`(?s)::music\s*\{[^}]*url="([^"]+)"[^}]*\}`)
 	musicUrls := make(map[string]bool)
 	for _, group := range groups {
 		for _, note := range group.Versions {
-			matches := musicRegex.FindAllStringSubmatch(note.Body, -1)
-			for _, match := range matches {
-				if len(match) > 1 {
-					musicUrls[match[1]] = true
-				}
+			urls := markdown.CollectMusicDirectives(note.Body)
+			for _, u := range urls {
+				musicUrls[u] = true
 			}
 		}
 	}
@@ -124,10 +120,7 @@ func Build(options Options) (BuildResult, error) {
 		musicMetadataMap[u] = meta
 	}
 
-	// Write the metadata to data/music-metadata.json for reference
-	if metaBytes, err := json.MarshalIndent(musicMetadataMap, "", "  "); err == nil {
-		_ = os.WriteFile("data/music-metadata.json", metaBytes, 0644)
-	}
+
 
 	markdown.SetMusicMetadataRegistry(musicMetadataMap)
 
@@ -142,7 +135,7 @@ func Build(options Options) (BuildResult, error) {
 		return BuildResult{}, fmt.Errorf("生成 search.json: %w", err)
 	}
 
-	obsidianIndex, err := buildObsidianIndex(allNotes, options.ContentDir, options.Config.Attachments)
+	obsidianIndex, err := buildObsidianIndex(allNotes, options.ContentDir, "/")
 	if err != nil {
 		return BuildResult{}, err
 	}
@@ -189,7 +182,7 @@ func Build(options Options) (BuildResult, error) {
 				langNotes = append(langNotes, *note)
 			}
 
-			processed := obsidian.Process(note.Body, obsidianIndex)
+			processed := obsidian.Process(note.Body, obsidianIndex, note.SourcePath)
 			document, err := markdown.ToHTMLWithHeadings(processed.Text)
 			if err != nil {
 				return BuildResult{}, fmt.Errorf("处理笔记 %s: %w", note.SourcePath, err)
@@ -546,7 +539,7 @@ func Build(options Options) (BuildResult, error) {
 		if err != nil {
 			return BuildResult{}, fmt.Errorf("读取关于页: %w", err)
 		}
-		aboutProcessed := obsidian.Process(aboutPage.Body, obsidianIndex)
+		aboutProcessed := obsidian.Process(aboutPage.Body, obsidianIndex, aboutPage.SourcePath)
 		aboutDocument, err := markdown.ToHTMLWithHeadings(aboutProcessed.Text)
 		if err != nil {
 			return BuildResult{}, fmt.Errorf("处理关于页: %w", err)
@@ -986,7 +979,7 @@ func renderHeadings(headings []markdown.Heading) []render.Heading {
 	return result
 }
 
-func buildObsidianIndex(notes []content.Note, contentDir string, cfg config.AttachmentConfig) (obsidian.Index, error) {
+func buildObsidianIndex(notes []content.Note, contentDir string, publicPath string) (obsidian.Index, error) {
 	targets := make([]obsidian.Target, 0, len(notes))
 	for _, note := range notes {
 		document, err := markdown.ToHTMLWithHeadings(note.Body)
@@ -1027,19 +1020,25 @@ func buildObsidianIndex(notes []content.Note, contentDir string, cfg config.Atta
 	}
 
 	var attachments []obsidian.Attachment
-	attDir := filepath.Join(contentDir, "attachments")
-	if _, err := os.Stat(attDir); err == nil {
-		err = filepath.WalkDir(attDir, func(path string, d os.DirEntry, err error) error {
-			if err != nil || d.IsDir() {
+	if _, err := os.Stat(contentDir); err == nil {
+		err = filepath.WalkDir(contentDir, func(path string, d os.DirEntry, err error) error {
+			if err != nil {
+				return nil
+			}
+			
+			if d.IsDir() {
+				// Ignore hidden folders like .obsidian, .git
+				if strings.HasPrefix(d.Name(), ".") {
+					return filepath.SkipDir
+				}
 				return nil
 			}
 
-			relPath, err := filepath.Rel(attDir, path)
+			relPath, err := filepath.Rel(contentDir, path)
 			if err != nil {
 				return nil
 			}
 
-			// Replace Windows backslashes with forward slashes for relative paths
 			relPath = filepath.ToSlash(relPath)
 
 			ext := strings.ToLower(filepath.Ext(d.Name()))
@@ -1054,14 +1053,12 @@ func buildObsidianIndex(notes []content.Note, contentDir string, cfg config.Atta
 			case obsidian.IsVideoExt(ext):
 				mediaType = "video"
 			default:
-				if d.Name() != ".gitkeep" {
-					fmt.Printf("[obsidian] unsupported attachment type: %s\n", d.Name())
-				}
+				// Ignore unsupported files
 				return nil
 			}
 
 			pubMode := "local"
-			pubURL := cfg.PublicPath + escapeURLPath(relPath)
+			pubURL := publicPath + escapeURLPath(relPath)
 			info, err := d.Info()
 			if err == nil && info.Size() > 25*1024*1024 {
 				fmt.Printf("[obsidian] local attachment may exceed Pages single-file limit: %s\n", d.Name())
@@ -1090,11 +1087,8 @@ func buildObsidianIndex(notes []content.Note, contentDir string, cfg config.Atta
 	if b, err := os.ReadFile(appJSONPath); err == nil {
 		_ = json.Unmarshal(b, &appJSON)
 	}
-	if appJSON.AttachmentFolderPath == "" {
-		appJSON.AttachmentFolderPath = "attachments"
-	}
 
-	return obsidian.NewIndex(targets, attachments, cfg.PublicPath, appJSON.AttachmentFolderPath), nil
+	return obsidian.NewIndex(targets, attachments, publicPath, appJSON.AttachmentFolderPath), nil
 }
 
 func escapeURLPath(p string) string {
@@ -1123,24 +1117,21 @@ func normalizeHeading(text string) string {
 	return text
 }
 
-func copyAttachments(contentDir, publicDir string, cfg config.AttachmentConfig) error {
-	sourceDir := filepath.Join(contentDir, "attachments")
-	targetDir := filepath.Join(publicDir, "attachments")
-
-	err := copyDirFiltered(sourceDir, targetDir, func(relativePath string, entry os.DirEntry) bool {
+func copyAttachments(contentDir, publicDir string) error {
+	err := copyDirFiltered(contentDir, publicDir, func(relativePath string, entry os.DirEntry) bool {
 		if entry.IsDir() {
-			return false // Don't skip directories entirely yet, allow traversing
+			if strings.HasPrefix(entry.Name(), ".") {
+				return true // skip .obsidian, .git
+			}
+			return false // allow traversing other dirs
 		}
 
 		ext := strings.ToLower(filepath.Ext(entry.Name()))
 		if !obsidian.IsImageExt(ext) && ext != ".pdf" && !obsidian.IsAudioExt(ext) && !obsidian.IsVideoExt(ext) {
-			if entry.Name() != ".gitkeep" {
-				fmt.Printf("[obsidian] unsupported attachment type: %s\n", entry.Name())
-			}
-			return true // Skip unsupported
+			return true // Skip unsupported (md, etc)
 		}
 
-		return false // Copy local files
+		return false // Copy local media files
 	})
 
 	return err

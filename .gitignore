@@ -23,17 +23,13 @@ coverage.out
 # macOS
 .DS_Store
 
-# Remote R2 attachments
-content/attachments/audio/**
-content/attachments/video/**
-content/attachments/picture/**
-content/attachments/pdf/**
+# Obsidian
+# Daybook needs app.json for attachmentFolderPath,
+# but other Obsidian user/workspace settings stay private.
+**/.obsidian/*
+!**/.obsidian/app.json
 
 # Keep directory placeholders
-!content/attachments/audio/.gitkeep
-!content/attachments/video/.gitkeep
-!content/attachments/picture/.gitkeep
-!content/attachments/pdf/.gitkeep
 Thumbs.db
 
 # Local environment
@@ -49,11 +45,7 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Obsidian workspace state
-content/.obsidian/workspace.json
-content/.obsidian/workspace-mobile.json
-content/**/.obsidian/workspace.json
-content/**/.obsidian/workspace-mobile.json
+
 
 # Dependencies
 node_modules/
@@ -65,4 +57,4 @@ node_modules/
 
 tools/font-subsets/source/
 
-.obsidian/
+

@@ -95,24 +95,16 @@ func NewIndex(targets []Target, attachments []Attachment, publicPath string, app
 	return index
 }
 
-func Process(input string, index Index) Result {
+func Process(input string, index Index, sourcePath string) Result {
 	result := Result{
 		Text: input,
 		HTML: make(map[string]string),
 	}
 
-	protectedTokens := make(map[string]string)
-	protect := func(pattern *regexp.Regexp) {
-		result.Text = pattern.ReplaceAllStringFunc(result.Text, func(match string) string {
-			token := fmt.Sprintf("DAYBOOK_PROTECTED_%d", len(protectedTokens))
-			protectedTokens[token] = match
-			return token
-		})
-	}
-
-	// Protect code blocks and inline code
-	protect(regexp.MustCompile("(?s)```.*?```"))
-	protect(regexp.MustCompile("(?s)`.*?`"))
+	var protectedTokens map[string]string
+	result.Text, protectedTokens = markdown.ProtectCode(result.Text, func(i int) string {
+		return fmt.Sprintf("DAYBOOK_PROTECTED_%d", i)
+	})
 
 	result.Text = replaceImageHTML(result.Text, true, result.HTML)
 	result.Text = replaceImageHTML(result.Text, false, result.HTML)
@@ -125,7 +117,14 @@ func Process(input string, index Index) Result {
 		if index := strings.IndexAny(basename, "?#"); index >= 0 {
 			basename = basename[:index]
 		}
-		if att, ok := index.findAttachment(basename); ok {
+		
+		// Markdown link might be ![alt](path) - use full urlStr as target, stripping query
+		targetUrl := urlStr
+		if index := strings.IndexAny(targetUrl, "?#"); index >= 0 {
+			targetUrl = targetUrl[:index]
+		}
+		
+		if att, ok := index.ResolveAttachment(targetUrl, sourcePath); ok {
 			result.Attachments = append(result.Attachments, att)
 		}
 		return match
@@ -142,7 +141,7 @@ func Process(input string, index Index) Result {
 		targetText, label := splitAlias(inner)
 
 		// 1. Check if it's an attachment
-		if att, ok := index.findAttachment(targetText); ok {
+		if att, ok := index.ResolveAttachment(targetText, sourcePath); ok {
 			result.Attachments = append(result.Attachments, att)
 			if isEmbed {
 				html, ok := renderAttachmentEmbed(att, label)
@@ -233,11 +232,70 @@ func (index Index) find(key string) (Target, bool) {
 	return target, ok
 }
 
-func (idx Index) findAttachment(target string) (Attachment, bool) {
-	normTarget := normalize(target)
-	att, ok := idx.attachments[normTarget]
+// ResolveAttachment resolves an attachment reference according to Obsidian rules.
+func (idx Index) ResolveAttachment(target string, sourcePath string) (Attachment, bool) {
+	// target is the raw link inside ![[target]]. It might be "a.png" or "sub/a.png"
+	
+	// Helper to lookup exact path in our map
+	lookupPath := func(p string) (Attachment, bool) {
+		norm := normalize(filepath.ToSlash(p))
+		att, ok := idx.attachments[norm]
+		if ok && att.Name != "ambiguous_marker" {
+			return att, true
+		}
+		return Attachment{}, false
+	}
+
+	// 1. Explicit Vault-relative target
+	if att, ok := lookupPath(target); ok {
+		return att, true
+	}
+
+	var noteDir string
+	if sourcePath != "" {
+		noteDir = filepath.ToSlash(filepath.Dir(sourcePath))
+		if noteDir == "." {
+			noteDir = ""
+		}
+	}
+
+	// 2. Current note-relative path
+	if noteDir != "" {
+		if att, ok := lookupPath(path.Join(noteDir, target)); ok {
+			return att, true
+		}
+	}
+
+	// 3. attachmentFolderPath logic
+	folder := strings.TrimSpace(idx.appAttachmentFolder)
+	if folder == "" || folder == "/" {
+		// Vault root fallback - already checked by step 1
+	} else if strings.HasPrefix(folder, "./") {
+		// Current folder or subfolder
+		sub := strings.TrimPrefix(folder, "./")
+		searchDir := noteDir
+		if sub != "" {
+			searchDir = path.Join(noteDir, sub)
+		}
+		if searchDir != "" {
+			if att, ok := lookupPath(path.Join(searchDir, target)); ok {
+				return att, true
+			}
+		}
+	} else {
+		// Fixed directory
+		if att, ok := lookupPath(path.Join(folder, target)); ok {
+			return att, true
+		}
+	}
+
+	// 4. Unique basename fallback
+	basename := filepath.Base(target)
+	normBasename := normalize(basename)
+	att, ok := idx.attachments[normBasename]
 	if ok {
 		if att.Name == "ambiguous_marker" {
+			fmt.Printf("[obsidian] ambiguous attachment %q requested in %s\n", target, sourcePath)
 			return Attachment{}, false
 		}
 		return att, true
@@ -561,8 +619,8 @@ func renderNoteEmbed(target Target, heading string, href string, index Index) st
 		// Escape nested embeds to prevent infinite recursion
 		safeMarkdown := strings.ReplaceAll(rawMarkdown, "![[", "[[")
 
-		// Process standard wikilinks
-		result := Process(safeMarkdown, index)
+		// Process standard wikilinks with the target's SourcePath context
+		result := Process(safeMarkdown, index, target.SourcePath)
 
 		// Convert to HTML
 		htmlBytes, err := markdown.ToHTML(result.Text)

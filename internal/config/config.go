@@ -76,22 +76,15 @@ type CommentConfig struct {
 	Waline   WalineConfig `yaml:"waline"`
 }
 
-type AttachmentConfig struct {
-	LocalDir      string   `yaml:"local_dir"`
-	PublicPath    string   `yaml:"public_path"`
-}
-
-
 type StatsConfig struct {
 	APIBase string
 }
 
 type Config struct {
-	Title       string           `yaml:"title"`
-	BaseURL     string           `yaml:"baseURL"`
-	StartedAt   string           `yaml:"startedAt"`
-	Comment     CommentConfig    `yaml:"comment"`
-	Attachments AttachmentConfig `yaml:"attachments"`
+	Title       string        `yaml:"title"`
+	BaseURL     string        `yaml:"baseURL"`
+	StartedAt   string        `yaml:"startedAt"`
+	Comment     CommentConfig `yaml:"comment"`
 	Stats       StatsConfig
 	Profile     ProfileConfig
 }
@@ -132,10 +125,7 @@ func Load() (Config, error) {
 				ImageUploader:  false,
 			},
 		},
-		Attachments: AttachmentConfig{
-			LocalDir:      "content/attachments",
-			PublicPath:    "/attachments/",
-		},
+
 		Stats: StatsConfig{
 			APIBase: parseStringEnv("DAYBOOK_STATS_API_BASE", "/api"),
 		},

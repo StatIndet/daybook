@@ -224,9 +224,7 @@ func TestBuildMarksNotesWithMermaid(t *testing.T) {
 		"Regular content.",
 	}, "\n"))
 
-	cfg := config.Config{
-		Attachments: config.AttachmentConfig{},
-	}
+	cfg := config.Config{}
 	_, err := Build(Options{
 		Config:       cfg,
 		NotesDir:     filepath.Join(contentDir, "notes"),

@@ -17,7 +17,7 @@ func TestProcessWikilinks(t *testing.T) {
 		},
 	}, nil, "", "attachments")
 
-	result := Process("[[安装 Debian SSH Server]]\n[[安装 Debian SSH Server#自动关机脚本|关机脚本]]\n[[不存在]]", index)
+	result := Process("[[安装 Debian SSH Server]]\n[[安装 Debian SSH Server#自动关机脚本|关机脚本]]\n[[不存在]]", index, "")
 
 	wantParts := []string{
 		"[在n150小主机上安装Debian并配置为SSH Server](/notes/debian-ssh-server/)",
@@ -52,7 +52,7 @@ func TestProcessImages(t *testing.T) {
 </p>
 
 <script>alert(1)</script>`
-	result := Process(input, NewIndex(nil, nil, "", "attachments"))
+	result := Process(input, NewIndex(nil, nil, "", "attachments"), "")
 	html := RestoreHTML("<p>DAYBOOK_HTML_IMAGE_0</p>", result.HTML)
 
 	if !strings.Contains(result.Text, `![添加新连接](/notes/assets/add-new-link.png)`) {
@@ -64,4 +64,81 @@ func TestProcessImages(t *testing.T) {
 	if !strings.Contains(result.Text, "<script>alert(1)</script>") {
 		t.Fatalf("unrelated HTML should be left for markdown escaping, got: %s", result.Text)
 	}
+}
+
+func TestResolveAttachment(t *testing.T) {
+	attachments := []Attachment{
+		{Name: "photo.png", RelPath: "photo.png"},
+		{Name: "a.jpg", RelPath: "attachments/picture/a.jpg"},
+		{Name: "image.png", RelPath: "notes/foo/image.png"},
+		{Name: "image.png", RelPath: "notes/b/image.png"},
+		{Name: "image.png", RelPath: "notes/a/image.png"}, // Ambiguous name!
+		{Name: "foo.pdf", RelPath: "media/foo.pdf"},
+	}
+
+	tests := []struct {
+		name                 string
+		target               string
+		sourcePath           string
+		attachmentFolderPath string
+		expectedPath         string
+	}{
+		{
+			name:                 "app.json missing/empty -> Vault root",
+			target:               "photo.png",
+			sourcePath:           "notes/article.md",
+			attachmentFolderPath: "",
+			expectedPath:         "photo.png",
+		},
+		{
+			name:                 "Fixed attachment directory",
+			target:               "picture/a.jpg",
+			sourcePath:           "notes/article.md",
+			attachmentFolderPath: "attachments",
+			expectedPath:         "attachments/picture/a.jpg",
+		},
+		{
+			name:                 "Same folder as current file",
+			target:               "image.png",
+			sourcePath:           "notes/foo/article.md",
+			attachmentFolderPath: "./",
+			expectedPath:         "notes/foo/image.png",
+		},
+		{
+			name:                 "Explicit vault path preferred",
+			target:               "media/foo.pdf",
+			sourcePath:           "notes/article.md",
+			attachmentFolderPath: "attachments",
+			expectedPath:         "media/foo.pdf",
+		},
+		{
+			name:                 "Embedded note context",
+			target:               "image.png",
+			sourcePath:           "notes/b/embedded.md",
+			attachmentFolderPath: "./",
+			expectedPath:         "notes/b/image.png",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			idx := NewIndex(nil, attachments, "/", tc.attachmentFolderPath)
+			att, ok := idx.ResolveAttachment(tc.target, tc.sourcePath)
+			if !ok {
+				t.Fatalf("Failed to resolve %q", tc.target)
+			}
+			if att.RelPath != tc.expectedPath {
+				t.Errorf("Expected %q, got %q", tc.expectedPath, att.RelPath)
+			}
+		})
+	}
+	
+	// Test ambiguity
+	t.Run("duplicate basename", func(t *testing.T) {
+		idx := NewIndex(nil, attachments, "/", "./")
+		_, ok := idx.ResolveAttachment("image.png", "other/article.md") // no context match, fallback to basename
+		if ok {
+			t.Errorf("Expected failure due to ambiguous basename, got success")
+		}
+	})
 }
