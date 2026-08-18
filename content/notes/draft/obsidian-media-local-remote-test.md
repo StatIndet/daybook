@@ -14,11 +14,11 @@ draft: false
 
 ## 本地图片：add-new-link.png
 
-![[add-new-link.png]]
+![[attachments/picture/shi-li.jpg]]
 
 ## 本地图片：br0.png
 
-![[br0.png]]
+![[attachments/shi-li.jpg]]
 
 ## 本地图片：居中并指定宽度
 
