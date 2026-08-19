@@ -1,4 +1,4 @@
-export function setupKatex() {
+function setupKatex() {
   const mathElements = document.querySelectorAll('.math-inline, .math-display');
   if (mathElements.length === 0) return;
 

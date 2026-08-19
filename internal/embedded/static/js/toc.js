@@ -1,7 +1,591 @@
+// assets/ts/toc/reading-toc-rail.ts
+var DEFAULT_GEOMETRY = {
+  width: 208,
+  height: 640,
+  direction: 1,
+  lineInset: 12,
+  idleAmplitude: 10.4,
+  maxExtraAmplitude: 14,
+  bulgeHalfHeight: 56,
+  labelGap: 12
+};
+var AMPLITUDE_STIFFNESS = 90;
+var AMPLITUDE_DAMPING = 2 * Math.sqrt(AMPLITUDE_STIFFNESS) * 0.75;
+var MAX_FRAME_STEP = 0.064;
+var MAX_SUBSTEP = 0.016;
+var POSITION_EPSILON = 0.035;
+var VELOCITY_EPSILON = 0.05;
+var AMPLITUDE_EPSILON = 0.025;
+var SPEED_EPSILON = 0.5;
+var PROGRESS_RESPONSE_SECONDS = 0.14;
+var SPEED_RESPONSE_SECONDS = 0.08;
+var SPEED_TO_AMPLITUDE = 0.012;
+var HALF_HEIGHT_SPEED_GAIN = 2.2;
+var BREATH_AMPLITUDE = 0.6;
+var BREATH_PERIOD_MS = 9e3;
+var MIN_AMPLITUDE_REBOUND = -4;
+var MAX_SCROLL_SPEED = 5e3;
+var MIN_DIMENSION = 1;
+function clamp(value, min, max) {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, value));
+}
+function finiteOr(value, fallback) {
+  return Number.isFinite(value) ? value : fallback;
+}
+function approximatelyEqual(a, b, epsilon = 1e-3) {
+  return Math.abs(a - b) <= epsilon;
+}
+function formatNumber(value) {
+  if (!Number.isFinite(value)) return "0";
+  return String(Math.round(value * 1e3) / 1e3);
+}
+function requiredElement(root, selector) {
+  const element = root.querySelector(selector);
+  if (!element) {
+    throw new Error(`[Daybook] Reading TOC rail is missing ${selector}`);
+  }
+  return element;
+}
+function makeSpring(initial) {
+  return {
+    current: initial,
+    target: initial,
+    velocity: 0
+  };
+}
+function snapSpring(spring) {
+  spring.current = spring.target;
+  spring.velocity = 0;
+}
+function stepSpring(spring, stiffness, damping, deltaTime) {
+  const acceleration = stiffness * (spring.target - spring.current) - damping * spring.velocity;
+  spring.velocity += acceleration * deltaTime;
+  spring.current += spring.velocity * deltaTime;
+  if (!Number.isFinite(spring.current) || !Number.isFinite(spring.velocity)) {
+    snapSpring(spring);
+  }
+}
+function springIsSettled(spring, positionEpsilon, velocityEpsilon = VELOCITY_EPSILON) {
+  return Math.abs(spring.target - spring.current) <= positionEpsilon && Math.abs(spring.velocity) <= velocityEpsilon;
+}
+function geometryIsEqual(a, b) {
+  return a.direction === b.direction && approximatelyEqual(a.width, b.width) && approximatelyEqual(a.height, b.height) && approximatelyEqual(a.lineInset, b.lineInset) && approximatelyEqual(a.idleAmplitude, b.idleAmplitude) && approximatelyEqual(a.maxExtraAmplitude, b.maxExtraAmplitude) && approximatelyEqual(a.bulgeHalfHeight, b.bulgeHalfHeight) && approximatelyEqual(a.labelGap, b.labelGap);
+}
+function normalizeGeometry(geometry) {
+  const width = Math.max(MIN_DIMENSION, finiteOr(geometry.width, DEFAULT_GEOMETRY.width));
+  const height = Math.max(MIN_DIMENSION, finiteOr(geometry.height, DEFAULT_GEOMETRY.height));
+  return {
+    width,
+    height,
+    direction: geometry.direction < 0 ? -1 : 1,
+    lineInset: clamp(finiteOr(geometry.lineInset, DEFAULT_GEOMETRY.lineInset), 0, width),
+    idleAmplitude: Math.max(0, finiteOr(geometry.idleAmplitude, DEFAULT_GEOMETRY.idleAmplitude)),
+    maxExtraAmplitude: Math.max(
+      0,
+      finiteOr(geometry.maxExtraAmplitude, DEFAULT_GEOMETRY.maxExtraAmplitude)
+    ),
+    bulgeHalfHeight: Math.max(
+      1,
+      finiteOr(geometry.bulgeHalfHeight, DEFAULT_GEOMETRY.bulgeHalfHeight)
+    ),
+    labelGap: Math.max(0, finiteOr(geometry.labelGap, DEFAULT_GEOMETRY.labelGap))
+  };
+}
+function buildReadingTocRailCurve(geometry, markerY, amplitude, halfHeight = geometry.bulgeHalfHeight) {
+  const normalized = normalizeGeometry(geometry);
+  const height = normalized.height;
+  const baselineX = normalized.lineInset;
+  const safeMarkerY = clamp(finiteOr(markerY, 0), 0, height);
+  const safeHalfHeight = Math.max(1, finiteOr(halfHeight, normalized.bulgeHalfHeight));
+  const topY = safeMarkerY - safeHalfHeight;
+  const bottomY = safeMarkerY + safeHalfHeight;
+  const edgeFactor = clamp(
+    Math.min(safeMarkerY / safeHalfHeight, (height - safeMarkerY) / safeHalfHeight),
+    0,
+    1
+  );
+  const availableAmplitude = normalized.direction > 0 ? Math.max(0, normalized.width - baselineX) : Math.max(0, baselineX);
+  const effectiveAmplitude = Math.min(
+    availableAmplitude,
+    Math.max(0, finiteOr(amplitude, normalized.idleAmplitude)) * edgeFactor
+  );
+  const peakX = baselineX + normalized.direction * effectiveAmplitude;
+  const curve = [
+    `C ${formatNumber(baselineX)} ${formatNumber(safeMarkerY - 0.6 * safeHalfHeight)}`,
+    `${formatNumber(peakX)} ${formatNumber(safeMarkerY - 0.3 * safeHalfHeight)}`,
+    `${formatNumber(peakX)} ${formatNumber(safeMarkerY)}`,
+    `C ${formatNumber(peakX)} ${formatNumber(safeMarkerY + 0.3 * safeHalfHeight)}`,
+    `${formatNumber(baselineX)} ${formatNumber(safeMarkerY + 0.6 * safeHalfHeight)}`,
+    `${formatNumber(baselineX)} ${formatNumber(bottomY)}`
+  ].join(" ");
+  return {
+    basePath: [
+      `M ${formatNumber(baselineX)} ${formatNumber(Math.min(0, topY))}`,
+      `L ${formatNumber(baselineX)} ${formatNumber(topY)}`,
+      curve,
+      `L ${formatNumber(baselineX)} ${formatNumber(Math.max(height, bottomY))}`
+    ].join(" "),
+    peakX,
+    effectiveAmplitude,
+    effectiveHalfHeight: safeHalfHeight,
+    topY,
+    bottomY
+  };
+}
+function readingTocRailDotOffset(dotY, markerY, halfHeight, amplitude, direction) {
+  const safeHalfHeight = Math.max(1, finiteOr(halfHeight, 1));
+  const ratio = Math.abs(finiteOr(dotY, 0) - finiteOr(markerY, 0)) / safeHalfHeight;
+  if (ratio >= 1) return 0;
+  const envelope = Math.cos(ratio * Math.PI / 2) ** 2;
+  return direction * Math.max(0, finiteOr(amplitude, 0)) * envelope;
+}
+function normalizeHeading(heading) {
+  const text = String(heading.text || "").trim();
+  return {
+    id: String(heading.id || ""),
+    text,
+    level: Math.round(clamp(finiteOr(heading.level, 2), 1, 6)),
+    ratio: clamp(finiteOr(heading.ratio, 0), 0, 1),
+    ariaLabel: String(heading.ariaLabel || text)
+  };
+}
+var ReadingTocRail = class {
+  constructor(root) {
+    this.geometry = DEFAULT_GEOMETRY;
+    this.headings = [];
+    this.dotButtons = [];
+    this.markerY = makeSpring(0);
+    this.amplitude = makeSpring(0);
+    this.hoverSpring = makeSpring(0);
+    this.progressTarget = 0;
+    this.activeIndex = -1;
+    this.endActiveIndex = -1;
+    this.renderedActiveIndex = -2;
+    this.renderedEndActiveIndex = -2;
+    this.renderedPercent = -1;
+    this.renderedTitle = "";
+    this.visibleTitleSlot = 0;
+    this.speedTarget = 0;
+    this.smoothedSpeed = 0;
+    this.lastTimestamp = null;
+    this.frameInitialized = false;
+    this.reducedMotion = false;
+    this.interactive = false;
+    this.destroyed = false;
+    this.snapRequested = true;
+    this.geometryDirty = true;
+    this.dotsDirty = true;
+    this.interactionDirty = true;
+    this.root = root;
+    this.svg = requiredElement(root, "[data-reading-toc-rail-svg]");
+    this.basePath = requiredElement(root, "[data-reading-toc-rail-base]");
+    this.accentPath = requiredElement(root, "[data-reading-toc-rail-accent]");
+    this.dotsRoot = requiredElement(root, "[data-reading-toc-rail-dots]");
+    this.label = requiredElement(root, "[data-reading-toc-rail-label]");
+    this.currentLink = requiredElement(root, "[data-reading-toc-rail-link]");
+    this.percent = requiredElement(root, "[data-reading-toc-rail-percent]");
+    const titleSlots = Array.from(root.querySelectorAll("[data-reading-toc-rail-title]"));
+    const firstTitle = titleSlots[0];
+    const secondTitle = titleSlots[1];
+    if (!firstTitle || !secondTitle) {
+      throw new Error("[Daybook] Reading TOC rail requires two title slots");
+    }
+    this.titleSlots = [firstTitle, secondTitle];
+    this.baseTop = this.basePath.cloneNode();
+    this.baseBottom = this.basePath.cloneNode();
+    this.accentTop = this.accentPath.cloneNode();
+    this.accentBottom = this.accentPath.cloneNode();
+    this.svg.insertBefore(this.baseTop, this.basePath);
+    this.svg.insertBefore(this.baseBottom, this.basePath);
+    this.svg.appendChild(this.accentTop);
+    this.svg.appendChild(this.accentBottom);
+    this.svg.style.overflow = "hidden";
+    this.refreshPositionTargets();
+  }
+  setHeadings(entries) {
+    if (this.destroyed) return;
+    this.headings = entries.map(normalizeHeading);
+    const fragment = document.createDocumentFragment();
+    this.dotButtons = this.headings.map((heading) => {
+      const dot = document.createElement("div");
+      dot.setAttribute("data-reading-toc-rail-dot", "");
+      dot.setAttribute("data-heading-level", String(heading.level));
+      dot.setAttribute("aria-hidden", "true");
+      fragment.appendChild(dot);
+      return dot;
+    });
+    this.dotsRoot.replaceChildren(fragment);
+    this.activeIndex = this.normalizeActiveIndex(this.activeIndex);
+    this.endActiveIndex = this.normalizeActiveIndex(this.endActiveIndex);
+    this.renderedActiveIndex = -2;
+    this.renderedEndActiveIndex = -2;
+    this.renderedTitle = "";
+    this.renderedPercent = -1;
+    this.dotsDirty = true;
+    this.interactionDirty = true;
+  }
+  updateHeadingRatios(ratios) {
+    if (this.destroyed) return;
+    let changed = false;
+    this.headings.forEach((heading, index) => {
+      const ratio = ratios[index];
+      if (ratio === void 0) return;
+      const normalized = clamp(finiteOr(ratio, heading.ratio), 0, 1);
+      if (!approximatelyEqual(normalized, heading.ratio)) {
+        heading.ratio = normalized;
+        changed = true;
+      }
+    });
+    if (changed) {
+      this.dotsDirty = true;
+    }
+  }
+  setGeometry(geometry) {
+    if (this.destroyed) return;
+    const nextGeometry = normalizeGeometry(geometry);
+    if (geometryIsEqual(nextGeometry, this.geometry)) return;
+    this.geometry = nextGeometry;
+    this.refreshPositionTargets();
+    this.clampSpringPositions();
+    this.amplitude.target = this.targetAmplitude();
+    this.geometryDirty = true;
+    this.dotsDirty = true;
+  }
+  /** Updates only in-memory targets and is safe to call directly from scroll handlers. */
+  setTargets(progress, activeIndex, endActiveIndex, scrollSpeed = null) {
+    if (this.destroyed) return;
+    const nextProgress = clamp(finiteOr(progress, this.progressTarget), 0, 1);
+    if (!approximatelyEqual(nextProgress, this.progressTarget, 1e-5)) {
+      this.progressTarget = nextProgress;
+      this.refreshPositionTargets();
+    }
+    const nextActiveIndex = this.normalizeActiveIndex(activeIndex);
+    const nextEndActiveIndex = this.normalizeActiveIndex(endActiveIndex);
+    if (nextActiveIndex !== this.activeIndex || nextEndActiveIndex !== this.endActiveIndex) {
+      this.activeIndex = nextActiveIndex;
+      this.endActiveIndex = nextEndActiveIndex;
+      this.interactionDirty = true;
+    }
+    this.speedTarget = !this.reducedMotion && scrollSpeed !== null ? clamp(Math.abs(finiteOr(scrollSpeed, 0)), 0, MAX_SCROLL_SPEED) : 0;
+  }
+  setReducedMotion(reduced) {
+    if (this.destroyed || reduced === this.reducedMotion) return;
+    this.reducedMotion = reduced;
+    if (reduced) {
+      this.snapToTargets();
+    } else {
+      this.lastTimestamp = null;
+      this.frameInitialized = true;
+    }
+  }
+  setInteractive(interactive) {
+    if (this.destroyed || interactive === this.interactive) return;
+    this.interactive = interactive;
+    this.root.inert = !interactive;
+    if (!interactive) {
+      this.speedTarget = 0;
+      this.amplitude.target = 0;
+    }
+    this.interactionDirty = true;
+  }
+  setHovered(hovered) {
+    if (this.destroyed) return;
+    this.hoverSpring.target = hovered ? 1 : 0;
+  }
+  /**
+   * Advances springs and performs every continuous DOM write. The owner should
+   * request another frame only when this method returns true.
+   */
+  advance(timestamp) {
+    if (this.destroyed) return false;
+    const safeTimestamp = finiteOr(timestamp, this.lastTimestamp ?? 0);
+    let deltaTime = this.lastTimestamp === null ? 0 : clamp((safeTimestamp - this.lastTimestamp) / 1e3, 0, MAX_FRAME_STEP);
+    this.lastTimestamp = safeTimestamp;
+    if (!this.frameInitialized || this.snapRequested || this.reducedMotion) {
+      this.applySnap();
+      deltaTime = 0;
+    } else if (deltaTime > 0) {
+      this.stepAnimation(deltaTime);
+    }
+    const animating = !this.reducedMotion && (this.interactive || !this.animationIsSettled());
+    if (!animating) {
+      this.speedTarget = 0;
+      this.smoothedSpeed = 0;
+      this.amplitude.target = 0;
+      snapSpring(this.markerY);
+      snapSpring(this.amplitude);
+    }
+    this.writeDOM(safeTimestamp);
+    return animating;
+  }
+  /** Snaps state in memory; the following advance() commits it to the DOM. */
+  snapToTargets() {
+    if (this.destroyed) return;
+    this.speedTarget = 0;
+    this.smoothedSpeed = 0;
+    this.amplitude.target = 0;
+    this.snapRequested = true;
+    this.lastTimestamp = null;
+  }
+  resumeAfterVisibility() {
+    if (this.destroyed) return;
+    this.snapToTargets();
+  }
+  destroy() {
+    if (this.destroyed) return;
+    this.destroyed = true;
+    this.dotsRoot.replaceChildren();
+    this.dotButtons = [];
+    this.headings = [];
+    this.basePath.setAttribute("d", "M 0 0");
+    this.accentPath.setAttribute("d", "M 0 0");
+    this.baseTop.remove();
+    this.baseBottom.remove();
+    this.accentTop.remove();
+    this.accentBottom.remove();
+    this.label.style.left = "";
+    this.label.style.top = "";
+    this.label.style.transform = "";
+    this.currentLink.setAttribute("href", "#");
+    this.currentLink.removeAttribute("aria-current");
+    this.currentLink.tabIndex = -1;
+    this.titleSlots.forEach((slot) => {
+      slot.textContent = "";
+      slot.classList.remove("is-active", "is-leaving");
+      slot.setAttribute("aria-hidden", "true");
+    });
+    this.percent.textContent = "0%";
+    this.root.inert = true;
+    this.root.dataset.interactive = "false";
+    this.root.style.removeProperty("--reading-toc-rail-direction");
+    this.lastTimestamp = null;
+    this.speedTarget = 0;
+    this.smoothedSpeed = 0;
+  }
+  refreshPositionTargets() {
+    const markerTarget = this.mapRatioToY(this.progressTarget);
+    this.markerY.target = markerTarget;
+  }
+  mapRatioToY(ratio) {
+    return this.geometry.height * clamp(ratio, 0, 1);
+  }
+  normalizeActiveIndex(index) {
+    if (this.headings.length === 0 || !Number.isFinite(index)) return -1;
+    return Math.round(clamp(index, 0, this.headings.length - 1));
+  }
+  targetAmplitude() {
+    if (this.reducedMotion || !this.interactive) return 0;
+    return Math.min(
+      this.geometry.maxExtraAmplitude,
+      SPEED_TO_AMPLITUDE * Math.abs(this.smoothedSpeed)
+    );
+  }
+  clampSpringPositions() {
+    this.markerY.target = clamp(this.markerY.target, 0, this.geometry.height);
+    const clampedCurrent = clamp(this.markerY.current, 0, this.geometry.height);
+    if (!approximatelyEqual(clampedCurrent, this.markerY.current)) {
+      this.markerY.current = clampedCurrent;
+      this.markerY.velocity = 0;
+    }
+  }
+  applySnap() {
+    this.refreshPositionTargets();
+    this.speedTarget = 0;
+    this.smoothedSpeed = 0;
+    this.amplitude.target = 0;
+    snapSpring(this.markerY);
+    snapSpring(this.amplitude);
+    this.frameInitialized = true;
+    this.snapRequested = false;
+  }
+  stepAnimation(deltaTime) {
+    const progressResponse = Math.min(
+      1,
+      1.4 * (1 - Math.exp(-deltaTime / PROGRESS_RESPONSE_SECONDS))
+    );
+    this.markerY.current += (this.markerY.target - this.markerY.current) * progressResponse;
+    if (Math.abs(this.markerY.target - this.markerY.current) <= POSITION_EPSILON) {
+      this.markerY.current = this.markerY.target;
+    }
+    const speedResponse = Math.min(1, deltaTime / SPEED_RESPONSE_SECONDS);
+    this.smoothedSpeed += (this.speedTarget - this.smoothedSpeed) * speedResponse;
+    this.speedTarget = 0;
+    if (Math.abs(this.smoothedSpeed) <= SPEED_EPSILON && this.speedTarget === 0) {
+      this.smoothedSpeed = 0;
+    }
+    this.amplitude.target = this.targetAmplitude();
+    const substeps = Math.max(1, Math.ceil(deltaTime / MAX_SUBSTEP));
+    const step = deltaTime / substeps;
+    for (let index = 0; index < substeps; index += 1) {
+      stepSpring(this.amplitude, AMPLITUDE_STIFFNESS, AMPLITUDE_DAMPING, step);
+      if (this.amplitude.current < MIN_AMPLITUDE_REBOUND) {
+        this.amplitude.current = MIN_AMPLITUDE_REBOUND;
+        if (this.amplitude.velocity < 0) {
+          this.amplitude.velocity = 0;
+        }
+      }
+      if (!Number.isFinite(this.amplitude.current)) {
+        this.amplitude.current = this.amplitude.target;
+        this.amplitude.velocity = 0;
+      }
+      stepSpring(this.hoverSpring, 300, 25, step);
+    }
+    this.clampSpringPositions();
+  }
+  animationIsSettled() {
+    return springIsSettled(this.markerY, POSITION_EPSILON) && springIsSettled(this.amplitude, AMPLITUDE_EPSILON) && springIsSettled(this.hoverSpring, AMPLITUDE_EPSILON) && Math.abs(this.speedTarget) <= SPEED_EPSILON && Math.abs(this.smoothedSpeed) <= SPEED_EPSILON;
+  }
+  baselineX() {
+    return this.geometry.lineInset;
+  }
+  writeDOM(timestamp) {
+    if (this.geometryDirty) {
+      this.svg.setAttribute(
+        "viewBox",
+        `0 0 ${formatNumber(this.geometry.width)} ${formatNumber(this.geometry.height)}`
+      );
+      this.root.style.setProperty("--reading-toc-rail-direction", String(this.geometry.direction));
+      this.geometryDirty = false;
+    }
+    if (this.dotsDirty) {
+      const dotX = this.baselineX();
+      this.dotButtons.forEach((button, index) => {
+        const heading = this.headings[index];
+        if (!heading) return;
+        button.style.left = `${formatNumber(dotX)}px`;
+        button.style.top = `${formatNumber(this.mapRatioToY(heading.ratio))}px`;
+      });
+      this.dotsDirty = false;
+    }
+    const markerY = clamp(
+      finiteOr(this.markerY.current, this.markerY.target),
+      0,
+      this.geometry.height
+    );
+    const hoverState = Math.max(0, Math.min(1, this.hoverSpring.current));
+    const boost = this.amplitude.current;
+    const breath = !this.reducedMotion ? BREATH_AMPLITUDE * Math.sin(timestamp / BREATH_PERIOD_MS * Math.PI * 2) : 0;
+    const waveAmplitude = Math.max(0, this.geometry.idleAmplitude + breath + boost);
+    const halfHeight = Math.max(
+      1,
+      this.geometry.bulgeHalfHeight + HALF_HEIGHT_SPEED_GAIN * boost
+    );
+    this.root.style.setProperty("--hover-opacity", `${1 - Math.pow(hoverState, 2)}`);
+    this.root.style.pointerEvents = hoverState > 0.5 ? "none" : "auto";
+    const path = buildReadingTocRailCurve(
+      this.geometry,
+      markerY,
+      waveAmplitude,
+      halfHeight
+    );
+    this.basePath.setAttribute("d", path.basePath);
+    this.accentPath.setAttribute("d", path.basePath);
+    this.baseTop.setAttribute("d", path.basePath);
+    this.baseTop.setAttribute("transform", "scale(1, -1)");
+    this.accentTop.setAttribute("d", path.basePath);
+    this.accentTop.setAttribute("transform", "scale(1, -1)");
+    const bottomTransform = `scale(1, -1) translate(0, -${formatNumber(2 * this.geometry.height)})`;
+    this.baseBottom.setAttribute("d", path.basePath);
+    this.baseBottom.setAttribute("transform", bottomTransform);
+    this.accentBottom.setAttribute("d", path.basePath);
+    this.accentBottom.setAttribute("transform", bottomTransform);
+    const pathStartY = Math.min(0, path.topY);
+    const pathEndY = Math.max(this.geometry.height, path.bottomY);
+    const totalLength = pathEndY - pathStartY;
+    const distanceToDot = markerY - pathStartY;
+    const offset = formatNumber(0.06 - distanceToDot / totalLength);
+    this.accentPath.setAttribute("stroke-dashoffset", offset);
+    this.accentTop.setAttribute("stroke-dashoffset", offset);
+    this.accentBottom.setAttribute("stroke-dashoffset", offset);
+    this.dotButtons.forEach((button, index) => {
+      const heading = this.headings[index];
+      if (!heading) return;
+      const dotY = this.mapRatioToY(heading.ratio);
+      const offsetX = readingTocRailDotOffset(
+        dotY,
+        markerY,
+        path.effectiveHalfHeight,
+        path.effectiveAmplitude,
+        this.geometry.direction
+      );
+      button.style.transform = `translate3d(calc(-50% + ${formatNumber(offsetX)}px), -50%, 0)`;
+    });
+    const labelX = path.peakX - this.geometry.labelGap;
+    this.label.style.left = "0";
+    this.label.style.top = `clamp(var(--reading-toc-rail-label-edge-inset), ${formatNumber(markerY)}px, calc(100% - var(--reading-toc-rail-label-edge-inset)))`;
+    this.label.style.transform = [
+      `translate3d(${formatNumber(labelX)}px, 0, 0)`,
+      "translate(-100%, -50%)"
+    ].join(" ");
+    this.writeLabelContent();
+    this.writeInteractionState();
+  }
+  writeLabelContent() {
+    const percentage = Math.round(clamp(this.progressTarget, 0, 1) * 100);
+    const heading = this.headings[this.activeIndex];
+    if (percentage !== this.renderedPercent) {
+      this.percent.textContent = `${percentage}%`;
+      if (heading) {
+        this.currentLink.setAttribute("aria-label", `${heading.ariaLabel}, ${percentage}%`);
+      }
+      this.renderedPercent = percentage;
+    }
+    if (!heading) {
+      if (this.renderedActiveIndex !== -1) {
+        this.titleSlots.forEach((slot) => {
+          slot.classList.remove("is-active", "is-leaving");
+          slot.setAttribute("aria-hidden", "true");
+        });
+        this.currentLink.setAttribute("href", "#");
+        this.currentLink.removeAttribute("aria-current");
+        this.renderedActiveIndex = -1;
+        this.renderedTitle = "";
+      }
+      return;
+    }
+    if (this.activeIndex === this.renderedActiveIndex) return;
+    this.currentLink.setAttribute("href", `#${encodeURIComponent(heading.id)}`);
+    this.currentLink.setAttribute("aria-label", `${heading.ariaLabel}, ${percentage}%`);
+    this.currentLink.setAttribute("aria-current", "location");
+    if (heading.text !== this.renderedTitle) {
+      if (this.renderedTitle === "") {
+        const initialSlot = this.titleSlots[this.visibleTitleSlot];
+        initialSlot.textContent = heading.text;
+        initialSlot.classList.remove("is-leaving");
+        initialSlot.classList.add("is-active");
+        initialSlot.removeAttribute("aria-hidden");
+      } else {
+        const previousSlot = this.titleSlots[this.visibleTitleSlot];
+        const nextSlotIndex = this.visibleTitleSlot === 0 ? 1 : 0;
+        const nextSlot = this.titleSlots[nextSlotIndex];
+        nextSlot.textContent = heading.text;
+        nextSlot.classList.remove("is-leaving");
+        nextSlot.classList.add("is-active");
+        nextSlot.removeAttribute("aria-hidden");
+        previousSlot.classList.remove("is-active");
+        previousSlot.classList.add("is-leaving");
+        previousSlot.setAttribute("aria-hidden", "true");
+        this.visibleTitleSlot = nextSlotIndex;
+      }
+      this.renderedTitle = heading.text;
+    }
+    this.renderedActiveIndex = this.activeIndex;
+    this.renderedEndActiveIndex = this.endActiveIndex;
+  }
+  writeInteractionState() {
+    if (!this.interactionDirty && this.renderedActiveIndex === this.activeIndex && this.renderedEndActiveIndex === this.endActiveIndex) return;
+    this.dotButtons.forEach((button, index) => {
+      const active = index >= this.activeIndex && index <= this.endActiveIndex;
+      button.classList.toggle("is-active", active);
+    });
+    this.currentLink.tabIndex = this.interactive && this.activeIndex >= 0 ? 0 : -1;
+    this.root.dataset.interactive = this.interactive ? "true" : "false";
+    this.interactionDirty = false;
+  }
+};
+
 // assets/ts/toc.ts
-import {
-  ReadingTocRail
-} from "../../../../assets/ts/toc/reading-toc-rail";
 var RAIL_MEDIA_QUERY = "(min-width: 116rem)";
 var MOTION_MEDIA_QUERY = "(prefers-reduced-motion: reduce)";
 var DEFAULT_ACTIVATION_LINE = 96;
@@ -11,17 +595,17 @@ var MIN_READING_TRAVEL = 240;
 var MIN_RAIL_HEIGHT = 320;
 var MIN_RAIL_WIDTH = 160;
 var MODE_HYSTERESIS = 8;
-var MAX_SCROLL_SPEED = 5e3;
+var MAX_SCROLL_SPEED2 = 5e3;
 var GEOMETRY_EPSILON = 1;
-function clamp(value, min, max) {
+function clamp2(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
-function finiteOr(value, fallback) {
+function finiteOr2(value, fallback) {
   return Number.isFinite(value) ? value : fallback;
 }
 function cssNumber(style, name, fallback) {
   const value = Number.parseFloat(style.getPropertyValue(name));
-  return finiteOr(value, fallback);
+  return finiteOr2(value, fallback);
 }
 function layoutDocumentTop(element) {
   let top = 0;
@@ -116,7 +700,7 @@ var NoteTocController = class {
       }
       this.pendingScrollSpeed = Math.max(
         this.pendingScrollSpeed || 0,
-        clamp(finiteOr(speed, 0), 0, MAX_SCROLL_SPEED)
+        clamp2(finiteOr2(speed, 0), 0, MAX_SCROLL_SPEED2)
       );
       this.latestScrollY = scrollY;
       this.lastScrollY = scrollY;
@@ -214,7 +798,7 @@ var NoteTocController = class {
         }
         const endActiveIndex = firstVis !== -1 ? Math.max(activeIndex, lastVis) : activeIndex;
         if (metrics.railEligible && this.rail) {
-          const progress = clamp(
+          const progress = clamp2(
             (activationY - metrics.contentTop) / metrics.readingTravel,
             0,
             1
@@ -383,7 +967,7 @@ var NoteTocController = class {
     const tocVisible = wrapperStyle.display !== "none" && wrapperRect.width > 0 && wrapperRect.height > 0;
     this.headings.forEach((heading) => {
       heading.documentY = layoutDocumentTop(heading.element);
-      heading.railRatio = contentHeight > 0 ? clamp((heading.documentY - contentTop) / contentHeight, 0, 1) : 0;
+      heading.railRatio = contentHeight > 0 ? clamp2((heading.documentY - contentTop) / contentHeight, 0, 1) : 0;
       heading.tocTop = heading.item.offsetTop;
       heading.tocHeight = Math.max(1, heading.item.offsetHeight);
     });

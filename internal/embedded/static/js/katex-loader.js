@@ -36,7 +36,4 @@ function renderAllMath(elements) {
 document.addEventListener("daybook:page-loaded", () => {
   setupKatex();
 });
-export {
-  setupKatex
-};
 //# sourceMappingURL=katex-loader.js.map

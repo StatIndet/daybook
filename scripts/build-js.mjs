@@ -32,7 +32,7 @@ const buildOptions = {
   sourcemap: true,
   format: 'esm', // Standard output format
   target: ['es2020'],
-  external: ['/*'],
+  external: ['/vendor/*'],
   logLevel: 'info',
 };
 
