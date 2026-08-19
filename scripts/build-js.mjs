@@ -27,11 +27,12 @@ if (tsFiles.length === 0) {
 
 const buildOptions = {
   entryPoints: tsFiles,
-  outdir: path.join(root, 'static', 'js'),
+  outdir: path.join(root, 'internal', 'embedded', 'static', 'js'),
   bundle: true, // Enable bundling so imported modules like embed-loading.ts are inlined
   sourcemap: true,
   format: 'esm', // Standard output format
   target: ['es2020'],
+  external: ['/*'],
   logLevel: 'info',
 };
 

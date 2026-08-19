@@ -1,12 +1,12 @@
 package markdown
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
+	
+	
+	
 	"os"
-	"os/exec"
-	"path/filepath"
+	"strings"
+		"path/filepath"
 )
 
 type MathItem struct {
@@ -50,48 +50,29 @@ func renderMathBlocks(items []MathItem) ([]MathRenderResult, error) {
 	if len(items) == 0 {
 		return nil, nil
 	}
-
-	nodePath, err := exec.LookPath("node")
-	if err != nil {
-		return nil, fmt.Errorf("找不到 node 命令，请安装 Node.js")
-	}
-
-	scriptPath := filepath.Join(projectRoot, "scripts", "render-katex.mjs")
-	if _, err := os.Stat(scriptPath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("找不到脚本 %s", scriptPath)
-	}
-
-	inputData, err := json.Marshal(items)
-	if err != nil {
-		return nil, fmt.Errorf("序列化公式数据失败: %w", err)
-	}
-
-	cmd := exec.Command(nodePath, scriptPath)
-	cmd.Dir = projectRoot
-
-	cmd.Stdin = bytes.NewReader(inputData)
-	var outBuf, errBuf bytes.Buffer
-	cmd.Stdout = &outBuf
-	cmd.Stderr = &errBuf
-
-	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("执行 render-katex 脚本失败: %w\nStderr: %s", err, errBuf.String())
-	}
-
-	if errBuf.Len() > 0 {
-		// print warnings from node stderr
-		fmt.Fprintf(os.Stderr, "KaTeX Warning/Error: %s\n", errBuf.String())
-	}
-
-	outputData := outBuf.Bytes()
-	if len(outputData) == 0 {
-		return nil, fmt.Errorf("render-katex 脚本没有输出")
-	}
-
 	var results []MathRenderResult
-	if err := json.Unmarshal(outputData, &results); err != nil {
-		return nil, fmt.Errorf("解析 KaTeX 输出结果失败: %w (output: %q)", err, string(outputData))
+	for _, item := range items {
+		var html string
+		if item.DisplayMode {
+			html = "<div class=\"math math-display\">$$" + escapeHtml(item.Tex) + "$$</div>"
+		} else {
+			html = "<span class=\"math math-inline\">\\(" + escapeHtml(item.Tex) + "\\)</span>"
+		}
+		results = append(results, MathRenderResult{
+			ID:    item.ID,
+			OK:    true,
+			HTML:  html,
+			Error: "",
+		})
 	}
-
 	return results, nil
+}
+
+func escapeHtml(value string) string {
+	s := strings.ReplaceAll(value, "&", "&amp;")
+	s = strings.ReplaceAll(s, "<", "&lt;")
+	s = strings.ReplaceAll(s, ">", "&gt;")
+	s = strings.ReplaceAll(s, "\"", "&quot;")
+	s = strings.ReplaceAll(s, "'", "&#39;")
+	return s
 }

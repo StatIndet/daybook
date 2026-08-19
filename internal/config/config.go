@@ -22,7 +22,7 @@ type ProfileConfig struct {
 }
 
 func (p ProfileConfig) HasSignatureFont() bool {
-	return p.Author.Name == "史帙"
+	return false
 }
 
 func (p ProfileConfig) GetLogoText() string {

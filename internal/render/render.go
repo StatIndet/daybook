@@ -6,12 +6,12 @@ import (
 	"math"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/StatIndet/daybook/internal/config"
 	"github.com/StatIndet/daybook/internal/i18n"
 	"github.com/StatIndet/daybook/internal/seo"
+	"github.com/StatIndet/daybook/internal/embedded"
 )
 
 type Renderer struct {
@@ -667,7 +667,7 @@ func (r Renderer) render(outputPath, pageTemplate string, data any) error {
 		},
 		"tagSlug": seo.TagSlug,
 	})
-	tmpl, err = tmpl.ParseFiles(files...)
+	tmpl, err = tmpl.ParseFS(embedded.FS, files...)
 	if err != nil {
 		return fmt.Errorf("解析模板: %w", err)
 	}
@@ -690,17 +690,13 @@ func (r Renderer) render(outputPath, pageTemplate string, data any) error {
 }
 
 func (r Renderer) templateFiles(pageTemplate string) ([]string, error) {
+	// r.TemplatesDir should be "templates" 
+	// To use ParseFS, we should use forward slashes.
+	dir := "templates"
 	files := []string{
-		filepath.Join(r.TemplatesDir, "layouts", "base.html"),
+		dir + "/layouts/base.html",
+		dir + "/partials/*.html",
+		dir + "/pages/" + pageTemplate,
 	}
-
-	partials, err := filepath.Glob(filepath.Join(r.TemplatesDir, "partials", "*.html"))
-	if err != nil {
-		return nil, fmt.Errorf("查找 partial 模板: %w", err)
-	}
-	sort.Strings(partials)
-	files = append(files, partials...)
-	files = append(files, filepath.Join(r.TemplatesDir, "pages", pageTemplate))
-
 	return files, nil
 }

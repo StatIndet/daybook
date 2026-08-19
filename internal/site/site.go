@@ -33,8 +33,6 @@ type Options struct {
 	Config       config.Config
 	ContentDir   string
 	NotesDir     string
-	TemplatesDir string
-	StaticDir    string
 	PublicDir    string
 }
 
@@ -71,10 +69,10 @@ func Build(options Options) (BuildResult, error) {
 		return BuildResult{}, fmt.Errorf("创建 public 目录: %w", err)
 	}
 
-	if err := copyStaticDir(options.StaticDir, options.PublicDir); err != nil {
+	if err := copyStaticDir("static", options.PublicDir); err != nil {
 		return BuildResult{}, err
 	}
-	assets, err := buildAssets(options.StaticDir, options.PublicDir)
+	assets, err := buildAssets("static", options.PublicDir)
 	if err != nil {
 		return BuildResult{}, err
 	}
@@ -145,7 +143,7 @@ func Build(options Options) (BuildResult, error) {
 		return BuildResult{}, fmt.Errorf("构建标签字典: %w", err)
 	}
 
-	renderer := render.New(options.TemplatesDir)
+	renderer := render.New("templates")
 
 	var allSiteURLs []sitemap.URL
 
@@ -1188,10 +1186,12 @@ func normalizeHeading(text string) string {
 	return text
 }
 
+
+
 func copyAttachments(contentDir, publicDir string) error {
 	err := copyDirFiltered(contentDir, publicDir, func(relativePath string, entry os.DirEntry) bool {
 		if entry.IsDir() {
-			if strings.HasPrefix(entry.Name(), ".") {
+			if strings.HasPrefix(entry.Name(), ".") || entry.Name() == filepath.Base(publicDir) {
 				return true // skip .obsidian, .git
 			}
 			return false // allow traversing other dirs
@@ -1286,5 +1286,7 @@ func copyFile(sourcePath, targetPath string) error {
 
 	return nil
 }
+
+
 
 

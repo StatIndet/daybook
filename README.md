@@ -203,10 +203,8 @@ stats:
 如果你启用了无后端统计 (`stats.enabled: true`)：
 
 1. 在 Cloudflare Dashboard 的 D1 数据库中创建数据库，并在项目的 `wrangler.jsonc` 中配置绑定 (Binding `DB`)。
-2. **非常重要**：在 Cloudflare Dashboard 设置生产环境变量 `STATS_SALT` 作为防刷盐值。在本地开发时，将盐值写在 `.dev.vars` 文件中：
 
 ```env
-STATS_SALT=your_random_secret_string
 ```
 
 （请确保 `.dev.vars` 永远不会被提交到 Git 仓库）。

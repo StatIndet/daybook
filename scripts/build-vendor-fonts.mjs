@@ -35,49 +35,49 @@ async function copyFileClean(source, target) {
 // Copy LXGW WenKai Screen
 await copyDirClean(
   path.join(root, "node_modules", "lxgw-wenkai-screen-web", "lxgwwenkaiscreen"),
-  path.join(root, "static", "vendor", "fonts", "lxgw-wenkai-screen", "regular"),
+  path.join(root, "internal", "embedded", "static", "vendor", "fonts", "lxgw-wenkai-screen", "regular"),
 );
 
 // Copy Maple Mono CN Regular
 await copyDirClean(
   path.join(root, "node_modules", "@chinese-fonts", "maple-mono-cn", "dist", "MapleMono-CN-Regular"),
-  path.join(root, "static", "vendor", "fonts", "maple-mono-cn", "regular"),
+  path.join(root, "internal", "embedded", "static", "vendor", "fonts", "maple-mono-cn", "regular"),
 );
 
 // Copy Maple Mono CN Italic
 await copyDirClean(
   path.join(root, "node_modules", "@chinese-fonts", "maple-mono-cn", "dist", "MapleMono-CN-Italic"),
-  path.join(root, "static", "vendor", "fonts", "maple-mono-cn", "italic"),
+  path.join(root, "internal", "embedded", "static", "vendor", "fonts", "maple-mono-cn", "italic"),
 );
 
 // Copy Material Symbols Rounded
 await copyFileClean(
   path.join(root, "node_modules", "material-symbols", "material-symbols-rounded.woff2"),
-  path.join(root, "static", "vendor", "fonts", "material-symbols", "material-symbols-rounded.woff2"),
+  path.join(root, "internal", "embedded", "static", "vendor", "fonts", "material-symbols", "material-symbols-rounded.woff2"),
 );
 
 // Copy Cormorant Garamond Meta (Italic)
 await copyFileClean(
   path.join(root, "node_modules", "@fontsource", "cormorant-garamond", "files", "cormorant-garamond-latin-400-italic.woff2"),
-  path.join(root, "static", "vendor", "fonts", "cormorant-garamond", "cormorant-garamond-latin-400-italic.woff2"),
+  path.join(root, "internal", "embedded", "static", "vendor", "fonts", "cormorant-garamond", "cormorant-garamond-latin-400-italic.woff2"),
 );
 
 // Copy Cormorant Garamond Settings (Normal)
 await copyFileClean(
   path.join(root, "node_modules", "@fontsource", "cormorant-garamond", "files", "cormorant-garamond-latin-400-normal.woff2"),
-  path.join(root, "static", "vendor", "fonts", "settings", "cormorant-garamond-latin-400-normal.woff2"),
+  path.join(root, "internal", "embedded", "static", "vendor", "fonts", "settings", "cormorant-garamond-latin-400-normal.woff2"),
 );
 
 // Copy Fraunces (Italic)
 await copyFileClean(
   path.join(root, "node_modules", "@fontsource", "fraunces", "files", "fraunces-latin-400-italic.woff2"),
-  path.join(root, "static", "vendor", "fonts", "decorative", "fraunces-latin-400-italic.woff2"),
+  path.join(root, "internal", "embedded", "static", "vendor", "fonts", "decorative", "fraunces-latin-400-italic.woff2"),
 );
 
 // Copy Allura (Normal)
 await copyFileClean(
   path.join(root, "node_modules", "@fontsource", "allura", "files", "allura-latin-400-normal.woff2"),
-  path.join(root, "static", "vendor", "fonts", "decorative", "allura-latin-400-normal.woff2"),
+  path.join(root, "internal", "embedded", "static", "vendor", "fonts", "decorative", "allura-latin-400-normal.woff2"),
 );
 
 console.log("Vendor fonts copied successfully.");

@@ -228,8 +228,7 @@ func TestBuildMarksNotesWithMermaid(t *testing.T) {
 	_, err := Build(Options{
 		Config:       cfg,
 		NotesDir:     filepath.Join(contentDir, "notes"),
-		TemplatesDir: filepath.Join("..", "..", "templates"),
-		StaticDir:    staticDir,
+		
 		PublicDir:    publicDir,
 	})
 	if err != nil {
