@@ -53,17 +53,22 @@ func GroupNotes(notes []Note) ([]*ArticleGroup, error) {
 	for i := range notes {
 		note := &notes[i]
 
-		group, ok := groupsMap[note.I18nKey]
+		groupKey := note.I18nKey
+		if groupKey == "" {
+			groupKey = "single:" + note.Lang + ":" + note.Slug
+		}
+
+		group, ok := groupsMap[groupKey]
 		if !ok {
 			group = &ArticleGroup{
-				I18nKey:  note.I18nKey,
+				I18nKey:  note.I18nKey, // might be empty
 				Versions: make(map[string]*Note),
 			}
-			groupsMap[note.I18nKey] = group
+			groupsMap[groupKey] = group
 		}
 
 		if _, exists := group.Versions[note.Lang]; exists {
-			return nil, fmt.Errorf("I18nKey %s 包含多个 %s 语言版本", note.I18nKey, note.Lang)
+			return nil, fmt.Errorf("GroupKey %s 包含多个 %s 语言版本", groupKey, note.Lang)
 		}
 
 		group.Versions[note.Lang] = note

@@ -1,5 +1,6 @@
 interface Env {
   DB: D1Database;
+  ASSETS: { fetch: (req: Request | string) => Promise<Response> };
 }
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
@@ -11,7 +12,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   }
 
   const normalizedPath = normalizePath(rawPath);
-  if (!isWhitelisted(normalizedPath)) {
+  if (!await isWhitelisted(env, request, normalizedPath)) {
     return new Response("Forbidden", { status: 403 });
   }
 
@@ -43,7 +44,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 };
 
 function normalizePath(p: string): string {
-  let pathname = p.split('?')[0].split('#')[0];
+  let pathname = decodeURI(p.split('?')[0].split('#')[0]);
   pathname = pathname.replace(/\/+/g, '/');
   if (!pathname.startsWith('/')) pathname = '/' + pathname;
   if (pathname !== '/' && !pathname.endsWith('/')) {
@@ -52,12 +53,48 @@ function normalizePath(p: string): string {
   return pathname;
 }
 
-function isWhitelisted(p: string): boolean {
+let cachedRoutes: string[] | null = null;
+let routesCacheTime = 0;
+
+async function isWhitelisted(env: Env, request: Request, p: string): Promise<boolean> {
   if (p === '/') return true;
   if (p === '/notes/') return true;
   if (p === '/archive/') return true;
   if (p === '/graph/') return true;
   if (p === '/about/') return true;
+  if (p === '/en/') return true;
+  if (p === '/en/notes/') return true;
+  if (p === '/en/archive/') return true;
+  if (p === '/en/graph/') return true;
+  if (p === '/en/about/') return true;
+
+  if (Date.now() - routesCacheTime > 60000 || !cachedRoutes) {
+    try {
+      const url = new URL(request.url);
+      const res = await env.ASSETS.fetch(new URL('/routes.json', url.origin));
+      if (res.ok) {
+        cachedRoutes = await res.json() as string[];
+        routesCacheTime = Date.now();
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  if (cachedRoutes && cachedRoutes.length > 0) {
+    if (cachedRoutes.includes(p)) return true;
+    
+    // tags
+    if (p.startsWith('/tags/') || p.startsWith('/en/tags/')) return true;
+    
+    return false;
+  }
+
+  // Fallback if routes.json fails
   if (p.startsWith('/notes/') && p.length > '/notes/'.length) return true;
+  if (p.startsWith('/en/notes/') && p.length > '/en/notes/'.length) return true;
+  if (p.startsWith('/tags/') && p.length > '/tags/'.length) return true;
+  if (p.startsWith('/en/tags/') && p.length > '/en/tags/'.length) return true;
+  
   return false;
 }

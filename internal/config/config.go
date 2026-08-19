@@ -77,6 +77,7 @@ type CommentConfig struct {
 }
 
 type StatsConfig struct {
+	Enabled bool
 	APIBase string
 }
 
@@ -127,6 +128,7 @@ func Load() (Config, error) {
 		},
 
 		Stats: StatsConfig{
+			Enabled: parseBoolEnv("DAYBOOK_STATS_ENABLED"),
 			APIBase: parseStringEnv("DAYBOOK_STATS_API_BASE", "/api"),
 		},
 	}

@@ -14,7 +14,7 @@ draft: false
 
 这里是笔记正文。`
 
-	note, err := Parse("example.md", text)
+	note, err := Parse("example.md", text, "example")
 	if err != nil {
 		t.Fatalf("Parse returned error: %v", err)
 	}
@@ -31,7 +31,7 @@ draft: false
 }
 
 func TestParseNoteRequiresFrontmatter(t *testing.T) {
-	_, err := Parse("missing.md", "没有 frontmatter 的正文")
+	_, err := Parse("missing.md", "没有 frontmatter 的正文", "missing")
 	if err == nil {
 		t.Fatal("Parse returned nil error")
 	}

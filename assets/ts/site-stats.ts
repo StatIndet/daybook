@@ -5,35 +5,11 @@ interface StatsResponse {
   visitors: number;
 }
 
-function getVisitorId(): string {
-  let vid = localStorage.getItem("daybook:visitor-id");
-  if (!vid) {
-    vid = crypto.randomUUID();
-    localStorage.setItem("daybook:visitor-id", vid);
-  }
-  return vid;
-}
-
-function getTodayString(): string {
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
 function normalizePath(p: string): string {
   try {
     const url = new URL(p, window.location.origin);
-    let pathname = url.pathname;
+    let pathname = decodeURI(url.pathname);
     
-    // Strip /en prefix to consolidate bilingual stats
-    if (pathname.startsWith('/en/')) {
-      pathname = pathname.substring(3);
-    } else if (pathname === '/en') {
-      pathname = '/';
-    }
-
     pathname = pathname.replace(/\/+/g, '/');
     if (!pathname.startsWith('/')) pathname = '/' + pathname;
     if (pathname !== '/' && !pathname.endsWith('/')) {
@@ -45,11 +21,11 @@ function normalizePath(p: string): string {
   }
 }
 
+let hitPromise: Promise<StatsResponse | null> | null = null;
+let lastHitPath = "";
+
 async function hitPath(path: string): Promise<StatsResponse | null> {
-  const visitorId = getVisitorId();
   const normalized = normalizePath(path);
-  const dateStr = getTodayString();
-  const dedupeKey = `daybook:hit:${normalized}:${dateStr}`;
 
   const statsEnabled = document.body.dataset.statsEnabled === "true";
   if (!statsEnabled) {
@@ -57,37 +33,31 @@ async function hitPath(path: string): Promise<StatsResponse | null> {
   }
   const apiBase = (document.body.dataset.statsApiBase || "/api").replace(/\/$/, "");
 
-  if (localStorage.getItem(dedupeKey)) {
-    // Already hit today, just GET
+  // Prevent multiple simultaneous hits for the same navigation (e.g. strict mode or duplicate events)
+  if (hitPromise && lastHitPath === normalized) {
+    return hitPromise;
+  }
+  lastHitPath = normalized;
+
+  hitPromise = (async () => {
     try {
-      const res = await fetch(`${apiBase}/stats?path=${encodeURIComponent(normalized)}`);
+      const res = await fetch(`${apiBase}/hit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ path: normalized })
+      });
       if (res.ok) {
         return (await res.json()) as StatsResponse;
       }
     } catch (e) {
-      console.error("[Site Stats] Fetch stats failed", e);
+      console.error("[Site Stats] Post hit failed", e);
     }
     return null;
-  }
+  })();
 
-  // Need to POST hit
-  try {
-    const res = await fetch(`${apiBase}/hit`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ path: normalized, visitorId })
-    });
-    if (res.ok) {
-      // Only write to localStorage after success
-      localStorage.setItem(dedupeKey, "1");
-      return (await res.json()) as StatsResponse;
-    }
-  } catch (e) {
-    console.error("[Site Stats] Post hit failed", e);
-  }
-  return null;
+  return hitPromise;
 }
 
 export function initSiteStats(root: Document | HTMLElement = document) {

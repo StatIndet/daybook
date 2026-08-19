@@ -372,6 +372,7 @@ func Build(options Options) (BuildResult, error) {
 					URL:                 noteLink.URL,
 					Slug:                note.Slug,
 					I18nKey:             group.I18nKey,
+					CommentPath:         joinURL("/", langPrefix, "notes", note.Slug),
 					Tags:                tags,
 					WordCount:           note.WordCount,
 					ReadingMinutes:      note.ReadingMinutes,
@@ -743,6 +744,13 @@ func Build(options Options) (BuildResult, error) {
 			allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: link.URL, LastMod: lastMod})
 		}
 	}
+
+	var routePaths []string
+	for _, u := range allSiteURLs {
+		routePaths = append(routePaths, u.Loc)
+	}
+	routeBytes, _ := json.Marshal(routePaths)
+	os.WriteFile(filepath.Join(options.PublicDir, "routes.json"), routeBytes, 0644)
 
 	if err := sitemap.WriteSitemap(filepath.Join(options.PublicDir, "sitemap.xml"), options.Config, allSiteURLs); err != nil {
 		return BuildResult{}, err

@@ -1,8 +1,10 @@
 {{define "home_footer"}}
 <footer class="home-footer">
   <div class="footer-stats-row">
+    {{if .Config.Stats.Enabled}}
     <span class="footer-stat-item">{{T .Lang "footer.visitors"}} <strong data-site-visitors>--</strong> &middot;</span>
     <span class="footer-stat-item">{{T .Lang "footer.views"}} <strong data-site-views>--</strong> &middot;</span>
+    {{end}}
     <span class="footer-stat-item">{{T .Lang "footer.words"}} <strong>{{ formatNum .Site.TotalWordCount }}</strong> &middot;</span>
     <span class="footer-stat-item">{{T .Lang "footer.uptime"}} <strong data-site-uptime data-started-at="{{ .Site.StartedAt }}">--</strong></span>
   </div>

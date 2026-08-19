@@ -25,10 +25,12 @@
         <br><span class="about-updated">updated <time datetime="{{.Updated}}">{{.Updated}}</time></span>
         {{end}}
       </div>
+      {{if .Config.Stats.Enabled}}
       <span class="about-meta-group">
         <span data-page-views data-path="/about/">--</span>
         <span data-page-views-label data-path="/about/">views</span>
       </span>
+      {{end}}
     </div>
   </div>
 </section>

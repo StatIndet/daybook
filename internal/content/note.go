@@ -64,7 +64,14 @@ func LoadNotes(dir string) ([]*ArticleGroup, []string, error) {
 			return nil
 		}
 
-		note, err := ParseFile(path)
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return fmt.Errorf("计算相对路径 %s: %w", path, err)
+		}
+		rel = filepath.ToSlash(rel)
+		slug := strings.TrimSuffix(rel, filepath.Ext(rel))
+
+		note, err := ParseFile(path, slug)
 		if err != nil {
 			skipped = append(skipped, fmt.Sprintf("%s (%v)", path, err))
 			return nil
@@ -94,16 +101,16 @@ func LoadNotes(dir string) ([]*ArticleGroup, []string, error) {
 	return groups, skipped, nil
 }
 
-func ParseFile(path string) (Note, error) {
+func ParseFile(path string, slug string) (Note, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return Note{}, fmt.Errorf("读取笔记文件: %w", err)
 	}
 
-	return Parse(path, string(data))
+	return Parse(path, string(data), slug)
 }
 
-func Parse(sourcePath, text string) (Note, error) {
+func Parse(sourcePath, text string, slug string) (Note, error) {
 	yamlText, body, ok := splitFrontmatter(text)
 	if !ok {
 		return Note{}, fmt.Errorf("缺少 YAML frontmatter")
@@ -118,7 +125,7 @@ func Parse(sourcePath, text string) (Note, error) {
 		Title:      strings.TrimSpace(meta.Title),
 		Date:       strings.TrimSpace(meta.Date),
 		Updated:    strings.TrimSpace(meta.Updated),
-		Slug:       strings.TrimSuffix(filepath.Base(sourcePath), filepath.Ext(sourcePath)),
+		Slug:       slug,
 		Lang:       strings.TrimSpace(meta.Lang),
 		I18nKey:    strings.TrimSpace(meta.I18nKey),
 		Tags:       meta.Tags,
@@ -137,9 +144,6 @@ func Parse(sourcePath, text string) (Note, error) {
 
 	if note.Lang == "" {
 		note.Lang = "zh-CN"
-	}
-	if note.I18nKey == "" {
-		note.I18nKey = note.Slug
 	}
 
 	note.WordCount = countWords(note.Body)
