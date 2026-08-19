@@ -61,6 +61,10 @@ func ParsePage(sourcePath, text string) (Page, error) {
 		SourcePath:    sourcePath,
 	}
 
+	if page.Draft {
+		return page, nil
+	}
+
 	page.WordCount = countWords(page.Body)
 	page.ReadingMinutes = int(math.Max(1, math.Ceil(float64(page.WordCount)/300.0)))
 

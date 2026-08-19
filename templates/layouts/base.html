@@ -2,7 +2,7 @@
 <!doctype html>
 <html lang="{{if .Lang}}{{.Lang}}{{else}}zh-CN{{end}}">
 {{template "head" .}}
-<body class="{{.BodyClass}}" data-page-kind="{{.PageKind}}" data-search-index-url="/search.json" data-stats-enabled="{{if .Config.Stats.Enabled}}true{{else}}false{{end}}" data-stats-api-base="{{.Config.Stats.APIBase}}">
+<body class="{{.BodyClass}}" data-page-kind="{{.PageKind}}" data-search-index-url="/search.json" data-stats-enabled="{{if .Config.Stats.Enabled}}true{{else}}false{{end}}">
   {{template "persistent_logo" .}}
   {{template "settings_overlay" .}}
 

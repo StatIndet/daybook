@@ -91,7 +91,7 @@ func Build(options Options) (BuildResult, error) {
 		}
 	}
 
-	startedAt := options.Config.StartedAt
+	startedAt := options.Config.Site.StartedAt
 	if startedAt == "" && len(groups) > 0 {
 		if note, _ := groups[len(groups)-1].SelectVersion("zh-CN"); note != nil {
 			startedAt = note.Date
@@ -125,7 +125,7 @@ func Build(options Options) (BuildResult, error) {
 	markdown.SetMusicMetadataRegistry(musicMetadataMap)
 
 	siteData := render.SiteData{
-		Title:          options.Config.Title,
+		Title:          options.Config.Site.Title,
 		StartedAt:      startedAt,
 		TotalWordCount: totalWordCount,
 	}
@@ -422,8 +422,8 @@ func Build(options Options) (BuildResult, error) {
 		homeSEOArgs := seo.BuilderArgs{
 			Config:      options.Config,
 			Lang:        lang,
-			Title:       options.Config.Profile.GetHomeTitle(lang),
-			Description: options.Config.Profile.GetHomeDescription(lang),
+			Title:       options.Config.GetHomeTitle(lang),
+			Description: options.Config.GetHomeDescription(lang),
 			PageURL:     joinURL("/", langPrefix),
 			Alternates:  homeAlternates,
 		}

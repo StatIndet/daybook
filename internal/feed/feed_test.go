@@ -23,7 +23,7 @@ func TestWriteRSS(t *testing.T) {
 		},
 	}
 
-	err := Write(path, config.Config{Title: "Daybook", BaseURL: "https://example.com"}, notes)
+	err := Write(path, config.Config{Site: config.SiteConfig{Title: "Daybook", URL: "https://example.com"}}, notes)
 	if err != nil {
 		t.Fatalf("Write returned error: %v", err)
 	}

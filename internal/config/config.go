@@ -1,34 +1,30 @@
 package config
 
 import (
-	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
-type ProfileConfig struct {
-	Author struct {
-		Name     string `json:"name"`
-		NameEn   string `json:"nameEn"`
-		LogoText string `json:"logoText"`
-		Avatar   string `json:"avatar"`
-		AboutUrl string `json:"aboutUrl"`
-	} `json:"author"`
-	Slogan map[string]string `json:"slogan"`
-	SEO    struct {
-		HomeTitle       map[string]string `json:"homeTitle"`
-		HomeDescription map[string]string `json:"homeDescription"`
-	} `json:"seo"`
+type AuthorConfig struct {
+	Name     string `yaml:"name"`
+	NameEn   string `yaml:"nameEn"`
+	LogoText string `yaml:"logoText"`
+	Avatar   string `yaml:"avatar"`
+	AboutUrl string `yaml:"aboutUrl"`
 }
 
-// HasSignatureFont reports whether the author name is "史帙",
-// which is the only name that has a custom handwriting woff2 font.
+type ProfileConfig struct {
+	Author AuthorConfig      `yaml:"author"`
+	Slogan map[string]string `yaml:"slogan"`
+}
+
 func (p ProfileConfig) HasSignatureFont() bool {
 	return p.Author.Name == "史帙"
 }
 
-// GetLogoText returns the persistent logo text.
-// Falls back to NameEn, then Name if logoText is empty.
 func (p ProfileConfig) GetLogoText() string {
 	if p.Author.LogoText != "" {
 		return p.Author.LogoText
@@ -39,11 +35,10 @@ func (p ProfileConfig) GetLogoText() string {
 	return p.Author.Name
 }
 
-func (p ProfileConfig) getMultilingualString(dict map[string]string, lang string) string {
+func getMultilingualString(dict map[string]string, lang string) string {
 	if val, ok := dict[lang]; ok && val != "" {
 		return val
 	}
-	// Fallback to "zh" if lang is missing or empty
 	if val, ok := dict["zh"]; ok && val != "" {
 		return val
 	}
@@ -51,15 +46,12 @@ func (p ProfileConfig) getMultilingualString(dict map[string]string, lang string
 }
 
 func (p ProfileConfig) GetSlogan(lang string) string {
-	return p.getMultilingualString(p.Slogan, lang)
+	return getMultilingualString(p.Slogan, lang)
 }
 
-func (p ProfileConfig) GetHomeTitle(lang string) string {
-	return p.getMultilingualString(p.SEO.HomeTitle, lang)
-}
-
-func (p ProfileConfig) GetHomeDescription(lang string) string {
-	return p.getMultilingualString(p.SEO.HomeDescription, lang)
+type SEOConfig struct {
+	HomeTitle       map[string]string `yaml:"homeTitle"`
+	HomeDescription map[string]string `yaml:"homeDescription"`
 }
 
 type WalineConfig struct {
@@ -72,102 +64,76 @@ type WalineConfig struct {
 }
 
 type CommentConfig struct {
+	Enabled  bool         `yaml:"enabled"`
 	Provider string       `yaml:"provider"`
 	Waline   WalineConfig `yaml:"waline"`
 }
 
 type StatsConfig struct {
-	Enabled bool
-	APIBase string
+	Enabled bool `yaml:"enabled"`
+}
+
+type SiteConfig struct {
+	Title     string `yaml:"title"`
+	URL       string `yaml:"url"`
+	StartedAt string `yaml:"startedAt"`
 }
 
 type Config struct {
-	Title       string        `yaml:"title"`
-	BaseURL     string        `yaml:"baseURL"`
-	StartedAt   string        `yaml:"startedAt"`
-	Comment     CommentConfig `yaml:"comment"`
-	Stats       StatsConfig
-	Profile     ProfileConfig
+	Site    SiteConfig    `yaml:"site"`
+	Profile ProfileConfig `yaml:"profile"`
+	SEO     SEOConfig     `yaml:"seo"`
+	Comment CommentConfig `yaml:"comment"`
+	Stats   StatsConfig   `yaml:"stats"`
 }
 
-func parseStringEnv(key, fallback string) string {
-	val, ok := os.LookupEnv(key)
-	if !ok {
-		return fallback
-	}
-	val = strings.TrimSpace(val)
-	val = strings.Trim(val, `"'`)
-	if val == "" {
-		return fallback
-	}
-	return val
+func (c Config) GetHomeTitle(lang string) string {
+	return getMultilingualString(c.SEO.HomeTitle, lang)
 }
 
-func parseBoolEnv(key string) bool {
-	val := strings.TrimSpace(os.Getenv(key))
-	val = strings.Trim(val, `"'`)
-	val = strings.ToLower(val)
-	return val == "true" || val == "1" || val == "on" || val == "yes"
-}
-
-func loadDotEnv() {
-	data, err := os.ReadFile(".env")
-	if err != nil {
-		return
-	}
-	lines := strings.Split(string(data), "\n")
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		parts := strings.SplitN(line, "=", 2)
-		if len(parts) == 2 {
-			key := strings.TrimSpace(parts[0])
-			val := strings.TrimSpace(parts[1])
-			val = strings.Trim(val, `"'`)
-			// Only set if not already present in environment
-			if _, exists := os.LookupEnv(key); !exists {
-				os.Setenv(key, val)
-			}
-		}
-	}
+func (c Config) GetHomeDescription(lang string) string {
+	return getMultilingualString(c.SEO.HomeDescription, lang)
 }
 
 func Load() (Config, error) {
-	loadDotEnv()
-
-	cfg := Config{
-		Title:     parseStringEnv("DAYBOOK_SITE_NAME", "Daybook"),
-		BaseURL:   parseStringEnv("DAYBOOK_SITE_URL", "http://localhost:1313"),
-		StartedAt: parseStringEnv("DAYBOOK_STARTED_AT", "2026-06-08"),
-		Comment: CommentConfig{
-			Provider: "waline",
-			Waline: WalineConfig{
-				ServerURL:      parseStringEnv("DAYBOOK_WALINE_SERVER_URL", ""),
-				Lang:           "zh-CN",
-				PageSize:       10,
-				CommentSorting: "latest",
-				Search:         false,
-				ImageUploader:  false,
-			},
-		},
-
-		Stats: StatsConfig{
-			Enabled: parseBoolEnv("DAYBOOK_STATS_ENABLED"),
-			APIBase: parseStringEnv("DAYBOOK_STATS_API_BASE", "/api"),
-		},
+	data, err := os.ReadFile("daybook.yaml")
+	if err != nil {
+		return Config{}, fmt.Errorf("config error: daybook.yaml not found: %w", err)
 	}
 
-	profileData, err := os.ReadFile("data/profile.json")
-	if err == nil {
-		_ = json.Unmarshal(profileData, &cfg.Profile)
-	} else {
-		// Provide default fallbacks if missing
-		cfg.Profile.Author.Name = "史帙"
-		cfg.Profile.Author.NameEn = "Daybook"
-		cfg.Profile.Author.Avatar = "/images/avatar/shelby.jpg"
-		cfg.Profile.Author.AboutUrl = "/about/"
+	var cfg Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return Config{}, fmt.Errorf("config error: invalid daybook.yaml: %w", err)
+	}
+
+	// Defaults and Fallbacks
+	if strings.TrimSpace(cfg.Site.Title) == "" {
+		cfg.Site.Title = "Daybook"
+	}
+	if strings.TrimSpace(cfg.Site.StartedAt) == "" {
+		cfg.Site.StartedAt = "2026-06-08"
+	}
+
+	if cfg.Comment.Enabled {
+		if cfg.Comment.Provider == "waline" {
+			if cfg.Comment.Waline.ServerURL == "" {
+				fmt.Println("[daybook] warning: comment provider is waline but serverURL is empty, disabling comments.")
+				cfg.Comment.Enabled = false
+			}
+			if cfg.Comment.Waline.PageSize == 0 {
+				cfg.Comment.Waline.PageSize = 10
+			}
+			if cfg.Comment.Waline.Lang == "" {
+				cfg.Comment.Waline.Lang = "zh-CN"
+			}
+			if cfg.Comment.Waline.CommentSorting == "" {
+				cfg.Comment.Waline.CommentSorting = "latest"
+			}
+		}
+	}
+
+	if cfg.Site.URL != "" && !strings.HasPrefix(cfg.Site.URL, "http://") && !strings.HasPrefix(cfg.Site.URL, "https://") {
+		return Config{}, fmt.Errorf("config error: site.url must be a valid http/https URL")
 	}
 
 	return cfg, nil

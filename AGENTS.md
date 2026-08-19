@@ -71,7 +71,7 @@ daybook/
 ├── scripts/
 ├── docs/
 ├── public/
-├── config.yaml
+├── daybook.yaml
 ├── go.mod
 ├── go.sum
 ├── README.md

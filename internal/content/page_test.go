@@ -26,3 +26,20 @@ slug:
 		t.Fatalf("Body = %q, want page body", page.Body)
 	}
 }
+
+func TestParseDraftPage(t *testing.T) {
+	text := `---
+draft: true
+---
+这里是页面正文。`
+	page, err := ParsePage("draft.md", text)
+	if err != nil {
+		t.Fatalf("ParsePage returned error: %v", err)
+	}
+	if !page.Draft {
+		t.Fatalf("Draft = %v, want true", page.Draft)
+	}
+	if page.WordCount != 0 {
+		t.Fatalf("WordCount = %d, want 0 for draft", page.WordCount)
+	}
+}

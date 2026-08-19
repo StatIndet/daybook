@@ -37,7 +37,7 @@ func run() error {
 	switch os.Args[1] {
 	case "build":
 		if cfg.Stats.Enabled {
-			fmt.Printf("[daybook] stats: enabled=true apiBase=%s\n", cfg.Stats.APIBase)
+			fmt.Println("[daybook] stats: enabled=true")
 		} else {
 			fmt.Println("[daybook] stats: disabled")
 		}

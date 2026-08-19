@@ -141,6 +141,11 @@ func Parse(sourcePath, text string, slug string) (Note, error) {
 		BodyStartLine: bodyStartLine,
 		SourcePath:    sourcePath,
 	}
+
+	if note.Draft {
+		return note, nil
+	}
+
 	note.URL = "/notes/" + note.Slug + "/"
 	note.CanonicalPath = "/notes/" + note.Slug + "/"
 

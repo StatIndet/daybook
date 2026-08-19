@@ -34,13 +34,13 @@ type item struct {
 }
 
 func Write(path string, cfg config.Config, notes []render.NoteLink) error {
-	baseURL := strings.TrimRight(cfg.BaseURL, "/")
+	baseURL := strings.TrimRight(cfg.Site.URL, "/")
 	document := rss{
 		Version: "2.0",
 		Channel: channel{
-			Title:       cfg.Title,
+			Title:       cfg.Site.Title,
 			Link:        baseURL + "/",
-			Description: cfg.Title,
+			Description: cfg.Site.Title,
 			Items:       make([]item, 0, len(notes)),
 		},
 	}

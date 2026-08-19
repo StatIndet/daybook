@@ -174,72 +174,51 @@ npm run server
 
 ## 部署与配置
 
-Daybook 的所有生产服务地址和站点信息均通过 **环境变量** 注入，项目根目录下不再使用 `config.yaml`。
+Daybook 通过唯一的配置文件 **`daybook.yaml`** 进行全局站点配置。
 
-所有外部服务（Waline 评论、D1 统计）都属于**实例级私人服务**。别人克隆后必须部署自己的服务端，**切勿使用作者的生产域名**。
+### 公开配置 `daybook.yaml`
+
+修改根目录的 `daybook.yaml`，填入你的个性化配置。**所有可以通过 Git 公开的内容都放在这里**：
+
+```yaml
+site:
+  title: My Daybook
+  url: https://example.com
+
+profile:
+  author:
+    name: Your Name
+
+comment:
+  enabled: false
+
+stats:
+  enabled: false
+```
+
+（关于完整配置及高级功能，参考仓库中的 `daybook.yaml` 示例）
+
+### Cloudflare D1 统计配置
+
+如果你启用了无后端统计 (`stats.enabled: true`)：
+
+1. 在 Cloudflare Dashboard 的 D1 数据库中创建数据库，并在项目的 `wrangler.jsonc` 中配置绑定 (Binding `DB`)。
+2. **非常重要**：在 Cloudflare Dashboard 设置生产环境变量 `STATS_SALT` 作为防刷盐值。在本地开发时，将盐值写在 `.dev.vars` 文件中：
+
+```env
+STATS_SALT=your_random_secret_string
+```
+
+（请确保 `.dev.vars` 永远不会被提交到 Git 仓库）。
 
 ### Cloudflare Pages 部署
 
 导入 Github 仓库后，使用以下构建配置：
 
-* **Build command**: `npm ci && scripts/build.sh`
+* **Build command**: `npm ci && npm run typecheck && npm run build:js && go run ./cmd/daybook build`
 * **Build output directory**: `public`
 * **Root directory**: `/`
 
-在部署前，务必在 Cloudflare Dashboard (`Settings → Environment variables`) 中添加以下变量：
-
-```env
-DAYBOOK_SITE_NAME=Daybook
-DAYBOOK_SITE_URL=https://example.com
-
-# 评论区（自行部署 Waline 后填写，未配置时将不加载）
-DAYBOOK_WALINE_SERVER_URL=https://comment.example.com
-
-# 全站访问统计
-DAYBOOK_STATS_API_BASE=/api
-```
-
-> **注意 (D1 统计)**: 本项目通过 Cloudflare Pages Functions 实现了无后端访问统计。如果你开启了统计，请在 Dashboard 的 `Settings → Functions` 中绑定 D1 数据库，名称设为 `DB`，并在环境变量中增加 `STATS_SALT` 作为防刷盐值。
-
-### 本地开发与隐私变量配置
-
-Daybook 遵循“代码与配置分离”的最佳实践。**请绝对不要将任何真实 API 链接或密码硬编码在代码中**。
-
-在本地开发时，请复制一份仓库自带的模板文件：
-
-```bash
-cp .env.example .env
-```
-
-然后打开 `.env` 文件，填入你的个人配置。这个文件已经被 `.gitignore` 忽略，绝不会被提交到开源仓库中。
-
-本地启动服务器时，只需使用标准的 `npm` 命令即可，项目底层的脚本会自动读取 `.env` 并在构建时注入这些变量：
-
-```bash
-# 启动本地实时预览
-npm run server
-```
-
----
-
-## 个性化定制 (Customization)
-
-当你克隆本仓库作为自己的博客后，你可以通过修改 **`data/profile.json`** 来一键替换全站的个人标识与搜索引擎优化 (SEO) 描述。无需在代码里到处寻找需要修改的名字。
-
-打开 `data/profile.json`，它的结构如下：
-
-* **`author`**: 
-  * `name`: 你的中文昵称（将显示在左侧边栏、移动端抽屉栏以及首页作者区）。
-  * `nameEn`: 你的英文名（主要用于英文界面的替代显示）。
-  * `avatar`: 你的头像路径，存放在 `static/images/avatar/` 下。
-  * `signatureImage`: 首页显示的个人签名图片路径。
-* **`slogan`**:
-  * `zh` / `en`: 分别对应中英文界面下的座右铭，支持多语言独立配置。
-* **`seo`**:
-  * `homeTitle`: 浏览器标签页标题及搜索引擎索引标题。
-  * `homeDescription`: 网站的 Meta Description 介绍，对搜素引擎和社交媒体卡片预览至关重要。
-
-修改保存后，直接执行 `npm run build` 或 `npm run server`，你的个人信息就会自动生效并更新到所有页面。
 
 ---
 

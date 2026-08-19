@@ -20,7 +20,7 @@ type urlset struct {
 }
 
 func WriteSitemap(outputPath string, cfg config.Config, urls []URL) error {
-	baseURL := strings.TrimSuffix(cfg.BaseURL, "/")
+	baseURL := strings.TrimSuffix(cfg.Site.URL, "/")
 
 	var finalURLs []URL
 	for _, u := range urls {
@@ -46,7 +46,7 @@ func WriteSitemap(outputPath string, cfg config.Config, urls []URL) error {
 }
 
 func WriteRobots(outputPath string, cfg config.Config) error {
-	baseURL := strings.TrimSuffix(cfg.BaseURL, "/")
+	baseURL := strings.TrimSuffix(cfg.Site.URL, "/")
 	sitemapURL := baseURL + "/sitemap.xml"
 
 	content := fmt.Sprintf("User-agent: *\nAllow: /\n\nSitemap: %s\n", sitemapURL)

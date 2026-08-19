@@ -31,7 +31,7 @@ async function hitPath(path: string): Promise<StatsResponse | null> {
   if (!statsEnabled) {
     return null;
   }
-  const apiBase = (document.body.dataset.statsApiBase || "/api").replace(/\/$/, "");
+  const apiBase = "/api";
 
   // Prevent multiple simultaneous hits for the same navigation (e.g. strict mode or duplicate events)
   if (hitPromise && lastHitPath === normalized) {

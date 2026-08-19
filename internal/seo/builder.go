@@ -67,7 +67,7 @@ func buildJSONLD(graph []any) template.JS {
 }
 
 func absURL(cfg config.Config, path string) string {
-	baseURL := strings.TrimSuffix(cfg.BaseURL, "/")
+	baseURL := strings.TrimSuffix(cfg.Site.URL, "/")
 	if !strings.HasPrefix(path, "/") {
 		path = "/" + path
 	}
@@ -102,7 +102,7 @@ func BuildForHome(args BuilderArgs) SEOData {
 			Publisher: &Organization{
 				Type: "Organization",
 				ID:   absURL(args.Config, "/") + "#organization",
-				Name: args.Config.Title,
+				Name: args.Config.Site.Title,
 				URL:  absURL(args.Config, "/"),
 			},
 		},
@@ -113,7 +113,7 @@ func BuildForHome(args BuilderArgs) SEOData {
 		Description:  desc,
 		CanonicalURL: url,
 		PageURL:      url,
-		SiteName:     args.Config.Title,
+		SiteName:     args.Config.Site.Title,
 		Lang:         args.Lang,
 		Type:         "website",
 		Alternates:   args.Alternates,
@@ -168,11 +168,11 @@ func BuildForNote(args BuilderArgs) SEOData {
 	}
 
 	return SEOData{
-		Title:        args.Title + " | " + args.Config.Title,
+		Title:        args.Title + " | " + args.Config.Site.Title,
 		Description:  desc,
 		CanonicalURL: url,
 		PageURL:      url,
-		SiteName:     args.Config.Title,
+		SiteName:     args.Config.Site.Title,
 		Lang:         args.Lang,
 		Type:         "article",
 		Published:    args.Published,
@@ -216,11 +216,11 @@ func BuildForAbout(args BuilderArgs) SEOData {
 	}
 
 	return SEOData{
-		Title:        args.Title + " | " + args.Config.Title,
+		Title:        args.Title + " | " + args.Config.Site.Title,
 		Description:  desc,
 		CanonicalURL: url,
 		PageURL:      url,
-		SiteName:     args.Config.Title,
+		SiteName:     args.Config.Site.Title,
 		Lang:         args.Lang,
 		Type:         "profile",
 		Alternates:   args.Alternates,
@@ -247,11 +247,11 @@ func BuildForCollection(args BuilderArgs) SEOData {
 	}
 
 	return SEOData{
-		Title:        args.Title + " | " + args.Config.Title,
+		Title:        args.Title + " | " + args.Config.Site.Title,
 		Description:  desc,
 		CanonicalURL: url,
 		PageURL:      url,
-		SiteName:     args.Config.Title,
+		SiteName:     args.Config.Site.Title,
 		Lang:         args.Lang,
 		Type:         "website",
 		Alternates:   args.Alternates,
@@ -278,11 +278,11 @@ func BuildForGraph(args BuilderArgs) SEOData {
 	}
 
 	return SEOData{
-		Title:        args.Title + " | " + args.Config.Title,
+		Title:        args.Title + " | " + args.Config.Site.Title,
 		Description:  desc,
 		CanonicalURL: url,
 		PageURL:      url,
-		SiteName:     args.Config.Title,
+		SiteName:     args.Config.Site.Title,
 		Lang:         args.Lang,
 		Type:         "website",
 		Alternates:   args.Alternates,
@@ -323,11 +323,11 @@ func BuildForTag(args BuilderArgs) SEOData {
 	}
 
 	return SEOData{
-		Title:        args.Title + " | " + args.Config.Title,
+		Title:        args.Title + " | " + args.Config.Site.Title,
 		Description:  desc,
 		CanonicalURL: url,
 		PageURL:      url,
-		SiteName:     args.Config.Title,
+		SiteName:     args.Config.Site.Title,
 		Lang:         args.Lang,
 		Type:         "website",
 		Alternates:   args.Alternates,

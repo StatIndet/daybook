@@ -36,3 +36,20 @@ func TestParseNoteRequiresFrontmatter(t *testing.T) {
 		t.Fatal("Parse returned nil error")
 	}
 }
+
+func TestParseDraftNote(t *testing.T) {
+	text := `---
+draft: true
+---
+这里是笔记正文。`
+	note, err := Parse("draft.md", text, "draft")
+	if err != nil {
+		t.Fatalf("Parse returned error: %v", err)
+	}
+	if !note.Draft {
+		t.Fatalf("Draft = %v, want true", note.Draft)
+	}
+	if note.WordCount != 0 {
+		t.Fatalf("WordCount = %d, want 0 for draft", note.WordCount)
+	}
+}
