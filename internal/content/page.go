@@ -16,6 +16,7 @@ type Page struct {
 	Summary        string
 	Draft          bool
 	Body           string
+	BodyStartLine  int
 	SourcePath     string
 	WordCount      int
 	ReadingMinutes int
@@ -39,7 +40,7 @@ func ParsePageFile(path string) (Page, error) {
 }
 
 func ParsePage(sourcePath, text string) (Page, error) {
-	yamlText, body, ok := splitFrontmatter(text)
+	yamlText, body, bodyStartLine, ok := splitFrontmatter(text)
 	if !ok {
 		return Page{}, fmt.Errorf("缺少 YAML frontmatter")
 	}
@@ -50,13 +51,14 @@ func ParsePage(sourcePath, text string) (Page, error) {
 	}
 
 	page := Page{
-		Title:      strings.TrimSpace(meta.Title),
-		Date:       strings.TrimSpace(meta.Date),
-		Updated:    strings.TrimSpace(meta.Updated),
-		Summary:    strings.TrimSpace(meta.Summary),
-		Draft:      meta.Draft,
-		Body:       strings.TrimSpace(body),
-		SourcePath: sourcePath,
+		Title:         strings.TrimSpace(meta.Title),
+		Date:          strings.TrimSpace(meta.Date),
+		Updated:       strings.TrimSpace(meta.Updated),
+		Summary:       strings.TrimSpace(meta.Summary),
+		Draft:         meta.Draft,
+		Body:          body,
+		BodyStartLine: bodyStartLine,
+		SourcePath:    sourcePath,
 	}
 
 	page.WordCount = countWords(page.Body)

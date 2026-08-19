@@ -110,7 +110,33 @@ func parseBoolEnv(key string) bool {
 	return val == "true" || val == "1" || val == "on" || val == "yes"
 }
 
+func loadDotEnv() {
+	data, err := os.ReadFile(".env")
+	if err != nil {
+		return
+	}
+	lines := strings.Split(string(data), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) == 2 {
+			key := strings.TrimSpace(parts[0])
+			val := strings.TrimSpace(parts[1])
+			val = strings.Trim(val, `"'`)
+			// Only set if not already present in environment
+			if _, exists := os.LookupEnv(key); !exists {
+				os.Setenv(key, val)
+			}
+		}
+	}
+}
+
 func Load() (Config, error) {
+	loadDotEnv()
+
 	cfg := Config{
 		Title:     parseStringEnv("DAYBOOK_SITE_NAME", "Daybook"),
 		BaseURL:   parseStringEnv("DAYBOOK_SITE_URL", "http://localhost:1313"),

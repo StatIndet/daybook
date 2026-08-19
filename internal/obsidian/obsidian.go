@@ -35,6 +35,7 @@ type Attachment struct {
 type Index struct {
 	targets             map[string]Target
 	attachments         map[string]Attachment
+	allAttachments      []Attachment
 	publicPath          string
 	appAttachmentFolder string
 }
@@ -44,6 +45,7 @@ type Result struct {
 	HTML        map[string]string
 	Links       []Link
 	Attachments []Attachment
+	Diagnostics []Diagnostic
 }
 
 type Link struct {
@@ -66,6 +68,7 @@ func NewIndex(targets []Target, attachments []Attachment, publicPath string, app
 	index := Index{
 		targets:             make(map[string]Target),
 		attachments:         make(map[string]Attachment),
+		allAttachments:      attachments,
 		publicPath:          publicPath,
 		appAttachmentFolder: appAttachmentFolder,
 	}
@@ -84,7 +87,6 @@ func NewIndex(targets []Target, attachments []Attachment, publicPath string, app
 		nameKey := normalize(att.Name)
 		if basenameCount[nameKey] > 1 {
 			if _, exists := index.attachments[nameKey]; !exists {
-				fmt.Printf("[obsidian] ambiguous attachment basename: %s matched multiple files\n", att.Name)
 				index.attachments[nameKey] = Attachment{Name: "ambiguous_marker"}
 			}
 		} else {
@@ -95,7 +97,7 @@ func NewIndex(targets []Target, attachments []Attachment, publicPath string, app
 	return index
 }
 
-func Process(input string, index Index, sourcePath string) Result {
+func Process(input string, index Index, sourcePath string, bodyStartLine int) Result {
 	result := Result{
 		Text: input,
 		HTML: make(map[string]string),
@@ -110,7 +112,15 @@ func Process(input string, index Index, sourcePath string) Result {
 	result.Text = replaceImageHTML(result.Text, false, result.HTML)
 	result.Text = rewriteMarkdownImagePaths(result.Text)
 	
+	lastSearchIndex := 0
+
 	result.Text = markdownImagePattern.ReplaceAllStringFunc(result.Text, func(match string) string {
+		matchStart := strings.Index(input[lastSearchIndex:], match)
+		if matchStart != -1 {
+			matchStart += lastSearchIndex
+			lastSearchIndex = matchStart + len(match)
+		}
+
 		parts := markdownImagePattern.FindStringSubmatch(match)
 		urlStr := parts[2]
 		basename := filepath.Base(urlStr)
@@ -118,19 +128,38 @@ func Process(input string, index Index, sourcePath string) Result {
 			basename = basename[:index]
 		}
 		
-		// Markdown link might be ![alt](path) - use full urlStr as target, stripping query
 		targetUrl := urlStr
 		if index := strings.IndexAny(targetUrl, "?#"); index >= 0 {
 			targetUrl = targetUrl[:index]
 		}
 		
-		if att, ok := index.ResolveAttachment(targetUrl, sourcePath); ok {
+		if att, ok, candidates := index.ResolveAttachment(targetUrl, sourcePath); ok {
 			result.Attachments = append(result.Attachments, att)
+		} else if len(candidates) > 0 {
+			line, col, snippet := getLineColSnippet(input, matchStart, bodyStartLine)
+			result.Diagnostics = append(result.Diagnostics, Diagnostic{
+				Severity:   "warning",
+				Code:       "obsidian/ambiguous-attachment",
+				Message:    fmt.Sprintf("attachment %q matches multiple files", targetUrl),
+				SourcePath: sourcePath,
+				Line:       line,
+				Column:     col,
+				Snippet:    snippet,
+				Candidates: candidates,
+			})
 		}
 		return match
 	})
 	
+	lastSearchIndex = 0
+
 	result.Text = wikilinkPattern.ReplaceAllStringFunc(result.Text, func(match string) string {
+		matchStart := strings.Index(input[lastSearchIndex:], match)
+		if matchStart != -1 {
+			matchStart += lastSearchIndex
+			lastSearchIndex = matchStart + len(match)
+		}
+
 		parts := wikilinkPattern.FindStringSubmatch(match)
 		isEmbed := parts[1] == "!"
 		inner := strings.TrimSpace(parts[2])
@@ -141,7 +170,7 @@ func Process(input string, index Index, sourcePath string) Result {
 		targetText, label := splitAlias(inner)
 
 		// 1. Check if it's an attachment
-		if att, ok := index.ResolveAttachment(targetText, sourcePath); ok {
+		if att, ok, candidates := index.ResolveAttachment(targetText, sourcePath); ok {
 			result.Attachments = append(result.Attachments, att)
 			if isEmbed {
 				html, ok := renderAttachmentEmbed(att, label)
@@ -150,11 +179,44 @@ func Process(input string, index Index, sourcePath string) Result {
 					result.HTML[token] = html
 					return token
 				}
-				// If not ok (e.g., unsupported type), we could return a warning
-				return fmt.Sprintf(`[obsidian] unsupported attachment embed: %s`, match)
+				line, col, snippet := getLineColSnippet(input, matchStart, bodyStartLine)
+				result.Diagnostics = append(result.Diagnostics, Diagnostic{
+					Severity:   "warning",
+					Code:       "obsidian/unsupported-attachment",
+					Message:    fmt.Sprintf("unsupported attachment embed: %q", targetText),
+					SourcePath: sourcePath,
+					Line:       line,
+					Column:     col,
+					Snippet:    snippet,
+				})
+				return match
 			}
-			// Regular link to attachment
 			return "[" + escapeMarkdownLabel(label) + "](" + escapeMarkdownURL(att.PublicURL) + ")"
+		} else if len(candidates) > 0 {
+			line, col, snippet := getLineColSnippet(input, matchStart, bodyStartLine)
+			result.Diagnostics = append(result.Diagnostics, Diagnostic{
+				Severity:   "warning",
+				Code:       "obsidian/ambiguous-attachment",
+				Message:    fmt.Sprintf("attachment %q matches multiple files", targetText),
+				SourcePath: sourcePath,
+				Line:       line,
+				Column:     col,
+				Snippet:    snippet,
+				Candidates: candidates,
+			})
+			return fmt.Sprintf(`<a class="wiki-link is-unresolved" href="#">%s</a>`, stdhtml.EscapeString(targetText))
+		} else if isEmbed || IsImageExt(filepath.Ext(targetText)) || IsAudioExt(filepath.Ext(targetText)) || IsVideoExt(filepath.Ext(targetText)) || filepath.Ext(targetText) == ".pdf" {
+			line, col, snippet := getLineColSnippet(input, matchStart, bodyStartLine)
+			result.Diagnostics = append(result.Diagnostics, Diagnostic{
+				Severity:   "warning",
+				Code:       "obsidian/unresolved-attachment",
+				Message:    fmt.Sprintf("attachment %q could not be resolved", targetText),
+				SourcePath: sourcePath,
+				Line:       line,
+				Column:     col,
+				Snippet:    snippet,
+			})
+			return fmt.Sprintf(`<a class="wiki-link is-unresolved" href="#">%s</a>`, stdhtml.EscapeString(targetText))
 		}
 
 		// 2. Check if it's a note
@@ -174,7 +236,16 @@ func Process(input string, index Index, sourcePath string) Result {
 		result.Links = append(result.Links, link)
 
 		if !ok {
-			fmt.Printf("[obsidian] unresolved embed: %s\n", match)
+			line, col, snippet := getLineColSnippet(input, matchStart, bodyStartLine)
+			result.Diagnostics = append(result.Diagnostics, Diagnostic{
+				Severity:   "warning",
+				Code:       "obsidian/unresolved-note",
+				Message:    fmt.Sprintf("note %q could not be resolved", noteText),
+				SourcePath: sourcePath,
+				Line:       line,
+				Column:     col,
+				Snippet:    snippet,
+			})
 			fallbackText := label
 			if fallbackText == "" {
 				fallbackText = inner
@@ -187,13 +258,34 @@ func Process(input string, index Index, sourcePath string) Result {
 			if id := target.headingID(headingText); id != "" {
 				href += "#" + url.PathEscape(id)
 			} else if !strings.HasPrefix(headingText, "^") {
-				fmt.Printf("[obsidian] missing heading: %s in %s\n", headingText, target.Slug)
+				line, col, snippet := getLineColSnippet(input, matchStart, bodyStartLine)
+				result.Diagnostics = append(result.Diagnostics, Diagnostic{
+					Severity:   "warning",
+					Code:       "obsidian/missing-heading",
+					Message:    fmt.Sprintf("missing heading: %q in %s", headingText, target.Slug),
+					SourcePath: sourcePath,
+					Line:       line,
+					Column:     col,
+					Snippet:    snippet,
+				})
 			}
 		}
 
 		if isEmbed {
 			// Page / Heading / Block embed
-			html := renderNoteEmbed(target, headingText, href, index)
+			html, missingBlock := renderNoteEmbed(target, headingText, href, index)
+			if missingBlock {
+				line, col, snippet := getLineColSnippet(input, matchStart, bodyStartLine)
+				result.Diagnostics = append(result.Diagnostics, Diagnostic{
+					Severity:   "warning",
+					Code:       "obsidian/missing-block",
+					Message:    fmt.Sprintf("missing block or section: %q in %s", headingText, target.Slug),
+					SourcePath: sourcePath,
+					Line:       line,
+					Column:     col,
+					Snippet:    snippet,
+				})
+			}
 			token := fmt.Sprintf("DAYBOOK_HTML_EMBED_%d", len(result.HTML))
 			result.HTML[token] = html
 			return token
@@ -233,7 +325,7 @@ func (index Index) find(key string) (Target, bool) {
 }
 
 // ResolveAttachment resolves an attachment reference according to Obsidian rules.
-func (idx Index) ResolveAttachment(target string, sourcePath string) (Attachment, bool) {
+func (idx Index) ResolveAttachment(target string, sourcePath string) (Attachment, bool, []string) {
 	// target is the raw link inside ![[target]]. It might be "a.png" or "sub/a.png"
 	
 	// Helper to lookup exact path in our map
@@ -248,7 +340,7 @@ func (idx Index) ResolveAttachment(target string, sourcePath string) (Attachment
 
 	// 1. Explicit Vault-relative target
 	if att, ok := lookupPath(target); ok {
-		return att, true
+		return att, true, nil
 	}
 
 	var noteDir string
@@ -262,7 +354,7 @@ func (idx Index) ResolveAttachment(target string, sourcePath string) (Attachment
 	// 2. Current note-relative path
 	if noteDir != "" {
 		if att, ok := lookupPath(path.Join(noteDir, target)); ok {
-			return att, true
+			return att, true, nil
 		}
 	}
 
@@ -279,13 +371,13 @@ func (idx Index) ResolveAttachment(target string, sourcePath string) (Attachment
 		}
 		if searchDir != "" {
 			if att, ok := lookupPath(path.Join(searchDir, target)); ok {
-				return att, true
+				return att, true, nil
 			}
 		}
 	} else {
 		// Fixed directory
 		if att, ok := lookupPath(path.Join(folder, target)); ok {
-			return att, true
+			return att, true, nil
 		}
 	}
 
@@ -295,13 +387,18 @@ func (idx Index) ResolveAttachment(target string, sourcePath string) (Attachment
 	att, ok := idx.attachments[normBasename]
 	if ok {
 		if att.Name == "ambiguous_marker" {
-			fmt.Printf("[obsidian] ambiguous attachment %q requested in %s\n", target, sourcePath)
-			return Attachment{}, false
+			var candidates []string
+			for _, a := range idx.allAttachments {
+				if normalize(a.Name) == normBasename {
+					candidates = append(candidates, a.RelPath)
+				}
+			}
+			return Attachment{}, false, candidates
 		}
-		return att, true
+		return att, true, nil
 	}
 
-	return Attachment{}, false
+	return Attachment{}, false, nil
 }
 
 func (target Target) headingID(text string) string {
@@ -585,23 +682,24 @@ func extractHeadingSection(content string, targetHeading string) string {
 	return strings.Join(section, "\n")
 }
 
-func renderNoteEmbed(target Target, heading string, href string, index Index) string {
+func renderNoteEmbed(target Target, heading string, href string, index Index) (string, bool) {
 	var rawMarkdown string
 	isBlockOrSection := false
+	missingBlock := false
 
 	if heading != "" && strings.HasPrefix(heading, "^") {
 		if block, ok := target.Blocks[heading[1:]]; ok {
 			rawMarkdown = block
 			isBlockOrSection = true
 		} else {
-			fmt.Printf("[obsidian] missing block: %s in %s\n", heading, target.Slug)
-			return fmt.Sprintf(`<blockquote class="obsidian-embed obsidian-note-embed" data-embed-type="note"><div class="obsidian-embed-content">未找到目标区块</div><a href="%s" data-tooltip="在新页面打开" aria-label="在新页面打开" class="obsidian-embed-link" target="_blank" rel="noopener"><span class="material-symbol">open_in_new</span></a></blockquote>`, escapeMarkdownURL(href))
+			missingBlock = true
+			return fmt.Sprintf(`<blockquote class="obsidian-embed obsidian-note-embed" data-embed-type="note"><div class="obsidian-embed-content">未找到目标区块</div><a href="%s" data-tooltip="在新页面打开" aria-label="在新页面打开" class="obsidian-embed-link" target="_blank" rel="noopener"><span class="material-symbol">open_in_new</span></a></blockquote>`, escapeMarkdownURL(href)), missingBlock
 		}
 	} else if heading != "" {
 		rawMarkdown = extractHeadingSection(target.Content, heading)
 		if rawMarkdown == "" {
-			fmt.Printf("[obsidian] missing heading content: %s in %s\n", heading, target.Slug)
-			return fmt.Sprintf(`<blockquote class="obsidian-embed obsidian-note-embed" data-embed-type="note"><div class="obsidian-embed-content">未找到目标小节</div><a href="%s" data-tooltip="在新页面打开" aria-label="在新页面打开" class="obsidian-embed-link" target="_blank" rel="noopener"><span class="material-symbol">open_in_new</span></a></blockquote>`, escapeMarkdownURL(href))
+			missingBlock = true
+			return fmt.Sprintf(`<blockquote class="obsidian-embed obsidian-note-embed" data-embed-type="note"><div class="obsidian-embed-content">未找到目标小节</div><a href="%s" data-tooltip="在新页面打开" aria-label="在新页面打开" class="obsidian-embed-link" target="_blank" rel="noopener"><span class="material-symbol">open_in_new</span></a></blockquote>`, escapeMarkdownURL(href)), missingBlock
 		} else {
 			isBlockOrSection = true
 		}
@@ -620,7 +718,7 @@ func renderNoteEmbed(target Target, heading string, href string, index Index) st
 		safeMarkdown := strings.ReplaceAll(rawMarkdown, "![[", "[[")
 
 		// Process standard wikilinks with the target's SourcePath context
-		result := Process(safeMarkdown, index, target.SourcePath)
+		result := Process(safeMarkdown, index, target.SourcePath, 1)
 
 		// Convert to HTML
 		htmlBytes, err := markdown.ToHTML(result.Text)
@@ -635,7 +733,7 @@ func renderNoteEmbed(target Target, heading string, href string, index Index) st
 		contentHTML = rawMarkdown
 	}
 
-	return fmt.Sprintf(`<blockquote class="obsidian-embed obsidian-note-embed" data-embed-type="note"><div class="obsidian-embed-content">%s</div><a href="%s" data-tooltip="在新页面打开" aria-label="在新页面打开" class="obsidian-embed-link" target="_blank" rel="noopener"><span class="material-symbol">open_in_new</span></a></blockquote>`, contentHTML, escapeMarkdownURL(href))
+	return fmt.Sprintf(`<blockquote class="obsidian-embed obsidian-note-embed" data-embed-type="note"><div class="obsidian-embed-content">%s</div><a href="%s" data-tooltip="在新页面打开" aria-label="在新页面打开" class="obsidian-embed-link" target="_blank" rel="noopener"><span class="material-symbol">open_in_new</span></a></blockquote>`, contentHTML, escapeMarkdownURL(href)), missingBlock
 }
 
 func safeSize(value string) bool {

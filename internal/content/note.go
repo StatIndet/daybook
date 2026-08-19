@@ -24,6 +24,7 @@ type Note struct {
 	Math           bool
 	Pin            bool
 	Body           string
+	BodyStartLine  int
 	URL            string
 	SourcePath     string
 	Toc            *bool
@@ -111,7 +112,7 @@ func ParseFile(path string, slug string) (Note, error) {
 }
 
 func Parse(sourcePath, text string, slug string) (Note, error) {
-	yamlText, body, ok := splitFrontmatter(text)
+	yamlText, body, bodyStartLine, ok := splitFrontmatter(text)
 	if !ok {
 		return Note{}, fmt.Errorf("缺少 YAML frontmatter")
 	}
@@ -122,22 +123,23 @@ func Parse(sourcePath, text string, slug string) (Note, error) {
 	}
 
 	note := Note{
-		Title:      strings.TrimSpace(meta.Title),
-		Date:       strings.TrimSpace(meta.Date),
-		Updated:    strings.TrimSpace(meta.Updated),
-		Slug:       slug,
-		Lang:       strings.TrimSpace(meta.Lang),
-		I18nKey:    strings.TrimSpace(meta.I18nKey),
-		Tags:       meta.Tags,
-		Summary:    strings.TrimSpace(meta.Summary),
-		Draft:      meta.Draft,
-		Listed:     meta.Listed,
-		Math:       meta.Math,
-		Pin:        meta.Pin,
-		Toc:        meta.Toc,
-		Comment:    meta.Comment,
-		Body:       strings.TrimSpace(body),
-		SourcePath: sourcePath,
+		Title:         strings.TrimSpace(meta.Title),
+		Date:          strings.TrimSpace(meta.Date),
+		Updated:       strings.TrimSpace(meta.Updated),
+		Slug:          slug,
+		Lang:          strings.TrimSpace(meta.Lang),
+		I18nKey:       strings.TrimSpace(meta.I18nKey),
+		Tags:          meta.Tags,
+		Summary:       strings.TrimSpace(meta.Summary),
+		Draft:         meta.Draft,
+		Listed:        meta.Listed,
+		Math:          meta.Math,
+		Pin:           meta.Pin,
+		Toc:           meta.Toc,
+		Comment:       meta.Comment,
+		Body:          body,
+		BodyStartLine: bodyStartLine,
+		SourcePath:    sourcePath,
 	}
 	note.URL = "/notes/" + note.Slug + "/"
 	note.CanonicalPath = "/notes/" + note.Slug + "/"
@@ -156,19 +158,30 @@ func Parse(sourcePath, text string, slug string) (Note, error) {
 	return note, nil
 }
 
-func splitFrontmatter(text string) (string, string, bool) {
+func splitFrontmatter(text string) (string, string, int, bool) {
+	// split on "\n" directly will lose \r, let's just split by "\n"
 	lines := strings.Split(text, "\n")
 	if len(lines) < 3 || strings.TrimSpace(lines[0]) != "---" {
-		return "", text, false
+		return "", strings.TrimSpace(text), 1, false
 	}
 
 	for i := 1; i < len(lines); i++ {
 		if strings.TrimSpace(lines[i]) == "---" {
-			return strings.Join(lines[1:i], "\n"), strings.Join(lines[i+1:], "\n"), true
+			// Find actual start line of body by skipping leading blank lines
+			startLineOffset := 0
+			bodyLines := lines[i+1:]
+			for startLineOffset < len(bodyLines) && strings.TrimSpace(bodyLines[startLineOffset]) == "" {
+				startLineOffset++
+			}
+			body := strings.Join(bodyLines[startLineOffset:], "\n")
+			body = strings.TrimRight(body, " \t\r\n") // Only trim trailing, leading is already handled
+			
+			// body starts at line i+2+startLineOffset (1-based index)
+			return strings.Join(lines[1:i], "\n"), body, i + 2 + startLineOffset, true
 		}
 	}
 
-	return "", text, false
+	return "", strings.TrimSpace(text), 1, false
 }
 
 func validate(note Note) error {

@@ -149,6 +149,8 @@ func Build(options Options) (BuildResult, error) {
 
 	var allSiteURLs []sitemap.URL
 
+	var allDiagnostics []obsidian.Diagnostic
+
 	langs := []string{"zh-CN", "en"}
 	for _, lang := range langs {
 		langPrefix := ""
@@ -182,7 +184,8 @@ func Build(options Options) (BuildResult, error) {
 				langNotes = append(langNotes, *note)
 			}
 
-			processed := obsidian.Process(note.Body, obsidianIndex, note.SourcePath)
+			processed := obsidian.Process(note.Body, obsidianIndex, note.SourcePath, note.BodyStartLine)
+			allDiagnostics = append(allDiagnostics, processed.Diagnostics...)
 			document, err := markdown.ToHTMLWithHeadings(processed.Text)
 			if err != nil {
 				return BuildResult{}, fmt.Errorf("处理笔记 %s: %w", note.SourcePath, err)
@@ -190,12 +193,12 @@ func Build(options Options) (BuildResult, error) {
 			document.HTML = obsidian.RestoreHTML(document.HTML, processed.HTML)
 			readingTime := estimateReadingTime(note.Body)
 
-			slugToUse := note.Slug
-			if lang == "en" {
-				slugToUse = note.I18nKey // In English context, we could use I18nKey as slug for links to keep them stable, but actually note.Slug is what we have. Let's use note.Slug.
+			transitionIdentity := group.I18nKey
+			if transitionIdentity == "" {
+				transitionIdentity = note.Slug
 			}
-			titleTransitionName := transitionName("note-title", slugToUse)
-			dateTransitionName := transitionName("note-date", slugToUse)
+			titleTransitionName := transitionName("note-title", transitionIdentity)
+			dateTransitionName := transitionName("note-date", transitionIdentity)
 
 			var tagNodes []graph.TagNode
 			var displayTags []string
@@ -276,7 +279,7 @@ func Build(options Options) (BuildResult, error) {
 				}
 			}
 
-			titleLayoutHTML := titlelayout.GenerateHTML(note.Title, slugToUse)
+			titleLayoutHTML := titlelayout.GenerateHTML(note.Title, note.Slug)
 
 			hasTranslation := len(group.Versions) > 1
 
@@ -540,7 +543,8 @@ func Build(options Options) (BuildResult, error) {
 		if err != nil {
 			return BuildResult{}, fmt.Errorf("读取关于页: %w", err)
 		}
-		aboutProcessed := obsidian.Process(aboutPage.Body, obsidianIndex, aboutPage.SourcePath)
+		aboutProcessed := obsidian.Process(aboutPage.Body, obsidianIndex, aboutPage.SourcePath, aboutPage.BodyStartLine)
+		allDiagnostics = append(allDiagnostics, aboutProcessed.Diagnostics...)
 		aboutDocument, err := markdown.ToHTMLWithHeadings(aboutProcessed.Text)
 		if err != nil {
 			return BuildResult{}, fmt.Errorf("处理关于页: %w", err)
@@ -759,7 +763,66 @@ func Build(options Options) (BuildResult, error) {
 		return BuildResult{}, err
 	}
 
+	deduped := deduplicateDiagnostics(allDiagnostics)
+	printDiagnostics(deduped)
+
 	return BuildResult{Notes: allNotes, Skipped: skipped}, nil
+}
+
+func deduplicateDiagnostics(diags []obsidian.Diagnostic) []obsidian.Diagnostic {
+	seen := make(map[string]bool)
+	var result []obsidian.Diagnostic
+	for _, d := range diags {
+		key := fmt.Sprintf("%s|%s|%d|%d|%s", d.Code, d.SourcePath, d.Line, d.Column, d.Message)
+		if !seen[key] {
+			seen[key] = true
+			result = append(result, d)
+		}
+	}
+	return result
+}
+
+func printDiagnostics(diags []obsidian.Diagnostic) {
+	if len(diags) == 0 {
+		fmt.Println("[daybook] build completed with no content warnings")
+		return
+	}
+
+	summary := make(map[string]int)
+	for _, d := range diags {
+		summary[d.Code]++
+		
+		fmt.Printf("\n%s[%s]: %s\n", d.Severity, d.Code, d.Message)
+		fmt.Printf("  --> %s:%d:%d\n", d.SourcePath, d.Line, d.Column)
+		if d.Snippet != "" {
+			fmt.Printf("   |\n")
+			fmt.Printf("%-2d | %s\n", d.Line, d.Snippet)
+			
+			// simple underline
+			indent := "   | "
+			for i := 0; i < d.Column-1; i++ {
+				indent += " "
+			}
+			fmt.Printf("%s^~~~~~\n", indent)
+		}
+
+		if len(d.Candidates) > 0 {
+			fmt.Printf("\n  candidates:\n")
+			for _, c := range d.Candidates {
+				fmt.Printf("    %s\n", c)
+			}
+		}
+	}
+
+	fmt.Printf("\n[daybook] build completed with %d warnings:\n", len(diags))
+	for code, count := range summary {
+		name := strings.TrimPrefix(code, "obsidian/")
+		name = strings.ReplaceAll(name, "-", " ")
+		if count > 1 {
+			name += "s"
+		}
+		fmt.Printf("  %d %s\n", count, name)
+	}
 }
 
 func estimateReadingTime(text string) string {
