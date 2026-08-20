@@ -202,13 +202,7 @@
 .notes-tools.is-tags-open .notes-tags-panel {
   max-height: clamp(15rem, 50vh, 25rem);
   opacity: 1;
-  overscroll-behavior: contain;
-  overflow-x: hidden;
-  overflow-y: auto;
-  padding-right: 0.25rem;
   pointer-events: auto;
-  scrollbar-color: color-mix(in srgb, var(--color-muted) 45%, transparent) transparent;
-  scrollbar-width: thin;
   transform: translateY(0);
   transition:
     max-height 360ms var(--notes-tool-shift-ease),
@@ -218,14 +212,53 @@
   visibility: visible;
 }
 
-.notes-tags-panel::-webkit-scrollbar {
-  width: 6px;
+.notes-tags-panel {
+  position: relative;
+  overflow: hidden;
 }
 
-.notes-tags-panel::-webkit-scrollbar-thumb {
+.notes-tags-scroll-viewport {
+  height: 100%;
+  max-height: inherit;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  padding-right: 0.25rem;
+}
+
+.notes-tags-scroll-viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.notes-tags-scrollbar {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 220ms ease;
+  visibility: hidden;
+}
+
+.notes-tags-scrollbar.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.notes-tags-scrollbar-thumb {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 100%;
   background: color-mix(in srgb, var(--color-muted) 35%, transparent);
   border-radius: 999px;
+  will-change: transform, height;
 }
+
+
 
 .notes-search-input {
   background: color-mix(in srgb, var(--color-paper) 72%, transparent);

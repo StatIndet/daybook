@@ -228,6 +228,79 @@ func isValidRemoteURL(rawURL string) bool {
 	return scheme == "http" || scheme == "https"
 }
 
+
+type MediaEmbed struct {
+	Kind     string
+	URL      string
+	Alt      string
+	Caption  string
+	Width    string
+	Height   string
+	Align    string
+	Poster   string
+	Autoplay bool
+	Muted    bool
+	Loop     bool
+}
+
+func RenderMediaEmbed(m MediaEmbed) string {
+	classes := "media-embed media-" + m.Kind
+	if m.Align != "" {
+		classes += " is-" + m.Align
+	}
+
+	var style string
+	if m.Width != "" && m.Kind == "image" {
+		style = fmt.Sprintf(` style="--image-width: %spx"`, m.Width)
+	}
+
+	var attrs []string
+	if m.Width != "" && m.Kind != "image" {
+		attrs = append(attrs, fmt.Sprintf(`width="%s"`, escapeAttr(m.Width)))
+	}
+	if m.Height != "" {
+		attrs = append(attrs, fmt.Sprintf(`height="%s"`, escapeAttr(m.Height)))
+	}
+	if m.Poster != "" {
+		attrs = append(attrs, fmt.Sprintf(`poster="%s"`, escapeAttr(m.Poster)))
+	}
+	if m.Autoplay {
+		attrs = append(attrs, "autoplay")
+	}
+	if m.Muted {
+		attrs = append(attrs, "muted")
+	}
+	if m.Loop {
+		attrs = append(attrs, "loop")
+	}
+
+	attrStr := strings.Join(attrs, " ")
+	if len(attrStr) > 0 {
+		attrStr = " " + attrStr
+	}
+
+	var inner string
+	switch m.Kind {
+	case "image":
+		inner = fmt.Sprintf(`<img src="%s" alt="%s" loading="lazy" decoding="async">`, escapeAttr(m.URL), escapeAttr(m.Alt))
+	case "video":
+		inner = fmt.Sprintf(`<video controls preload="metadata" src="%s"%s></video>`, escapeAttr(m.URL), attrStr)
+	case "audio":
+		inner = fmt.Sprintf(`<audio controls preload="metadata" src="%s"%s></audio>`, escapeAttr(m.URL), attrStr)
+	case "pdf":
+		// Provide default height if not specified
+		if m.Height == "" {
+			attrStr += ` height="800"`
+		}
+		inner = fmt.Sprintf(`<iframe src="%s" loading="lazy" title="%s" frameborder="0"%s></iframe>`, escapeAttr(m.URL), escapeAttr(m.Alt), attrStr)
+	}
+
+	if m.Caption != "" {
+		return fmt.Sprintf(`<figure class="%s"%s>%s<figcaption>%s</figcaption></figure>`, classes, style, inner, stdhtml.EscapeString(m.Caption))
+	}
+	return fmt.Sprintf(`<figure class="%s"%s>%s</figure>`, classes, style, inner)
+}
+
 func renderImageEmbed(attrs map[string]string) (string, bool) {
 	rawURL := strings.TrimSpace(attrs["url"])
 	if !isValidRemoteURL(rawURL) {

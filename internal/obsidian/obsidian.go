@@ -105,6 +105,10 @@ func NewIndex(targets []Target, attachments []Attachment, publicPath string, app
 }
 
 func Process(input string, index Index, sourcePath string, bodyStartLine int) Result {
+	return processWithContext(input, index, sourcePath, bodyStartLine, 0, nil)
+}
+
+func processWithContext(input string, index Index, sourcePath string, bodyStartLine int, embedDepth int, visited map[string]bool) Result {
 	result := Result{
 		Text: input,
 		HTML: make(map[string]string),
@@ -213,7 +217,7 @@ func Process(input string, index Index, sourcePath string, bodyStartLine int) Re
 				}
 
 				if isEmbed {
-					html, missingBlock := renderNoteEmbed(target, headingText, href, index)
+					html, missingBlock := renderNoteEmbed(target, headingText, href, index, embedDepth, visited)
 					if missingBlock {
 						line, col, snippet := getLineColSnippet(input, matchStart, bodyStartLine)
 						result.Diagnostics = append(result.Diagnostics, Diagnostic{
@@ -598,37 +602,33 @@ func renderAttachmentEmbed(att Attachment, label string) (string, bool) {
 	if label != "" {
 		alt = strings.SplitN(label, "|", 2)[0]
 	}
-	escapedAlt := stdhtml.EscapeString(alt)
+
+	m := markdown.MediaEmbed{
+		URL:   att.PublicURL,
+		Alt:   alt,
+		Width: attrs.Width,
+		Align: attrs.Align,
+	}
+
+	// We only map label to Caption if it explicitly looks like a caption? 
+	// The user said: "只有用户显式指定 caption 时，才显示 figcaption。本地 alias 如果当前存在可合理映射为 caption 的语义，再按照现有语法兼容；不要随便把 center/500 当 caption。"
+	// If label is not empty and not just width/align, we can use it as Alt. Should it be Caption?
+	// Obsidian natively uses the alias (label) as Alt text, not caption. We'll leave Caption empty unless it's explicitly supported in some way. We'll just use it for Alt.
 
 	switch att.MediaType {
 	case "pdf":
-		return fmt.Sprintf(`<figure class="obsidian-embed obsidian-pdf"><iframe src="%s" loading="lazy" title="%s"></iframe><figcaption><a href="%s" target="_blank" rel="noopener">打开 PDF：%s</a></figcaption></figure>`, att.PublicURL, escapedAlt, att.PublicURL, escapedAlt), true
+		m.Kind = "pdf"
+		m.Alt = alt
+		return markdown.RenderMediaEmbed(m), true
 	case "image":
-		var style string
-		if attrs.Width != "" {
-			style = fmt.Sprintf(` style="--image-width: %spx"`, attrs.Width)
-		}
-		classes := "obsidian-embed obsidian-image"
-		if attrs.Align != "" {
-			classes += " is-" + attrs.Align
-		}
-		return fmt.Sprintf(`<figure class="%s"%s><img src="%s" alt="%s" loading="lazy" decoding="async"></figure>`, classes, style, att.PublicURL, escapedAlt), true
+		m.Kind = "image"
+		return markdown.RenderMediaEmbed(m), true
 	case "audio":
-		var classes = "obsidian-embed obsidian-audio"
-		if attrs.Align == "center" {
-			classes += " is-center" // Assuming similar align class for simplicity, wait, user wants `class="obsidian-embed obsidian-audio is-center"` if center? I'll use standard classes and CSS.
-		}
-		return fmt.Sprintf(`<figure class="%s"><audio controls preload="metadata" src="%s"></audio><figcaption>%s</figcaption></figure>`, classes, att.PublicURL, escapedAlt), true
+		m.Kind = "audio"
+		return markdown.RenderMediaEmbed(m), true
 	case "video":
-		var classes = "obsidian-embed obsidian-video"
-		if attrs.Align != "" {
-			classes += " is-" + attrs.Align
-		}
-		var widthAttr string
-		if attrs.Width != "" {
-			widthAttr = fmt.Sprintf(` width="%s"`, stdhtml.EscapeString(attrs.Width))
-		}
-		return fmt.Sprintf(`<figure class="%s"><video controls preload="metadata" src="%s"%s></video><figcaption>%s</figcaption></figure>`, classes, att.PublicURL, widthAttr, escapedAlt), true
+		m.Kind = "video"
+		return markdown.RenderMediaEmbed(m), true
 	}
 
 	return "", false
@@ -743,15 +743,33 @@ func extractHeadingSection(content string, targetHeading string) string {
 	return strings.Join(section, "\n")
 }
 
-func renderNoteEmbed(target Target, heading string, href string, index Index) (string, bool) {
+func renderNoteEmbed(target Target, heading string, href string, index Index, embedDepth int, visited map[string]bool) (string, bool) {
+	if visited == nil {
+		visited = make(map[string]bool)
+	}
+
+	if embedDepth > 5 || visited[target.SourcePath] {
+		label := target.Title
+		if heading != "" {
+			label += "#" + heading
+		}
+		fallback := fmt.Sprintf(`<a class="wiki-link is-unresolved" href="%s" data-tooltip="Cycle detected">%s</a>`, escapeMarkdownURL(href), stdhtml.EscapeString(label))
+		return fallback, false
+	}
+	
+	newVisited := make(map[string]bool)
+	for k, v := range visited {
+		newVisited[k] = v
+	}
+	newVisited[target.SourcePath] = true
+
 	var rawMarkdown string
-	isBlockOrSection := false
 	missingBlock := false
+	isWholeNote := false
 
 	if heading != "" && strings.HasPrefix(heading, "^") {
 		if block, ok := target.Blocks[heading[1:]]; ok {
 			rawMarkdown = block
-			isBlockOrSection = true
 		} else {
 			missingBlock = true
 			return fmt.Sprintf(`<blockquote class="obsidian-embed obsidian-note-embed" data-embed-type="note"><div class="obsidian-embed-content">未找到目标区块</div><a href="%s" data-tooltip="在新页面打开" aria-label="在新页面打开" class="obsidian-embed-link" target="_blank" rel="noopener"><span class="material-symbol">open_in_new</span></a></blockquote>`, escapeMarkdownURL(href)), missingBlock
@@ -761,37 +779,26 @@ func renderNoteEmbed(target Target, heading string, href string, index Index) (s
 		if rawMarkdown == "" {
 			missingBlock = true
 			return fmt.Sprintf(`<blockquote class="obsidian-embed obsidian-note-embed" data-embed-type="note"><div class="obsidian-embed-content">未找到目标小节</div><a href="%s" data-tooltip="在新页面打开" aria-label="在新页面打开" class="obsidian-embed-link" target="_blank" rel="noopener"><span class="material-symbol">open_in_new</span></a></blockquote>`, escapeMarkdownURL(href)), missingBlock
-		} else {
-			isBlockOrSection = true
 		}
 	} else {
-		titleHTML := fmt.Sprintf(`<div class="obsidian-embed-title">%s</div>`, stdhtml.EscapeString(target.Title))
-		if target.Summary != "" {
-			rawMarkdown = titleHTML + "\n" + fmt.Sprintf(`<div class="obsidian-embed-summary">%s</div>`, stdhtml.EscapeString(target.Summary))
-		} else {
-			rawMarkdown = titleHTML
-		}
+		isWholeNote = true
+		rawMarkdown = target.Content
 	}
 
+	result := processWithContext(rawMarkdown, index, target.SourcePath, 1, embedDepth+1, newVisited)
+
 	var contentHTML string
-	if isBlockOrSection {
-		// Escape nested embeds to prevent infinite recursion
-		safeMarkdown := strings.ReplaceAll(rawMarkdown, "![[", "[[")
-
-		// Process standard wikilinks with the target's SourcePath context
-		result := Process(safeMarkdown, index, target.SourcePath, 1)
-
-		// Convert to HTML
-		htmlBytes, err := markdown.ToHTML(result.Text)
-		if err == nil {
-			contentHTML = htmlBytes
-			contentHTML = RestoreHTML(contentHTML, result.HTML)
-		} else {
-			contentHTML = stdhtml.EscapeString(rawMarkdown)
-		}
+	htmlBytes, err := markdown.ToHTML(result.Text)
+	if err == nil {
+		contentHTML = htmlBytes
+		contentHTML = RestoreHTML(contentHTML, result.HTML)
 	} else {
-		// For full note embed summary, it's already HTML
-		contentHTML = rawMarkdown
+		contentHTML = stdhtml.EscapeString(rawMarkdown)
+	}
+	
+	if isWholeNote {
+		titleHTML := fmt.Sprintf(`<div class="obsidian-embed-title">%s</div>`, stdhtml.EscapeString(target.Title))
+		contentHTML = titleHTML + "\n" + contentHTML
 	}
 
 	return fmt.Sprintf(`<blockquote class="obsidian-embed obsidian-note-embed" data-embed-type="note"><div class="obsidian-embed-content">%s</div><a href="%s" data-tooltip="在新页面打开" aria-label="在新页面打开" class="obsidian-embed-link" target="_blank" rel="noopener"><span class="material-symbol">open_in_new</span></a></blockquote>`, contentHTML, escapeMarkdownURL(href)), missingBlock

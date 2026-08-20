@@ -222,8 +222,12 @@ interface DaybookTransitionFinishedDetail {
       const parser = new DOMParser();
       const newDocument = parser.parseFromString(html, "text/html");
 
+      
       const currentContainer = document.querySelector("[data-daybook-page]");
       const newContainer = newDocument.querySelector("[data-daybook-page]");
+
+      await preloadStylesheets(newDocument);
+
 
       if (!currentContainer || !newContainer) {
         throw new Error("Missing data-daybook-page");
@@ -392,6 +396,55 @@ interface DaybookTransitionFinishedDetail {
     }
   }
 
+    function preloadStylesheets(newDocument: Document): Promise<void> {
+    const newLinks = Array.from(newDocument.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'));
+    const promises: Promise<void>[] = [];
+
+    newLinks.forEach(newLink => {
+      const href = newLink.getAttribute("href");
+      if (!href) return;
+
+      const newUrl = new URL(href, location.href).href;
+      
+      // Check if already in current head
+      const exists = Array.from(document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'))
+        .some(link => link.href && new URL(link.href, location.href).href === newUrl);
+        
+      if (!exists) {
+        // Preload it
+        const promise = new Promise<void>(resolve => {
+          const preload = document.createElement("link");
+          preload.rel = "preload";
+          preload.as = "style";
+          preload.href = href;
+          if (newLink.crossOrigin) preload.crossOrigin = newLink.crossOrigin;
+          if (newLink.integrity) preload.integrity = newLink.integrity;
+          if (newLink.referrerPolicy) preload.referrerPolicy = newLink.referrerPolicy;
+          
+          let timeout = setTimeout(() => {
+            console.warn("Timeout preloading stylesheet:", href);
+            resolve();
+          }, 3000); // 3s safeguard
+          
+          preload.onload = () => {
+            clearTimeout(timeout);
+            resolve();
+          };
+          preload.onerror = () => {
+            clearTimeout(timeout);
+            console.warn("Failed to preload stylesheet:", href);
+            resolve();
+          };
+          
+          document.head.appendChild(preload);
+        });
+        promises.push(promise);
+      }
+    });
+
+    return Promise.all(promises).then(() => {});
+  }
+
   function updateHead(newDocument: Document) {
     if (newDocument.title) document.title = newDocument.title;
 
@@ -424,10 +477,15 @@ interface DaybookTransitionFinishedDetail {
       });
     });
 
-    const newStylesheets = newDocument.head.querySelectorAll('link[rel="stylesheet"]');
+    const newStylesheets = Array.from(newDocument.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'));
     newStylesheets.forEach(newLink => {
       const href = newLink.getAttribute("href");
-      if (href && !document.head.querySelector(`link[rel="stylesheet"][href="${href}"]`)) {
+      if (!href) return;
+      const newUrl = new URL(href, location.href).href;
+      const exists = Array.from(document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'))
+        .some(link => link.href && new URL(link.href, location.href).href === newUrl);
+      
+      if (!exists) {
         document.head.appendChild(newLink.cloneNode(true));
       }
     });

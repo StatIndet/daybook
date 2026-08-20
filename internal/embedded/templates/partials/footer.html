@@ -30,13 +30,16 @@
 
       <div class="notes-tool-panel notes-tags-panel" id="notes-tags-panel" data-notes-panel="tags" aria-hidden="true">
         {{if .Tags}}
-        <nav class="notes-tag-list" aria-label="标签筛选">
-          {{range .Tags}}
-          <a class="notes-tag-link" href="{{.URL}}" data-notes-tag="{{.Name}}" style="--tag-index: {{.Index}}; --tag-exit-index: {{.ReverseIndex}};">
-            <span class="notes-tag-text">{{.Name}}</span>
-          </a>
-          {{end}}
-        </nav>
+        <div class="notes-tags-scroll-viewport">
+          <nav class="notes-tag-list" aria-label="标签筛选">
+            {{range .Tags}}
+            <a class="notes-tag-link" href="{{.URL}}" data-notes-tag="{{.Name}}" style="--tag-index: {{.Index}}; --tag-exit-index: {{.ReverseIndex}};">
+              <span class="notes-tag-text">{{.Name}}</span>
+            </a>
+            {{end}}
+          </nav>
+        </div>
+        <div class="notes-tags-scrollbar"><div class="notes-tags-scrollbar-thumb"></div></div>
         {{else}}
         <p class="notes-tool-empty">{{T .Lang "tag.empty"}}</p>
         {{end}}

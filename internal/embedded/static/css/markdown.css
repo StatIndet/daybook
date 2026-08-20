@@ -1464,49 +1464,49 @@
   max-width: 100%;
 }
 
-.markdown .obsidian-image {
+.markdown .media-image {
   /* Default behaviors for image embeds */
 }
 
-.markdown .obsidian-image img {
+.markdown .media-image img {
   border-radius: 4px;
   width: var(--image-width, auto);
   max-width: 100%;
   height: auto;
 }
 
-.markdown .obsidian-image.is-center {
+.markdown .media-image.is-center {
   text-align: center;
 }
 
-.markdown .obsidian-image.is-center img {
+.markdown .media-image.is-center img {
   margin-left: auto;
   margin-right: auto;
 }
 
-.markdown .obsidian-image.is-left {
+.markdown .media-image.is-left {
   text-align: left;
 }
 
-.markdown .obsidian-image.is-left img {
+.markdown .media-image.is-left img {
   margin-right: auto;
 }
 
-.markdown .obsidian-image.is-right {
+.markdown .media-image.is-right {
   text-align: right;
 }
 
-.markdown .obsidian-image.is-right img {
+.markdown .media-image.is-right img {
   margin-left: auto;
 }
 
-.markdown .obsidian-pdf {
+.markdown .media-pdf {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.markdown .obsidian-pdf iframe {
+.markdown .media-pdf iframe {
   width: 100%;
   height: 600px;
   border: 1px solid var(--color-line);
@@ -1515,35 +1515,35 @@
 }
 
 @media (max-width: 960px) {
-  .markdown .obsidian-pdf iframe {
+  .markdown .media-pdf iframe {
     height: 400px;
   }
 }
 
-.markdown .obsidian-audio,
-.markdown .obsidian-video {
+.markdown .media-audio,
+.markdown .media-video {
   display: flex;
   flex-direction: column;
   gap: 8px;
   margin: 24px 0;
 }
 
-.markdown .obsidian-audio audio {
+.markdown .media-audio audio {
   width: 100%;
   border: 1px solid var(--color-line);
   border-radius: 6px;
   background: var(--color-paper);
 }
 
-.markdown .obsidian-video video {
+.markdown .media-video video {
   max-width: 100%;
   border: 1px solid var(--color-line);
   border-radius: 6px;
   background: var(--color-paper);
 }
 
-.markdown .obsidian-audio.is-center,
-.markdown .obsidian-video.is-center {
+.markdown .media-audio.is-center,
+.markdown .media-video.is-center {
   align-items: center;
 }
 
@@ -1582,22 +1582,6 @@
   font-weight: bold;
   margin-bottom: 0.5rem;
   color: var(--color-text);
-}
-
-.markdown .obsidian-embed-summary {
-  color: var(--color-muted);
-}
-
-.markdown .obsidian-embed-summary::first-letter {
-  color: var(--color-accent);
-  float: left;
-  font-family: var(--font-ui);
-  font-size: 3.4em;
-  font-style: italic;
-  font-weight: 700;
-  line-height: 0.92;
-  margin-top: 4px;
-  padding: 4px 10px 0 0;
 }
 
 .markdown .obsidian-embed-link {

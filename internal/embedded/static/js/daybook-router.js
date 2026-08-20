@@ -238,6 +238,7 @@ function initSiteUptime(root = document) {
       const newDocument = parser.parseFromString(html, "text/html");
       const currentContainer = document.querySelector("[data-daybook-page]");
       const newContainer = newDocument.querySelector("[data-daybook-page]");
+      await preloadStylesheets(newDocument);
       if (!currentContainer || !newContainer) {
         throw new Error("Missing data-daybook-page");
       }
@@ -382,6 +383,44 @@ function initSiteUptime(root = document) {
       }
     }
   }
+  function preloadStylesheets(newDocument) {
+    const newLinks = Array.from(newDocument.head.querySelectorAll('link[rel="stylesheet"]'));
+    const promises = [];
+    newLinks.forEach((newLink) => {
+      const href = newLink.getAttribute("href");
+      if (!href) return;
+      const newUrl = new URL(href, location.href).href;
+      const exists = Array.from(document.head.querySelectorAll('link[rel="stylesheet"]')).some((link) => link.href && new URL(link.href, location.href).href === newUrl);
+      if (!exists) {
+        const promise = new Promise((resolve) => {
+          const preload = document.createElement("link");
+          preload.rel = "preload";
+          preload.as = "style";
+          preload.href = href;
+          if (newLink.crossOrigin) preload.crossOrigin = newLink.crossOrigin;
+          if (newLink.integrity) preload.integrity = newLink.integrity;
+          if (newLink.referrerPolicy) preload.referrerPolicy = newLink.referrerPolicy;
+          let timeout = setTimeout(() => {
+            console.warn("Timeout preloading stylesheet:", href);
+            resolve();
+          }, 3e3);
+          preload.onload = () => {
+            clearTimeout(timeout);
+            resolve();
+          };
+          preload.onerror = () => {
+            clearTimeout(timeout);
+            console.warn("Failed to preload stylesheet:", href);
+            resolve();
+          };
+          document.head.appendChild(preload);
+        });
+        promises.push(promise);
+      }
+    });
+    return Promise.all(promises).then(() => {
+    });
+  }
   function updateHead(newDocument) {
     if (newDocument.title) document.title = newDocument.title;
     const newLang = newDocument.documentElement.lang;
@@ -409,10 +448,13 @@ function initSiteUptime(root = document) {
         document.head.appendChild(el.cloneNode(true));
       });
     });
-    const newStylesheets = newDocument.head.querySelectorAll('link[rel="stylesheet"]');
+    const newStylesheets = Array.from(newDocument.head.querySelectorAll('link[rel="stylesheet"]'));
     newStylesheets.forEach((newLink) => {
       const href = newLink.getAttribute("href");
-      if (href && !document.head.querySelector(`link[rel="stylesheet"][href="${href}"]`)) {
+      if (!href) return;
+      const newUrl = new URL(href, location.href).href;
+      const exists = Array.from(document.head.querySelectorAll('link[rel="stylesheet"]')).some((link) => link.href && new URL(link.href, location.href).href === newUrl);
+      if (!exists) {
         document.head.appendChild(newLink.cloneNode(true));
       }
     });
