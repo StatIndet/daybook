@@ -311,14 +311,14 @@ func TestToHTMLWithMath(t *testing.T) {
 		t.Fatalf("ToHTMLWithHeadings returned error: %v", err)
 	}
 
-	if !strings.Contains(document.HTML, `<span class="katex">`) {
+	if !strings.Contains(document.HTML, `<span class="math math-inline">`) {
 		t.Fatalf("HTML does not contain rendered inline math: %s", document.HTML)
 	}
-	if !strings.Contains(document.HTML, `<span class="katex-display">`) {
+	if !strings.Contains(document.HTML, `<div class="math math-display">`) {
 		t.Fatalf("HTML does not contain rendered display math: %s", document.HTML)
 	}
 
-	if strings.Contains(document.HTML, `<p><span class="katex-display">`) || strings.Contains(document.HTML, `<p><div class="katex-display">`) {
+	if strings.Contains(document.HTML, `<p><div class="math math-display">`) || strings.Contains(document.HTML, `<p><div class="katex-display">`) {
 		t.Fatalf("Display math should not be wrapped in <p> tag: %s", document.HTML)
 	}
 }

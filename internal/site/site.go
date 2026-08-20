@@ -1151,12 +1151,13 @@ func buildObsidianIndex(notes []content.Note, contentDir string, publicDir strin
 	appJSONPath := filepath.Join(contentDir, ".obsidian", "app.json")
 	var appJSON struct {
 		AttachmentFolderPath string `json:"attachmentFolderPath"`
+		NewLinkFormat        string `json:"newLinkFormat"`
 	}
 	if b, err := os.ReadFile(appJSONPath); err == nil {
 		_ = json.Unmarshal(b, &appJSON)
 	}
 
-	return obsidian.NewIndex(targets, attachments, publicPath, appJSON.AttachmentFolderPath), nil
+	return obsidian.NewIndex(targets, attachments, publicPath, appJSON.AttachmentFolderPath, appJSON.NewLinkFormat), nil
 }
 
 func escapeURLPath(p string) string {

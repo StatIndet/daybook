@@ -138,7 +138,6 @@ hr.notes-divider {
 }
 
 .notes-brand-name {
-  view-transition-name: site-name;
   align-items: baseline;
   display: flex;
   flex-wrap: wrap;
@@ -371,3 +370,7 @@ hr.notes-divider {
   font-weight: 700;
   margin: 0;
 }
+
+
+.notes-brand-cn { view-transition-name: site-name-cn; }
+.notes-brand-en { view-transition-name: site-name-en; }

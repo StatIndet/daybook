@@ -3,9 +3,14 @@ function setupKatex() {
   const mathElements = document.querySelectorAll(".math-inline, .math-display");
   if (mathElements.length === 0) return;
   if (!window.katex) {
+    if (window.katexLoading) return;
+    window.katexLoading = true;
     const script = document.createElement("script");
     script.src = "/vendor/katex/katex.js";
-    script.onload = () => renderAllMath(mathElements);
+    script.onload = () => {
+      window.katexLoading = false;
+      renderAllMath(document.querySelectorAll(".math-inline, .math-display"));
+    };
     document.head.appendChild(script);
     const link = document.createElement("link");
     link.rel = "stylesheet";
@@ -33,7 +38,7 @@ function renderAllMath(elements) {
     }
   });
 }
-document.addEventListener("daybook:page-loaded", () => {
+document.addEventListener("daybook:page-load", () => {
   setupKatex();
 });
 //# sourceMappingURL=katex-loader.js.map

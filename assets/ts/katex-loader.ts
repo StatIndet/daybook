@@ -3,9 +3,14 @@ function setupKatex() {
   if (mathElements.length === 0) return;
 
   if (!(window as any).katex) {
+    if ((window as any).katexLoading) return;
+    (window as any).katexLoading = true;
     const script = document.createElement('script');
     script.src = '/vendor/katex/katex.js';
-    script.onload = () => renderAllMath(mathElements);
+    script.onload = () => {
+      (window as any).katexLoading = false;
+      renderAllMath(document.querySelectorAll('.math-inline, .math-display'));
+    };
     document.head.appendChild(script);
 
     const link = document.createElement('link');
@@ -36,6 +41,6 @@ function renderAllMath(elements: NodeListOf<Element>) {
   });
 }
 
-document.addEventListener('daybook:page-loaded', () => {
+document.addEventListener('daybook:page-load', () => {
   setupKatex();
 });
