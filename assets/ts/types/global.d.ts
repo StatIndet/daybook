@@ -9,7 +9,7 @@ declare global {
     ThemeSettings: any;
     daybookSyncThemeButtons: () => void;
     daybookSetTheme: (theme: string, remember: boolean) => void;
-    daybookSetEyeCare: (enabled: boolean, remember: boolean) => void;
+    daybookSetPalette: (palette: string, remember: boolean) => void;
     daybookShouldAnimateTheme: () => boolean;
     daybookClearThemeTransition: (attributeName: string) => void;
     daybookSyncNoteTocs: (toc?: any) => void;

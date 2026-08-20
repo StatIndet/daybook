@@ -1,4 +1,4 @@
-:root[data-palette="warm"] {
+:root {
   --font-logo: "Daybook Fraunces", serif;
   --font-ui: "LXGW WenKai Screen", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-body: "LXGW WenKai Screen", "PingFang SC", "Microsoft YaHei", serif;
@@ -59,91 +59,6 @@
   --reading-toc-rail-collapse-shift: 10px;
   --note-title-size: clamp(1.55rem, 2vw, 1.625rem);
   --note-text-size: 15px;
-  --color-page: #f6f1e6;
-  --color-text: #25201b;
-  --color-muted: #4a4239;
-  --color-line: #d9cfb9;
-  --color-accent: #8a4423;
-  --color-hover-text: var(--color-accent);
-  --graph-node-attachment: #d4b856;
-  --color-paper: #fbf6ec;
-  --color-faint: #b8ad9b;
-  --color-accent-soft: rgba(138, 68, 35, 0.1);
-  --color-accent-soft-strong: rgba(138, 68, 35, 0.18);
-  --color-tooltip-bg: #25201b;
-  --color-tooltip-text: #fbf6ec;
-  --color-code-bg: #f0e9d6;
-  --color-code-border: #d9cfb9;
-  --color-code-inline-bg: #ebe3cd;
-  --color-golden-rect: rgba(138, 68, 35, 0.18);
-  --color-golden-diagonal: rgba(138, 68, 35, 0.11);
-  --color-golden-curve: rgba(37, 32, 27, 0.32);
-  --shadow-code: inset 0 1px 0 rgba(255, 255, 255, 0.48);
-  --syntax-text: #25201b;
-  --syntax-comment: #7d7165;
-  --syntax-keyword: #8a4423;
-  --syntax-string: #7a5a22;
-  --syntax-number: #9a552f;
-  --syntax-function: #6c5b2c;
-  --syntax-tag: #8a4423;
-  --syntax-attr: #5f5940;
-  --syntax-operator: #5f554c;
-  --syntax-error: #9b392f;
-  --syntax-inserted: #4f6c3f;
-  --syntax-deleted: #9b392f;
-  --image-icon-filter: none;
-  --shadow-avatar:
-    0 18px 48px rgba(38, 35, 31, 0.14),
-    0 4px 16px rgba(38, 35, 31, 0.08);
-  --shadow-avatar-small:
-    0 10px 28px rgba(38, 35, 31, 0.12),
-    0 3px 10px rgba(38, 35, 31, 0.08);
-  color-scheme: light;
-}
-:root[data-palette="warm"][data-theme="dark"] {
-  --color-page: #131110;
-  --color-text: #f4f0e3;
-  --color-muted: #c8c1ae;
-  --color-line: #2a2622;
-  --color-accent: #c89761;
-  --color-hover-text: var(--color-accent);
-  --graph-node-attachment: #d6c776;
-  --color-paper: #1a1715;
-  --color-faint: #4f4a42;
-  --color-accent-soft: rgba(200, 151, 97, 0.12);
-  --color-accent-soft-strong: rgba(200, 151, 97, 0.22);
-  --color-tooltip-bg: #f4f0e3;
-  --color-tooltip-text: #131110;
-  --color-code-bg: #1a1715;
-  --color-code-border: #2a2622;
-  --color-code-inline-bg: #201c19;
-  --color-golden-rect: rgba(200, 151, 97, 0.22);
-  --color-golden-diagonal: rgba(200, 151, 97, 0.14);
-  --color-golden-curve: rgba(244, 240, 227, 0.3);
-  --shadow-code: inset 0 1px 0 rgba(255, 255, 255, 0.035);
-  --syntax-text: #f4f0e3;
-  --syntax-comment: #9d9484;
-  --syntax-keyword: #c89761;
-  --syntax-string: #d6b56d;
-  --syntax-number: #d89a70;
-  --syntax-function: #d2b46c;
-  --syntax-tag: #d7986f;
-  --syntax-attr: #cfc18b;
-  --syntax-operator: #c8c1ae;
-  --syntax-error: #ee8f7a;
-  --syntax-inserted: #9bb978;
-  --syntax-deleted: #ee8f7a;
-  --image-icon-filter: invert(94%) sepia(8%) saturate(530%) hue-rotate(333deg) brightness(96%) contrast(88%);
-  --shadow-avatar:
-    0 18px 48px rgba(0, 0, 0, 0.32),
-    0 4px 16px rgba(0, 0, 0, 0.22);
-  --shadow-avatar-small:
-    0 10px 28px rgba(0, 0, 0, 0.28),
-    0 3px 10px rgba(0, 0, 0, 0.18);
-  color-scheme: dark;
-}
-
-:root {
   --color-page: oklch(96% 0.005 298);
   --color-text: oklch(25% 0.005 298);
   --color-muted: oklch(40% 0.005 298);
@@ -226,5 +141,91 @@
   --shadow-avatar-small:
     0 10px 28px oklch(0% 0 0 / 0.28),
     0 3px 10px oklch(0% 0 0 / 0.18);
+  color-scheme: dark;
+}
+
+:root[data-palette="warm"] {
+  --color-page: #f6f1e6;
+  --color-text: #25201b;
+  --color-muted: #4a4239;
+  --color-line: #d9cfb9;
+  --color-accent: #8a4423;
+  --color-hover-text: var(--color-accent);
+  --graph-node-attachment: #d4b856;
+  --color-paper: #fbf6ec;
+  --color-faint: #b8ad9b;
+  --color-accent-soft: rgba(138, 68, 35, 0.1);
+  --color-accent-soft-strong: rgba(138, 68, 35, 0.18);
+  --color-tooltip-bg: #25201b;
+  --color-tooltip-text: #fbf6ec;
+  --color-code-bg: #f0e9d6;
+  --color-code-border: #d9cfb9;
+  --color-code-inline-bg: #ebe3cd;
+  --color-golden-rect: rgba(138, 68, 35, 0.18);
+  --color-golden-diagonal: rgba(138, 68, 35, 0.11);
+  --color-golden-curve: rgba(37, 32, 27, 0.32);
+  --shadow-code: inset 0 1px 0 rgba(255, 255, 255, 0.48);
+  --syntax-text: #25201b;
+  --syntax-comment: #7d7165;
+  --syntax-keyword: #8a4423;
+  --syntax-string: #7a5a22;
+  --syntax-number: #9a552f;
+  --syntax-function: #6c5b2c;
+  --syntax-tag: #8a4423;
+  --syntax-attr: #5f5940;
+  --syntax-operator: #5f554c;
+  --syntax-error: #9b392f;
+  --syntax-inserted: #4f6c3f;
+  --syntax-deleted: #9b392f;
+  --image-icon-filter: none;
+  --shadow-avatar:
+    0 18px 48px rgba(38, 35, 31, 0.14),
+    0 4px 16px rgba(38, 35, 31, 0.08);
+  --shadow-avatar-small:
+    0 10px 28px rgba(38, 35, 31, 0.12),
+    0 3px 10px rgba(38, 35, 31, 0.08);
+  color-scheme: light;
+}
+
+:root[data-palette="warm"][data-theme="dark"] {
+  --color-page: #131110;
+  --color-text: #f4f0e3;
+  --color-muted: #c8c1ae;
+  --color-line: #2a2622;
+  --color-accent: #c89761;
+  --color-hover-text: var(--color-accent);
+  --graph-node-attachment: #d6c776;
+  --color-paper: #1a1715;
+  --color-faint: #4f4a42;
+  --color-accent-soft: rgba(200, 151, 97, 0.12);
+  --color-accent-soft-strong: rgba(200, 151, 97, 0.22);
+  --color-tooltip-bg: #f4f0e3;
+  --color-tooltip-text: #131110;
+  --color-code-bg: #1a1715;
+  --color-code-border: #2a2622;
+  --color-code-inline-bg: #201c19;
+  --color-golden-rect: rgba(200, 151, 97, 0.22);
+  --color-golden-diagonal: rgba(200, 151, 97, 0.14);
+  --color-golden-curve: rgba(244, 240, 227, 0.3);
+  --shadow-code: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  --syntax-text: #f4f0e3;
+  --syntax-comment: #9d9484;
+  --syntax-keyword: #c89761;
+  --syntax-string: #d6b56d;
+  --syntax-number: #d89a70;
+  --syntax-function: #d2b46c;
+  --syntax-tag: #d7986f;
+  --syntax-attr: #cfc18b;
+  --syntax-operator: #c8c1ae;
+  --syntax-error: #ee8f7a;
+  --syntax-inserted: #9bb978;
+  --syntax-deleted: #ee8f7a;
+  --image-icon-filter: invert(94%) sepia(8%) saturate(530%) hue-rotate(333deg) brightness(96%) contrast(88%);
+  --shadow-avatar:
+    0 18px 48px rgba(0, 0, 0, 0.32),
+    0 4px 16px rgba(0, 0, 0, 0.22);
+  --shadow-avatar-small:
+    0 10px 28px rgba(0, 0, 0, 0.28),
+    0 3px 10px rgba(0, 0, 0, 0.18);
   color-scheme: dark;
 }

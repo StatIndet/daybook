@@ -109,6 +109,30 @@
     root.style.removeProperty("view-transition-name");
     delete root.dataset[attributeName];
   }
+  const resolvedTheme = savedTheme() || preferredTheme();
+  applyTheme(resolvedTheme, false);
+  const resolvedPalette = preferredPalette();
+  applyPalette(resolvedPalette, false);
+  window.daybookSyncThemeButtons = function() {
+    applyTheme(root.dataset["theme"] || "", false);
+    applyPalette(root.dataset["palette"] || "default", false);
+  };
+  window.daybookSetTheme = applyTheme;
+  window.daybookSetPalette = applyPalette;
+  window.daybookShouldAnimateTheme = shouldAnimateTheme;
+  window.daybookClearThemeTransition = clearThemeTransition;
+  document.addEventListener("daybook:page-load", function() {
+    applyTheme(root.dataset["theme"] || "", false);
+    applyPalette(root.dataset["palette"] || "default", false);
+  });
+  document.addEventListener("pointerdown", function(event) {
+    const target = event.target;
+    if (!target) return;
+    const switchEl = target.closest(".material-switch");
+    if (switchEl) {
+      switchEl.classList.add("is-pressed");
+    }
+  });
   function removePressedState() {
     document.querySelectorAll(".material-switch.is-pressed").forEach(function(el) {
       el.classList.remove("is-pressed");
