@@ -17,23 +17,41 @@
     if (path.endsWith("/index.html")) path = path.slice(0, -11) || "/";
     return path;
   }
-  function isNotesIndex(url) {
-    return cleanPath(url) === "/notes";
+  function noteSlugFromURL(url) {
+    let p = cleanPath(url);
+    if (p.endsWith("/index.html")) p = p.substring(0, p.length - 11);
+    if (p.endsWith("/")) p = p.substring(0, p.length - 1);
+    if (p.startsWith("/en/")) {
+      p = "/" + p.substring(4);
+    }
+    if (p.startsWith("/notes/")) {
+      const slug = p.substring(7);
+      if (slug.length > 0) {
+        return decodeURIComponent(slug);
+      }
+    }
+    return null;
   }
-  function isNoteDetail(url) {
-    return /^\/notes\/[^/]+$/.test(cleanPath(url));
+  function isNotesIndex(url) {
+    let p = cleanPath(url);
+    if (p.endsWith("/index.html")) p = p.substring(0, p.length - 11);
+    if (p.endsWith("/")) p = p.substring(0, p.length - 1);
+    if (p.startsWith("/en/")) p = "/" + p.substring(4);
+    return p === "/notes";
   }
   function articleTransitionInfo(currentUrlStr, targetUrlStr) {
     try {
       const currentURL = new URL(currentUrlStr, location.origin);
       const targetURL = new URL(targetUrlStr, location.origin);
-      if (isNotesIndex(currentURL) && isNoteDetail(targetURL)) {
-        const parts = cleanPath(targetURL).split("/");
-        return { direction: "to-detail", slug: decodeURIComponent(parts[parts.length - 1] || "") };
+      const currentSlug = noteSlugFromURL(currentURL);
+      const targetSlug = noteSlugFromURL(targetURL);
+      const currentIsIndex = isNotesIndex(currentURL);
+      const targetIsIndex = isNotesIndex(targetURL);
+      if (currentIsIndex && targetSlug) {
+        return { direction: "to-detail", slug: targetSlug };
       }
-      if (isNoteDetail(currentURL) && isNotesIndex(targetURL)) {
-        const parts = cleanPath(currentURL).split("/");
-        return { direction: "to-list", slug: decodeURIComponent(parts[parts.length - 1] || "") };
+      if (currentSlug && targetIsIndex) {
+        return { direction: "to-list", slug: currentSlug };
       }
     } catch {
       return null;
@@ -110,12 +128,6 @@
       targetMeta.classList.add("meta-shared-target");
     }
   }
-  function hasSiteIdentity(root) {
-    return Boolean(root.querySelector(".hero-identity, .notes-aside-identity"));
-  }
-  function shouldAnimateIdentityExit(nextDocument) {
-    return hasSiteIdentity(document) && !hasSiteIdentity(nextDocument);
-  }
   function exitClassName(body) {
     if (body.classList.contains("home-body")) return "home-exiting";
     return "page-exiting";
@@ -128,7 +140,6 @@
     document.documentElement.classList.remove(
       "is-transitioning",
       "article-transition",
-      "identity-exit-down",
       "meta-shared-transition"
     );
     if (document.body) {
@@ -142,7 +153,6 @@
     prepareArticleTransitionSource,
     prepareArticleTransitionTarget,
     clearArticleSharedTransitions,
-    shouldAnimateIdentityExit,
     exitClassName,
     enterClassName,
     clearTransitionClasses

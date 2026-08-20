@@ -294,9 +294,6 @@ function initSiteUptime(root = document) {
           transitionInfo = engine.prepareArticleTransitionSource(oldUrl, targetUrl.href, sourceLink);
         } else if (!isTraverse) {
           document.body.classList.add(engine.exitClassName(document.body));
-          if (engine.shouldAnimateIdentityExit(newDocument)) {
-            document.documentElement.classList.add("identity-exit-down");
-          }
           await new Promise((r) => setTimeout(r, engine.cssDuration("--transition-exit-delay", 260)));
         }
       }
