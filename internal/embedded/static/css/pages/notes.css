@@ -134,10 +134,11 @@ hr.notes-divider {
 }
 
 .notes-aside-identity {
-  view-transition-name: site-identity;
+  
 }
 
 .notes-brand-name {
+  view-transition-name: site-name;
   align-items: baseline;
   display: flex;
   flex-wrap: wrap;

@@ -11,6 +11,7 @@ import (
 	"github.com/StatIndet/daybook/internal/config"
 	"github.com/StatIndet/daybook/internal/i18n"
 	"github.com/StatIndet/daybook/internal/seo"
+	"github.com/StatIndet/daybook/internal/morphable"
 	"github.com/StatIndet/daybook/internal/embedded"
 )
 
@@ -645,6 +646,8 @@ func (r Renderer) render(outputPath, pageTemplate string, data any) error {
 	}
 
 	tmpl := template.New(filepath.Base(files[0])).Funcs(template.FuncMap{
+		"morphableText": func(text, key, classPrefix string) template.HTML { return morphable.GenerateHTML(text, key, classPrefix, true) },
+		"morphableTitle": func(text, key, classPrefix string) template.HTML { return morphable.GenerateHTML(text, key, classPrefix, false) },
 		"formatNum": func(n int) string {
 			s := fmt.Sprintf("%d", n)
 			var parts []string

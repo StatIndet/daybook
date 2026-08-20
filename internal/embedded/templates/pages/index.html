@@ -1,7 +1,9 @@
 {{define "content"}}
 <section class="home-hero" aria-label="{{T .Lang "home.hero_label"}}">
-  <div class="hero-avatar-wrap">
-    <img class="hero-avatar" src="{{.Config.Profile.Author.Avatar}}" alt="{{.Config.Profile.Author.Name}}">
+  <div class="hero-avatar-wrap" data-site-avatar>
+    {{if .Config.Profile.Author.Avatar}}
+    <img class="hero-avatar" src="{{.Config.Profile.Author.Avatar}}" alt="">
+    {{end}}
   </div>
 
   <div class="hero-content">
@@ -11,7 +13,7 @@
         <span class="hero-name-en">{{.Config.Profile.Author.NameEn}}</span>
       </h1>
 
-      <p class="hero-slogan">{{.Config.Profile.GetSlogan .Lang}}</p>
+      <p class="hero-slogan">{{morphableText (.Config.Profile.GetSlogan .Lang) "site-slogan" "slogan"}}</p>
     </div>
 
     {{template "social_links" .}}

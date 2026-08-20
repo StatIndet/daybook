@@ -1,7 +1,11 @@
 {{define "side_nav"}}
 <aside class="side-rail" aria-label="站点导航">
   <a class="side-avatar-link" href="/" aria-label="回到首页">
-    <img class="side-avatar" src="{{.Config.Profile.Author.Avatar}}" alt="{{.Config.Profile.Author.Name}}头像">
+    <div class="side-avatar-wrap" data-site-avatar>
+      {{if .Config.Profile.Author.Avatar}}
+      <img class="side-avatar" src="{{.Config.Profile.Author.Avatar}}" alt="">
+      {{end}}
+    </div>
   </a>
 
   <nav class="side-nav" aria-label="主导航">

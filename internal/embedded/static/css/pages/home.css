@@ -20,17 +20,21 @@
 
 .hero-avatar-wrap {
   flex: 0 0 auto;
-}
-
-.hero-avatar {
   aspect-ratio: 1;
   border-radius: 50%;
-  box-shadow: var(--shadow-avatar);
-  display: block;
   height: var(--hero-avatar-size);
-  object-fit: cover;
-  view-transition-name: site-avatar;
   width: var(--hero-avatar-size);
+  background-color: var(--color-surface-variant);
+  box-shadow: var(--shadow-avatar);
+  view-transition-name: site-avatar;
+}
+
+.hero-avatar-wrap {
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
 }
 
 .hero-content {
@@ -42,10 +46,11 @@
 }
 
 .hero-identity {
-  view-transition-name: site-identity;
+  
 }
 
 .hero-name {
+  view-transition-name: site-name;
   align-items: baseline;
   display: flex;
   flex-wrap: wrap;
@@ -160,6 +165,7 @@
 
   .hero-avatar {
     height: var(--hero-avatar-size-mobile);
+    width: var(--hero-avatar-size-mobile);
     width: var(--hero-avatar-size-mobile);
   }
 

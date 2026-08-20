@@ -19,7 +19,7 @@
       <span class="notes-brand-cn{{if .Config.Profile.HasSignatureFont}} use-signature-font{{end}}">{{.Config.Profile.Author.Name}}</span>
       <span class="notes-brand-en">{{.Config.Profile.Author.NameEn}}</span>
     </h1>
-    <p>{{.Config.Profile.GetSlogan .Lang}}</p>
+    <p class="notes-brand-slogan">{{morphableText (.Config.Profile.GetSlogan .Lang) "site-slogan" "slogan"}}</p>
   </div>
 
   <div class="notes-aside-controls">

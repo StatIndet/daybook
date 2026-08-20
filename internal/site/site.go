@@ -26,7 +26,7 @@ import (
 	"github.com/StatIndet/daybook/internal/search"
 	"github.com/StatIndet/daybook/internal/seo"
 	"github.com/StatIndet/daybook/internal/sitemap"
-	"github.com/StatIndet/daybook/internal/titlelayout"
+	"github.com/StatIndet/daybook/internal/morphable"
 )
 
 type Options struct {
@@ -133,7 +133,7 @@ func Build(options Options) (BuildResult, error) {
 		return BuildResult{}, fmt.Errorf("生成 search.json: %w", err)
 	}
 
-	obsidianIndex, err := buildObsidianIndex(allNotes, options.ContentDir, "/")
+	obsidianIndex, err := buildObsidianIndex(allNotes, options.ContentDir, options.PublicDir, "/")
 	if err != nil {
 		return BuildResult{}, err
 	}
@@ -277,7 +277,7 @@ func Build(options Options) (BuildResult, error) {
 				}
 			}
 
-			titleLayoutHTML := titlelayout.GenerateHTML(note.Title, note.Slug)
+			titleLayoutHTML := morphable.GenerateHTML(note.Title, note.Slug, "title")
 
 			hasTranslation := len(group.Versions) > 1
 
@@ -1048,7 +1048,7 @@ func renderHeadings(headings []markdown.Heading) []render.Heading {
 	return result
 }
 
-func buildObsidianIndex(notes []content.Note, contentDir string, publicPath string) (obsidian.Index, error) {
+func buildObsidianIndex(notes []content.Note, contentDir string, publicDir string, publicPath string) (obsidian.Index, error) {
 	targets := make([]obsidian.Target, 0, len(notes))
 	for _, note := range notes {
 		document, err := markdown.ToHTMLWithHeadings(note.Body)
@@ -1095,20 +1095,19 @@ func buildObsidianIndex(notes []content.Note, contentDir string, publicPath stri
 				return nil
 			}
 			
-			if d.IsDir() {
-				// Ignore hidden folders like .obsidian, .git
-				if strings.HasPrefix(d.Name(), ".") {
-					return filepath.SkipDir
-				}
-				return nil
-			}
-
 			relPath, err := filepath.Rel(contentDir, path)
 			if err != nil {
 				return nil
 			}
-
 			relPath = filepath.ToSlash(relPath)
+
+			if d.IsDir() {
+				// Ignore hidden folders like .obsidian, .git
+				if shouldSkipVaultDir(relPath, publicDir) {
+					return filepath.SkipDir
+				}
+				return nil
+			}
 
 			ext := strings.ToLower(filepath.Ext(d.Name()))
 			mediaType := ""
@@ -1188,10 +1187,25 @@ func normalizeHeading(text string) string {
 
 
 
+func shouldSkipVaultDir(relativePath, publicDir string) bool {
+	base := filepath.Base(relativePath)
+	if base != "." && strings.HasPrefix(base, ".") {
+		return true
+	}
+	// publicDir is usually relative to contentDir (e.g. "public").
+	// We only skip the exact top-level public output directory.
+	// If relativePath is identical to the cleaned publicDir relative to contentDir...
+	// For simplicity, if relativePath == publicDir or filepath.Base(publicDir):
+	if relativePath == publicDir || relativePath == filepath.Base(publicDir) {
+		return true
+	}
+	return false
+}
+
 func copyAttachments(contentDir, publicDir string) error {
 	err := copyDirFiltered(contentDir, publicDir, func(relativePath string, entry os.DirEntry) bool {
 		if entry.IsDir() {
-			if strings.HasPrefix(entry.Name(), ".") || entry.Name() == filepath.Base(publicDir) {
+			if shouldSkipVaultDir(relativePath, publicDir) {
 				return true // skip .obsidian, .git
 			}
 			return false // allow traversing other dirs
@@ -1210,9 +1224,10 @@ func copyAttachments(contentDir, publicDir string) error {
 
 func Serve(publicDir, address string) error {
 	if _, err := os.Stat(publicDir); err != nil {
-		return fmt.Errorf("找不到 public 目录，请先运行 go run ./cmd/daybook build: %w", err)
+		return fmt.Errorf("public directory not found; run `daybook build` first: %w", err)
 	}
 
+	fmt.Println("预览地址: http://localhost:1313")
 	fileServer := http.FileServer(http.Dir(publicDir))
 	mux := http.NewServeMux()
 	mux.Handle("/", fileServer)

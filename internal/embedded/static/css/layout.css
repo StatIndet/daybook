@@ -70,15 +70,22 @@
   width: max-content;
 }
 
-.side-avatar {
+.side-avatar-wrap {
   aspect-ratio: 1;
   border-radius: 50%;
-  box-shadow: var(--shadow-avatar-small);
-  display: block;
   height: 76px;
-  object-fit: cover;
-  view-transition-name: site-avatar;
   width: 76px;
+  background-color: var(--color-surface-variant);
+  box-shadow: var(--shadow-avatar-small);
+  view-transition-name: site-avatar;
+}
+
+.side-avatar {
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
 }
 
 .side-nav {

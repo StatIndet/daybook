@@ -20,7 +20,7 @@ func main() {
 func printHelp() {
 	fmt.Println("Usage:")
 	fmt.Println("  daybook build    Build the current Daybook vault into ./public")
-	fmt.Println("  daybook serve    Build and serve the current Daybook vault locally")
+	fmt.Println("  daybook serve    Serve the existing ./public directory locally")
 	fmt.Println("  daybook version  Print Daybook version")
 }
 
@@ -59,7 +59,7 @@ func run() error {
 		PublicDir:  "public",
 	}
 
-	if command == "build" || command == "serve" {
+	if command == "build" {
 		if cfg.Stats.Enabled {
 			fmt.Println("[daybook] stats: enabled=true")
 		} else {
@@ -79,7 +79,8 @@ func run() error {
 	}
 
 	if command == "serve" {
-		fmt.Println("预览地址: http://localhost:1313")
+		
+		
 		return site.Serve(options.PublicDir, ":1313")
 	}
 
