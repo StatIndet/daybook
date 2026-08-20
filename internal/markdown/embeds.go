@@ -302,121 +302,74 @@ func RenderMediaEmbed(m MediaEmbed) string {
 }
 
 func renderImageEmbed(attrs map[string]string) (string, bool) {
-	rawURL := strings.TrimSpace(attrs["url"])
-	if !isValidRemoteURL(rawURL) {
+	url, ok := attrs["url"]
+	if !ok || !isValidRemoteURL(url) {
 		return "", false
 	}
-
-	width := parseDimension(attrs["width"])
-	align := parseAlign(attrs["align"])
-	alt := escapeAttr(attrs["alt"])
-	caption := escapeText(attrs["caption"])
-
-	style := ""
-	if width != "" {
-		style += fmt.Sprintf("max-width: min(%spx, 100%%); height: auto;", width)
+	m := MediaEmbed{
+		Kind:    "image",
+		URL:     url,
+		Alt:     attrs["alt"],
+		Caption: attrs["caption"],
+		Width:   parseDimension(attrs["width"]),
+		Align:   parseAlign(attrs["align"]),
 	}
-
-	imgTag := fmt.Sprintf(`<img src="%s" alt="%s" loading="lazy" decoding="async"`, escapeAttr(rawURL), alt)
-	if style != "" {
-		imgTag += fmt.Sprintf(` style="%s"`, style)
-	}
-	imgTag += ">"
-
-	figClass := "remote-image"
-	if align != "" {
-		figClass += " align-" + align
-	}
-
-	html := fmt.Sprintf(`<figure class="%s">%s`, figClass, imgTag)
-	if caption != "" {
-		html += fmt.Sprintf(`<figcaption>%s</figcaption>`, caption)
-	}
-	html += `</figure>`
-
-	return html, true
+	return RenderMediaEmbed(m), true
 }
 
 func renderVideoEmbed(attrs map[string]string) (string, bool) {
-	rawURL := strings.TrimSpace(attrs["url"])
-	if !isValidRemoteURL(rawURL) {
+	url, ok := attrs["url"]
+	if !ok || !isValidRemoteURL(url) {
 		return "", false
 	}
-
-	width := parseDimension(attrs["width"])
-	align := parseAlign(attrs["align"])
-	poster := escapeAttr(attrs["poster"])
-	
-	autoplay := parseBool(attrs["autoplay"])
-	muted := parseBool(attrs["muted"])
-	loop := parseBool(attrs["loop"])
-
-	style := ""
-	if width != "" {
-		style += fmt.Sprintf("max-width: min(%spx, 100%%); height: auto;", width)
+	m := MediaEmbed{
+		Kind:     "video",
+		URL:      url,
+		Caption:  attrs["caption"],
+		Width:    parseDimension(attrs["width"]),
+		Height:   parseDimension(attrs["height"]),
+		Align:    parseAlign(attrs["align"]),
+		Poster:   attrs["poster"],
+		Autoplay: parseBool(attrs["autoplay"]),
+		Muted:    parseBool(attrs["muted"]),
+		Loop:     parseBool(attrs["loop"]),
 	}
-
-	videoAttrs := `controls preload="metadata" playsinline`
-	if poster != "" {
-		videoAttrs += fmt.Sprintf(` poster="%s"`, poster)
-	}
-	if autoplay {
-		videoAttrs += " autoplay"
-	}
-	if muted {
-		videoAttrs += " muted"
-	}
-	if loop {
-		videoAttrs += " loop"
-	}
-	if style != "" {
-		videoAttrs += fmt.Sprintf(` style="%s"`, style)
-	}
-
-	videoTag := fmt.Sprintf(`<video src="%s" %s></video>`, escapeAttr(rawURL), videoAttrs)
-
-	figClass := "remote-video"
-	if align != "" {
-		figClass += " align-" + align
-	}
-
-	return fmt.Sprintf(`<figure class="%s">%s</figure>`, figClass, videoTag), true
+	return RenderMediaEmbed(m), true
 }
 
 func renderAudioEmbed(attrs map[string]string) (string, bool) {
-	rawURL := strings.TrimSpace(attrs["url"])
-	if !isValidRemoteURL(rawURL) {
+	url, ok := attrs["url"]
+	if !ok || !isValidRemoteURL(url) {
 		return "", false
 	}
-
-	audioAttrs := `controls preload="metadata"`
-	if parseBool(attrs["autoplay"]) {
-		audioAttrs += " autoplay"
+	m := MediaEmbed{
+		Kind:     "audio",
+		URL:      url,
+		Caption:  attrs["caption"],
+		Width:    parseDimension(attrs["width"]),
+		Align:    parseAlign(attrs["align"]),
+		Autoplay: parseBool(attrs["autoplay"]),
+		Muted:    parseBool(attrs["muted"]),
+		Loop:     parseBool(attrs["loop"]),
 	}
-	if parseBool(attrs["loop"]) {
-		audioAttrs += " loop"
-	}
-
-	return fmt.Sprintf(`<div class="remote-audio"><audio src="%s" %s></audio></div>`, escapeAttr(rawURL), audioAttrs), true
+	return RenderMediaEmbed(m), true
 }
 
 func renderPDFEmbed(attrs map[string]string) (string, bool) {
-	rawURL := strings.TrimSpace(attrs["url"])
-	if !isValidRemoteURL(rawURL) {
+	url, ok := attrs["url"]
+	if !ok || !isValidRemoteURL(url) {
 		return "", false
 	}
-
-	height := parseDimension(attrs["height"])
-	if height == "" {
-		height = "720"
+	m := MediaEmbed{
+		Kind:    "pdf",
+		URL:     url,
+		Alt:     "PDF Document",
+		Caption: attrs["caption"],
+		Width:   parseDimension(attrs["width"]),
+		Height:  parseDimension(attrs["height"]),
+		Align:   parseAlign(attrs["align"]),
 	}
-	title := escapeAttr(attrs["title"])
-	if title == "" {
-		title = "PDF Document"
-	}
-
-	html := fmt.Sprintf(`<iframe src="%s" title="%s" width="100%%" height="%spx" loading="lazy" class="remote-pdf"></iframe>`, escapeAttr(rawURL), title, height)
-	return html, true
+	return RenderMediaEmbed(m), true
 }
 
 func renderMusicEmbed(attrs map[string]string) (string, bool) {
