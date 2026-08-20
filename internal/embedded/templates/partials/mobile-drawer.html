@@ -53,10 +53,10 @@
 
       <label class="drawer-switch-item">
         <div class="drawer-switch-label">
-          <span class="material-symbol drawer-eyecare-icon" aria-hidden="true">palette</span>
-          <span class="drawer-switch-text">{{T .Lang "action.theme"}}</span>
+          <span class="material-symbol drawer-palette-icon" aria-hidden="true">palette</span>
+          <span class="drawer-switch-text">{{T .Lang "action.palette"}}</span>
         </div>
-        <button type="button" class="material-switch drawer-eyecare-toggle eye-care-toggle" role="switch" aria-checked="false" aria-label="{{T .Lang "action.theme"}}">
+        <button type="button" class="material-switch drawer-palette-toggle palette-toggle" role="switch" aria-checked="false" aria-label="{{T .Lang "action.palette"}}">
           <span class="switch-track"></span>
           <span class="switch-thumb"></span>
         </button>
@@ -71,17 +71,14 @@
     </div>
 
     <div class="mobile-drawer-footer">
-      <div class="drawer-footer-row">
-        <a href="{{if eq .Lang "en"}}/en{{end}}/rss.xml">RSS</a>
-        <span class="footer-separator" aria-hidden="true">/</span>
-        <a href="https://github.com/StatIndet" target="_blank" rel="noopener noreferrer">Github</a>
-        <span class="footer-separator" aria-hidden="true">/</span>
-        <a href="mailto:shi-zhi@outlook.com">email</a>
-      </div>
-      <div class="drawer-footer-row">
-        <a href="https://space.bilibili.com/1837364961" target="_blank" rel="noopener noreferrer">bilibili</a>
-        <span class="footer-separator" aria-hidden="true">/</span>
-        <a href="https://qm.qq.com/q/JQkjSvKBwI" target="_blank" rel="noopener noreferrer">QQ</a>
+      <div class="drawer-footer-row" style="display: flex; flex-wrap: wrap; gap: 0 8px; justify-content: center; padding: 0 16px;">
+        {{$socials := .Config.GetSocialLinks .Lang}}
+                {{range $index, $social := $socials}}
+          {{if gt $index 0}}<span class="footer-separator" aria-hidden="true">/</span>{{end}}
+    <a href="{{.URL}}" 
+            {{if and (not (eq .Type "email")) (not (eq .Type "rss"))}}target="_blank" rel="noopener noreferrer"{{end}}>{{.Label}}</a>
+          
+        {{end}}
       </div>
       <p class="drawer-copyright">© 2026 {{.Config.Profile.Author.Name}}</p>
     </div>

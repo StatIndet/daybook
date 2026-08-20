@@ -1,4 +1,4 @@
-:root {
+:root[data-palette="warm"] {
   --font-logo: "Daybook Fraunces", serif;
   --font-ui: "LXGW WenKai Screen", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-body: "LXGW WenKai Screen", "PingFang SC", "Microsoft YaHei", serif;
@@ -100,7 +100,7 @@
     0 3px 10px rgba(38, 35, 31, 0.08);
   color-scheme: light;
 }
-:root[data-theme="dark"] {
+:root[data-palette="warm"][data-theme="dark"] {
   --color-page: #131110;
   --color-text: #f4f0e3;
   --color-muted: #c8c1ae;
@@ -143,7 +143,7 @@
   color-scheme: dark;
 }
 
-:root[data-eye-care="false"] {
+:root {
   --color-page: oklch(96% 0.005 298);
   --color-text: oklch(25% 0.005 298);
   --color-muted: oklch(40% 0.005 298);
@@ -186,7 +186,7 @@
   color-scheme: light;
 }
 
-:root[data-eye-care="false"][data-theme="dark"] {
+:root[data-theme="dark"] {
   --color-page: oklch(22% 0.005 298);
   --color-text: oklch(92% 0.005 298);
   --color-muted: oklch(77% 0.005 298);

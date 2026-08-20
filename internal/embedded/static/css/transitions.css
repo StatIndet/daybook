@@ -22,46 +22,46 @@
 
 :root {
   --theme-reveal-from: 100% 0 0 0;
-  --eye-care-reveal-from: 0 100% 0 0;
+  --palette-reveal-from: 0 100% 0 0;
 }
 
 :root[data-theme="dark"] {
   --theme-reveal-from: 0 0 100% 0;
 }
 
-html[data-eye-care-changing="to-eye-care"] {
-  --eye-care-reveal-from: 0 100% 0 0;
+html[data-palette-changing="to-warm"] {
+  --palette-reveal-from: 0 100% 0 0;
 }
 
-html[data-eye-care-changing="from-eye-care"] {
-  --eye-care-reveal-from: 0 0 0 100%;
+html[data-palette-changing="from-warm"] {
+  --palette-reveal-from: 0 0 0 100%;
 }
 
 html[data-theme-changing] .hero-avatar-wrap,
-html[data-eye-care-changing] .hero-avatar-wrap,
+html[data-palette-changing] .hero-avatar-wrap,
 html[data-theme-changing] .side-avatar-wrap,
-html[data-eye-care-changing] .side-avatar-wrap,
+html[data-palette-changing] .side-avatar-wrap,
 html[data-theme-changing] .hero-name,
 html[data-theme-changing] .slogan-glyph,
-html[data-eye-care-changing] .hero-name,
-html[data-eye-care-changing] .slogan-glyph,
+html[data-palette-changing] .hero-name,
+html[data-palette-changing] .slogan-glyph,
 html[data-theme-changing] .notes-brand-name,
 html[data-theme-changing] .slogan-glyph,
-html[data-eye-care-changing] .notes-brand-name,
-html[data-eye-care-changing] .slogan-glyph,
+html[data-palette-changing] .notes-brand-name,
+html[data-palette-changing] .slogan-glyph,
 html[data-theme-changing] .notes-item-title a,
-html[data-eye-care-changing] .notes-item-title a,
+html[data-palette-changing] .notes-item-title a,
 html[data-theme-changing] .notes-item-meta,
-html[data-eye-care-changing] .notes-item-meta,
+html[data-palette-changing] .notes-item-meta,
 html[data-theme-changing] .note-title span,
-html[data-eye-care-changing] .note-title span,
+html[data-palette-changing] .note-title span,
 html[data-theme-changing] .note-meta,
-html[data-eye-care-changing] .note-meta {
+html[data-palette-changing] .note-meta {
   view-transition-name: none !important;
 }
 
 ::view-transition-old(theme-toggle-transition),
-::view-transition-old(eye-care-toggle-transition) {
+::view-transition-old(palette-toggle-transition) {
   animation: none;
   mix-blend-mode: normal;
   z-index: -1;
@@ -74,8 +74,8 @@ html[data-eye-care-changing] .note-meta {
   z-index: 99;
 }
 
-::view-transition-new(eye-care-toggle-transition) {
-  animation: eye-care-toggle-reveal 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+::view-transition-new(palette-toggle-transition) {
+  animation: palette-toggle-reveal 0.7s cubic-bezier(0.4, 0, 0.2, 1);
   clip-path: inset(0 0 0 0);
   mix-blend-mode: normal;
   z-index: 99;
@@ -92,9 +92,9 @@ html[data-eye-care-changing] .note-meta {
   }
 }
 
-@keyframes eye-care-toggle-reveal {
+@keyframes palette-toggle-reveal {
   from {
-    clip-path: inset(var(--eye-care-reveal-from));
+    clip-path: inset(var(--palette-reveal-from));
   }
 }
 

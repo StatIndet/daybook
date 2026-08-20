@@ -8,6 +8,13 @@
       return "";
     }
   }
+  function savedPalette() {
+    try {
+      return localStorage.getItem("palette") || "";
+    } catch (error) {
+      return "";
+    }
+  }
   function savedEyeCare() {
     try {
       return localStorage.getItem("eyeCare") || "";
@@ -21,9 +28,9 @@
     } catch (error) {
     }
   }
-  function storeEyeCare(enabled) {
+  function storePalette(palette) {
     try {
-      localStorage.setItem("eyeCare", enabled ? "true" : "false");
+      localStorage.setItem("palette", palette);
     } catch (error) {
     }
   }
@@ -33,8 +40,26 @@
     }
     return "light";
   }
-  function preferredEyeCare() {
-    return savedEyeCare() !== "false";
+  function preferredPalette() {
+    const palette = savedPalette();
+    if (palette === "warm" || palette === "default") return palette;
+    const legacy = savedEyeCare();
+    if (legacy === "true") {
+      storePalette("warm");
+      try {
+        localStorage.removeItem("eyeCare");
+      } catch (e) {
+      }
+      return "warm";
+    } else if (legacy === "false") {
+      storePalette("default");
+      try {
+        localStorage.removeItem("eyeCare");
+      } catch (e) {
+      }
+      return "default";
+    }
+    return "default";
   }
   function applyTheme(theme, remember) {
     const nextTheme = theme === "dark" ? "dark" : "light";
@@ -58,16 +83,16 @@
       el.textContent = nextTheme === "dark" ? "\u4EAE\u8272\u6A21\u5F0F" : "\u6697\u8272\u6A21\u5F0F";
     });
   }
-  function applyEyeCare(enabled, remember) {
-    const nextEyeCare = enabled !== false;
-    root.dataset["eyeCare"] = nextEyeCare ? "true" : "false";
+  function applyPalette(palette, remember) {
+    const nextPalette = palette === "warm" ? "warm" : "default";
+    root.dataset["palette"] = nextPalette;
     if (remember) {
-      storeEyeCare(nextEyeCare);
+      storePalette(nextPalette);
     }
-    document.querySelectorAll(".eye-care-toggle").forEach(function(button) {
-      button.setAttribute("aria-pressed", nextEyeCare ? "true" : "false");
+    document.querySelectorAll(".palette-toggle").forEach(function(button) {
+      button.setAttribute("aria-pressed", nextPalette === "warm" ? "true" : "false");
       if (button.getAttribute("role") === "switch") {
-        button.setAttribute("aria-checked", nextEyeCare ? "true" : "false");
+        button.setAttribute("aria-checked", nextPalette === "warm" ? "true" : "false");
       }
     });
   }
@@ -84,28 +109,6 @@
     root.style.removeProperty("view-transition-name");
     delete root.dataset[attributeName];
   }
-  applyTheme(savedTheme() || preferredTheme(), false);
-  applyEyeCare(preferredEyeCare(), false);
-  window.daybookSyncThemeButtons = function() {
-    applyTheme(root.dataset["theme"] || "", false);
-    applyEyeCare(root.dataset["eyeCare"] !== "false", false);
-  };
-  window.daybookSetTheme = applyTheme;
-  window.daybookSetEyeCare = applyEyeCare;
-  window.daybookShouldAnimateTheme = shouldAnimateTheme;
-  window.daybookClearThemeTransition = clearThemeTransition;
-  document.addEventListener("daybook:page-load", function() {
-    applyTheme(root.dataset["theme"] || "", false);
-    applyEyeCare(root.dataset["eyeCare"] !== "false", false);
-  });
-  document.addEventListener("pointerdown", function(event) {
-    const target = event.target;
-    if (!target) return;
-    const switchEl = target.closest(".material-switch");
-    if (switchEl) {
-      switchEl.classList.add("is-pressed");
-    }
-  });
   function removePressedState() {
     document.querySelectorAll(".material-switch.is-pressed").forEach(function(el) {
       el.classList.remove("is-pressed");
@@ -119,7 +122,7 @@
     const target = event.target;
     if (!target) return;
     const themeButton = target.closest(".theme-toggle");
-    const eyeCareButton = target.closest(".eye-care-toggle");
+    const paletteButton = target.closest(".palette-toggle");
     if (themeButton) {
       const current = root.dataset["theme"] === "dark" ? "dark" : "light";
       const next = current === "dark" ? "light" : "dark";
@@ -147,30 +150,30 @@
       }, 350);
       return;
     }
-    if (!eyeCareButton) {
+    if (!paletteButton) {
       return;
     }
-    const currentEyeCare = root.dataset["eyeCare"] !== "false";
-    const nextEyeCare = !currentEyeCare;
+    const currentPalette = root.dataset["palette"] === "warm" ? "warm" : "default";
+    const nextPalette = currentPalette === "warm" ? "default" : "warm";
     if (!shouldAnimateTheme()) {
-      applyEyeCare(nextEyeCare, true);
+      applyPalette(nextPalette, true);
       return;
     }
     isTransitioning = true;
-    if (eyeCareButton.getAttribute("role") === "switch") {
-      eyeCareButton.setAttribute("aria-checked", nextEyeCare ? "true" : "false");
+    if (paletteButton.getAttribute("role") === "switch") {
+      paletteButton.setAttribute("aria-checked", nextPalette === "warm" ? "true" : "false");
     }
     setTimeout(function() {
-      root.style.setProperty("view-transition-name", "eye-care-toggle-transition");
-      root.dataset["eyeCareChanging"] = nextEyeCare ? "to-eye-care" : "from-eye-care";
-      const eyeCareTransition = document.startViewTransition(function() {
-        applyEyeCare(nextEyeCare, true);
+      root.style.setProperty("view-transition-name", "palette-toggle-transition");
+      root.dataset["paletteChanging"] = nextPalette === "warm" ? "to-warm" : "from-warm";
+      const paletteTransition = document.startViewTransition(function() {
+        applyPalette(nextPalette, true);
       });
-      eyeCareTransition.finished.then(function() {
-        clearThemeTransition("eyeCareChanging");
+      paletteTransition.finished.then(function() {
+        clearThemeTransition("paletteChanging");
         isTransitioning = false;
       }, function() {
-        clearThemeTransition("eyeCareChanging");
+        clearThemeTransition("paletteChanging");
         isTransitioning = false;
       });
     }, 350);

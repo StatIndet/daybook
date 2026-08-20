@@ -574,8 +574,8 @@
 }
 
 .markdown :not(pre) > code {
-  background: var(--color-paper);
-  border: 1px solid var(--color-line);
+  background: var(--color-code-inline-bg);
+  border: 1px solid var(--color-code-border);
   border-radius: 3px;
   color: var(--color-muted);
   font-family: var(--font-mono);
@@ -588,9 +588,9 @@
     border-color 350ms ease;
 }
 
-:root[data-eye-care="false"] .markdown :not(pre) > code {
-  background: var(--color-code-inline-bg);
-  border-color: var(--color-code-border);
+:root[data-palette="warm"] .markdown :not(pre) > code {
+  background: var(--color-paper);
+  border-color: var(--color-line);
   color: var(--color-muted);
 }
 
@@ -941,13 +941,13 @@
   font-style: italic;
 }
 
-:root[data-eye-care="false"] .markdown .chroma .c,
-:root[data-eye-care="false"] .markdown .chroma .ch,
-:root[data-eye-care="false"] .markdown .chroma .cm,
-:root[data-eye-care="false"] .markdown .chroma .c1,
-:root[data-eye-care="false"] .markdown .chroma .cs,
-:root[data-eye-care="false"] .markdown .chroma .cp,
-:root[data-eye-care="false"] .markdown .chroma .cpf {
+:root[data-palette="default"] .markdown .chroma .c,
+:root[data-palette="default"] .markdown .chroma .ch,
+:root[data-palette="default"] .markdown .chroma .cm,
+:root[data-palette="default"] .markdown .chroma .c1,
+:root[data-palette="default"] .markdown .chroma .cs,
+:root[data-palette="default"] .markdown .chroma .cp,
+:root[data-palette="default"] .markdown .chroma .cpf {
   font-style: normal;
 }
 
@@ -1559,12 +1559,12 @@
   position: relative;
 }
 
-:root[data-eye-care="false"] .markdown blockquote.obsidian-note-embed {
+.markdown blockquote.obsidian-note-embed {
   border-left-color: var(--color-accent);
 }
 
-:root[data-eye-care="false"][data-theme="dark"] .markdown blockquote.obsidian-note-embed {
-  border-left-color: var(--color-accent);
+:root[data-palette="warm"] .markdown blockquote.obsidian-note-embed {
+  border-left-color: inherit; /* or whatever the base was, let's just leave it empty if there was no base, wait, the base has 'border-left: 2px solid var(--color-accent)' ? */
 }
 
 .markdown .obsidian-embed-content {

@@ -9,6 +9,14 @@
     }
   }
 
+  function savedPalette(): string {
+    try {
+      return localStorage.getItem("palette") || "";
+    } catch (error) {
+      return "";
+    }
+  }
+
   function savedEyeCare(): string {
     try {
       return localStorage.getItem("eyeCare") || "";
@@ -25,12 +33,10 @@
     }
   }
 
-  function storeEyeCare(enabled: boolean) {
+  function storePalette(palette: string) {
     try {
-      localStorage.setItem("eyeCare", enabled ? "true" : "false");
-    } catch (error) {
-      // Ignore storage failures so theme switching still works for this page.
-    }
+      localStorage.setItem("palette", palette);
+    } catch (error) {}
   }
 
   function preferredTheme(): string {
@@ -40,10 +46,23 @@
     return "light";
   }
 
-  function preferredEyeCare(): boolean {
-    return savedEyeCare() !== "false";
+  function preferredPalette(): string {
+    const palette = savedPalette();
+    if (palette === "warm" || palette === "default") return palette;
+    
+    // Legacy migration
+    const legacy = savedEyeCare();
+    if (legacy === "true") {
+      storePalette("warm");
+      try { localStorage.removeItem("eyeCare"); } catch(e) {}
+      return "warm";
+    } else if (legacy === "false") {
+      storePalette("default");
+      try { localStorage.removeItem("eyeCare"); } catch(e) {}
+      return "default";
+    }
+    return "default";
   }
-
   function applyTheme(theme: string, remember: boolean) {
     const nextTheme = theme === "dark" ? "dark" : "light";
     root.dataset['theme'] = nextTheme;
@@ -71,22 +90,23 @@
     });
   }
 
-  function applyEyeCare(enabled: boolean, remember: boolean) {
-    const nextEyeCare = enabled !== false;
-    root.dataset['eyeCare'] = nextEyeCare ? "true" : "false";
+  function applyPalette(palette: string, remember: boolean) {
+    const nextPalette = palette === "warm" ? "warm" : "default";
+    root.dataset['palette'] = nextPalette;
 
     if (remember) {
-      storeEyeCare(nextEyeCare);
+      storePalette(nextPalette);
     }
 
-    document.querySelectorAll(".eye-care-toggle").forEach(function (button) {
-      button.setAttribute("aria-pressed", nextEyeCare ? "true" : "false");
+    document.querySelectorAll(".palette-toggle").forEach(function (button) {
+      button.setAttribute("aria-pressed", nextPalette === "warm" ? "true" : "false");
       if (button.getAttribute("role") === "switch") {
-        button.setAttribute("aria-checked", nextEyeCare ? "true" : "false");
+        button.setAttribute("aria-checked", nextPalette === "warm" ? "true" : "false");
       }
     });
   }
 
+  
   function shouldAnimateTheme(): boolean {
     if (!document.startViewTransition) {
       return false;
@@ -101,33 +121,6 @@
     root.style.removeProperty("view-transition-name");
     delete root.dataset[attributeName];
   }
-
-  applyTheme(savedTheme() || preferredTheme(), false);
-  applyEyeCare(preferredEyeCare(), false);
-
-  window.daybookSyncThemeButtons = function () {
-    applyTheme(root.dataset['theme'] || "", false);
-    applyEyeCare(root.dataset['eyeCare'] !== "false", false);
-  };
-
-  window.daybookSetTheme = applyTheme;
-  window.daybookSetEyeCare = applyEyeCare;
-  window.daybookShouldAnimateTheme = shouldAnimateTheme;
-  window.daybookClearThemeTransition = clearThemeTransition;
-
-  document.addEventListener("daybook:page-load", function () {
-    applyTheme(root.dataset['theme'] || "", false);
-    applyEyeCare(root.dataset['eyeCare'] !== "false", false);
-  });
-
-  document.addEventListener("pointerdown", function (event: PointerEvent) {
-    const target = event.target as HTMLElement | null;
-    if (!target) return;
-    const switchEl = target.closest(".material-switch");
-    if (switchEl) {
-      switchEl.classList.add("is-pressed");
-    }
-  });
 
   function removePressedState() {
     document.querySelectorAll(".material-switch.is-pressed").forEach(function (el) {
@@ -147,7 +140,7 @@
     if (!target) return;
 
     const themeButton = target.closest(".theme-toggle");
-    const eyeCareButton = target.closest(".eye-care-toggle");
+    const paletteButton = target.closest(".palette-toggle");
 
     if (themeButton) {
       const current = root.dataset['theme'] === "dark" ? "dark" : "light";
@@ -183,36 +176,36 @@
       return;
     }
 
-    if (!eyeCareButton) {
+    if (!paletteButton) {
       return;
     }
 
-    const currentEyeCare = root.dataset['eyeCare'] !== "false";
-    const nextEyeCare = !currentEyeCare;
+    const currentPalette = root.dataset['palette'] === "warm" ? "warm" : "default";
+    const nextPalette = currentPalette === "warm" ? "default" : "warm";
 
     if (!shouldAnimateTheme()) {
-      applyEyeCare(nextEyeCare, true);
+      applyPalette(nextPalette, true);
       return;
     }
 
     isTransitioning = true;
-    if (eyeCareButton.getAttribute("role") === "switch") {
-      eyeCareButton.setAttribute("aria-checked", nextEyeCare ? "true" : "false");
+    if (paletteButton.getAttribute("role") === "switch") {
+      paletteButton.setAttribute("aria-checked", nextPalette === "warm" ? "true" : "false");
     }
 
     setTimeout(function () {
-      root.style.setProperty("view-transition-name", "eye-care-toggle-transition");
-      root.dataset['eyeCareChanging'] = nextEyeCare ? "to-eye-care" : "from-eye-care";
+      root.style.setProperty("view-transition-name", "palette-toggle-transition");
+      root.dataset['paletteChanging'] = nextPalette === "warm" ? "to-warm" : "from-warm";
 
-      const eyeCareTransition = document.startViewTransition!(function () {
-        applyEyeCare(nextEyeCare, true);
+      const paletteTransition = document.startViewTransition!(function () {
+        applyPalette(nextPalette, true);
       });
 
-      eyeCareTransition.finished.then(function () {
-        clearThemeTransition("eyeCareChanging");
+      paletteTransition.finished.then(function () {
+        clearThemeTransition("paletteChanging");
         isTransitioning = false;
       }, function () {
-        clearThemeTransition("eyeCareChanging");
+        clearThemeTransition("paletteChanging");
         isTransitioning = false;
       });
     }, 350);

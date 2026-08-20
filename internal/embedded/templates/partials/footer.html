@@ -68,18 +68,12 @@
 {{end}}
 
 {{define "notes_footer_links"}}
-<nav class="notes-footer-links" aria-label="页脚链接">
-  <div class="footer-link-row">
-    <a href="{{if eq .Lang "en"}}/en{{end}}/rss.xml">RSS</a>
-    <span class="footer-separator" aria-hidden="true">/</span>
-    <a href="https://github.com/StatIndet" target="_blank" rel="noopener noreferrer">Github</a>
-    <span class="footer-separator" aria-hidden="true">/</span>
-    <a href="mailto:shi-zhi@outlook.com">email</a>
-  </div>
-  <div class="footer-link-row">
-    <a href="https://space.bilibili.com/1837364961" target="_blank" rel="noopener noreferrer">bilibili</a>
-    <span class="footer-separator" aria-hidden="true">/</span>
-    <a href="https://qm.qq.com/q/JQkjSvKBwI" target="_blank" rel="noopener noreferrer">QQ</a>
-  </div>
+<nav class="notes-footer-links" aria-label="页脚链接" style="display: flex; flex-wrap: wrap; gap: 0 8px;">
+  {{$socials := .Config.GetSocialLinks .Lang}}
+  {{range $index, $social := $socials}}
+    {{if gt $index 0}}<span class="footer-separator" aria-hidden="true">/</span>{{end}}
+    <a href="{{.URL}}" 
+      {{if and (not (eq .Type "email")) (not (eq .Type "rss"))}}target="_blank" rel="noopener noreferrer"{{end}}>{{.Label}}</a>
+  {{end}}
 </nav>
 {{end}}

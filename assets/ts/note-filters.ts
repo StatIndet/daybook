@@ -373,13 +373,18 @@
   function syncTagsScrollbar() {
     const panels = document.querySelectorAll('.notes-tags-panel:not(.mobile-tags-panel)');
     panels.forEach(panel => {
+      if (panel.hasAttribute('data-scrollbar-initialized')) return;
+      panel.setAttribute('data-scrollbar-initialized', 'true');
+
       const viewport = panel.querySelector('.notes-tags-scroll-viewport') as HTMLElement | null;
       const scrollbar = panel.querySelector('.notes-tags-scrollbar') as HTMLElement | null;
       const thumb = panel.querySelector('.notes-tags-scrollbar-thumb') as HTMLElement | null;
 
       if (!viewport || !scrollbar || !thumb) return;
 
-      const updateThumb = () => {
+      let hideTimer: number | null = null;
+
+      const updateTagsScrollbarGeometry = () => {
         const clientHeight = viewport.clientHeight;
         const scrollHeight = viewport.scrollHeight;
         const scrollTop = viewport.scrollTop;
@@ -389,8 +394,6 @@
           return;
         }
 
-        scrollbar.classList.add('is-visible');
-        
         const minThumb = 30;
         const ratio = clientHeight / scrollHeight;
         const thumbHeight = Math.max(minThumb, clientHeight * ratio);
@@ -404,13 +407,34 @@
         thumb.style.transform = `translateY(${thumbTop}px)`;
       };
 
-      viewport.addEventListener('scroll', updateThumb, { passive: true });
-      updateThumb();
+      const showTagsScrollbarTemporarily = () => {
+        const clientHeight = viewport.clientHeight;
+        const scrollHeight = viewport.scrollHeight;
+        if (scrollHeight <= clientHeight || clientHeight === 0) return;
 
-      const observer = new ResizeObserver(() => updateThumb());
+        scrollbar.classList.add('is-visible');
+        
+        if (hideTimer !== null) {
+          window.clearTimeout(hideTimer);
+        }
+        hideTimer = window.setTimeout(() => {
+          scrollbar.classList.remove('is-visible');
+        }, 800);
+      };
+
+      viewport.addEventListener('scroll', () => {
+        updateTagsScrollbarGeometry();
+        showTagsScrollbarTemporarily();
+      }, { passive: true });
+
+      const observer = new ResizeObserver(() => {
+        updateTagsScrollbarGeometry();
+      });
       observer.observe(viewport);
       const tagList = viewport.querySelector('.notes-tag-list');
       if (tagList) observer.observe(tagList);
+      
+      updateTagsScrollbarGeometry();
     });
   }
 

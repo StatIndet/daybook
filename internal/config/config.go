@@ -8,6 +8,18 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type SocialLinkConfig struct {
+	Type string `yaml:"type"`
+	URL  string `yaml:"url"`
+}
+
+type SocialLink struct {
+	Type  string
+	Label string
+	URL   string
+	Icon  string
+}
+
 type AuthorConfig struct {
 	Name     string `yaml:"name"`
 	NameEn   string `yaml:"nameEn"`
@@ -19,6 +31,8 @@ type AuthorConfig struct {
 type ProfileConfig struct {
 	Author AuthorConfig      `yaml:"author"`
 	Slogan map[string]string `yaml:"slogan"`
+	Social []SocialLinkConfig `yaml:"social"`
+	ParsedSocial []SocialLink `yaml:"-"`
 }
 
 func (p ProfileConfig) HasSignatureFont() bool {
@@ -93,6 +107,70 @@ func (c Config) GetHomeTitle(lang string) string {
 
 func (c Config) GetHomeDescription(lang string) string {
 	return getMultilingualString(c.SEO.HomeDescription, lang)
+}
+
+func (c Config) GetSocialLinks(lang string) []SocialLink {
+	links := make([]SocialLink, len(c.Profile.ParsedSocial))
+	copy(links, c.Profile.ParsedSocial)
+	
+	rssURL := "/rss.xml"
+	if lang != "zh-CN" && lang != "zh" {
+		rssURL = "/" + lang + "/rss.xml"
+	}
+	
+	links = append(links, SocialLink{
+		Type:  "rss",
+		Label: "RSS",
+		URL:   rssURL,
+		Icon:  "/icons/social/rss.svg",
+	})
+	
+	return links
+}
+
+
+var supportedSocialPlatforms = map[string]struct{ Label, Icon string }{
+	"bilibili":  {"Bilibili", "/icons/social/bilibili.svg"},
+	"bluesky":   {"Bluesky", "/icons/social/bluesky.svg"},
+	"discord":   {"Discord", "/icons/social/discord.svg"},
+	"email":     {"Email", "/icons/social/gmail.svg"},
+	"github":    {"GitHub", "/icons/social/github.svg"},
+	"gitlab":    {"GitLab", "/icons/social/gitlab.svg"},
+	"instagram": {"Instagram", "/icons/social/instagram.svg"},
+	"mastodon":  {"Mastodon", "/icons/social/mastodon.svg"},
+	"qq":        {"QQ", "/icons/social/qq.svg"},
+	"reddit":    {"Reddit", "/icons/social/reddit.svg"},
+	"telegram":  {"Telegram", "/icons/social/telegram.svg"},
+	"threads":   {"Threads", "/icons/social/threads.svg"},
+	"twitch":    {"Twitch", "/icons/social/twitch.svg"},
+	"x":         {"X (Twitter)", "/icons/social/x.svg"},
+	"youtube":   {"YouTube", "/icons/social/youtube.svg"},
+}
+
+func parseSocialLinks(configs []SocialLinkConfig) []SocialLink {
+	var links []SocialLink
+	for _, c := range configs {
+		if strings.TrimSpace(c.URL) == "" {
+			continue
+		}
+		if c.Type == "rss" {
+			continue
+		}
+		
+		info, ok := supportedSocialPlatforms[c.Type]
+		if !ok {
+			fmt.Printf("[daybook] warning: unsupported social platform \"%s\", skipping\n", c.Type)
+			continue
+		}
+		
+		links = append(links, SocialLink{
+			Type:  c.Type,
+			Label: info.Label,
+			URL:   c.URL,
+			Icon:  info.Icon,
+		})
+	}
+	return links
 }
 
 func Load() (Config, error) {

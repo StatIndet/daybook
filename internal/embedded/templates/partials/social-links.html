@@ -1,19 +1,11 @@
 {{define "social_links"}}
-<nav class="hero-social" aria-label="社交链接">
-  <a href="https://github.com/StatIndet" aria-label="GitHub" target="_blank" rel="noopener noreferrer">
-    <img src="/icons/social/github.svg" alt="" aria-hidden="true">
-  </a>
-  <a href="https://space.bilibili.com/1837364961" aria-label="B站" target="_blank" rel="noopener noreferrer">
-    <img src="/icons/social/bilibili.svg" alt="" aria-hidden="true">
-  </a>
-  <a href="https://qm.qq.com/q/JQkjSvKBwI" aria-label="QQ" target="_blank" rel="noopener noreferrer">
-    <img src="/icons/social/qq.svg" alt="" aria-hidden="true">
-  </a>
-  <a href="mailto:shi-zhi@outlook.com" aria-label="邮箱">
-    <img src="/icons/social/gmail.svg" alt="" aria-hidden="true">
-  </a>
-  <a href="/rss.xml" aria-label="RSS">
-    <img src="/icons/social/rss.svg" alt="" aria-hidden="true">
-  </a>
+<nav class="hero-social" aria-label="Social Links">
+  {{$socials := .Config.GetSocialLinks .Lang}}
+  {{range $socials}}
+    <a href="{{.URL}}" aria-label="{{.Label}}" 
+      {{if and (not (eq .Type "email")) (not (eq .Type "rss"))}}target="_blank" rel="noopener noreferrer"{{end}}>
+      <img src="{{.Icon}}" alt="" aria-hidden="true">
+    </a>
+  {{end}}
 </nav>
 {{end}}

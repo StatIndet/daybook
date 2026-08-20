@@ -376,7 +376,7 @@
   }
 
   .graph-toolbar .theme-toggle,
-  .graph-toolbar .eye-care-toggle {
+  .graph-toolbar .palette-toggle {
     display: none !important;
   }
 }

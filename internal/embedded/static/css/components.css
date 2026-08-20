@@ -120,11 +120,18 @@
   color: var(--color-accent);
 }
 
+.notes-action-button .material-symbol {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
 .notes-action-button:hover .material-symbol,
-.notes-action-button:focus-visible .material-symbol,
+.notes-action-button:focus-visible .material-symbol {
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
 .notes-action-button[aria-expanded="true"] .material-symbol,
 .notes-action-button[aria-pressed="true"] .material-symbol {
-  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
+  color: var(--color-accent);
 }
 
 .notes-action-button:hover::after,
