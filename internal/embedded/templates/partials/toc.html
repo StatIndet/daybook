@@ -18,7 +18,8 @@
         {{end}}
       </ol>
     </nav>
-    <div class="note-toc-reading-controls" style="margin-top: 16px; border-top: 1px dashed var(--color-line); padding-top: 16px;">
+    <div class="note-toc-divider" aria-hidden="true" style="--toc-index: {{len .Note.Headings}}"></div>
+    <div class="note-toc-reading-controls" style="--toc-index: {{len .Note.Headings}}">
       {{template "reading_controls" .}}
     </div>
   </aside>

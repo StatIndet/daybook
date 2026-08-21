@@ -13,7 +13,7 @@
 {{end}}
 
 {{define "notes_aside"}}
-<aside class="notes-aside" aria-label="站点信息">
+<aside class="notes-aside" aria-label="站点信息" data-transition-region="notes-aside">
   <div class="notes-brand notes-aside-identity">
     <h1 class="notes-brand-name">
       <span class="notes-brand-cn{{if .Config.Profile.HasSignatureFont}} use-signature-font{{end}}">{{.Config.Profile.Author.Name}}</span>

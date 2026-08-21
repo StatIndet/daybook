@@ -294,6 +294,7 @@ function initSiteUptime(root = document) {
           document.documentElement.classList.add("article-transition");
           transitionInfo = engine.prepareArticleTransitionSource(oldUrl, targetUrl.href, sourceLink);
         } else if (!isTraverse) {
+          engine.resolveStableRegions(document, newDocument);
           document.body.classList.add(engine.exitClassName(document.body));
           await new Promise((r) => setTimeout(r, engine.cssDuration("--transition-exit-delay", 260)));
         }

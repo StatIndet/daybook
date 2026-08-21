@@ -84,6 +84,8 @@ type NotePage struct {
 	CommentEnabled      bool
 	IsFallback          bool
 	HasTranslation      bool
+	Pin                 bool
+	HasMusic            bool
 	TitleLayout         template.HTML
 	TitleTransitionName string
 	DateTransitionName  string

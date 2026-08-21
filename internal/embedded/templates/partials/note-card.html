@@ -1,27 +1,27 @@
 {{define "note_card"}}
 <article class="notes-item" data-note-card data-search-title="{{.Title}}" data-search-summary="{{.Summary}}" data-tags="{{range .Tags}}{{.}}&#10;{{end}}" data-tag-ids="{{range .TagIDs}}{{.}}&#10;{{end}}">
-  <div class="notes-item-header">
+  <div class="notes-item-header" data-transition-scope="{{.Slug}}">
     <h1 class="notes-item-title">
       <a href="{{.URL}}" data-title-transition-key="{{.Slug}}">
         {{.TitleLayout}}
       </a>
+    </h1>
+    <div class="notes-item-indicators">
       {{if .Pin}}
-        <span class="notes-item-pin" aria-hidden="true" title="已固定"></span>
+        <span class="notes-item-pin" aria-hidden="true" title="已固定" data-article-shared="pin"></span>
       {{end}}
       {{if .HasMusic}}
-        <span class="material-symbol notes-item-music" aria-hidden="true" title="包含音乐">music_note_2</span>
+        <span class="material-symbol notes-item-music" aria-hidden="true" title="包含音乐" data-article-shared="music">music_note_2</span>
       {{end}}
       {{if .HasTranslation}}
-        <span class="material-symbol notes-item-bilingual" aria-hidden="true" title="双语">translate</span>
+        <span class="material-symbol notes-item-bilingual" aria-hidden="true" title="双语" data-article-shared="bilingual">translate</span>
       {{end}}
-    </h1>
+    </div>
     <p class="notes-item-meta">
-      <span class="meta-transition-group" data-meta-transition-key="{{.Slug}}">
-        <time datetime="{{.Date}}" data-date-transition-key="{{.Slug}}">{{.Date}}</time>
-        <span class="reading-time">{{.ReadingMinutes}} {{T .Lang "post.min_read"}}</span>
-      </span>
+      <time datetime="{{.Date}}" data-article-shared="published">{{.Date}}</time>
+      <span class="reading-time" data-article-shared="reading">{{.ReadingMinutes}} {{T .Lang "post.min_read"}}</span>
       {{if .Updated}}
-        <span class="updated-time">&bull; updated <time datetime="{{.Updated}}">{{.Updated}}</time></span>
+        <span class="updated-time" data-article-shared="updated">&bull; updated <time datetime="{{.Updated}}">{{.Updated}}</time></span>
       {{end}}
     </p>
   </div>

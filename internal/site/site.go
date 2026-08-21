@@ -387,6 +387,8 @@ func Build(options Options) (BuildResult, error) {
 					CommentEnabled:      commentEnabled,
 					IsFallback:          isFallback,
 					HasTranslation:      hasTranslation,
+					Pin:                 note.Pin,
+					HasMusic:            note.HasMusic,
 					TitleLayout:         titleLayoutHTML,
 					TitleTransitionName: titleTransitionName,
 					DateTransitionName:  dateTransitionName,

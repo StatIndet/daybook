@@ -31,7 +31,23 @@
   {{template "mobile_overlay" .}}
   <script type="module">
     let walineLoader = null;
+    
+    function updateStaggerIndices() {
+      const staggerMeta = document.querySelector(".article-stagger-meta");
+      if (staggerMeta) {
+        const items = staggerMeta.children;
+        for (let i = 0; i < items.length; i++) {
+          items[i].style.setProperty("--stagger-index", i);
+        }
+      }
+    }
+    
+    // Run on initial load
+    updateStaggerIndices();
+    
     document.addEventListener("daybook:page-load", async () => {
+      updateStaggerIndices();
+      
       const container = document.getElementById("waline");
       if (container) {
         if (!walineLoader) {

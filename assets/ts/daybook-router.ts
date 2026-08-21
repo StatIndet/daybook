@@ -294,6 +294,7 @@ interface DaybookTransitionFinishedDetail {
           document.documentElement.classList.add("article-transition");
           transitionInfo = engine.prepareArticleTransitionSource(oldUrl, targetUrl.href, sourceLink);
         } else if (!isTraverse) { // Push transition
+          engine.resolveStableRegions(document, newDocument);
           document.body.classList.add(engine.exitClassName(document.body));
           
           await new Promise(r => setTimeout(r, engine.cssDuration("--transition-exit-delay", 260)));

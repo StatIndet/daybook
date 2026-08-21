@@ -44,6 +44,13 @@
   gap: 0.55rem 0.85rem;
 }
 
+.notes-item-indicators {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  margin-left: -0.3em; /* to counteract individual icon margins */
+}
+
 .notes-item-title {
   font-family: var(--font-body);
   font-size: 1.05rem;
@@ -310,21 +317,33 @@ hr.notes-divider {
   }
 
   .notes-item-header {
-    display: block;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas: 
+      "title title"
+      "indicators meta";
+    gap: 0.25rem 0.65rem;
+    align-items: center;
   }
 
   .notes-item-title {
-    display: block;
+    grid-area: title;
     font-size: 1rem;
-    margin-bottom: 0.25em;
+    margin-bottom: 0;
+  }
+  
+  .notes-item-indicators {
+    grid-area: indicators;
   }
 
   .notes-item-meta {
+    grid-area: meta;
     align-items: center;
     display: flex;
     font-size: 1.05rem;
     gap: 0.65em;
-    padding-top: 0.2em;
+    margin: 0;
+    justify-self: start;
   }
 }
 

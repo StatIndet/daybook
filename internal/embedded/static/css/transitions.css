@@ -462,53 +462,53 @@ html.article-transition .slogan-glyph {
 .home-entering .footer-stats-row > *:nth-child(2) { animation-delay: 294ms; }
 .home-entering .footer-stats-row > *:nth-child(1) { animation-delay: 322ms; }
 
-html:not(.article-transition) body.page-exiting .side-nav .nav-link {
+html:not(.article-transition) body.page-exiting .side-nav:not(.transition-stable) .nav-link {
   animation: side-nav-exit-left var(--duration-normal) var(--ease-out) both;
 }
 
-html:not(.article-transition) body.page-exiting .side-nav .nav-link:nth-child(1) {
+html:not(.article-transition) body.page-exiting .side-nav:not(.transition-stable) .nav-link:nth-child(1) {
   animation-delay: 0ms;
 }
 
-html:not(.article-transition) body.page-exiting .side-nav .nav-link:nth-child(2) {
+html:not(.article-transition) body.page-exiting .side-nav:not(.transition-stable) .nav-link:nth-child(2) {
   animation-delay: 28ms;
 }
 
-html:not(.article-transition) body.page-exiting .side-nav .nav-link:nth-child(3) {
+html:not(.article-transition) body.page-exiting .side-nav:not(.transition-stable) .nav-link:nth-child(3) {
   animation-delay: 56ms;
 }
 
-html:not(.article-transition) body.page-exiting .side-nav .nav-link:nth-child(4) {
+html:not(.article-transition) body.page-exiting .side-nav:not(.transition-stable) .nav-link:nth-child(4) {
   animation-delay: 84ms;
 }
 
-html:not(.article-transition) body.page-exiting .side-nav .nav-link:nth-child(5) {
+html:not(.article-transition) body.page-exiting .side-nav:not(.transition-stable) .nav-link:nth-child(5) {
   animation-delay: 112ms;
 }
 
-html:not(.article-transition) body.page-exiting .notes-footer-actions .notes-action-button,
-html:not(.article-transition) body.page-exiting .notes-footer-links,
-html:not(.article-transition) body.page-exiting .notes-footer > p {
+html:not(.article-transition) body.page-exiting .notes-aside:not(.transition-stable) .notes-footer-actions .notes-action-button,
+html:not(.article-transition) body.page-exiting .notes-aside:not(.transition-stable) .notes-footer-links,
+html:not(.article-transition) body.page-exiting .notes-aside:not(.transition-stable) .notes-footer > p {
   animation: aside-exit-right var(--duration-normal) var(--ease-out) both;
 }
 
-html:not(.article-transition) body.page-exiting .notes-footer-actions .notes-action-button:nth-child(1) {
+html:not(.article-transition) body.page-exiting .notes-aside:not(.transition-stable) .notes-footer-actions .notes-action-button:nth-child(1) {
   animation-delay: 40ms;
 }
 
-html:not(.article-transition) body.page-exiting .notes-footer-actions .notes-action-button:nth-child(2) {
+html:not(.article-transition) body.page-exiting .notes-aside:not(.transition-stable) .notes-footer-actions .notes-action-button:nth-child(2) {
   animation-delay: 68ms;
 }
 
-html:not(.article-transition) body.page-exiting .notes-footer-actions .notes-action-button:nth-child(3) {
+html:not(.article-transition) body.page-exiting .notes-aside:not(.transition-stable) .notes-footer-actions .notes-action-button:nth-child(3) {
   animation-delay: 96ms;
 }
 
-html:not(.article-transition) body.page-exiting .notes-footer-links {
+html:not(.article-transition) body.page-exiting .notes-aside:not(.transition-stable) .notes-footer-links {
   animation-delay: 124ms;
 }
 
-html:not(.article-transition) body.page-exiting .notes-footer > p {
+html:not(.article-transition) body.page-exiting .notes-aside:not(.transition-stable) .notes-footer > p {
   animation-delay: 152ms;
 }
 
@@ -516,22 +516,22 @@ html.article-transition .persistent-logo,
 html.article-transition .side-rail,
 html.article-transition .notes-page,
 html.article-transition .side-nav,
-html.article-transition .side-nav .nav-link,
+html.article-transition .side-nav:not(.transition-stable) .nav-link,
 html.article-transition .side-avatar-link,
 html.article-transition .side-avatar-wrap,
 html.article-transition .notes-aside,
 html.article-transition .notes-aside *,
-html.article-transition .notes-footer-actions .notes-action-button,
-html.article-transition .notes-footer-links,
-html.article-transition .notes-footer > p {
+html.article-transition .notes-aside:not(.transition-stable) .notes-footer-actions .notes-action-button,
+html.article-transition .notes-aside:not(.transition-stable) .notes-footer-links,
+html.article-transition .notes-aside:not(.transition-stable) .notes-footer > p {
   animation: none !important;
   opacity: 1 !important;
   transform: none !important;
 }
 
 html.article-transition [data-title-transition-key],
-html.article-transition [data-date-transition-key],
-html.article-transition [data-meta-transition-key] {
+html.article-transition [data-transition-scope],
+html.article-transition [data-transition-scope] {
   view-transition-name: none !important;
 }
 
@@ -547,56 +547,56 @@ html.article-transition [data-meta-transition-key] {
 
 
 
-html:not(.article-transition) body.page-entering.page-body .side-nav .nav-link {
+html:not(.article-transition) body.page-entering.page-body .side-nav:not(.transition-stable) .nav-link {
   animation: side-nav-enter var(--duration-normal) var(--ease-out) both;
 }
 
-html:not(.article-transition) body.page-entering.page-body .side-nav .nav-link:nth-child(1) {
+html:not(.article-transition) body.page-entering.page-body .side-nav:not(.transition-stable) .nav-link:nth-child(1) {
   animation-delay: 80ms;
 }
 
-html:not(.article-transition) body.page-entering.page-body .side-nav .nav-link:nth-child(2) {
+html:not(.article-transition) body.page-entering.page-body .side-nav:not(.transition-stable) .nav-link:nth-child(2) {
   animation-delay: 112ms;
 }
 
-html:not(.article-transition) body.page-entering.page-body .side-nav .nav-link:nth-child(3) {
+html:not(.article-transition) body.page-entering.page-body .side-nav:not(.transition-stable) .nav-link:nth-child(3) {
   animation-delay: 144ms;
 }
 
-html:not(.article-transition) body.page-entering.page-body .side-nav .nav-link:nth-child(4) {
+html:not(.article-transition) body.page-entering.page-body .side-nav:not(.transition-stable) .nav-link:nth-child(4) {
   animation-delay: 176ms;
 }
 
-html:not(.article-transition) body.page-entering.page-body .side-nav .nav-link:nth-child(5) {
+html:not(.article-transition) body.page-entering.page-body .side-nav:not(.transition-stable) .nav-link:nth-child(5) {
   animation-delay: 208ms;
 }
 
-html:not(.article-transition) body.page-entering .notes-footer-actions .notes-action-button {
+html:not(.article-transition) body.page-entering .notes-aside:not(.transition-stable) .notes-footer-actions .notes-action-button {
   animation: aside-enter var(--duration-normal) var(--ease-out) both;
 }
 
-html:not(.article-transition) body.page-entering .notes-footer-actions .notes-action-button:nth-child(1) {
+html:not(.article-transition) body.page-entering .notes-aside:not(.transition-stable) .notes-footer-actions .notes-action-button:nth-child(1) {
   animation-delay: 170ms;
 }
 
-html:not(.article-transition) body.page-entering .notes-footer-actions .notes-action-button:nth-child(2) {
+html:not(.article-transition) body.page-entering .notes-aside:not(.transition-stable) .notes-footer-actions .notes-action-button:nth-child(2) {
   animation-delay: 205ms;
 }
 
-html:not(.article-transition) body.page-entering .notes-footer-actions .notes-action-button:nth-child(3) {
+html:not(.article-transition) body.page-entering .notes-aside:not(.transition-stable) .notes-footer-actions .notes-action-button:nth-child(3) {
   animation-delay: 240ms;
 }
 
-html:not(.article-transition) body.page-entering .notes-footer-links,
-html:not(.article-transition) body.page-entering .notes-footer > p {
+html:not(.article-transition) body.page-entering .notes-aside:not(.transition-stable) .notes-footer-links,
+html:not(.article-transition) body.page-entering .notes-aside:not(.transition-stable) .notes-footer > p {
   animation: aside-enter var(--duration-normal) var(--ease-out) both;
 }
 
-html:not(.article-transition) body.page-entering .notes-footer-links {
+html:not(.article-transition) body.page-entering .notes-aside:not(.transition-stable) .notes-footer-links {
   animation-delay: 280ms;
 }
 
-html:not(.article-transition) body.page-entering .notes-footer > p {
+html:not(.article-transition) body.page-entering .notes-aside:not(.transition-stable) .notes-footer > p {
   animation-delay: 320ms;
 }
 
@@ -648,66 +648,47 @@ body.page-entering .archive-item {
   animation: article-content-enter-mini var(--post-enter-duration) var(--ease-page) 205ms both;
 }
 
-@media (max-width: 1600px) {
-  .note-body .note-toc {
-    animation: article-content-enter var(--post-enter-duration) var(--ease-page) 100ms both;
-    opacity: 0;
-  }
-}
-
-@media (min-width: 1601px) {
+@media (min-width: 1281px) {
   .note-body .note-toc-header {
-    animation: article-content-enter-mini var(--post-enter-duration) var(--ease-page) 175ms backwards;
+    animation: article-content-enter-mini var(--post-enter-duration) var(--ease-page) backwards;
+    animation-delay: 50ms;
   }
 
   .note-body .note-toc-panel li {
+    animation: article-content-enter-mini var(--post-enter-duration) var(--ease-page) backwards;
+    animation-delay: calc(80ms + min(var(--toc-index, 0), 20) * 30ms);
+  }
+
+  .note-body .note-toc-divider {
+    animation: divider-draw 400ms var(--ease-page) backwards;
+    animation-delay: calc(100ms + min(var(--toc-index, 0), 20) * 30ms);
+  }
+
+  .note-body .note-toc-reading-controls > * {
     animation: article-content-enter var(--post-enter-duration) var(--ease-page) backwards;
   }
-
-  .note-body .note-toc-panel li:nth-child(1) {
-    animation-delay: 175ms;
+  
+  .note-body .note-toc-reading-controls > *:nth-child(1) {
+    animation-delay: calc(120ms + min(var(--toc-index, 0), 20) * 30ms);
   }
-
-  .note-body .note-toc-panel li:nth-child(2) {
-    animation-delay: 200ms;
+  .note-body .note-toc-reading-controls > *:nth-child(2) {
+    animation-delay: calc(150ms + min(var(--toc-index, 0), 20) * 30ms);
   }
-
-  .note-body .note-toc-panel li:nth-child(3) {
-    animation-delay: 225ms;
-  }
-
-  .note-body .note-toc-panel li:nth-child(4) {
-    animation-delay: 250ms;
-  }
-
-  .note-body .note-toc-panel li:nth-child(5) {
-    animation-delay: 275ms;
-  }
-
-  .note-body .note-toc-panel li:nth-child(6) {
-    animation-delay: 300ms;
-  }
-
-  .note-body .note-toc-panel li:nth-child(7) {
-    animation-delay: 325ms;
-  }
-
-  .note-body .note-toc-panel li:nth-child(8) {
-    animation-delay: 350ms;
-  }
-
-  .note-body .note-toc-panel li:nth-child(n + 9) {
-    animation-delay: 375ms;
+  .note-body .note-toc-reading-controls > *:nth-child(3) {
+    animation-delay: calc(180ms + min(var(--toc-index, 0), 20) * 30ms);
   }
 }
 
-.note-body .note-right-controls > * {
-  animation: article-content-enter var(--post-enter-duration) var(--ease-page) both;
+@keyframes divider-draw {
+  from { clip-path: inset(0 100% 0 0); opacity: 0; }
+  to { clip-path: inset(0 0 0 0); opacity: 1; }
+}
+
+.note-body .article-stagger-meta > * {
+  animation: article-content-enter-mini var(--post-enter-duration) var(--ease-page) both;
+  animation-delay: calc(100ms + min(var(--stagger-index, 0), 10) * 30ms);
   opacity: 0;
 }
-.note-body .note-right-controls > *:nth-child(1) { animation-delay: 150ms; }
-.note-body .note-right-controls > *:nth-child(2) { animation-delay: 200ms; }
-.note-body .note-right-controls > *:nth-child(3) { animation-delay: 250ms; }
 
 .note-body .post-content > * {
   animation: article-content-enter var(--post-enter-duration) var(--ease-page) both;
@@ -794,11 +775,12 @@ body.page-entering .archive-item {
   .hero-name,
   .slogan-glyph,
   .notes-brand-name,
-  .slogan-glyph,
   .notes-item-title a,
-  .notes-item-meta,
+  .article-meta-rows,
+  .article-shared-meta,
+  .article-stagger-meta,
   .note-title span,
-  .note-meta {
+  [data-article-shared] {
     view-transition-name: none !important;
   }
 
@@ -811,15 +793,18 @@ body.page-entering .archive-item {
   .note-back-link,
   .note-toc,
   .notes-item,
-  .notes-item-meta,
+  .article-meta-rows,
+  .article-shared-meta,
+  .article-stagger-meta,
+  .article-stagger-meta > *,
   .archive-year,
   .archive-item,
-  .note-meta,
   .note-summary,
   .post-content > * {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
+    clip-path: none !important;
   }
 
   .note-toc,

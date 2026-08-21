@@ -75,9 +75,6 @@
   function findTitleBySlug(root, slug) {
     return findDataElement(root, "data-title-transition-key", slug) || findDataElement(root, "data-title-id", slug);
   }
-  function findMetaBySlug(root, slug) {
-    return findDataElement(root, "data-meta-transition-key", slug);
-  }
   function clearArticleSharedTransitions(root) {
     if (!root) return;
     root.querySelectorAll(".title-glyph").forEach((el) => {
@@ -86,7 +83,7 @@
     root.querySelectorAll("[data-title-transition-key]").forEach((el) => {
       el.style.removeProperty("view-transition-name");
     });
-    root.querySelectorAll("[data-meta-transition-key]").forEach((el) => {
+    root.querySelectorAll("[data-article-shared]").forEach((el) => {
       el.style.removeProperty("view-transition-name");
     });
   }
@@ -105,9 +102,13 @@
         sg.style.viewTransitionName = `title-glyph-${sg.dataset.glyphIndex}`;
       });
     }
-    const sourceMeta = findMetaBySlug(document, info.slug);
-    if (sourceMeta) {
-      sourceMeta.style.viewTransitionName = "meta-item-shared";
+    const sourceScope = findDataElement(document, "data-transition-scope", info.slug);
+    if (sourceScope) {
+      const sharedElements = sourceScope.querySelectorAll("[data-article-shared]");
+      sharedElements.forEach((el) => {
+        const name = el.getAttribute("data-article-shared");
+        el.style.viewTransitionName = `article-shared-${name}`;
+      });
       document.documentElement.classList.add("meta-shared-transition");
     }
     return info;
@@ -122,10 +123,14 @@
         tg.style.viewTransitionName = `title-glyph-${tg.dataset.glyphIndex}`;
       });
     }
-    const targetMeta = findMetaBySlug(document, info.slug);
-    if (targetMeta) {
-      targetMeta.style.viewTransitionName = "meta-item-shared";
-      targetMeta.classList.add("meta-shared-target");
+    const targetScope = findDataElement(document, "data-transition-scope", info.slug);
+    if (targetScope) {
+      const sharedElements = targetScope.querySelectorAll("[data-article-shared]");
+      sharedElements.forEach((el) => {
+        const name = el.getAttribute("data-article-shared");
+        el.style.viewTransitionName = `article-shared-${name}`;
+      });
+      targetScope.classList.add("meta-shared-target");
     }
   }
   function exitClassName(body) {
@@ -146,6 +151,24 @@
       document.body.classList.remove("home-exiting", "page-exiting", "home-entering", "page-entering");
     }
   }
+  function resolveStableRegions(oldDoc, newDoc) {
+    const oldRegions = oldDoc.querySelectorAll("[data-transition-region]");
+    const newRegions = newDoc.querySelectorAll("[data-transition-region]");
+    const oldMap = /* @__PURE__ */ new Map();
+    oldRegions.forEach((el) => {
+      oldMap.set(el.getAttribute("data-transition-region"), el);
+      el.classList.remove("transition-stable");
+    });
+    newRegions.forEach((newEl) => {
+      const region = newEl.getAttribute("data-transition-region");
+      const oldEl = oldMap.get(region);
+      newEl.classList.remove("transition-stable");
+      if (oldEl) {
+        oldEl.classList.add("transition-stable");
+        newEl.classList.add("transition-stable");
+      }
+    });
+  }
   window.DaybookTransitionEngine = {
     reducedMotion,
     cssDuration,
@@ -155,7 +178,8 @@
     clearArticleSharedTransitions,
     exitClassName,
     enterClassName,
-    clearTransitionClasses
+    clearTransitionClasses,
+    resolveStableRegions
   };
 })();
 //# sourceMappingURL=page-transition-engine.js.map
