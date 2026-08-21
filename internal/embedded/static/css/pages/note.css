@@ -892,9 +892,9 @@ body[data-reader-mode="immersive"] .note-title-wrapper {
   body[data-reader-mode="immersive"] .reader-progress-bar {
     visibility: visible;
     opacity: 1;
-    position: fixed;
-    top: var(--mobile-topbar-height);
-    transform: translateY(calc(var(--mobile-topbar-height) * -1));
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    transform: none;
     left: 0;
     width: 100%;
     height: 2px;
