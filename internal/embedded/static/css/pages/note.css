@@ -875,9 +875,35 @@ body[data-reader-mode="immersive"] .note-title-wrapper {
 @media (max-width: 960px) {
   /* Reader Mode specific controls (Single DOM Architecture) */
   body[data-reader-mode="immersive"] .mobile-reading-controls {
+    /* Host is ALWAYS 32px tall to avoid Gecko compositor bug */
     top: 0;
     transform: translateY(0) !important;
+    height: 32px !important;
+    background: transparent !important;
+    transition: none !important;
+  }
+
+  /* 1. Collapsed state (default) */
+  body[data-reader-mode="immersive"]:not(.reader-controls-expanded) .mobile-reading-controls {
+    pointer-events: none; /* Prevent 32px invisible box from blocking article clicks */
+  }
+
+  /* Hide inner controls */
+  body[data-reader-mode="immersive"]:not(.reader-controls-expanded) .mobile-reading-controls .rc-layer {
+    visibility: hidden;
+    transition: none !important;
+  }
+
+  /* The real 2px progress bar via pseudo-element */
+  body[data-reader-mode="immersive"]:not(.reader-controls-expanded) .mobile-reading-controls::before {
+    content: "";
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
     height: 2px;
+    pointer-events: none;
     background-image: linear-gradient(
       to right,
       var(--color-accent) 0,
@@ -885,29 +911,20 @@ body[data-reader-mode="immersive"] .note-title-wrapper {
       var(--color-line) var(--reading-progress),
       var(--color-line) 100%
     );
-    background-size: 100% 2px;
-    background-repeat: no-repeat;
-    background-position: top left;
-    background-color: transparent;
-    transition: height 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, top 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
   }
-  
-  /* Expanded state */
+
+  /* 2. Expanded state */
   body[data-reader-mode="immersive"].reader-controls-expanded .mobile-reading-controls {
-    height: 32px;
+    pointer-events: auto;
     top: env(safe-area-inset-top, 0px);
-    background-image: none; /* Disable gradient when expanded */
   }
-  
-  /* Hide the 32px layers when collapsed to avoid Gecko composite clipping bug */
-  body[data-reader-mode="immersive"]:not(.reader-controls-expanded) .mobile-reading-controls .rc-layer {
-    visibility: hidden;
-    transition: visibility 0s 300ms; /* Wait for collapse animation to finish before hiding */
+
+  body[data-reader-mode="immersive"].reader-controls-expanded .mobile-reading-controls::before {
+    display: none;
   }
-  
-  /* Show the layers when expanded */
+
   body[data-reader-mode="immersive"].reader-controls-expanded .mobile-reading-controls .rc-layer {
     visibility: visible;
-    transition: visibility 0s 0s; /* Show instantly when starting to expand */
+    transition: none !important;
   }
 }
