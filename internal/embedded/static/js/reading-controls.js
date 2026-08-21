@@ -34,7 +34,7 @@ function updateReadingControls() {
   const topBar = document.getElementById("mobile-top-bar");
   const desktopTexts = document.querySelectorAll("[data-desktop-progress-text]");
   const mobileTexts = document.querySelectorAll("[data-mobile-progress-text]");
-  const controlStrips = document.querySelectorAll(".mobile-reading-controls, .reader-mode-controls");
+  const controlStrips = document.querySelectorAll(".mobile-reading-controls");
   const backToTopBtns = document.querySelectorAll(".back-to-top-btn, .mobile-top-btn");
   const goToBottomBtns = document.querySelectorAll(".go-to-bottom-btn, .mobile-bottom-btn, .reading-progress-btn");
   backToTopBtns.forEach((btn) => {

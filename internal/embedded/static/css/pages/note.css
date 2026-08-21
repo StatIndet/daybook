@@ -872,48 +872,42 @@ body[data-reader-mode="immersive"] .note-title-wrapper {
 }
 
 /* Adjust mobile controls to sit properly without topbar */
-  /* Reader Mode specific controls (two sets of code) */
-  .reader-mode-controls {
-    display: none; /* Hidden by default globally */
-  }
-
 @media (max-width: 960px) {
-  /* Hide ordinary controls in Reader Mode */
+  /* Reader Mode specific controls (Single DOM Architecture) */
   body[data-reader-mode="immersive"] .mobile-reading-controls {
-    display: none !important;
-  }
-  
-  .reader-mode-controls {
-    position: fixed;
-    top: 0; /* Flush to absolute top for the 2px progress bar */
-    left: 0;
-    width: 100%;
-    z-index: 2005;
-    overflow: hidden;
+    top: 0;
+    transform: translateY(0) !important;
     height: 2px;
-    background: transparent;
+    background-image: linear-gradient(
+      to right,
+      var(--color-accent) 0,
+      var(--color-accent) var(--reading-progress),
+      var(--color-line) var(--reading-progress),
+      var(--color-line) 100%
+    );
+    background-size: 100% 2px;
+    background-repeat: no-repeat;
+    background-position: top left;
+    background-color: transparent;
     transition: height 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, top 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
   }
   
-  body[data-reader-mode="immersive"] .reader-mode-controls {
-    display: block;
-  }
-  
-  body[data-reader-mode="immersive"].reader-controls-expanded .reader-mode-controls {
+  /* Expanded state */
+  body[data-reader-mode="immersive"].reader-controls-expanded .mobile-reading-controls {
     height: 32px;
-    top: env(safe-area-inset-top, 0px); /* Move down to safe area for clickable buttons */
+    top: env(safe-area-inset-top, 0px);
+    background-image: none; /* Disable gradient when expanded */
   }
   
-  /* Ensure the progress bar track is visible when collapsed */
-  body[data-reader-mode="immersive"]:not(.reader-controls-expanded) .reader-mode-controls .rc-base {
-    background: var(--color-line);
-  }
-
-  body[data-reader-mode="immersive"]:not(.reader-controls-expanded) .reader-mode-controls .rc-progress {
-    background: var(--color-accent);
+  /* Hide the 32px layers when collapsed to avoid Gecko composite clipping bug */
+  body[data-reader-mode="immersive"]:not(.reader-controls-expanded) .mobile-reading-controls .rc-layer {
+    visibility: hidden;
+    transition: visibility 0s 300ms; /* Wait for collapse animation to finish before hiding */
   }
   
-  body[data-reader-mode="immersive"].reader-controls-expanded .reader-mode-controls .rc-progress {
-    background: var(--color-text);
+  /* Show the layers when expanded */
+  body[data-reader-mode="immersive"].reader-controls-expanded .mobile-reading-controls .rc-layer {
+    visibility: visible;
+    transition: visibility 0s 0s; /* Show instantly when starting to expand */
   }
 }
