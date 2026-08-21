@@ -7,6 +7,9 @@ function initReadingControls() {
   const isNotePage = document.querySelector(".note") !== null;
   if (!scrollListenerAdded) {
     window.addEventListener("scroll", onScroll, { passive: true });
+    document.addEventListener("daybook:reader-mode-change", () => {
+      requestAnimationFrame(updateReadingControls);
+    });
     scrollListenerAdded = true;
   }
   if (isNotePage) {
@@ -31,7 +34,7 @@ function updateReadingControls() {
   const topBar = document.getElementById("mobile-top-bar");
   const desktopTexts = document.querySelectorAll("[data-desktop-progress-text]");
   const mobileTexts = document.querySelectorAll("[data-mobile-progress-text]");
-  const controlStrips = document.querySelectorAll(".mobile-reading-controls");
+  const controlStrips = document.querySelectorAll(".mobile-reading-controls, .reader-mode-controls");
   const backToTopBtns = document.querySelectorAll(".back-to-top-btn, .mobile-top-btn");
   const goToBottomBtns = document.querySelectorAll(".go-to-bottom-btn, .mobile-bottom-btn, .reading-progress-btn");
   backToTopBtns.forEach((btn) => {
@@ -86,9 +89,18 @@ function updateReadingControls() {
   controlStrips.forEach((el) => {
     el.style.setProperty("--reading-progress", progressStr);
   });
-  if (topBar) {
-    const isMobile = window.innerWidth <= 960;
-    if (isMobile) {
+  const isReaderMode = document.body.dataset.readerMode === "immersive";
+  const isMobile = window.innerWidth <= 960;
+  if (isMobile) {
+    if (isReaderMode) {
+      if (currentScrollY <= 0) {
+        document.body.classList.remove("reader-controls-expanded");
+      } else if (currentScrollY > lastScrollY) {
+        document.body.classList.remove("reader-controls-expanded");
+      } else if (currentScrollY < lastScrollY) {
+        document.body.classList.add("reader-controls-expanded");
+      }
+    } else if (topBar) {
       const overlaysOpen = document.body.classList.contains("is-mobile-drawer-open") || document.body.classList.contains("is-search-overlay-open") || document.body.classList.contains("is-tags-overlay-open");
       if (overlaysOpen) {
         if (isHidden) {
@@ -117,11 +129,11 @@ function updateReadingControls() {
           }
         }
       }
-    } else {
-      if (isHidden) {
-        document.body.classList.remove("mobile-top-bar-hidden");
-        isHidden = false;
-      }
+    }
+  } else {
+    if (isHidden) {
+      document.body.classList.remove("mobile-top-bar-hidden");
+      isHidden = false;
     }
   }
   lastScrollY = currentScrollY;

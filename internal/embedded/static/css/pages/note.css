@@ -865,13 +865,55 @@ body[data-reader-mode="immersive"] .post-content {
 }
 
 body[data-reader-mode="immersive"] .note-title-wrapper {
-  padding-right: 48px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: 16px;
 }
 
 /* Adjust mobile controls to sit properly without topbar */
+  /* Reader Mode specific controls (two sets of code) */
+  .reader-mode-controls {
+    display: none; /* Hidden by default globally */
+  }
+
 @media (max-width: 960px) {
+  /* Hide ordinary controls in Reader Mode */
   body[data-reader-mode="immersive"] .mobile-reading-controls {
-    top: 0 !important;
-    padding-top: max(16px, env(safe-area-inset-top));
+    display: none !important;
+  }
+  
+  .reader-mode-controls {
+    position: fixed;
+    top: 0; /* Flush to absolute top for the 2px progress bar */
+    left: 0;
+    width: 100%;
+    z-index: 2005;
+    overflow: hidden;
+    height: 2px;
+    background: transparent;
+    transition: height 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, top 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+  }
+  
+  body[data-reader-mode="immersive"] .reader-mode-controls {
+    display: block;
+  }
+  
+  body[data-reader-mode="immersive"].reader-controls-expanded .reader-mode-controls {
+    height: 32px;
+    top: env(safe-area-inset-top, 0px); /* Move down to safe area for clickable buttons */
+  }
+  
+  /* Ensure the progress bar track is visible when collapsed */
+  body[data-reader-mode="immersive"]:not(.reader-controls-expanded) .reader-mode-controls .rc-base {
+    background: var(--color-line);
+  }
+
+  body[data-reader-mode="immersive"]:not(.reader-controls-expanded) .reader-mode-controls .rc-progress {
+    background: var(--color-accent);
+  }
+  
+  body[data-reader-mode="immersive"].reader-controls-expanded .reader-mode-controls .rc-progress {
+    background: var(--color-text);
   }
 }
