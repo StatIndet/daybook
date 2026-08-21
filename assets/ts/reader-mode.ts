@@ -12,6 +12,7 @@ function setReaderMode(enabled: boolean) {
     delete document.body.dataset.readerMode;
   }
   syncReaderControls();
+  document.dispatchEvent(new CustomEvent("daybook:reader-mode-change", { detail: { enabled } }));
 }
 
 function clearReaderMode() {

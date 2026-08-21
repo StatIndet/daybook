@@ -1383,28 +1383,31 @@ body.is-search-overlay-open .mobile-search-overlay {
 
 .reader-mode-exit {
   align-items: center;
-  background: var(--color-paper);
-  border: 1px solid var(--color-line);
-  border-radius: 50%;
-  box-shadow: var(--shadow-sm);
-  color: var(--color-text);
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--color-muted);
   cursor: pointer;
   display: flex;
-  height: 48px;
+  height: 36px;
   justify-content: center;
   padding: 0;
-  position: fixed;
-  right: max(1.5rem, env(safe-area-inset-right));
-  top: max(1.5rem, env(safe-area-inset-top));
-  transition: transform 200ms ease, box-shadow 200ms ease, opacity 200ms ease;
-  width: 48px;
-  z-index: 1000;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: color 160ms ease;
+  width: 36px;
+  z-index: 10;
 }
 
 .reader-mode-exit:hover,
 .reader-mode-exit:focus-visible {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  color: var(--color-hover-text);
+}
+
+.reader-mode-exit .material-symbol {
+  font-size: 1.3rem;
 }
 
 .reader-mode-exit[hidden] {

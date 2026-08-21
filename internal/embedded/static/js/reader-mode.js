@@ -11,6 +11,7 @@ function setReaderMode(enabled) {
     delete document.body.dataset.readerMode;
   }
   syncReaderControls();
+  document.dispatchEvent(new CustomEvent("daybook:reader-mode-change", { detail: { enabled } }));
 }
 function clearReaderMode() {
   if (document.body.dataset.readerMode === "immersive") {

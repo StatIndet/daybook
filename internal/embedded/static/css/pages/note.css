@@ -816,7 +816,7 @@ html[data-reduced-motion="true"] .note-toc-stage .note-toc {
 /* =========================================================================
    Reader Mode (Immersive)
    ========================================================================= */
-body[data-reader-mode="immersive"] .side-nav,
+body[data-reader-mode="immersive"] .side-rail,
 body[data-reader-mode="immersive"] .persistent-logo-container,
 body[data-reader-mode="immersive"] .mobile-drawer,
 body[data-reader-mode="immersive"] .mobile-drawer-mask,
@@ -837,30 +837,35 @@ body[data-reader-mode="immersive"] .page-main {
   grid-column: 1 !important;
 }
 
-body[data-reader-mode="immersive"] .notes-page {
-  display: block;
-  max-width: 100%;
-}
-
-body[data-reader-mode="immersive"] .note-detail {
-  max-width: 100%;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
-
-body[data-reader-mode="immersive"] .note {
-  /* Increase readability */
+body[data-reader-mode="immersive"] {
   --note-text-size: 1.0625rem; /* 17px */
   --note-body-width: 52rem;
   --note-title-size: clamp(2rem, 3.5vw, 2.5rem);
-  
+}
+
+body[data-reader-mode="immersive"] .notes-page {
+  display: block;
   max-width: var(--note-body-width);
-  margin-left: auto;
-  margin-right: auto;
+  margin-inline: auto;
+}
+
+body[data-reader-mode="immersive"] .note-detail {
+  width: 100%;
+  max-width: var(--note-body-width);
+  margin-inline: auto;
+  padding-inline: 0 !important;
+}
+
+body[data-reader-mode="immersive"] .note {
+  width: 100%;
 }
 
 body[data-reader-mode="immersive"] .post-content {
   line-height: 1.85;
+}
+
+body[data-reader-mode="immersive"] .note-title-wrapper {
+  padding-right: 48px;
 }
 
 /* Adjust mobile controls to sit properly without topbar */

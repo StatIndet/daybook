@@ -19,9 +19,7 @@
     </button>
   </div>
 </div>
-<button type="button" class="reader-mode-exit" aria-label="{{T .Lang "action.exit_reader"}}" data-tooltip="{{T .Lang "action.exit_reader"}}" data-reader-exit hidden>
-  <span class="material-symbol" aria-hidden="true">exit_to_app</span>
-</button>
+
 <div class="notes-page note-detail-page{{if .Note.Headings}} has-toc{{end}}">
   <section class="note-detail article-stage" aria-label="文章详情">
     <article class="note" data-has-mermaid="{{if .Note.HasMermaid}}true{{else}}false{{end}}" data-has-math="{{if .Note.HasMath}}true{{else}}false{{end}}">
@@ -35,6 +33,9 @@
               {{.Note.TitleLayout}}
             </span>
           </h1>
+          <button type="button" class="reader-mode-exit" aria-label="{{T .Lang "action.exit_reader"}}" data-tooltip="{{T .Lang "action.exit_reader"}}" data-reader-exit hidden>
+            <span class="material-symbol" aria-hidden="true">exit_to_app</span>
+          </button>
         </div>
         {{if .Note.IsFallback}}
         <div class="note-fallback-warning">

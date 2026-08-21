@@ -1171,6 +1171,9 @@ document.addEventListener("daybook:before-swap", () => {
   activeController?.destroy();
   activeController = null;
 });
+document.addEventListener("daybook:reader-mode-change", () => {
+  activeController?.requestMeasure(true);
+});
 document.addEventListener("daybook:page-load", initNoteTocController);
 document.addEventListener("daybook:article-content-swapped", initNoteTocController);
 document.addEventListener("daybook:transition-finished", () => {
