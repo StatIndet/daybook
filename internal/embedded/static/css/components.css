@@ -1238,36 +1238,32 @@ body.is-search-overlay-open .mobile-search-overlay {
 
 /* Theme Icons Container */
 .theme-icon-container {
-  position: relative;
-  width: 24px;
-  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 24px;
+  height: 24px;
 }
 
 .theme-icon-container svg {
-  position: absolute;
-  opacity: 0;
-  transform: rotate(-90deg) scale(0.5);
-  transition: opacity 250ms ease, transform var(--motion-expressive-fast-spatial-duration) var(--motion-expressive-fast-spatial-easing);
+  display: none;
+  transition: transform 0.25s ease;
   color: inherit;
 }
 
 :root[data-theme-mode="light"] .theme-toggle svg.lucide-sun,
 :root[data-theme-mode="dark"] .theme-toggle svg.lucide-moon,
 :root[data-theme-mode="system"] .theme-toggle svg.lucide-sun-moon {
-  opacity: 1;
-  transform: rotate(0) scale(1);
+  display: block;
 }
 
-.theme-toggle:hover svg,
-.theme-toggle:focus-visible svg {
-  transform: rotate(20deg) scale(1);
+.theme-toggle:hover .theme-icon-container svg,
+.theme-toggle:focus-visible .theme-icon-container svg {
+  transform: rotate(20deg);
 }
 
-.theme-toggle.clicked svg {
-  transform: rotate(90deg) scale(1) !important;
+.theme-toggle:active .theme-icon-container svg {
+  transform: rotate(90deg);
 }
 
 /* Ensure palette icon is highlighted in warm or cool mode appropriately? 

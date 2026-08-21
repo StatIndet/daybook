@@ -290,11 +290,18 @@
         }
 
         isTransitioning = true;
+        // 1. Move the indicator immediately
+        root.dataset['themeMode'] = mode;
+        storeThemeMode(mode);
+        syncThemeButtons();
+        
+        // 2. Wait for indicator animation to complete before changing theme
         setTimeout(function() {
           root.style.setProperty("view-transition-name", "theme-toggle-transition");
           root.dataset['themeChanging'] = "true";
           const transition = document.startViewTransition!(function() {
-            applyThemeMode(mode, true);
+            root.dataset['theme'] = nextResolved;
+            syncThemeButtons();
           });
           transition.finished.then(function() {
             clearThemeTransition("themeChanging");
@@ -303,7 +310,7 @@
             clearThemeTransition("themeChanging");
             isTransitioning = false;
           });
-        }, 150); // Small delay for mobile indicator visual to move
+        }, 350); 
       }
       return;
     }
@@ -316,13 +323,6 @@
       const nextMode = currentMode === "system" ? "light" : (currentMode === "light" ? "dark" : "system");
       const nextResolved = nextMode === "system" ? getSystemPreferredTheme() : nextMode;
       const currentResolved = root.dataset['theme'];
-      
-      if (themeButton) {
-         themeButton.classList.remove("clicked");
-         // Trigger reflow
-         void (themeButton as HTMLElement).offsetWidth;
-         themeButton.classList.add("clicked");
-      }
 
       if (nextResolved === currentResolved || !shouldAnimateTheme()) {
         applyThemeMode(nextMode, true);
@@ -330,22 +330,21 @@
       }
 
       isTransitioning = true;
-      setTimeout(function () {
-        root.style.setProperty("view-transition-name", "theme-toggle-transition");
-        root.dataset['themeChanging'] = "true";
+      // Start view transition immediately for desktop, active state gives physical feedback
+      root.style.setProperty("view-transition-name", "theme-toggle-transition");
+      root.dataset['themeChanging'] = "true";
 
-        const themeTransition = document.startViewTransition!(function () {
-          applyThemeMode(nextMode, true);
-        });
+      const themeTransition = document.startViewTransition!(function () {
+        applyThemeMode(nextMode, true);
+      });
 
-        themeTransition.finished.then(function () {
-          clearThemeTransition("themeChanging");
-          isTransitioning = false;
-        }, function () {
-          clearThemeTransition("themeChanging");
-          isTransitioning = false;
-        });
-      }, 350);
+      themeTransition.finished.then(function () {
+        clearThemeTransition("themeChanging");
+        isTransitioning = false;
+      }, function () {
+        clearThemeTransition("themeChanging");
+        isTransitioning = false;
+      });
 
       return;
     }
