@@ -871,60 +871,35 @@ body[data-reader-mode="immersive"] .note-title-wrapper {
   column-gap: 16px;
 }
 
+/* =========================================================================
+   Reader Mode Progress Bar
+   ========================================================================= */
+.reader-progress-bar {
+  display: none;
+}
+
 /* Adjust mobile controls to sit properly without topbar */
 @media (max-width: 960px) {
-  /* Reader Mode specific controls (Single DOM Architecture) */
+  /* Hide ordinary controls in Reader Mode */
   body[data-reader-mode="immersive"] .mobile-reading-controls {
-    /* Host is ALWAYS 32px tall to avoid Gecko compositor bug */
-    top: 0;
-    transform: translateY(0) !important;
-    height: 32px !important;
-    background: transparent !important;
-    transition: none !important;
+    display: none !important;
   }
 
-  /* 1. Collapsed state (default) */
-  body[data-reader-mode="immersive"]:not(.reader-controls-expanded) .mobile-reading-controls {
-    pointer-events: none; /* Prevent 32px invisible box from blocking article clicks */
-  }
-
-  /* Hide inner controls */
-  body[data-reader-mode="immersive"]:not(.reader-controls-expanded) .mobile-reading-controls .rc-layer {
-    visibility: hidden;
-    transition: none !important;
-  }
-
-  /* The real 2px progress bar via pseudo-element */
-  body[data-reader-mode="immersive"]:not(.reader-controls-expanded) .mobile-reading-controls::before {
-    content: "";
+  body[data-reader-mode="immersive"] .reader-progress-bar {
     display: block;
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 2px;
     pointer-events: none;
-    background-image: linear-gradient(
+    z-index: 2005;
+    background: linear-gradient(
       to right,
       var(--color-accent) 0,
-      var(--color-accent) var(--reading-progress),
-      var(--color-line) var(--reading-progress),
+      var(--color-accent) var(--reading-progress, 0%),
+      var(--color-line) var(--reading-progress, 0%),
       var(--color-line) 100%
     );
-  }
-
-  /* 2. Expanded state */
-  body[data-reader-mode="immersive"].reader-controls-expanded .mobile-reading-controls {
-    pointer-events: auto;
-    top: env(safe-area-inset-top, 0px);
-  }
-
-  body[data-reader-mode="immersive"].reader-controls-expanded .mobile-reading-controls::before {
-    display: none;
-  }
-
-  body[data-reader-mode="immersive"].reader-controls-expanded .mobile-reading-controls .rc-layer {
-    visibility: visible;
-    transition: none !important;
   }
 }

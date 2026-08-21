@@ -34,7 +34,6 @@ function updateReadingControls() {
   const topBar = document.getElementById("mobile-top-bar");
   const desktopTexts = document.querySelectorAll("[data-desktop-progress-text]");
   const mobileTexts = document.querySelectorAll("[data-mobile-progress-text]");
-  const controlStrips = document.querySelectorAll(".mobile-reading-controls");
   const backToTopBtns = document.querySelectorAll(".back-to-top-btn, .mobile-top-btn");
   const goToBottomBtns = document.querySelectorAll(".go-to-bottom-btn, .mobile-bottom-btn, .reading-progress-btn");
   backToTopBtns.forEach((btn) => {
@@ -86,21 +85,11 @@ function updateReadingControls() {
     circle.style.strokeDashoffset = offset.toString();
   });
   const progressStr = `${progress}%`;
-  controlStrips.forEach((el) => {
-    el.style.setProperty("--reading-progress", progressStr);
-  });
+  document.body.style.setProperty("--reading-progress", progressStr);
   const isReaderMode = document.body.dataset.readerMode === "immersive";
   const isMobile = window.innerWidth <= 960;
   if (isMobile) {
-    if (isReaderMode) {
-      if (currentScrollY <= 0) {
-        document.body.classList.remove("reader-controls-expanded");
-      } else if (currentScrollY > lastScrollY) {
-        document.body.classList.remove("reader-controls-expanded");
-      } else if (currentScrollY < lastScrollY) {
-        document.body.classList.add("reader-controls-expanded");
-      }
-    } else if (topBar) {
+    if (!isReaderMode && topBar) {
       const overlaysOpen = document.body.classList.contains("is-mobile-drawer-open") || document.body.classList.contains("is-search-overlay-open") || document.body.classList.contains("is-tags-overlay-open");
       if (overlaysOpen) {
         if (isHidden) {

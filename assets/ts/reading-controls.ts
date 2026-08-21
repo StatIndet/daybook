@@ -41,7 +41,6 @@ function updateReadingControls() {
   const topBar = document.getElementById('mobile-top-bar');
   const desktopTexts = document.querySelectorAll('[data-desktop-progress-text]');
   const mobileTexts = document.querySelectorAll('[data-mobile-progress-text]');
-  const controlStrips = document.querySelectorAll('.mobile-reading-controls');
   const backToTopBtns = document.querySelectorAll('.back-to-top-btn, .mobile-top-btn');
   const goToBottomBtns = document.querySelectorAll('.go-to-bottom-btn, .mobile-bottom-btn, .reading-progress-btn');
   
@@ -104,26 +103,14 @@ function updateReadingControls() {
   });
   
   const progressStr = `${progress}%`;
-  controlStrips.forEach(el => {
-    (el as HTMLElement).style.setProperty('--reading-progress', progressStr);
-  });
+  document.body.style.setProperty('--reading-progress', progressStr);
 
   // 2. Auto-hide mobile top bar logic
   const isReaderMode = document.body.dataset.readerMode === 'immersive';
   const isMobile = window.innerWidth <= 960;
   
   if (isMobile) {
-    if (isReaderMode) {
-      // Independent Reader Mode state machine: 
-      // Default to 2px, only expand on scroll up
-      if (currentScrollY <= 0) {
-        document.body.classList.remove('reader-controls-expanded');
-      } else if (currentScrollY > lastScrollY) {
-        document.body.classList.remove('reader-controls-expanded');
-      } else if (currentScrollY < lastScrollY) {
-        document.body.classList.add('reader-controls-expanded');
-      }
-    } else if (topBar) {
+    if (!isReaderMode && topBar) {
       const overlaysOpen = document.body.classList.contains('is-mobile-drawer-open') || 
                            document.body.classList.contains('is-search-overlay-open') || 
                            document.body.classList.contains('is-tags-overlay-open');
