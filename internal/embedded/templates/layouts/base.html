@@ -66,6 +66,10 @@
       });
     });
 
+    import("{{.Assets.Path "/js/reader-mode.js"}}").then(module => {
+      module.initReaderMode();
+    });
+
     import("{{.Assets.Path "/js/settings-overlay.js"}}").then(module => {
       module.initSettingsOverlay();
     });

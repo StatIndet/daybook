@@ -188,7 +188,6 @@
   padding: 4px 10px 0 0;
 }
 
-
 @media (min-width: 116rem) {
   .note-toc-wrapper {
     --reading-toc-rail-eligible: 1;
@@ -396,14 +395,6 @@ html[data-reduced-motion="true"] .note-toc-stage .note-toc {
   border-top: 1px dashed var(--color-line);
   margin-top: clamp(3.5rem, 6vw, 5rem);
   padding-top: clamp(2rem, 4vw, 3rem);
-}
-
-.post-comments-title {
-  color: var(--color-text);
-  font-family: var(--font-ui);
-  font-size: clamp(1.2rem, 1.5vw, 1.35rem);
-  font-weight: 700;
-  margin: 0;
 }
 
 /* Right Reading Controls */
@@ -820,4 +811,62 @@ html[data-reduced-motion="true"] .note-toc-stage .note-toc {
 .note-toc-stage.has-reading-rail.is-reading:not(.is-hovered) .note-toc-divider {
   opacity: 0;
   transform: translate3d(calc(var(--reading-toc-rail-collapse-shift) * -1), 0, 0);
+}
+
+/* =========================================================================
+   Reader Mode (Immersive)
+   ========================================================================= */
+body[data-reader-mode="immersive"] .side-nav,
+body[data-reader-mode="immersive"] .persistent-logo-container,
+body[data-reader-mode="immersive"] .mobile-drawer,
+body[data-reader-mode="immersive"] .mobile-drawer-mask,
+body[data-reader-mode="immersive"] .mobile-overlay-container,
+body[data-reader-mode="immersive"] .notes-aside,
+body[data-reader-mode="immersive"] .note-tags,
+body[data-reader-mode="immersive"] .post-comments,
+body[data-reader-mode="immersive"] .note-back-link {
+  display: none !important;
+}
+
+body[data-reader-mode="immersive"] .page-shell {
+  grid-template-columns: minmax(0, 1fr) !important;
+  margin: 0 auto;
+}
+
+body[data-reader-mode="immersive"] .page-main {
+  grid-column: 1 !important;
+}
+
+body[data-reader-mode="immersive"] .notes-page {
+  display: block;
+  max-width: 100%;
+}
+
+body[data-reader-mode="immersive"] .note-detail {
+  max-width: 100%;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+body[data-reader-mode="immersive"] .note {
+  /* Increase readability */
+  --note-text-size: 1.0625rem; /* 17px */
+  --note-body-width: 52rem;
+  --note-title-size: clamp(2rem, 3.5vw, 2.5rem);
+  
+  max-width: var(--note-body-width);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+body[data-reader-mode="immersive"] .post-content {
+  line-height: 1.85;
+}
+
+/* Adjust mobile controls to sit properly without topbar */
+@media (max-width: 960px) {
+  body[data-reader-mode="immersive"] .mobile-reading-controls {
+    top: 0 !important;
+    padding-top: max(16px, env(safe-area-inset-top));
+  }
 }

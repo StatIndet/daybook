@@ -88,7 +88,11 @@
   font-size: 1.28rem;
 }
 
-.notes-action-button::after {
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]::after {
   background: var(--color-tooltip-bg);
   border-radius: 3px;
   top: calc(100% + 9px);
@@ -107,6 +111,13 @@
     opacity 160ms ease,
     transform 160ms ease;
   white-space: nowrap;
+  z-index: 100;
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 .notes-action-button:hover,
@@ -134,11 +145,7 @@
   color: var(--color-accent);
 }
 
-.notes-action-button:hover::after,
-.notes-action-button:focus-visible::after {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
+
 
 .notes-action-button:focus-visible {
   outline: 1px solid var(--color-accent);
@@ -1341,4 +1348,65 @@ body.is-search-overlay-open .mobile-search-overlay {
   .theme-icon-container svg {
     transition: none !important;
   }
+}
+
+/* Reader Mode Toggle */
+.reader-mode-toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--color-muted);
+  cursor: pointer;
+  display: inline-flex;
+  font-family: inherit;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  position: relative;
+  transition: color 160ms ease, transform 160ms ease;
+  vertical-align: text-bottom;
+}
+
+.reader-mode-toggle:hover,
+.reader-mode-toggle:focus-visible {
+  color: var(--color-hover-text);
+}
+
+.reader-mode-toggle[aria-pressed="true"] {
+  color: var(--color-accent);
+}
+
+.reader-mode-toggle .material-symbol {
+  font-size: 1.15em;
+  line-height: 1;
+}
+
+.reader-mode-exit {
+  align-items: center;
+  background: var(--color-paper);
+  border: 1px solid var(--color-line);
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
+  color: var(--color-text);
+  cursor: pointer;
+  display: flex;
+  height: 48px;
+  justify-content: center;
+  padding: 0;
+  position: fixed;
+  right: max(1.5rem, env(safe-area-inset-right));
+  top: max(1.5rem, env(safe-area-inset-top));
+  transition: transform 200ms ease, box-shadow 200ms ease, opacity 200ms ease;
+  width: 48px;
+  z-index: 1000;
+}
+
+.reader-mode-exit:hover,
+.reader-mode-exit:focus-visible {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.reader-mode-exit[hidden] {
+  display: none !important;
 }
