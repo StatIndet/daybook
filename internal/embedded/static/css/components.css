@@ -1235,3 +1235,114 @@ body.is-search-overlay-open .mobile-search-overlay {
 
 /* Article Title Morphable Layout */
 
+
+/* Theme Icons Container */
+.theme-icon-container {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-icon-container svg {
+  position: absolute;
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.5);
+  transition: opacity 250ms ease, transform var(--motion-expressive-fast-spatial-duration) var(--motion-expressive-fast-spatial-easing);
+  color: inherit;
+}
+
+:root[data-theme-mode="light"] .theme-toggle svg.lucide-sun,
+:root[data-theme-mode="dark"] .theme-toggle svg.lucide-moon,
+:root[data-theme-mode="system"] .theme-toggle svg.lucide-sun-moon {
+  opacity: 1;
+  transform: rotate(0) scale(1);
+}
+
+.theme-toggle:hover svg,
+.theme-toggle:focus-visible svg {
+  transform: rotate(20deg) scale(1);
+}
+
+.theme-toggle.clicked svg {
+  transform: rotate(90deg) scale(1) !important;
+}
+
+/* Ensure palette icon is highlighted in warm or cool mode appropriately? 
+   Instruction 14: Desktop palette icon always highlights like warm state.
+   Wait, "无论当前是 Cool 还是 Warm，Desktop 的 palette icon 都保持与 warm 状态相同等级的高亮色... Visual highlight and accessibility state 分离"
+*/
+.notes-action-button.palette-toggle .material-symbol {
+  color: var(--color-accent); /* Always visually active */
+}
+
+/* Mobile Theme Selector */
+.mobile-theme-selector {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: max-content;
+  padding: 4px;
+  gap: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-line) 40%, transparent);
+}
+
+.theme-selector-indicator {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--color-accent-soft-strong);
+  transition: transform var(--motion-expressive-fast-spatial-duration) var(--motion-expressive-fast-spatial-easing);
+  z-index: 0;
+}
+
+:root[data-theme-mode="light"] .theme-selector-indicator {
+  transform: translateX(0);
+}
+:root[data-theme-mode="system"] .theme-selector-indicator {
+  transform: translateX(36px);
+}
+:root[data-theme-mode="dark"] .theme-selector-indicator {
+  transform: translateX(72px);
+}
+
+.theme-selector-btn {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+  border: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-muted);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: color 150ms ease;
+}
+
+.theme-selector-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.theme-selector-btn:hover,
+.theme-selector-btn:focus-visible,
+.theme-selector-btn[aria-checked="true"] {
+  color: var(--color-hover-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-selector-indicator,
+  .theme-icon-container svg {
+    transition: none !important;
+  }
+}

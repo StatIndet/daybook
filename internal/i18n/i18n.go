@@ -46,7 +46,15 @@ var dictionary = map[string]map[string]string{
 		"seo.notes.description": "按时间线浏览 Daybook 的全部文章、笔记与技术记录。",
 		"seo.archive.description": "按时间线浏览 Daybook 的全部文章、笔记与技术记录。",
 		"seo.graph.description": "探索 Daybook 中的知识关联网络。",
-			},
+		"theme.light":         "浅色",
+		"theme.dark":          "深色",
+		"theme.system":        "跟随系统",
+		"theme.system_light":  "跟随系统（浅色）",
+		"theme.system_dark":   "跟随系统（深色）",
+		"palette.cool":        "冷色",
+		"palette.warm":        "暖色",
+		"palette.warm_theme":  "暖色主题",
+	},
 	"en": {
 		"nav.home":            "Home",
 		"nav.notes":           "Notes",
@@ -92,7 +100,15 @@ var dictionary = map[string]map[string]string{
 		"seo.notes.description": "Browse all articles, notes, and technical records in Daybook by timeline.",
 		"seo.archive.description": "Browse all articles, notes, and technical records in Daybook by timeline.",
 		"seo.graph.description": "Explore the knowledge association network in Daybook.",
-			},
+		"theme.light":         "Light",
+		"theme.dark":          "Dark",
+		"theme.system":        "System",
+		"theme.system_light":  "System (Light)",
+		"theme.system_dark":   "System (Dark)",
+		"palette.cool":        "Cool",
+		"palette.warm":        "Warm",
+		"palette.warm_theme":  "Warm theme",
+	},
 }
 
 func T(lang, key string) string {

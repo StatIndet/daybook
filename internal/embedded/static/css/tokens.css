@@ -17,6 +17,8 @@
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-page: cubic-bezier(0.165, 0.84, 0.44, 1);
   --article-enter-ease: cubic-bezier(0.165, 0.84, 0.44, 1);
+  --motion-expressive-fast-spatial-duration: 350ms;
+  --motion-expressive-fast-spatial-easing: cubic-bezier(0.42, 1.67, 0.21, 0.9);
   --duration-fast: 240ms;
   --duration-normal: 420ms;
   --duration-shared: 720ms;

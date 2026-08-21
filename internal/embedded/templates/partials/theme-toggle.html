@@ -1,8 +1,12 @@
 {{define "theme_toggle_header"}}
-<button class="notes-action-button header-theme-toggle theme-toggle" type="button" aria-label="{{T .Lang "action.theme"}}">
-  <span class="material-symbol" aria-hidden="true">dark_mode</span>
+<button class="notes-action-button header-theme-toggle theme-toggle" type="button" aria-label="{{T .Lang "theme.system"}}">
+  <div class="theme-icon-container">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun-icon lucide-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon-icon lucide-moon"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun-moon-icon lucide-sun-moon"><path d="M12 2v2"/><path d="M14.837 16.385a6 6 0 1 1-7.223-7.222c.624-.147.97.66.715 1.248a4 4 0 0 0 5.26 5.259c.589-.255 1.396.09 1.248.715"/><path d="M16 12a4 4 0 0 0-4-4"/><path d="m19 5-1.256 1.256"/><path d="M20 12h2"/></svg>
+  </div>
 </button>
-<button class="notes-action-button header-theme-toggle palette-toggle" type="button" aria-label="{{T .Lang "action.palette"}}" aria-pressed="false">
+<button class="notes-action-button header-theme-toggle palette-toggle" type="button" aria-label="{{T .Lang "palette.cool"}}" aria-pressed="false">
   <span class="material-symbol" aria-hidden="true">palette</span>
 </button>
 <a class="notes-action-button header-theme-toggle lang-toggle" href="{{.AlternateURL}}" aria-label="{{T .Lang "post.bilingual"}}" data-notes-tool="lang">
@@ -11,10 +15,14 @@
 {{end}}
 
 {{define "theme_toggle_action"}}
-<button class="notes-action-button theme-toggle" type="button" aria-label="{{T .Lang "action.theme"}}" data-tooltip="{{T .Lang "tooltip.theme"}}">
-  <span class="material-symbol" aria-hidden="true">dark_mode</span>
+<button class="notes-action-button theme-toggle" type="button" aria-label="{{T .Lang "theme.system"}}" data-tooltip="{{T .Lang "theme.system"}}">
+  <div class="theme-icon-container">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun-icon lucide-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon-icon lucide-moon"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun-moon-icon lucide-sun-moon"><path d="M12 2v2"/><path d="M14.837 16.385a6 6 0 1 1-7.223-7.222c.624-.147.97.66.715 1.248a4 4 0 0 0 5.26 5.259c.589-.255 1.396.09 1.248.715"/><path d="M16 12a4 4 0 0 0-4-4"/><path d="m19 5-1.256 1.256"/><path d="M20 12h2"/></svg>
+  </div>
 </button>
-<button class="notes-action-button palette-toggle" type="button" aria-label="{{T .Lang "action.palette"}}" aria-pressed="false" data-tooltip="{{T .Lang "tooltip.palette"}}">
+<button class="notes-action-button palette-toggle" type="button" aria-label="{{T .Lang "palette.cool"}}" aria-pressed="false" data-tooltip="{{T .Lang "palette.cool"}}">
   <span class="material-symbol" aria-hidden="true">palette</span>
 </button>
 <a class="notes-action-button lang-toggle" href="{{.AlternateURL}}" aria-label="{{T .Lang "post.bilingual"}}" data-tooltip="中/EN" data-notes-tool="lang">
