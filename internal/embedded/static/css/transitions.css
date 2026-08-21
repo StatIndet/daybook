@@ -19,7 +19,6 @@
   mix-blend-mode: normal;
 }
 
-
 :root {
   --theme-reveal-from: 100% 0 0 0;
   --palette-reveal-from: 0 100% 0 0;
@@ -535,18 +534,6 @@ html.article-transition [data-transition-scope] {
   view-transition-name: none !important;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
 html:not(.article-transition) body.page-entering.page-body .side-nav:not(.transition-stable) .nav-link {
   animation: side-nav-enter var(--duration-normal) var(--ease-out) both;
 }
@@ -651,37 +638,27 @@ body.page-entering .archive-item {
 @media (min-width: 1281px) {
   .note-body .note-toc-header {
     animation: article-content-enter-mini var(--post-enter-duration) var(--ease-page) backwards;
-    animation-delay: 50ms;
+    animation-delay: 175ms;
   }
 
   .note-body .note-toc-panel li {
-    animation: article-content-enter-mini var(--post-enter-duration) var(--ease-page) backwards;
-    animation-delay: calc(80ms + min(var(--toc-index, 0), 20) * 30ms);
+    animation: article-content-enter var(--post-enter-duration) var(--ease-page) backwards;
+    animation-delay: calc(175ms + min(var(--toc-index, 0), 8) * 25ms);
   }
 
-  .note-body .note-toc-divider {
-    animation: divider-draw 400ms var(--ease-page) backwards;
-    animation-delay: calc(100ms + min(var(--toc-index, 0), 20) * 30ms);
-  }
-
-  .note-body .note-toc-reading-controls > * {
+  .note-body .note-right-controls > * {
     animation: article-content-enter var(--post-enter-duration) var(--ease-page) backwards;
   }
   
-  .note-body .note-toc-reading-controls > *:nth-child(1) {
-    animation-delay: calc(120ms + min(var(--toc-index, 0), 20) * 30ms);
+  .note-body .note-right-controls > *:nth-child(1) {
+    animation-delay: 150ms;
   }
-  .note-body .note-toc-reading-controls > *:nth-child(2) {
-    animation-delay: calc(150ms + min(var(--toc-index, 0), 20) * 30ms);
+  .note-body .note-right-controls > *:nth-child(2) {
+    animation-delay: 200ms;
   }
-  .note-body .note-toc-reading-controls > *:nth-child(3) {
-    animation-delay: calc(180ms + min(var(--toc-index, 0), 20) * 30ms);
+  .note-body .note-right-controls > *:nth-child(3) {
+    animation-delay: 250ms;
   }
-}
-
-@keyframes divider-draw {
-  from { clip-path: inset(0 100% 0 0); opacity: 0; }
-  to { clip-path: inset(0 0 0 0); opacity: 1; }
 }
 
 .note-body .article-stagger-meta > * {
@@ -758,7 +735,6 @@ body.page-entering .archive-item {
 .note-body .post-content > *:nth-child(n + 16) {
   animation-delay: 900ms;
 }
-
 
 @media (prefers-reduced-motion: reduce) {
   *,
