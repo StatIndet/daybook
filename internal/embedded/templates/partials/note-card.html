@@ -8,6 +8,9 @@
       {{if .Pin}}
         <span class="notes-item-pin" aria-hidden="true" title="已固定"></span>
       {{end}}
+      {{if .HasMusic}}
+        <span class="material-symbol notes-item-music" aria-hidden="true" title="包含音乐">music_note_2</span>
+      {{end}}
       {{if .HasTranslation}}
         <span class="material-symbol notes-item-bilingual" aria-hidden="true" title="双语">translate</span>
       {{end}}

@@ -55,6 +55,7 @@ type NoteLink struct {
 	URL                 string
 	Slug                string
 	Pin                 bool
+	HasMusic            bool
 	HasTranslation      bool
 	TitleLayout         template.HTML
 	TitleTransitionName string

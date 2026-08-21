@@ -294,6 +294,7 @@ func Build(options Options) (BuildResult, error) {
 				URL:                 joinURL("/", langPrefix, "notes", note.Slug),
 				Slug:                note.Slug,
 				Pin:                 note.Pin,
+				HasMusic:            note.HasMusic,
 				HasTranslation:      hasTranslation,
 				TitleLayout:         titleLayoutHTML,
 				TitleTransitionName: titleTransitionName,

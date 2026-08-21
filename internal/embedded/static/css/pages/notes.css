@@ -86,6 +86,7 @@
   width: 1.1em;
 }
 
+.notes-item-music,
 .notes-item-bilingual {
   color: var(--color-muted);
   font-size: 1.1em;
