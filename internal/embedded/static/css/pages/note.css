@@ -895,12 +895,17 @@ body[data-reader-mode="immersive"] .note-title-wrapper {
     height: 2px;
     pointer-events: none;
     z-index: 2005;
-    background: linear-gradient(
-      to right,
-      var(--color-accent) 0,
-      var(--color-accent) var(--reading-progress, 0%),
-      var(--color-line) var(--reading-progress, 0%),
-      var(--color-line) 100%
-    );
+    background: var(--color-line);
+  }
+
+  body[data-reader-mode="immersive"] .reader-progress-bar::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    clip-path: inset(0 calc(100% - var(--reading-progress, 0%)) 0 0);
+    background: var(--color-accent);
   }
 }
