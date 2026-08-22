@@ -44,3 +44,7 @@ function renderAllMath(elements: NodeListOf<Element>) {
 document.addEventListener('daybook:page-load', () => {
   setupKatex();
 });
+
+document.addEventListener('daybook:article-content-swapped', () => {
+  setupKatex();
+});

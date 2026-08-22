@@ -35,7 +35,7 @@ function initShareOverlay() {
     const btn = target.closest("[data-share-open]");
     if (btn) {
       const title = btn.getAttribute("data-share-title") || "";
-      const url = btn.getAttribute("data-share-url") || "";
+      const url = btn.getAttribute("data-share-link") || "";
       const shareText = btn.getAttribute("data-share-text") || "";
       openShare(title, url, shareText);
     }

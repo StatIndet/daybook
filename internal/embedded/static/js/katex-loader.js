@@ -41,4 +41,7 @@ function renderAllMath(elements) {
 document.addEventListener("daybook:page-load", () => {
   setupKatex();
 });
+document.addEventListener("daybook:article-content-swapped", () => {
+  setupKatex();
+});
 //# sourceMappingURL=katex-loader.js.map

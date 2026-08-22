@@ -262,7 +262,7 @@ func TestShareRendering(t *testing.T) {
 	if !strings.Contains(cjkHtml, `data-share-title="鲸歌"`) {
 		t.Errorf("Expected CJK title to be preserved in data-share-title")
 	}
-	if !strings.Contains(cjkHtml, `data-share-url="https://daybook.page/notes/cjk/"`) {
+	if !strings.Contains(cjkHtml, `data-share-link="https://daybook.page/notes/cjk/"`) {
 		t.Errorf("Expected CJK ShareURL to be unencoded and correct: %s", cjkHtml)
 	}
 	if !strings.Contains(cjkHtml, `data-share-text="分享：&#34;鲸歌&#34;"`) {
@@ -270,7 +270,7 @@ func TestShareRendering(t *testing.T) {
 	}
 
 	spaceHtml := readPublicAsset(t, publicDir, "/notes/space/index.html")
-	if !strings.Contains(spaceHtml, `data-share-url="https://daybook.page/notes/space/"`) {
+	if !strings.Contains(spaceHtml, `data-share-link="https://daybook.page/notes/space/"`) {
 		t.Errorf("Expected ASCII space ShareURL to be unencoded and correct")
 	}
 	if !strings.Contains(spaceHtml, `data-share-text="分享：&#34;A Space Title&#34;"`) {
