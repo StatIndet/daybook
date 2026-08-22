@@ -884,33 +884,22 @@ body[data-reader-mode="immersive"] .note-title-wrapper {
     display: none !important;
   }
 
-  /* Host element: position fixed at true 0, takes up offset + 2px space */
   body[data-reader-mode="immersive"] .reader-progress-bar {
     display: block;
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
-    /* Combine JS visual offset and CSS env using max() to prevent doubling, add 2px for the line */
-    height: calc(max(var(--reader-progress-top-offset, 0px), env(safe-area-inset-top, 0px)) + 2px);
+    height: 2px;
     pointer-events: none;
     z-index: 2005;
-    background: transparent;
-  }
-
-  /* The actual line: positioned at the bottom of the host */
-  body[data-reader-mode="immersive"] .reader-progress-bar__line {
-    position: absolute;
-    left: 0;
-    bottom: 0; /* Or top: var(--reader-progress-top-offset...) */
-    width: 100%;
-    height: 2px; /* Development note: increase this to 10px temporarily if testing visual clipping */
     background: linear-gradient(
       to right,
-      var(--color-accent) 0%,
+      var(--color-accent) 0,
       var(--color-accent) var(--reading-progress, 0%),
       var(--color-line) var(--reading-progress, 0%),
       var(--color-line) 100%
     );
+    transform: translateY(max(var(--reader-progress-visual-top, 0px), env(safe-area-inset-top, 0px)));
   }
 }

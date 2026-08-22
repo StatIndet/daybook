@@ -3,8 +3,8 @@ var scrollListenerAdded = false;
 var ticking = false;
 var isHidden = false;
 var lastScrollY = window.scrollY;
-var lastViewportWidth = window.innerWidth;
-var lastOrientation = window.screen && window.screen.orientation ? window.screen.orientation.type : "";
+var viewportOffsetTicking = false;
+var lastReaderProgressVisualTop = null;
 function initReadingControls() {
   const isNotePage = document.querySelector(".note") !== null;
   if (!scrollListenerAdded) {
@@ -13,42 +13,44 @@ function initReadingControls() {
       const customEvent = e;
       requestAnimationFrame(() => {
         updateReadingControls();
-        if (customEvent.detail && customEvent.detail.enabled) {
-          syncReaderProgressViewportOffset();
-        }
       });
+      if (customEvent.detail && customEvent.detail.enabled) {
+        requestReaderProgressVisualSync();
+      }
     });
-    window.addEventListener("resize", handleViewportGeometryChange);
-    window.addEventListener("orientationchange", () => requestAnimationFrame(syncReaderProgressViewportOffset));
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("scroll", requestReaderProgressVisualSync, { passive: true });
+      window.visualViewport.addEventListener("resize", requestReaderProgressVisualSync, { passive: true });
+    }
     scrollListenerAdded = true;
   }
   if (isNotePage) {
     requestAnimationFrame(() => {
       updateReadingControls();
-      syncReaderProgressViewportOffset();
     });
+    requestReaderProgressVisualSync();
   } else {
     document.body.classList.remove("mobile-top-bar-hidden");
     isHidden = false;
   }
 }
-function handleViewportGeometryChange() {
-  const currentWidth = window.innerWidth;
-  const currentOrientation = window.screen && window.screen.orientation ? window.screen.orientation.type : "";
-  if (currentWidth !== lastViewportWidth || currentOrientation !== lastOrientation) {
-    lastViewportWidth = currentWidth;
-    lastOrientation = currentOrientation;
-    requestAnimationFrame(syncReaderProgressViewportOffset);
-  }
+function requestReaderProgressVisualSync() {
+  if (viewportOffsetTicking) return;
+  viewportOffsetTicking = true;
+  requestAnimationFrame(() => {
+    syncReaderProgressVisualTop();
+    viewportOffsetTicking = false;
+  });
 }
-function syncReaderProgressViewportOffset() {
+function syncReaderProgressVisualTop() {
   const isReaderMode = document.body.dataset.readerMode === "immersive";
   const isMobile = window.innerWidth <= 960;
   if (!isReaderMode || !isMobile) return;
   const rawOffset = window.visualViewport ? window.visualViewport.offsetTop : 0;
-  const dpr = window.devicePixelRatio || 1;
-  const snapped = Math.round(rawOffset * dpr) / dpr;
-  document.body.style.setProperty("--reader-progress-top-offset", `${snapped}px`);
+  if (lastReaderProgressVisualTop === null || Math.abs(rawOffset - lastReaderProgressVisualTop) > 0.05) {
+    document.body.style.setProperty("--reader-progress-visual-top", `${rawOffset}px`);
+    lastReaderProgressVisualTop = rawOffset;
+  }
 }
 function onScroll() {
   if (!ticking) {

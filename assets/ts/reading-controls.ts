@@ -2,8 +2,9 @@ let scrollListenerAdded = false;
 let ticking = false;
 let isHidden = false;
 let lastScrollY = window.scrollY;
-let lastViewportWidth = window.innerWidth;
-let lastOrientation = window.screen && window.screen.orientation ? window.screen.orientation.type : '';
+
+let viewportOffsetTicking = false;
+let lastReaderProgressVisualTop: number | null = null;
 
 export function initReadingControls() {
   const isNotePage = document.querySelector('.note') !== null;
@@ -15,14 +16,16 @@ export function initReadingControls() {
       const customEvent = e as CustomEvent;
       requestAnimationFrame(() => {
         updateReadingControls();
-        if (customEvent.detail && customEvent.detail.enabled) {
-          syncReaderProgressViewportOffset();
-        }
       });
+      if (customEvent.detail && customEvent.detail.enabled) {
+        requestReaderProgressVisualSync();
+      }
     });
     
-    window.addEventListener('resize', handleViewportGeometryChange);
-    window.addEventListener('orientationchange', () => requestAnimationFrame(syncReaderProgressViewportOffset));
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('scroll', requestReaderProgressVisualSync, { passive: true });
+      window.visualViewport.addEventListener('resize', requestReaderProgressVisualSync, { passive: true });
+    }
     
     scrollListenerAdded = true;
   }
@@ -31,8 +34,8 @@ export function initReadingControls() {
   if (isNotePage) {
     requestAnimationFrame(() => {
       updateReadingControls();
-      syncReaderProgressViewportOffset();
     });
+    requestReaderProgressVisualSync();
   } else {
     // Reset if leaving note page
     document.body.classList.remove('mobile-top-bar-hidden');
@@ -40,28 +43,29 @@ export function initReadingControls() {
   }
 }
 
-function handleViewportGeometryChange() {
-  const currentWidth = window.innerWidth;
-  const currentOrientation = window.screen && window.screen.orientation ? window.screen.orientation.type : '';
-  
-  if (currentWidth !== lastViewportWidth || currentOrientation !== lastOrientation) {
-    lastViewportWidth = currentWidth;
-    lastOrientation = currentOrientation;
-    requestAnimationFrame(syncReaderProgressViewportOffset);
-  }
+function requestReaderProgressVisualSync() {
+  if (viewportOffsetTicking) return;
+  viewportOffsetTicking = true;
+  requestAnimationFrame(() => {
+    syncReaderProgressVisualTop();
+    viewportOffsetTicking = false;
+  });
 }
 
-function syncReaderProgressViewportOffset() {
+function syncReaderProgressVisualTop() {
   const isReaderMode = document.body.dataset.readerMode === 'immersive';
   const isMobile = window.innerWidth <= 960;
   if (!isReaderMode || !isMobile) return;
 
   const rawOffset = window.visualViewport ? window.visualViewport.offsetTop : 0;
-  const dpr = window.devicePixelRatio || 1;
-  const snapped = Math.round(rawOffset * dpr) / dpr;
-
-  document.body.style.setProperty('--reader-progress-top-offset', `${snapped}px`);
+  
+  if (lastReaderProgressVisualTop === null || Math.abs(rawOffset - lastReaderProgressVisualTop) > 0.05) {
+    document.body.style.setProperty('--reader-progress-visual-top', `${rawOffset}px`);
+    lastReaderProgressVisualTop = rawOffset;
+  }
 }
+
+
 
 function onScroll() {
   if (!ticking) {
