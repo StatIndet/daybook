@@ -39,7 +39,7 @@
         <g class="golden-{{.Kind}}" style="animation-name: g-opacity-{{.Order}};">
           {{$guide := .}}{{range .Segments}}
           <g class="guide-static-transform" transform="translate({{.TranslateX}} {{.TranslateY}}) rotate({{.Rotation}})">
-            <line class="golden-{{$guide.Kind}}" x1="0" y1="0" x2="{{.Length}}" y2="0" style="animation-name: g-seg-{{.Order}}; transform-origin: 0 0; animation-timing-function: linear; opacity: 1;" />
+            <line class="golden-{{$guide.Kind}}" x1="0" y1="0" x2="{{.Length}}" y2="0" style="animation-name: g-seg-{{.Order}}; transform-origin: 0 0; animation-timing-function: var(--ease-golden); opacity: 1;" />
           </g>
           {{end}}
         </g>

@@ -150,12 +150,12 @@
 }
 
 .golden-diagonal {
-  stroke-width: 0.8;
+  stroke-width: 0.809;
   stroke: var(--color-golden-diagonal);
 }
 
 .golden-curve {
-  stroke-width: 1.55;
+  stroke-width: 1.618;
   animation-name: golden-curve-life;
   animation-timing-function: linear;
   stroke: var(--color-golden-curve);
@@ -201,7 +201,7 @@
   
 
   .golden-curve {
-  stroke-width: 1.55;
+  stroke-width: 1.618;
     stroke-dasharray: 1 !important;
     stroke-dashoffset: 0 !important;
   }
