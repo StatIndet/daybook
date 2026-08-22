@@ -9,10 +9,10 @@ import (
 	"strings"
 
 	"github.com/StatIndet/daybook/internal/config"
-	"github.com/StatIndet/daybook/internal/i18n"
-	"github.com/StatIndet/daybook/internal/seo"
-	"github.com/StatIndet/daybook/internal/morphable"
 	"github.com/StatIndet/daybook/internal/embedded"
+	"github.com/StatIndet/daybook/internal/i18n"
+	"github.com/StatIndet/daybook/internal/morphable"
+	"github.com/StatIndet/daybook/internal/seo"
 )
 
 type Renderer struct {
@@ -20,9 +20,9 @@ type Renderer struct {
 }
 
 type SiteData struct {
-	Title            string
-	StartedAt        string
-	TotalWordCount   int
+	Title          string
+	StartedAt      string
+	TotalWordCount int
 }
 
 type Assets struct {
@@ -125,14 +125,6 @@ type goldenSquare struct {
 	s float64
 }
 
-type GoldenLayer struct {
-	Index               int
-	Transform           template.CSS
-	RectStrokeWidth     string
-	DiagonalStrokeWidth string
-	CurveStrokeWidth    string
-}
-
 type GoldenSpiral struct {
 	// PoleX/PoleY are the mathematical limit point used to calculate the
 	// logarithmic spiral. They are not the visual spin center.
@@ -161,7 +153,6 @@ type GoldenSpiral struct {
 	Squares                 []GoldenPath
 	Diagonals               []GoldenPath
 	SpiralPath              string
-	Layers                  []GoldenLayer
 }
 
 type IndexData struct {
@@ -426,16 +417,6 @@ func NewGoldenSpiral() GoldenSpiral {
 	outerQuarterTurns := 0.0
 	spiralPath, spiralStart, spiralEnd := buildSpiralPath(pole, spiralOuterAnchor, spiralInnerQuarterTurns, outerQuarterTurns, math.Pi/180)
 
-	layers := make([]GoldenLayer, 0, 1)
-	scale := 1.0
-	layers = append(layers, GoldenLayer{
-		Index:               0,
-		Transform:           "",
-		RectStrokeWidth:     fmt.Sprintf("%.3f", 1.0/scale),
-		DiagonalStrokeWidth: fmt.Sprintf("%.3f", 0.8/scale),
-		CurveStrokeWidth:    fmt.Sprintf("%.3f", 1.55/scale),
-	})
-
 	return GoldenSpiral{
 		PoleX:                   fmt.Sprintf("%.2f", pole.x),
 		PoleY:                   fmt.Sprintf("%.2f", pole.y),
@@ -460,7 +441,6 @@ func NewGoldenSpiral() GoldenSpiral {
 		Squares:                 squarePaths,
 		Diagonals:               diagonals,
 		SpiralPath:              spiralPath,
-		Layers:                  layers,
 	}
 }
 
@@ -525,36 +505,48 @@ func subdivideGoldenRect(rect goldenRect, maxSquares int) ([]goldenSquare, point
 
 func buildSpiralPath(pole, outerAnchor point, innerQuarterTurns, outerQuarterTurns, step float64) (string, point, point) {
 	const quarter = math.Pi / 2
-
 	b := math.Log((1+math.Sqrt(5))/2) / quarter
 	r0 := distance(outerAnchor, pole)
 	theta0 := math.Atan2(outerAnchor.y-pole.y, outerAnchor.x-pole.x)
 	outerT := -outerQuarterTurns * quarter
 	innerT := innerQuarterTurns * quarter
+	step = math.Pi / 12
 
-	points := make([]point, 0, int((innerT-outerT)/step)+2)
+	P := func(t float64) point {
+		r := r0 * math.Exp(b*t)
+		return point{pole.x + r*math.Cos(theta0+t), pole.y + r*math.Sin(theta0+t)}
+	}
+	Pd := func(t float64) point {
+		r := r0 * math.Exp(b*t)
+		dx := r * (b*math.Cos(theta0+t) - math.Sin(theta0+t))
+		dy := r * (b*math.Sin(theta0+t) + math.Cos(theta0+t))
+		return point{dx, dy}
+	}
+
+	parts := make([]string, 0)
+	startPoint := P(innerT)
+	parts = append(parts, fmt.Sprintf("M %.2f %.2f", startPoint.x, startPoint.y))
+
 	for t := innerT; t > outerT; t -= step {
-		points = append(points, spiralPoint(pole, r0, theta0, b, t))
+		tNext := t - step
+		if tNext < outerT {
+			tNext = outerT
+		}
+		delta := t - tNext
+		p0, pd0 := P(t), Pd(t)
+		p1, pd1 := P(tNext), Pd(tNext)
+		c1x := p0.x - pd0.x*delta/3
+		c1y := p0.y - pd0.y*delta/3
+		c2x := p1.x + pd1.x*delta/3
+		c2y := p1.y + pd1.y*delta/3
+		parts = append(parts, fmt.Sprintf("C %.2f %.2f, %.2f %.2f, %.2f %.2f", c1x, c1y, c2x, c2y, p1.x, p1.y))
+		if tNext <= outerT {
+			break
+		}
 	}
-	points = append(points, spiralPoint(pole, r0, theta0, b, outerT))
 
-	parts := make([]string, 0, len(points))
-	for _, point := range points {
-		parts = append(parts, fmt.Sprintf("%.2f %.2f", point.x, point.y))
-	}
-
-	return "M " + strings.Join(parts, " L "), points[0], points[len(points)-1]
+	return strings.Join(parts, " "), startPoint, P(outerT)
 }
-
-func spiralPoint(pole point, r0, theta0, b, t float64) point {
-	r := r0 * math.Exp(-b*t)
-	a := theta0 + t
-	return point{
-		x: pole.x + r*math.Cos(a),
-		y: pole.y + r*math.Sin(a),
-	}
-}
-
 func squareFromPole(x, y, size float64, pole point) (string, float64) {
 	corners := []point{
 		{x: x, y: y},
@@ -651,8 +643,12 @@ func (r Renderer) render(outputPath, pageTemplate string, data any) error {
 	}
 
 	tmpl := template.New(filepath.Base(files[0])).Funcs(template.FuncMap{
-		"morphableText": func(text, key, classPrefix string) template.HTML { return morphable.GenerateHTML(text, key, classPrefix, true) },
-		"morphableTitle": func(text, key, classPrefix string) template.HTML { return morphable.GenerateHTML(text, key, classPrefix, false) },
+		"morphableText": func(text, key, classPrefix string) template.HTML {
+			return morphable.GenerateHTML(text, key, classPrefix, true)
+		},
+		"morphableTitle": func(text, key, classPrefix string) template.HTML {
+			return morphable.GenerateHTML(text, key, classPrefix, false)
+		},
 		"formatNum": func(n int) string {
 			s := fmt.Sprintf("%d", n)
 			var parts []string
@@ -698,7 +694,7 @@ func (r Renderer) render(outputPath, pageTemplate string, data any) error {
 }
 
 func (r Renderer) templateFiles(pageTemplate string) ([]string, error) {
-	// r.TemplatesDir should be "templates" 
+	// r.TemplatesDir should be "templates"
 	// To use ParseFS, we should use forward slashes.
 	dir := "templates"
 	files := []string{

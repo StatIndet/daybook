@@ -132,49 +132,39 @@
   will-change: transform;
 }
 
-.golden-spiral-layer {
-  transform-box: view-box;
-  transform-origin: inherit;
-}
-
-.golden-spiral-layer-1 {
-  transform: rotate(-180deg) scale(0.3819660112501051);
-}
-
-.golden-spiral-layer-2 {
-  transform: rotate(-360deg) scale(0.14589803375031546);
-}
-
 .golden-rect,
 .golden-diagonal,
 .golden-curve {
+  stroke-width: 1.55;
   animation-duration: var(--golden-loop-duration);
   animation-fill-mode: both;
   animation-iteration-count: infinite;
   animation-timing-function: var(--ease-page);
   fill: none;
   opacity: 0;
-  stroke-dasharray: 0 1;
+  stroke-dasharray: 1;
   stroke-dashoffset: 0;
   stroke-linecap: round;
-  will-change: stroke-dashoffset, opacity;
+  
 }
 
 .golden-rect {
+  stroke-width: 1.0;
   stroke: var(--color-golden-rect);
 }
 
 .golden-diagonal {
+  stroke-width: 0.8;
   stroke: var(--color-golden-diagonal);
 }
 
 .golden-curve {
-  --golden-curve-dash-length: 4096;
+  stroke-width: 1.55;
   animation-name: golden-curve-life;
   animation-timing-function: linear;
   stroke: var(--color-golden-curve);
-  stroke-dasharray: var(--golden-curve-dash-length) var(--golden-curve-dash-length);
-  stroke-dashoffset: var(--golden-curve-dash-length);
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
   stroke-linejoin: round;
 }
 
@@ -195,6 +185,7 @@
   .golden-rect,
   .golden-diagonal,
   .golden-curve {
+  stroke-width: 1.55;
     animation: none !important;
     opacity: 1 !important;
   }
@@ -209,12 +200,14 @@
 
   .golden-rect,
   .golden-diagonal {
-    stroke-dasharray: 1 1 !important;
+  stroke-width: 0.8;
+    stroke-dasharray: 1 !important;
     stroke-dashoffset: 0 !important;
   }
 
   .golden-curve {
-    stroke-dasharray: var(--golden-curve-dash-length) var(--golden-curve-dash-length) !important;
+  stroke-width: 1.55;
+    stroke-dasharray: 1 !important;
     stroke-dashoffset: 0 !important;
   }
 }
