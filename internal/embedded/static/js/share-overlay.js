@@ -61,85 +61,50 @@ function initShareOverlay() {
     });
   }
   function animateTextChange(container, newText) {
-    if (container.hasAttribute("data-animating")) return;
-    const oldText = container.textContent?.trim() || "";
+    let oldText = "";
+    const newSpans = container.querySelectorAll(".share-char-new");
+    if (newSpans.length > 0) {
+      newSpans.forEach((span) => {
+        oldText += span.textContent || "";
+      });
+    } else {
+      oldText = container.textContent?.trim() || "";
+    }
     if (oldText === newText) return;
-    const htmlContainer = container;
-    htmlContainer.setAttribute("data-animating", "true");
     const animationId = Math.random().toString(36).substring(2);
-    htmlContainer.setAttribute("data-animation-id", animationId);
-    htmlContainer.textContent = oldText;
-    const oldRects = [];
-    let textNode = htmlContainer.firstChild;
-    if (textNode) {
-      const range = document.createRange();
-      const containerRect = htmlContainer.getBoundingClientRect();
-      for (let i = 0; i < oldText.length; i++) {
-        range.setStart(textNode, i);
-        range.setEnd(textNode, i + 1);
-        const r = range.getBoundingClientRect();
-        oldRects.push({ left: r.left - containerRect.left });
-      }
-    }
-    htmlContainer.textContent = newText;
-    const newRects = [];
-    textNode = htmlContainer.firstChild;
-    let finalWidth = 0;
-    let finalHeight = 0;
-    if (textNode) {
-      const range = document.createRange();
-      const containerRect = htmlContainer.getBoundingClientRect();
-      finalWidth = containerRect.width;
-      finalHeight = containerRect.height;
-      for (let i = 0; i < newText.length; i++) {
-        range.setStart(textNode, i);
-        range.setEnd(textNode, i + 1);
-        const r = range.getBoundingClientRect();
-        newRects.push({ left: r.left - containerRect.left });
-      }
-    }
-    htmlContainer.innerHTML = "";
-    htmlContainer.style.width = `${finalWidth}px`;
-    htmlContainer.style.height = `${finalHeight}px`;
-    htmlContainer.style.display = "inline-block";
-    htmlContainer.style.position = "relative";
+    container.setAttribute("data-animation-id", animationId);
     const maxLength = Math.max(oldText.length, newText.length);
+    container.innerHTML = "";
+    container.style.display = "inline-flex";
     for (let i = 0; i < maxLength; i++) {
-      if (oldText[i] && oldRects[i]) {
+      const wrapper = document.createElement("span");
+      wrapper.style.display = "inline-grid";
+      wrapper.style.verticalAlign = "top";
+      if (oldText[i]) {
         const oldSpan = document.createElement("span");
         oldSpan.textContent = oldText[i];
-        oldSpan.style.position = "absolute";
-        oldSpan.style.left = `${oldRects[i].left}px`;
-        oldSpan.style.top = "0px";
-        oldSpan.style.lineHeight = `${finalHeight}px`;
+        oldSpan.style.gridArea = "1 / 1";
         oldSpan.style.animation = `shareRollOut 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards`;
         oldSpan.style.animationDelay = `${i * 0.03}s`;
-        htmlContainer.appendChild(oldSpan);
+        wrapper.appendChild(oldSpan);
       }
-      if (newText[i] && newRects[i]) {
+      if (newText[i]) {
         const newSpan = document.createElement("span");
+        newSpan.className = "share-char-new";
         newSpan.textContent = newText[i];
-        newSpan.style.position = "absolute";
-        newSpan.style.left = `${newRects[i].left}px`;
-        newSpan.style.top = "0px";
-        newSpan.style.lineHeight = `${finalHeight}px`;
+        newSpan.style.gridArea = "1 / 1";
         newSpan.style.animation = `shareRollIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards`;
         newSpan.style.animationDelay = `${i * 0.03}s`;
         newSpan.style.opacity = "0";
         newSpan.style.transform = "translateY(100%)";
-        htmlContainer.appendChild(newSpan);
+        wrapper.appendChild(newSpan);
       }
+      container.appendChild(wrapper);
     }
     setTimeout(() => {
-      if (htmlContainer.getAttribute("data-animation-id") === animationId) {
-        if (htmlContainer.children.length > 0) {
-          htmlContainer.textContent = newText;
-        }
-        htmlContainer.style.width = "";
-        htmlContainer.style.height = "";
-        htmlContainer.style.display = "";
-        htmlContainer.style.position = "";
-        htmlContainer.removeAttribute("data-animating");
+      if (container.getAttribute("data-animation-id") === animationId) {
+        container.textContent = newText;
+        container.style.display = "";
       }
     }, 400 + maxLength * 30 + 50);
   }
