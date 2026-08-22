@@ -60,16 +60,65 @@ function initShareOverlay() {
       window.open(url, "_blank", "noopener,noreferrer");
     });
   }
+  function animateTextChange(container, newText) {
+    let oldText = "";
+    const newSpans = container.querySelectorAll(".share-char-new");
+    if (newSpans.length > 0) {
+      newSpans.forEach((span) => {
+        oldText += span.textContent || "";
+      });
+    } else {
+      oldText = container.textContent?.trim() || "";
+    }
+    if (oldText === newText) return;
+    const animationId = Math.random().toString(36).substring(2);
+    container.setAttribute("data-animation-id", animationId);
+    const maxLength = Math.max(oldText.length, newText.length);
+    container.innerHTML = "";
+    container.style.display = "inline-flex";
+    for (let i = 0; i < maxLength; i++) {
+      const wrapper = document.createElement("span");
+      wrapper.style.display = "inline-grid";
+      wrapper.style.verticalAlign = "top";
+      if (oldText[i]) {
+        const oldSpan = document.createElement("span");
+        oldSpan.textContent = oldText[i];
+        oldSpan.style.gridArea = "1 / 1";
+        oldSpan.style.animation = `shareRollOut 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards`;
+        oldSpan.style.animationDelay = `${i * 0.03}s`;
+        wrapper.appendChild(oldSpan);
+      }
+      if (newText[i]) {
+        const newSpan = document.createElement("span");
+        newSpan.className = "share-char-new";
+        newSpan.textContent = newText[i];
+        newSpan.style.gridArea = "1 / 1";
+        newSpan.style.animation = `shareRollIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards`;
+        newSpan.style.animationDelay = `${i * 0.03}s`;
+        newSpan.style.opacity = "0";
+        newSpan.style.transform = "translateY(100%)";
+        wrapper.appendChild(newSpan);
+      }
+      container.appendChild(wrapper);
+    }
+    setTimeout(() => {
+      if (container.getAttribute("data-animation-id") === animationId) {
+        container.textContent = newText;
+        container.style.display = "";
+      }
+    }, 400 + maxLength * 30 + 50);
+  }
   if (copyBtn && copyText) {
     copyBtn.addEventListener("click", () => {
       const text = textarea.value;
       navigator.clipboard.writeText(text).then(() => {
         const lang = document.documentElement.lang.toLowerCase().startsWith("en") ? "en" : "zh";
-        const originalText = copyText.getAttribute(`data-text-copy-${lang}`) || "Copy";
         const copiedText = copyText.getAttribute(`data-text-copied-${lang}`) || "Copied";
-        copyText.textContent = copiedText;
+        animateTextChange(copyText, copiedText);
         setTimeout(() => {
-          copyText.textContent = originalText;
+          const currentLang = document.documentElement.lang.toLowerCase().startsWith("en") ? "en" : "zh";
+          const freshOriginal = copyText.getAttribute(`data-text-copy-${currentLang}`) || "Copy";
+          animateTextChange(copyText, freshOriginal);
         }, 1500);
       });
     });
