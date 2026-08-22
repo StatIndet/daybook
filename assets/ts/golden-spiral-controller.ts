@@ -45,7 +45,9 @@ export function initGoldenSpiral() {
   
   const data = JSON.parse(dataScript.textContent || '{}');
   
-  const worker = new Worker('/js/golden-spiral-worker.js');
+  const workerURL = canvas.dataset.workerUrl;
+  if (!workerURL) return;
+  const worker = new Worker(workerURL);
   currentWorker = worker;
   currentCanvas = canvas;
   

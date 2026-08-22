@@ -126,9 +126,15 @@
   to { transform: rotate(360deg); }
 }
 
-.golden-spiral-stage {
+.golden-spiral-stage,
+  .golden-guides-spin-stage {
   animation: golden-spin var(--golden-loop-duration) linear infinite;
   transform-box: view-box;
+  will-change: transform;
+}
+
+.golden-guides-spin-stage {
+  animation: golden-spin var(--golden-loop-duration) linear infinite;
   will-change: transform;
 }
 
@@ -182,6 +188,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .golden-spiral-stage,
+  .golden-guides-spin-stage,
   .golden-rect,
   .golden-diagonal,
   .golden-curve {
@@ -190,7 +197,8 @@
     opacity: 1 !important;
   }
 
-  .golden-spiral-stage {
+  .golden-spiral-stage,
+  .golden-guides-spin-stage {
     transform: none !important;
   }
 

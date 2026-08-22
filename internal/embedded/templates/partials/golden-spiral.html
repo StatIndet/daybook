@@ -26,7 +26,7 @@
   <div class="golden-spiral-layers" style="position: relative; width: 100%; height: 100%; overflow: hidden;">
     <!-- Canvas Layer for Guides -->
     <div id="golden-guides-stage" style="position: absolute; inset: 0; pointer-events: none;">
-      <canvas id="golden-guides-canvas" class="golden-spiral-stage" style="position: absolute; transform-origin: center; --golden-loop-duration: {{.Spiral.LoopDuration}};"></canvas>
+      <canvas id="golden-guides-canvas" class="golden-guides-spin-stage" data-worker-url="{{.Assets.Path "/js/golden-spiral-worker.js"}}" style="position: absolute; transform-origin: center; --golden-loop-duration: {{.Spiral.LoopDuration}};"></canvas>
     </div>
 
     <!-- SVG Layer for Curve -->

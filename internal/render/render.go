@@ -174,7 +174,7 @@ type GoldenSpiral struct {
 	Squares                 []GoldenPath
 	Diagonals               []GoldenPath
 	SpiralPath              string
-	GuidesJSON              string
+	GuidesJSON              template.JS
 }
 
 type IndexData struct {
@@ -486,7 +486,7 @@ func NewGoldenSpiral() GoldenSpiral {
 		CurveShrinkStartPct:     pct(curveShrinkStart, loopDuration),
 		CurveShrinkEndPct:       pct(curveShrinkEnd, loopDuration),
 		CurveHidePct:            pct(curveHideAt, loopDuration),
-		GuidesJSON:              guidesJSON,
+		GuidesJSON:              template.JS(guidesJSON),
 		SpiralPath:              spiralPath,
 	}
 }
