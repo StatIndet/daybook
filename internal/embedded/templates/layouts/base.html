@@ -3,6 +3,7 @@
 <html lang="{{if .Lang}}{{.Lang}}{{else}}zh-CN{{end}}">
 {{template "head" .}}
 <body class="{{.BodyClass}}" data-page-kind="{{.PageKind}}" data-search-index-url="/search.json" data-stats-enabled="{{if .Config.Stats.Enabled}}true{{else}}false{{end}}">
+  <div class="reader-progress-bar" aria-hidden="true"><div class="reader-progress-bar__line"></div></div>
   {{template "persistent_logo" .}}
   {{template "settings_overlay" .}}
 

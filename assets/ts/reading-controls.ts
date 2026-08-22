@@ -11,6 +11,12 @@ export function initReadingControls() {
     document.addEventListener('daybook:reader-mode-change', () => {
       requestAnimationFrame(updateReadingControls);
     });
+    
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => requestAnimationFrame(updateReadingControls));
+      window.visualViewport.addEventListener('scroll', () => requestAnimationFrame(updateReadingControls));
+    }
+    
     scrollListenerAdded = true;
   }
   
@@ -109,8 +115,15 @@ function updateReadingControls() {
   const isReaderMode = document.body.dataset.readerMode === 'immersive';
   const isMobile = window.innerWidth <= 960;
   
+  // 3. Sync visual viewport offset for reader mode progress bar
+  if (isReaderMode && isMobile) {
+    const visualViewportTop = window.visualViewport ? window.visualViewport.offsetTop : 0;
+    // visualViewport.offsetTop is relative to the layout viewport
+    document.body.style.setProperty('--reader-progress-top-offset', `${visualViewportTop}px`);
+  }
+  
   if (isMobile) {
-    if (topBar) {
+    if (!isReaderMode && topBar) {
       const overlaysOpen = document.body.classList.contains('is-mobile-drawer-open') || 
                            document.body.classList.contains('is-search-overlay-open') || 
                            document.body.classList.contains('is-tags-overlay-open');
