@@ -93,13 +93,9 @@ type NotePage struct {
 	DateTransitionName  string
 }
 
-type GoldenGuideSegment struct {
-	TranslateX string
-	TranslateY string
-	Rotation   string
-	Length     string
-	Kind       string
-	Order      int
+type GoldenGuide struct {
+	Order int
+	Kind  string
 
 	GrowStartPct string
 	GrowFadePct  string
@@ -109,6 +105,21 @@ type GoldenGuideSegment struct {
 	ShrinkEndPct   string
 
 	HidePct string
+
+	Segments []GoldenGuideSegment
+}
+
+type GoldenGuideSegment struct {
+	TranslateX string
+	TranslateY string
+	Rotation   string
+	Length     string
+	Order      int
+
+	GrowStartPct   string
+	GrowEndPct     string
+	ShrinkStartPct string
+	ShrinkEndPct   string
 }
 
 type goldenGuideDraft struct {
@@ -155,7 +166,7 @@ type GoldenSpiral struct {
 	CurveShrinkStartPct     string
 	CurveShrinkEndPct       string
 	CurveHidePct            string
-	GuideSegments           []GoldenGuideSegment
+	Guides                  []GoldenGuide
 	SpiralPath              string
 }
 
@@ -406,17 +417,20 @@ func NewGoldenSpiral() GoldenSpiral {
 
 	loopDuration := guideHideAt + hiddenDuration
 
-	guideSegments := make([]GoldenGuideSegment, 0, len(diagonalDrafts)+len(squareDrafts)*4)
-	order := 0
+	guides := make([]GoldenGuide, 0, len(diagonalDrafts)+len(squareDrafts))
+	guideOrder := 0
+	segOrder := 0
 	for _, draft := range diagonalDrafts {
-		segs := segmentsFromDraft(order, draft, minDistance, maxDistance, phi, guideGrowEnd, guideShrinkStart, guideShrinkEnd, guideHideAt, loopDuration)
-		guideSegments = append(guideSegments, segs...)
-		order += len(segs)
+		g := guideFromDraft(guideOrder, segOrder, draft, minDistance, maxDistance, phi, guideGrowEnd, guideShrinkStart, guideShrinkEnd, guideHideAt, loopDuration)
+		guides = append(guides, g)
+		guideOrder++
+		segOrder += len(g.Segments)
 	}
 	for _, draft := range squareDrafts {
-		segs := segmentsFromDraft(order, draft, minDistance, maxDistance, phi, guideGrowEnd, guideShrinkStart, guideShrinkEnd, guideHideAt, loopDuration)
-		guideSegments = append(guideSegments, segs...)
-		order += len(segs)
+		g := guideFromDraft(guideOrder, segOrder, draft, minDistance, maxDistance, phi, guideGrowEnd, guideShrinkStart, guideShrinkEnd, guideHideAt, loopDuration)
+		guides = append(guides, g)
+		guideOrder++
+		segOrder += len(g.Segments)
 	}
 
 	spiralOuterAnchor := point{x: outerRect.x, y: outerRect.y + outerRect.h}
@@ -445,7 +459,7 @@ func NewGoldenSpiral() GoldenSpiral {
 		CurveShrinkStartPct:     pct(curveShrinkStart, loopDuration),
 		CurveShrinkEndPct:       pct(curveShrinkEnd, loopDuration),
 		CurveHidePct:            pct(curveHideAt, loopDuration),
-		GuideSegments:           guideSegments,
+		Guides:                  guides,
 		SpiralPath:              spiralPath,
 	}
 }
@@ -613,7 +627,7 @@ func guideDistanceRange(guides []goldenGuideDraft) (float64, float64) {
 	return minDistance, maxDistance
 }
 
-func segmentsFromDraft(baseOrder int, draft goldenGuideDraft, minDistance, maxDistance, maxDelay, growEnd, shrinkBase, shrinkEnd, hideAt, loopDuration float64) []GoldenGuideSegment {
+func guideFromDraft(guideOrder, baseSegOrder int, draft goldenGuideDraft, minDistance, maxDistance, maxDelay, growEnd, shrinkBase, shrinkEnd, hideAt, loopDuration float64) GoldenGuide {
 	ratio := 0.0
 	if maxDistance > minDistance {
 		ratio = (draft.distance - minDistance) / (maxDistance - minDistance)
@@ -637,6 +651,8 @@ func segmentsFromDraft(baseOrder int, draft goldenGuideDraft, minDistance, maxDi
 
 	segments := make([]GoldenGuideSegment, numEdges)
 
+	const overlapSec = 0.03 // 30ms overlap
+
 	currentGrow := growDelay
 	for i := 0; i < numEdges; i++ {
 		p0, p1 := pts[i], pts[i+1]
@@ -648,6 +664,12 @@ func segmentsFromDraft(baseOrder int, draft goldenGuideDraft, minDistance, maxDi
 
 		segGrowEnd := currentGrow + growDuration*ratioL
 
+		segGrowStartReal := currentGrow
+		if i > 0 {
+			// Pull back the start time by overlapSec to create a slight overlap
+			segGrowStartReal = currentGrow - overlapSec
+		}
+
 		sumAfter := 0.0
 		for j := i + 1; j < numEdges; j++ {
 			sumAfter += lengths[j]
@@ -656,28 +678,46 @@ func segmentsFromDraft(baseOrder int, draft goldenGuideDraft, minDistance, maxDi
 		segShrinkStart := shrinkStart + shrinkDuration*(sumAfter/totalLength)
 		segShrinkEnd := segShrinkStart + shrinkDuration*ratioL
 
+		segShrinkStartReal := segShrinkStart
+		if i < numEdges-1 {
+			// For shrink, overlap means starting earlier for the NEXT segment in shrink order.
+			// Edge 3 shrinks first, Edge 2 next. Edge 2 should start 30ms before Edge 3 finishes.
+			// Wait, the order of shrink is i from numEdges-1 down to 0.
+			// So segShrinkStart for edge i should be pulled back.
+			segShrinkStartReal = segShrinkStart - overlapSec
+		}
+
 		segments[i] = GoldenGuideSegment{
 			TranslateX: fmt.Sprintf("%.2f", p0.x),
 			TranslateY: fmt.Sprintf("%.2f", p0.y),
 			Rotation:   fmt.Sprintf("%.2f", angle),
 			Length:     fmt.Sprintf("%.2f", l),
-			Kind:       draft.kind,
-			Order:      baseOrder + i,
+			Order:      baseSegOrder + i,
 
-			GrowStartPct: pct(currentGrow, loopDuration),
-			GrowFadePct:  pct(currentGrow+0.12, loopDuration),
-			GrowEndPct:   pct(segGrowEnd, loopDuration),
-
-			ShrinkStartPct: pct(segShrinkStart, loopDuration),
+			GrowStartPct:   pct(segGrowStartReal, loopDuration),
+			GrowEndPct:     pct(segGrowEnd, loopDuration),
+			ShrinkStartPct: pct(segShrinkStartReal, loopDuration),
 			ShrinkEndPct:   pct(segShrinkEnd, loopDuration),
-
-			HidePct: pct(hideAt, loopDuration),
 		}
 
 		currentGrow = segGrowEnd
 	}
 
-	return segments
+	return GoldenGuide{
+		Order: guideOrder,
+		Kind:  draft.kind,
+
+		GrowStartPct: pct(growDelay, loopDuration),
+		GrowFadePct:  pct(growDelay+0.12, loopDuration),
+		GrowEndPct:   pct(growEnd, loopDuration),
+
+		ShrinkStartPct: pct(shrinkStart, loopDuration),
+		ShrinkEndPct:   pct(shrinkEnd, loopDuration),
+
+		HidePct: pct(hideAt, loopDuration),
+
+		Segments: segments,
+	}
 }
 
 func distance(a, b point) float64 {
