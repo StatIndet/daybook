@@ -1,7 +1,6 @@
 package render
 
 import (
-	"encoding/json"
 	"fmt"
 	"html/template"
 	"math"
@@ -94,18 +93,33 @@ type NotePage struct {
 	DateTransitionName  string
 }
 
-type GoldenPath struct {
-	D              string
-	Order          int
-	Distance       string
-	GrowDelay      string
-	ShrinkDelay    string
+type GoldenGuide struct {
+	Order int
+	Kind  string
+
+	GrowStartPct string
+	GrowFadePct  string
+	GrowEndPct   string
+
+	ShrinkStartPct string
+	ShrinkEndPct   string
+
+	HidePct string
+
+	Segments []GoldenGuideSegment
+}
+
+type GoldenGuideSegment struct {
+	TranslateX string
+	TranslateY string
+	Rotation   string
+	Length     string
+	Order      int
+
 	GrowStartPct   string
-	GrowFadePct    string
 	GrowEndPct     string
 	ShrinkStartPct string
 	ShrinkEndPct   string
-	HidePct        string
 }
 
 type goldenGuideDraft struct {
@@ -125,25 +139,6 @@ type goldenSquare struct {
 	x float64
 	y float64
 	s float64
-}
-
-type GuideJSONData struct {
-	Kind        string      `json:"kind"`
-	Points      [][]float64 `json:"points"`
-	GrowStart   float64     `json:"growStart"`
-	GrowFade    float64     `json:"growFade"`
-	GrowEnd     float64     `json:"growEnd"`
-	ShrinkStart float64     `json:"shrinkStart"`
-	ShrinkEnd   float64     `json:"shrinkEnd"`
-	HideAt      float64     `json:"hideAt"`
-}
-
-type SpiralJSONData struct {
-	LoopDuration float64         `json:"loopDuration"`
-	MaxRadius    float64         `json:"maxRadius"`
-	SpinCenterX  float64         `json:"spinCenterX"`
-	SpinCenterY  float64         `json:"spinCenterY"`
-	Guides       []GuideJSONData `json:"guides"`
 }
 
 type GoldenSpiral struct {
@@ -171,10 +166,8 @@ type GoldenSpiral struct {
 	CurveShrinkStartPct     string
 	CurveShrinkEndPct       string
 	CurveHidePct            string
-	Squares                 []GoldenPath
-	Diagonals               []GoldenPath
+	Guides                  []GoldenGuide
 	SpiralPath              string
-	GuidesJSON              template.JS
 }
 
 type IndexData struct {
@@ -424,46 +417,26 @@ func NewGoldenSpiral() GoldenSpiral {
 
 	loopDuration := guideHideAt + hiddenDuration
 
-	guidesData := make([]GuideJSONData, 0, len(diagonalDrafts)+len(squareDrafts))
+	guides := make([]GoldenGuide, 0, len(diagonalDrafts)+len(squareDrafts))
+	guideOrder := 0
+	segOrder := 0
 	for _, draft := range diagonalDrafts {
-		guidesData = append(guidesData, goldenPathFromDraft(draft, minDistance, maxDistance, phi, guideGrowEnd, guideShrinkStart, guideShrinkEnd, guideHideAt, loopDuration))
+		g := guideFromDraft(guideOrder, segOrder, draft, minDistance, maxDistance, phi, guideGrowEnd, guideShrinkStart, guideShrinkEnd, guideHideAt, loopDuration)
+		guides = append(guides, g)
+		guideOrder++
+		segOrder += len(g.Segments)
 	}
 	for _, draft := range squareDrafts {
-		guidesData = append(guidesData, goldenPathFromDraft(draft, minDistance, maxDistance, phi, guideGrowEnd, guideShrinkStart, guideShrinkEnd, guideHideAt, loopDuration))
+		g := guideFromDraft(guideOrder, segOrder, draft, minDistance, maxDistance, phi, guideGrowEnd, guideShrinkStart, guideShrinkEnd, guideHideAt, loopDuration)
+		guides = append(guides, g)
+		guideOrder++
+		segOrder += len(g.Segments)
 	}
 
 	spiralOuterAnchor := point{x: outerRect.x, y: outerRect.y + outerRect.h}
 	spiralInnerQuarterTurns := float64(len(squares))
 	outerQuarterTurns := 0.0
 	spiralPath, spiralStart, spiralEnd := buildSpiralPath(pole, spiralOuterAnchor, spiralInnerQuarterTurns, outerQuarterTurns)
-
-	maxRadius := 0.0
-	for _, draft := range diagonalDrafts {
-		for _, p := range draft.points {
-			d := distance(p, spiralStart)
-			if d > maxRadius {
-				maxRadius = d
-			}
-		}
-	}
-	for _, draft := range squareDrafts {
-		for _, p := range draft.points {
-			d := distance(p, spiralStart)
-			if d > maxRadius {
-				maxRadius = d
-			}
-		}
-	}
-
-	jsonData := SpiralJSONData{
-		LoopDuration: loopDuration,
-		MaxRadius:    maxRadius,
-		SpinCenterX:  spiralStart.x,
-		SpinCenterY:  spiralStart.y,
-		Guides:       guidesData,
-	}
-	jsonBytes, _ := json.Marshal(jsonData)
-	guidesJSON := string(jsonBytes)
 
 	return GoldenSpiral{
 		PoleX:                   fmt.Sprintf("%.2f", pole.x),
@@ -486,7 +459,7 @@ func NewGoldenSpiral() GoldenSpiral {
 		CurveShrinkStartPct:     pct(curveShrinkStart, loopDuration),
 		CurveShrinkEndPct:       pct(curveShrinkEnd, loopDuration),
 		CurveHidePct:            pct(curveHideAt, loopDuration),
-		GuidesJSON:              template.JS(guidesJSON),
+		Guides:                  guides,
 		SpiralPath:              spiralPath,
 	}
 }
@@ -654,7 +627,7 @@ func guideDistanceRange(guides []goldenGuideDraft) (float64, float64) {
 	return minDistance, maxDistance
 }
 
-func goldenPathFromDraft(draft goldenGuideDraft, minDistance, maxDistance, maxDelay, growEnd, shrinkBase, shrinkEnd, hideAt, loopDuration float64) GuideJSONData {
+func guideFromDraft(guideOrder, baseSegOrder int, draft goldenGuideDraft, minDistance, maxDistance, maxDelay, growEnd, shrinkBase, shrinkEnd, hideAt, loopDuration float64) GoldenGuide {
 	ratio := 0.0
 	if maxDistance > minDistance {
 		ratio = (draft.distance - minDistance) / (maxDistance - minDistance)
@@ -663,20 +636,87 @@ func goldenPathFromDraft(draft goldenGuideDraft, minDistance, maxDistance, maxDe
 	shrinkDelay := (1 - ratio) * maxDelay
 	shrinkStart := shrinkBase + shrinkDelay
 
-	pts := make([][]float64, len(draft.points))
-	for i, p := range draft.points {
-		pts[i] = []float64{p.x, p.y}
+	growDuration := growEnd - growDelay
+	shrinkDuration := shrinkEnd - shrinkStart
+
+	pts := draft.points
+	numEdges := len(pts) - 1
+	lengths := make([]float64, numEdges)
+	totalLength := 0.0
+	for i := 0; i < numEdges; i++ {
+		l := distance(pts[i], pts[i+1])
+		lengths[i] = l
+		totalLength += l
 	}
 
-	return GuideJSONData{
-		Kind:        draft.kind,
-		Points:      pts,
-		GrowStart:   growDelay,
-		GrowFade:    growDelay + 0.12,
-		GrowEnd:     growEnd,
-		ShrinkStart: shrinkStart,
-		ShrinkEnd:   shrinkEnd,
-		HideAt:      hideAt,
+	segments := make([]GoldenGuideSegment, numEdges)
+
+	const overlapSec = 0.03 // 30ms overlap
+
+	currentGrow := growDelay
+	for i := 0; i < numEdges; i++ {
+		p0, p1 := pts[i], pts[i+1]
+		l := lengths[i]
+		ratioL := l / totalLength
+
+		dx, dy := p1.x-p0.x, p1.y-p0.y
+		angle := math.Atan2(dy, dx) * 180 / math.Pi
+
+		segGrowEnd := currentGrow + growDuration*ratioL
+
+		segGrowStartReal := currentGrow
+		if i > 0 {
+			// Pull back the start time by overlapSec to create a slight overlap
+			segGrowStartReal = currentGrow - overlapSec
+		}
+
+		sumAfter := 0.0
+		for j := i + 1; j < numEdges; j++ {
+			sumAfter += lengths[j]
+		}
+
+		segShrinkStart := shrinkStart + shrinkDuration*(sumAfter/totalLength)
+		segShrinkEnd := segShrinkStart + shrinkDuration*ratioL
+
+		segShrinkStartReal := segShrinkStart
+		if i < numEdges-1 {
+			// For shrink, overlap means starting earlier for the NEXT segment in shrink order.
+			// Edge 3 shrinks first, Edge 2 next. Edge 2 should start 30ms before Edge 3 finishes.
+			// Wait, the order of shrink is i from numEdges-1 down to 0.
+			// So segShrinkStart for edge i should be pulled back.
+			segShrinkStartReal = segShrinkStart - overlapSec
+		}
+
+		segments[i] = GoldenGuideSegment{
+			TranslateX: fmt.Sprintf("%.2f", p0.x),
+			TranslateY: fmt.Sprintf("%.2f", p0.y),
+			Rotation:   fmt.Sprintf("%.2f", angle),
+			Length:     fmt.Sprintf("%.2f", l),
+			Order:      baseSegOrder + i,
+
+			GrowStartPct:   pct(segGrowStartReal, loopDuration),
+			GrowEndPct:     pct(segGrowEnd, loopDuration),
+			ShrinkStartPct: pct(segShrinkStartReal, loopDuration),
+			ShrinkEndPct:   pct(segShrinkEnd, loopDuration),
+		}
+
+		currentGrow = segGrowEnd
+	}
+
+	return GoldenGuide{
+		Order: guideOrder,
+		Kind:  draft.kind,
+
+		GrowStartPct: pct(growDelay, loopDuration),
+		GrowFadePct:  pct(growDelay+0.12, loopDuration),
+		GrowEndPct:   pct(growEnd, loopDuration),
+
+		ShrinkStartPct: pct(shrinkStart, loopDuration),
+		ShrinkEndPct:   pct(shrinkEnd, loopDuration),
+
+		HidePct: pct(hideAt, loopDuration),
+
+		Segments: segments,
 	}
 }
 

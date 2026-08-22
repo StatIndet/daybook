@@ -126,32 +126,22 @@
   to { transform: rotate(360deg); }
 }
 
-.golden-spiral-stage,
-  .golden-guides-spin-stage {
+.golden-spiral-stage {
   animation: golden-spin var(--golden-loop-duration) linear infinite;
   transform-box: view-box;
-  will-change: transform;
-}
-
-.golden-guides-spin-stage {
-  animation: golden-spin var(--golden-loop-duration) linear infinite;
   will-change: transform;
 }
 
 .golden-rect,
 .golden-diagonal,
 .golden-curve {
-  stroke-width: 1.55;
   animation-duration: var(--golden-loop-duration);
   animation-fill-mode: both;
   animation-iteration-count: infinite;
   animation-timing-function: var(--ease-page);
   fill: none;
   opacity: 0;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 0;
   stroke-linecap: round;
-  
 }
 
 .golden-rect {
@@ -188,17 +178,19 @@
 
 @media (prefers-reduced-motion: reduce) {
   .golden-spiral-stage,
-  .golden-guides-spin-stage,
   .golden-rect,
   .golden-diagonal,
   .golden-curve {
-  stroke-width: 1.55;
     animation: none !important;
     opacity: 1 !important;
   }
+  
+  .golden-rect,
+  .golden-diagonal {
+    transform: scaleX(1) !important;
+  }
 
-  .golden-spiral-stage,
-  .golden-guides-spin-stage {
+  .golden-spiral-stage {
     transform: none !important;
   }
 
@@ -206,12 +198,7 @@
     display: none;
   }
 
-  .golden-rect,
-  .golden-diagonal {
-  stroke-width: 0.8;
-    stroke-dasharray: 1 !important;
-    stroke-dashoffset: 0 !important;
-  }
+  
 
   .golden-curve {
   stroke-width: 1.55;

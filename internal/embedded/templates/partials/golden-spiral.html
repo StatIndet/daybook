@@ -17,20 +17,36 @@
       {{.Spiral.CurveShrinkEndPct}}% { opacity: 1; stroke-dashoffset: 1; }
       {{.Spiral.CurveHidePct}}%, 100% { opacity: 0; stroke-dashoffset: 1; }
     }
+
+    {{range .Spiral.Guides}}
+    @keyframes g-opacity-{{.Order}} {
+      0%, {{.GrowStartPct}}%, {{.HidePct}}%, 100% { opacity: 0; }
+      {{.GrowFadePct}}%, {{.ShrinkEndPct}}% { opacity: 1; }
+    }
+    {{$guide := .}}{{range .Segments}}
+    @keyframes g-seg-{{.Order}} {
+      0%, {{.GrowStartPct}}%, {{.ShrinkEndPct}}%, 100% { transform: scaleX(0); }
+      {{.GrowEndPct}}%, {{.ShrinkStartPct}}% { transform: scaleX(1); }
+    }
+    {{end}}
+    {{end}}
   </style>
 
-  <script type="application/json" id="golden-spiral-data">
-    {{.Spiral.GuidesJSON}}
-  </script>
-
-  <div class="golden-spiral-layers" style="position: relative; width: 100%; height: 100%; overflow: hidden;">
-    <!-- Canvas Layer for Guides -->
-    <div id="golden-guides-stage" style="position: absolute; inset: 0; pointer-events: none;">
-      <canvas id="golden-guides-canvas" class="golden-guides-spin-stage" data-worker-url="{{.Assets.Path "/js/golden-spiral-worker.js"}}" style="position: absolute; transform-origin: center; --golden-loop-duration: {{.Spiral.LoopDuration}};"></canvas>
-    </div>
-
-    <!-- SVG Layer for Curve -->
-    <svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+  <div class="golden-spiral-layers" style="display: grid; width: 100%; height: 100%;">
+    <svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" style="grid-area: 1 / 1;">
+      <g class="golden-spiral-stage" style="--golden-loop-duration: {{.Spiral.LoopDuration}}; transform-origin: {{.Spiral.SpinCenterX}}px {{.Spiral.SpinCenterY}}px;">
+        {{range .Spiral.Guides}}
+        <g class="golden-{{.Kind}}" style="animation-name: g-opacity-{{.Order}};">
+          {{$guide := .}}{{range .Segments}}
+          <g class="guide-static-transform" transform="translate({{.TranslateX}} {{.TranslateY}}) rotate({{.Rotation}})">
+            <line class="golden-{{$guide.Kind}}" x1="0" y1="0" x2="{{.Length}}" y2="0" style="animation-name: g-seg-{{.Order}}; transform-origin: 0 0; animation-timing-function: linear; opacity: 1;" />
+          </g>
+          {{end}}
+        </g>
+        {{end}}
+      </g>
+    </svg>
+    <svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" style="grid-area: 1 / 1;">
       <g class="golden-spiral-stage" style="--golden-loop-duration: {{.Spiral.LoopDuration}}; transform-origin: {{.Spiral.SpinCenterX}}px {{.Spiral.SpinCenterY}}px;">
         <path class="golden-curve" d="{{.Spiral.SpiralPath}}" pathLength="1"></path>
       </g>
