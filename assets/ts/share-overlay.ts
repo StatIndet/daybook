@@ -15,9 +15,12 @@ export function initShareOverlay() {
   }
   overlay.dataset.shareBound = 'true';
 
+  let currentShareURL = '';
+
   function openShare(title: string, url: string, shareText: string) {
     if (!overlay || !textarea) return;
 
+    currentShareURL = url;
     // The backend provides shareText with {Title} already replaced.
     // We just need to append the URL on a new line.
     const defaultText = shareText + '\n' + url;
@@ -67,11 +70,31 @@ export function initShareOverlay() {
     });
   }
 
+  function buildTelegramPayload(text: string, shareURL: string) {
+    if (!shareURL || !text.includes(shareURL)) {
+      return text;
+    }
+    
+    const idx = text.indexOf(shareURL);
+    let before = text.substring(0, idx);
+    let after = text.substring(idx + shareURL.length);
+    
+    if (before.endsWith('\n') && after.startsWith('\n')) {
+      before = before.substring(0, before.length - 1);
+    } else if (before.trim() === '' && after.startsWith('\n')) {
+      after = after.substring(1);
+    } else if (after.trim() === '' && before.endsWith('\n')) {
+      before = before.substring(0, before.length - 1);
+    }
+    
+    return (before + after).trim();
+  }
+
   if (tgBtn) {
     tgBtn.addEventListener('click', () => {
       const text = textarea.value;
-      // For Telegram, url must be explicitly empty so it doesn't duplicate the url from the text
-      const url = `https://t.me/share/url?url=&text=${encodeURIComponent(text)}`;
+      const tgText = buildTelegramPayload(text, currentShareURL);
+      const url = `https://t.me/share/url?url=${encodeURIComponent(currentShareURL)}&text=${encodeURIComponent(tgText)}`;
       window.open(url, '_blank', 'noopener,noreferrer');
     });
   }

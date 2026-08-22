@@ -194,6 +194,9 @@ comment:
 
 stats:
   enabled: false
+
+share:
+  text: '"{Title}"'
 ```
 
 （关于完整配置及高级功能，参考仓库中的 `daybook.yaml` 示例）

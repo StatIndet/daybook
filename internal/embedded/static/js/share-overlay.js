@@ -12,8 +12,10 @@ function initShareOverlay() {
     return;
   }
   overlay.dataset.shareBound = "true";
+  let currentShareURL = "";
   function openShare(title, url, shareText) {
     if (!overlay || !textarea) return;
+    currentShareURL = url;
     const defaultText = shareText + "\n" + url;
     textarea.value = defaultText;
     overlay.removeAttribute("inert");
@@ -53,10 +55,27 @@ function initShareOverlay() {
       window.open(url, "_blank", "noopener,noreferrer");
     });
   }
+  function buildTelegramPayload(text, shareURL) {
+    if (!shareURL || !text.includes(shareURL)) {
+      return text;
+    }
+    const idx = text.indexOf(shareURL);
+    let before = text.substring(0, idx);
+    let after = text.substring(idx + shareURL.length);
+    if (before.endsWith("\n") && after.startsWith("\n")) {
+      before = before.substring(0, before.length - 1);
+    } else if (before.trim() === "" && after.startsWith("\n")) {
+      after = after.substring(1);
+    } else if (after.trim() === "" && before.endsWith("\n")) {
+      before = before.substring(0, before.length - 1);
+    }
+    return (before + after).trim();
+  }
   if (tgBtn) {
     tgBtn.addEventListener("click", () => {
       const text = textarea.value;
-      const url = `https://t.me/share/url?url=&text=${encodeURIComponent(text)}`;
+      const tgText = buildTelegramPayload(text, currentShareURL);
+      const url = `https://t.me/share/url?url=${encodeURIComponent(currentShareURL)}&text=${encodeURIComponent(tgText)}`;
       window.open(url, "_blank", "noopener,noreferrer");
     });
   }
