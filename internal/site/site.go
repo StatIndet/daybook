@@ -353,6 +353,10 @@ func Build(options Options) (BuildResult, error) {
 				Alternates:  noteAlternates,
 			}
 
+			canonicalPath := joinURL("/", langPrefix, "notes", note.Slug)
+			shareURL := strings.TrimSuffix(options.Config.Site.URL, "/") + canonicalPath
+			shareText := strings.ReplaceAll(options.Config.Share.Text, "{Title}", note.Title)
+
 			notePageData := render.NoteData{
 				Site:         siteData,
 				Config:       options.Config,
@@ -374,11 +378,13 @@ func Build(options Options) (BuildResult, error) {
 					URL:                 noteLink.URL,
 					Slug:                note.Slug,
 					I18nKey:             group.I18nKey,
-					CommentPath:         joinURL("/", langPrefix, "notes", note.Slug),
+					CommentPath:         canonicalPath,
 					Tags:                tags,
 					WordCount:           note.WordCount,
 					ReadingMinutes:      note.ReadingMinutes,
-					CanonicalPath:       joinURL("/", langPrefix, "notes", note.Slug),
+					CanonicalPath:       canonicalPath,
+					ShareURL:            shareURL,
+					ShareText:           shareText,
 					HTML:                template.HTML(document.HTML),
 					Headings:            renderHeadings(document.Headings),
 					HasMermaid:          document.HasMermaid,

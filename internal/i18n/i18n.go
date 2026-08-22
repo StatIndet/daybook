@@ -56,6 +56,10 @@ var dictionary = map[string]map[string]string{
 		"palette.cool":        "冷色",
 		"palette.warm":        "暖色",
 		"palette.warm_theme":  "暖色主题",
+		"action.share":        "分享",
+		"action.close_share":  "关闭分享",
+		"action.copy":         "复制",
+		"action.copied":       "已复制",
 	},
 	"en": {
 		"nav.home":            "Home",
@@ -112,6 +116,10 @@ var dictionary = map[string]map[string]string{
 		"palette.cool":        "Cool",
 		"palette.warm":        "Warm",
 		"palette.warm_theme":  "Warm theme",
+		"action.share":        "Share",
+		"action.close_share":  "Close share",
+		"action.copy":         "Copy",
+		"action.copied":       "Copied",
 	},
 }
 

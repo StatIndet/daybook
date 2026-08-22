@@ -176,6 +176,10 @@ func writeRequiredTemplateAssets(t *testing.T, staticDir string) {
 		"js/mobile-drawer.js",
 		"js/search-overlay.js",
 		"js/daybook-router.js",
+		"js/reader-mode.js",
+		"js/reading-controls.js",
+		"js/settings-overlay.js",
+		"js/share-overlay.js",
 		"vendor/katex/katex.min.css",
 	} {
 		writeTestFile(t, staticDir, scriptPath, `document.documentElement.dataset.loaded = "true";`)
@@ -208,4 +212,68 @@ func readPublicAsset(t *testing.T, publicDir, webPath string) string {
 func fileExists(filePath string) bool {
 	_, err := os.Stat(filePath)
 	return err == nil
+}
+
+func TestShareRendering(t *testing.T) {
+	contentDir := filepath.Join(t.TempDir(), "content")
+	staticDir := filepath.Join(t.TempDir(), "static")
+	publicDir := filepath.Join(t.TempDir(), "public")
+
+	writeRequiredTemplateAssets(t, staticDir)
+	writeTestFile(t, contentDir, "pages/about.md", "---\ntitle: About\n---\n")
+	writeTestFile(t, contentDir, "notes/cjk.md", strings.Join([]string{
+		"---",
+		"title: 鲸歌",
+		"date: 2026-06-17",
+		"slug: cjk",
+		"summary: test",
+		"draft: false",
+		"---",
+		"",
+		"Testing CJK title.",
+	}, "\n"))
+	
+	writeTestFile(t, contentDir, "notes/space.md", strings.Join([]string{
+		"---",
+		"title: A Space Title",
+		"date: 2026-06-18",
+		"slug: space",
+		"summary: test",
+		"draft: false",
+		"---",
+		"",
+		"Testing space title.",
+	}, "\n"))
+
+	cfg := config.Config{}
+	cfg.Site.URL = "https://daybook.page/" // test trailing slash
+	cfg.Share.Text = "分享：\"{Title}\""
+
+	_, err := Build(Options{
+		Config:       cfg,
+		NotesDir:     filepath.Join(contentDir, "notes"),
+		PublicDir:    publicDir,
+	})
+	if err != nil {
+		t.Fatalf("Build returned error: %v", err)
+	}
+
+	cjkHtml := readPublicAsset(t, publicDir, "/notes/cjk/index.html")
+	if !strings.Contains(cjkHtml, `data-share-title="鲸歌"`) {
+		t.Errorf("Expected CJK title to be preserved in data-share-title")
+	}
+	if !strings.Contains(cjkHtml, `data-share-url="https://daybook.page/notes/cjk/"`) {
+		t.Errorf("Expected CJK ShareURL to be unencoded and correct: %s", cjkHtml)
+	}
+	if !strings.Contains(cjkHtml, `data-share-text="分享：&#34;鲸歌&#34;"`) {
+		t.Errorf("Expected CJK ShareText to have replaced Title and be html-escaped")
+	}
+
+	spaceHtml := readPublicAsset(t, publicDir, "/notes/space/index.html")
+	if !strings.Contains(spaceHtml, `data-share-url="https://daybook.page/notes/space/"`) {
+		t.Errorf("Expected ASCII space ShareURL to be unencoded and correct")
+	}
+	if !strings.Contains(spaceHtml, `data-share-text="分享：&#34;A Space Title&#34;"`) {
+		t.Errorf("Expected ASCII space ShareText to have replaced Title and be html-escaped")
+	}
 }

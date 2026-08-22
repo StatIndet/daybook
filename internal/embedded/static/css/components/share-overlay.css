@@ -1,0 +1,79 @@
+/* 
+   Share Overlay 
+   Reuses .settings-overlay structure for consistent modal styling.
+*/
+
+.share-overlay {
+  /* Inherits display logic from .settings-overlay in settings-overlay.css */
+}
+
+/* Base styles are handled by .settings-overlay, .settings-paper etc. */
+
+.share-textarea {
+  width: 100%;
+  height: 120px;
+  min-height: 80px;
+  max-height: 200px;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(62, 56, 50, 0.2);
+  border-radius: 4px;
+  padding: 16px;
+  font-family: inherit; /* Inherit the modal's elegant typography */
+  font-size: 1.1rem;
+  line-height: 1.5;
+  color: #2c2723;
+  resize: vertical;
+}
+
+.share-textarea:focus-visible {
+  outline: 2px solid rgba(62, 56, 50, 0.4);
+  outline-offset: 2px;
+}
+
+.share-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 24px;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.share-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(62, 56, 50, 0.2);
+  border-radius: 4px;
+  padding: 8px 16px;
+  color: #3e3832;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.share-action-btn:hover {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.share-action-btn:active {
+  transform: scale(0.98);
+}
+
+.share-action-btn .material-symbol {
+  font-size: 1.25rem;
+}
+
+.share-copy-text {
+  font-family: var(--font-ui);
+}
+
+@media (max-width: 600px) {
+  .share-actions {
+    flex-wrap: wrap;
+  }
+  .share-action-btn {
+    flex: 1 1 100%;
+  }
+}

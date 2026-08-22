@@ -87,6 +87,10 @@ type StatsConfig struct {
 	Enabled bool `yaml:"enabled"`
 }
 
+type ShareConfig struct {
+	Text string `yaml:"text"`
+}
+
 type SiteConfig struct {
 	Title     string `yaml:"title"`
 	URL       string `yaml:"url"`
@@ -99,6 +103,7 @@ type Config struct {
 	SEO     SEOConfig     `yaml:"seo"`
 	Comment CommentConfig `yaml:"comment"`
 	Stats   StatsConfig   `yaml:"stats"`
+	Share   ShareConfig   `yaml:"share"`
 }
 
 func (c Config) GetHomeTitle(lang string) string {
@@ -190,6 +195,9 @@ func Load() (Config, error) {
 	}
 	if strings.TrimSpace(cfg.Site.StartedAt) == "" {
 		cfg.Site.StartedAt = "2026-06-08"
+	}
+	if cfg.Share.Text == "" {
+		cfg.Share.Text = `"{Title}"`
 	}
 
 	if cfg.Comment.Enabled {

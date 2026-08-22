@@ -76,6 +76,8 @@ type NotePage struct {
 	WordCount           int
 	ReadingMinutes      int
 	CanonicalPath       string
+	ShareURL            string
+	ShareText           string
 	HTML                template.HTML
 	Headings            []Heading
 	HasMermaid          bool

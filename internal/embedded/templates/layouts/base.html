@@ -6,6 +6,7 @@
   <div class="reader-progress-bar" aria-hidden="true"></div>
   {{template "persistent_logo" .}}
   {{template "settings_overlay" .}}
+  {{template "share_overlay" .}}
 
 
   <div class="page-frame" id="daybook-page" data-daybook-page>
@@ -74,6 +75,10 @@
 
     import("{{.Assets.Path "/js/settings-overlay.js"}}").then(module => {
       module.initSettingsOverlay();
+    });
+
+    import("{{.Assets.Path "/js/share-overlay.js"}}").then(module => {
+      module.initShareOverlay();
     });
 
     import("{{.Assets.Path "/js/image-loader.js"}}");
