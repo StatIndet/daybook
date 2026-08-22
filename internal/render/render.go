@@ -348,7 +348,7 @@ func NewGoldenSpiral() GoldenSpiral {
 	}
 
 	baseOuterAnchor := point{x: baseOuterRect.x, y: baseOuterRect.y + baseOuterRect.h}
-	_, visualAnchor, _ := buildSpiralPath(basePole, baseOuterAnchor, float64(len(baseSquares)), 0, math.Pi/180)
+	_, visualAnchor, _ := buildSpiralPath(basePole, baseOuterAnchor, float64(len(baseSquares)), 0)
 
 	outerRect := scaleRectAround(baseOuterRect, visualAnchor, phi*phi*phi)
 	squares, pole := subdivideGoldenRect(outerRect, maxSquares)
@@ -415,7 +415,7 @@ func NewGoldenSpiral() GoldenSpiral {
 	spiralOuterAnchor := point{x: outerRect.x, y: outerRect.y + outerRect.h}
 	spiralInnerQuarterTurns := float64(len(squares))
 	outerQuarterTurns := 0.0
-	spiralPath, spiralStart, spiralEnd := buildSpiralPath(pole, spiralOuterAnchor, spiralInnerQuarterTurns, outerQuarterTurns, math.Pi/180)
+	spiralPath, spiralStart, spiralEnd := buildSpiralPath(pole, spiralOuterAnchor, spiralInnerQuarterTurns, outerQuarterTurns)
 
 	return GoldenSpiral{
 		PoleX:                   fmt.Sprintf("%.2f", pole.x),
@@ -503,23 +503,25 @@ func subdivideGoldenRect(rect goldenRect, maxSquares int) ([]goldenSquare, point
 	return squares, point{x: cx + cw/2, y: cy + ch/2}
 }
 
-func buildSpiralPath(pole, outerAnchor point, innerQuarterTurns, outerQuarterTurns, step float64) (string, point, point) {
+func buildSpiralPath(pole, outerAnchor point, innerQuarterTurns, outerQuarterTurns float64) (string, point, point) {
 	const quarter = math.Pi / 2
 	b := math.Log((1+math.Sqrt(5))/2) / quarter
 	r0 := distance(outerAnchor, pole)
 	theta0 := math.Atan2(outerAnchor.y-pole.y, outerAnchor.x-pole.x)
 	outerT := -outerQuarterTurns * quarter
 	innerT := innerQuarterTurns * quarter
-	step = math.Pi / 12
+	const bezierStep = math.Pi / 12
 
 	P := func(t float64) point {
-		r := r0 * math.Exp(b*t)
-		return point{pole.x + r*math.Cos(theta0+t), pole.y + r*math.Sin(theta0+t)}
+		r := r0 * math.Exp(-b*t)
+		a := theta0 + t
+		return point{pole.x + r*math.Cos(a), pole.y + r*math.Sin(a)}
 	}
 	Pd := func(t float64) point {
-		r := r0 * math.Exp(b*t)
-		dx := r * (b*math.Cos(theta0+t) - math.Sin(theta0+t))
-		dy := r * (b*math.Sin(theta0+t) + math.Cos(theta0+t))
+		r := r0 * math.Exp(-b*t)
+		a := theta0 + t
+		dx := r * (-b*math.Cos(a) - math.Sin(a))
+		dy := r * (-b*math.Sin(a) + math.Cos(a))
 		return point{dx, dy}
 	}
 
@@ -527,8 +529,8 @@ func buildSpiralPath(pole, outerAnchor point, innerQuarterTurns, outerQuarterTur
 	startPoint := P(innerT)
 	parts = append(parts, fmt.Sprintf("M %.2f %.2f", startPoint.x, startPoint.y))
 
-	for t := innerT; t > outerT; t -= step {
-		tNext := t - step
+	for t := innerT; t > outerT; t -= bezierStep {
+		tNext := t - bezierStep
 		if tNext < outerT {
 			tNext = outerT
 		}
