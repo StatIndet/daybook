@@ -16,7 +16,6 @@ let lastMoveTime = performance.now();
 let lastMoveX = mouseX;
 let lastMoveY = mouseY;
 const BREAK_SPEED = 3.0;
-const lerpFactor = 0.3;
 
 const selectors = {
   hover: 'a, button, [role="button"], summary, .note-card, .nav-link, .theme-toggle, .mobile-drawer-button, .graph-toolbar button, .copy-button',
@@ -32,11 +31,8 @@ function updateCursorPosition() {
     cursorEl.style.transform = `translate3d(${cursorX}px, ${cursorY}px, 0)`;
   }
   
-  if (Math.abs(mouseX - cursorX) > 0.1 || Math.abs(mouseY - cursorY) > 0.1) {
-    rafId = requestAnimationFrame(updateCursorPosition);
-  } else {
-    isMoving = false;
-  }
+  isMoving = false;
+  rafId = null;
 }
 
 function breakIdleClock(snap = false) {

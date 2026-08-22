@@ -297,11 +297,8 @@ function updateCursorPosition() {
   if (cursorEl) {
     cursorEl.style.transform = `translate3d(${cursorX}px, ${cursorY}px, 0)`;
   }
-  if (Math.abs(mouseX - cursorX) > 0.1 || Math.abs(mouseY - cursorY) > 0.1) {
-    rafId = requestAnimationFrame(updateCursorPosition);
-  } else {
-    isMoving = false;
-  }
+  isMoving = false;
+  rafId = null;
 }
 function breakIdleClock(snap = false) {
   isClockActive = false;
