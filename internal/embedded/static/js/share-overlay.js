@@ -94,15 +94,17 @@ function initShareOverlay() {
     container.setAttribute("data-animation-id", animationId);
     const maxLength = Math.max(oldText.length, newText.length);
     container.innerHTML = "";
-    container.style.display = "inline-flex";
+    container.style.display = "inline";
+    container.style.whiteSpace = "nowrap";
     for (let i = 0; i < maxLength; i++) {
       const wrapper = document.createElement("span");
-      wrapper.style.display = "inline-grid";
-      wrapper.style.verticalAlign = "top";
+      wrapper.style.position = "relative";
       if (oldText[i]) {
         const oldSpan = document.createElement("span");
         oldSpan.textContent = oldText[i];
-        oldSpan.style.gridArea = "1 / 1";
+        oldSpan.style.position = newText[i] ? "absolute" : "relative";
+        oldSpan.style.left = "0";
+        oldSpan.style.top = "0";
         oldSpan.style.animation = `shareRollOut 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards`;
         oldSpan.style.animationDelay = `${i * 0.03}s`;
         wrapper.appendChild(oldSpan);
@@ -111,11 +113,11 @@ function initShareOverlay() {
         const newSpan = document.createElement("span");
         newSpan.className = "share-char-new";
         newSpan.textContent = newText[i];
-        newSpan.style.gridArea = "1 / 1";
+        newSpan.style.position = "relative";
         newSpan.style.animation = `shareRollIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards`;
         newSpan.style.animationDelay = `${i * 0.03}s`;
         newSpan.style.opacity = "0";
-        newSpan.style.transform = "translateY(100%)";
+        newSpan.style.top = "1em";
         wrapper.appendChild(newSpan);
       }
       container.appendChild(wrapper);
@@ -124,6 +126,7 @@ function initShareOverlay() {
       if (container.getAttribute("data-animation-id") === animationId) {
         container.textContent = newText;
         container.style.display = "";
+        container.style.whiteSpace = "";
       }
     }, 400 + maxLength * 30 + 50);
   }

@@ -115,17 +115,24 @@ export function initShareOverlay() {
 
     const maxLength = Math.max(oldText.length, newText.length);
     container.innerHTML = '';
-    (container as HTMLElement).style.display = 'inline-flex';
+    // display: inline allows the spans to perfectly maintain font shaping/kerning
+    // white-space: nowrap prevents awkward line breaks during animation
+    (container as HTMLElement).style.display = 'inline';
+    (container as HTMLElement).style.whiteSpace = 'nowrap';
 
     for (let i = 0; i < maxLength; i++) {
+      // Wrapper MUST remain purely inline to preserve text runs
       const wrapper = document.createElement('span');
-      wrapper.style.display = 'inline-grid';
-      wrapper.style.verticalAlign = 'top';
+      wrapper.style.position = 'relative';
       
       if (oldText[i]) {
         const oldSpan = document.createElement('span');
         oldSpan.textContent = oldText[i];
-        oldSpan.style.gridArea = '1 / 1';
+        // If there is no new text for this position, the old character must take up the layout space
+        // otherwise the wrapper collapses and absolute positioning forces characters to overlap.
+        oldSpan.style.position = newText[i] ? 'absolute' : 'relative';
+        oldSpan.style.left = '0';
+        oldSpan.style.top = '0';
         oldSpan.style.animation = `shareRollOut 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards`;
         oldSpan.style.animationDelay = `${i * 0.03}s`;
         wrapper.appendChild(oldSpan);
@@ -135,11 +142,11 @@ export function initShareOverlay() {
         const newSpan = document.createElement('span');
         newSpan.className = 'share-char-new';
         newSpan.textContent = newText[i];
-        newSpan.style.gridArea = '1 / 1';
+        newSpan.style.position = 'relative';
         newSpan.style.animation = `shareRollIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards`;
         newSpan.style.animationDelay = `${i * 0.03}s`;
         newSpan.style.opacity = '0';
-        newSpan.style.transform = 'translateY(100%)';
+        newSpan.style.top = '1em';
         wrapper.appendChild(newSpan);
       }
       
@@ -150,6 +157,7 @@ export function initShareOverlay() {
       if (container.getAttribute('data-animation-id') === animationId) {
         container.textContent = newText;
         (container as HTMLElement).style.display = '';
+        (container as HTMLElement).style.whiteSpace = '';
       }
     }, 400 + maxLength * 30 + 50); // animation duration + stagger delay + buffer
   }

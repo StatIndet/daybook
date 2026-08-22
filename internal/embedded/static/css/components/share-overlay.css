@@ -97,13 +97,6 @@
   font-family: inherit;
 }
 
-.share-copy-text,
-.share-copy-text * {
-  font-kerning: none;
-  font-variant-ligatures: none;
-  font-feature-settings: "kern" 0, "liga" 0;
-}
-
 @media (max-width: 600px) {
   .share-actions {
     gap: 16px;
@@ -111,10 +104,10 @@
 }
 
 @keyframes shareRollOut {
-  0% { transform: translateY(0); opacity: 1; }
-  100% { transform: translateY(-100%); opacity: 0; }
+  0% { top: 0; opacity: 1; }
+  100% { top: -1em; opacity: 0; }
 }
 @keyframes shareRollIn {
-  0% { transform: translateY(100%); opacity: 0; }
-  100% { transform: translateY(0); opacity: 1; }
+  0% { top: 1em; opacity: 0; }
+  100% { top: 0; opacity: 1; }
 }
