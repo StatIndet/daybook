@@ -1599,7 +1599,7 @@
 
 .markdown .obsidian-embed-link::after {
   background: var(--color-tooltip-bg);
-  border-radius: 3px;
+  border-radius: 8px;
   top: calc(100% + 9px);
   color: var(--color-tooltip-text);
   content: attr(data-tooltip);
@@ -1608,12 +1608,16 @@
   left: 50%;
   line-height: 1;
   opacity: 0;
-  padding: 6px 7px;
+  padding: 5px 10px;
   pointer-events: none;
   position: absolute;
-  transform: translate(-50%, -4px);
-  transition: opacity 160ms ease, transform 160ms ease;
+  transform: translateX(-50%);
+  clip-path: inset(100% 50% 0 50% round 8px);
+  transition:
+    opacity var(--motion-expressive-effects-duration) var(--motion-expressive-effects-easing),
+    clip-path var(--motion-expressive-effects-duration) var(--motion-expressive-effects-easing);
   white-space: nowrap;
+  z-index: 100;
 }
 
 .markdown .obsidian-embed-link:hover,
@@ -1626,7 +1630,19 @@
 .markdown .obsidian-embed-link:hover::after,
 .markdown .obsidian-embed-link:focus-visible::after {
   opacity: 1;
-  transform: translate(-50%, 0);
+  clip-path: inset(0 0 0 0 round 8px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .markdown .obsidian-embed-link::after {
+    clip-path: none !important;
+    transition: opacity 160ms ease !important;
+  }
+}
+
+html[data-reduced-motion="true"] .markdown .obsidian-embed-link::after {
+  clip-path: none !important;
+  transition: opacity 160ms ease !important;
 }
 
 .markdown .obsidian-embed-link .material-symbol {
