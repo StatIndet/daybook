@@ -89,7 +89,7 @@ function updateReadingControls() {
   const isReaderMode = document.body.dataset.readerMode === "immersive";
   const isMobile = window.innerWidth <= 960;
   if (isMobile) {
-    if (!isReaderMode && topBar) {
+    if (topBar) {
       const overlaysOpen = document.body.classList.contains("is-mobile-drawer-open") || document.body.classList.contains("is-search-overlay-open") || document.body.classList.contains("is-tags-overlay-open");
       if (overlaysOpen) {
         if (isHidden) {
