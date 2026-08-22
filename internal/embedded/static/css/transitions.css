@@ -795,6 +795,57 @@ body.page-entering .archive-item {
   }
 }
 
+html[data-reduced-motion="true"] *,
+html[data-reduced-motion="true"] *::before,
+html[data-reduced-motion="true"] *::after {
+  animation-delay: 0ms !important;
+  animation-duration: 1ms !important;
+  scroll-behavior: auto !important;
+  transition-duration: 1ms !important;
+}
+
+html[data-reduced-motion="true"] .hero-avatar-wrap,
+html[data-reduced-motion="true"] .side-avatar-wrap,
+html[data-reduced-motion="true"] .hero-name,
+html[data-reduced-motion="true"] .slogan-glyph,
+html[data-reduced-motion="true"] .notes-brand-name,
+html[data-reduced-motion="true"] .notes-item-title a,
+html[data-reduced-motion="true"] .article-meta-rows,
+html[data-reduced-motion="true"] .article-shared-meta,
+html[data-reduced-motion="true"] .article-stagger-meta,
+html[data-reduced-motion="true"] .note-title span,
+html[data-reduced-motion="true"] [data-article-shared] {
+  view-transition-name: none !important;
+}
+
+html[data-reduced-motion="true"] .note-back-link,
+html[data-reduced-motion="true"] .note-toc,
+html[data-reduced-motion="true"] .notes-item,
+html[data-reduced-motion="true"] .article-meta-rows,
+html[data-reduced-motion="true"] .article-shared-meta,
+html[data-reduced-motion="true"] .article-stagger-meta,
+html[data-reduced-motion="true"] .article-stagger-meta > *,
+html[data-reduced-motion="true"] .archive-year,
+html[data-reduced-motion="true"] .archive-item,
+html[data-reduced-motion="true"] .note-summary,
+html[data-reduced-motion="true"] .post-content > * {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  clip-path: none !important;
+}
+
+html[data-reduced-motion="true"] .note-toc,
+html[data-reduced-motion="true"] .note-toc-panel {
+  transition: none !important;
+}
+
+html[data-reduced-motion="true"] .note-toc:not(.is-open) .note-toc-panel {
+  opacity: 0 !important;
+  transform: none !important;
+  visibility: hidden !important;
+}
+
 .title-glyph {
   view-transition-class: article-title-glyph;
   margin: 0;
