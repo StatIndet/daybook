@@ -93,23 +93,28 @@ type NotePage struct {
 	DateTransitionName  string
 }
 
-type GoldenPath struct {
-	D              string
-	Order          int
-	Distance       string
-	GrowDelay      string
-	ShrinkDelay    string
-	GrowStartPct   string
-	GrowFadePct    string
-	GrowEndPct     string
+type GoldenGuideSegment struct {
+	TranslateX string
+	TranslateY string
+	Rotation   string
+	Length     string
+	Kind       string
+	Order      int
+
+	GrowStartPct string
+	GrowFadePct  string
+	GrowEndPct   string
+
 	ShrinkStartPct string
 	ShrinkEndPct   string
-	HidePct        string
+
+	HidePct string
 }
 
 type goldenGuideDraft struct {
-	d        string
+	points   []point
 	distance float64
+	kind     string
 }
 
 type goldenRect struct {
@@ -150,8 +155,7 @@ type GoldenSpiral struct {
 	CurveShrinkStartPct     string
 	CurveShrinkEndPct       string
 	CurveHidePct            string
-	Squares                 []GoldenPath
-	Diagonals               []GoldenPath
+	GuideSegments           []GoldenGuideSegment
 	SpiralPath              string
 }
 
@@ -373,8 +377,8 @@ func NewGoldenSpiral() GoldenSpiral {
 	}
 	squareDrafts := make([]goldenGuideDraft, 0, len(squares))
 	for _, square := range squares {
-		d, distance := squareFromPole(square.x, square.y, square.s, pole)
-		squareDrafts = append(squareDrafts, goldenGuideDraft{d: d, distance: distance})
+		draft := squareFromPole(square.x, square.y, square.s, pole)
+		squareDrafts = append(squareDrafts, draft)
 	}
 
 	allGuides := append([]goldenGuideDraft{}, diagonalDrafts...)
@@ -402,14 +406,17 @@ func NewGoldenSpiral() GoldenSpiral {
 
 	loopDuration := guideHideAt + hiddenDuration
 
-	diagonals := make([]GoldenPath, 0, len(diagonalDrafts))
-	for i, draft := range diagonalDrafts {
-		diagonals = append(diagonals, goldenPathFromDraft(i, draft, minDistance, maxDistance, phi, guideGrowEnd, guideShrinkStart, guideShrinkEnd, guideHideAt, loopDuration))
+	guideSegments := make([]GoldenGuideSegment, 0, len(diagonalDrafts)+len(squareDrafts)*4)
+	order := 0
+	for _, draft := range diagonalDrafts {
+		segs := segmentsFromDraft(order, draft, minDistance, maxDistance, phi, guideGrowEnd, guideShrinkStart, guideShrinkEnd, guideHideAt, loopDuration)
+		guideSegments = append(guideSegments, segs...)
+		order += len(segs)
 	}
-
-	squarePaths := make([]GoldenPath, 0, len(squareDrafts))
-	for i, draft := range squareDrafts {
-		squarePaths = append(squarePaths, goldenPathFromDraft(i+len(diagonalDrafts), draft, minDistance, maxDistance, phi, guideGrowEnd, guideShrinkStart, guideShrinkEnd, guideHideAt, loopDuration))
+	for _, draft := range squareDrafts {
+		segs := segmentsFromDraft(order, draft, minDistance, maxDistance, phi, guideGrowEnd, guideShrinkStart, guideShrinkEnd, guideHideAt, loopDuration)
+		guideSegments = append(guideSegments, segs...)
+		order += len(segs)
 	}
 
 	spiralOuterAnchor := point{x: outerRect.x, y: outerRect.y + outerRect.h}
@@ -438,8 +445,7 @@ func NewGoldenSpiral() GoldenSpiral {
 		CurveShrinkStartPct:     pct(curveShrinkStart, loopDuration),
 		CurveShrinkEndPct:       pct(curveShrinkEnd, loopDuration),
 		CurveHidePct:            pct(curveHideAt, loopDuration),
-		Squares:                 squarePaths,
-		Diagonals:               diagonals,
+		GuideSegments:           guideSegments,
 		SpiralPath:              spiralPath,
 	}
 }
@@ -549,7 +555,7 @@ func buildSpiralPath(pole, outerAnchor point, innerQuarterTurns, outerQuarterTur
 
 	return strings.Join(parts, " "), startPoint, P(outerT)
 }
-func squareFromPole(x, y, size float64, pole point) (string, float64) {
+func squareFromPole(x, y, size float64, pole point) goldenGuideDraft {
 	corners := []point{
 		{x: x, y: y},
 		{x: x + size, y: y},
@@ -571,23 +577,21 @@ func squareFromPole(x, y, size float64, pole point) (string, float64) {
 		ordered = append(ordered, corners[(start+i)%len(corners)])
 	}
 
-	return fmt.Sprintf(
-		"M %.2f %.2f L %.2f %.2f L %.2f %.2f L %.2f %.2f Z",
-		ordered[0].x, ordered[0].y,
-		ordered[1].x, ordered[1].y,
-		ordered[2].x, ordered[2].y,
-		ordered[3].x, ordered[3].y,
-	), minDistance
+	return goldenGuideDraft{
+		points:   []point{ordered[0], ordered[1], ordered[2], ordered[3], ordered[0]},
+		distance: minDistance,
+		kind:     "rect",
+	}
 }
 
 func diagonalFromPole(a, b, pole point) goldenGuideDraft {
 	if distance(b, pole) < distance(a, pole) {
 		a, b = b, a
 	}
-
 	return goldenGuideDraft{
-		d:        fmt.Sprintf("M %.2f %.2f L %.2f %.2f", a.x, a.y, b.x, b.y),
+		points:   []point{a, b},
 		distance: distance(a, pole),
+		kind:     "diagonal",
 	}
 }
 
@@ -609,25 +613,71 @@ func guideDistanceRange(guides []goldenGuideDraft) (float64, float64) {
 	return minDistance, maxDistance
 }
 
-func goldenPathFromDraft(order int, draft goldenGuideDraft, minDistance, maxDistance, maxDelay, growEnd, shrinkBase, shrinkEnd, hideAt, loopDuration float64) GoldenPath {
-	ratio := (draft.distance - minDistance) / (maxDistance - minDistance)
+func segmentsFromDraft(baseOrder int, draft goldenGuideDraft, minDistance, maxDistance, maxDelay, growEnd, shrinkBase, shrinkEnd, hideAt, loopDuration float64) []GoldenGuideSegment {
+	ratio := 0.0
+	if maxDistance > minDistance {
+		ratio = (draft.distance - minDistance) / (maxDistance - minDistance)
+	}
 	growDelay := ratio * maxDelay
 	shrinkDelay := (1 - ratio) * maxDelay
 	shrinkStart := shrinkBase + shrinkDelay
 
-	return GoldenPath{
-		D:              draft.d,
-		Order:          order,
-		Distance:       fmt.Sprintf("%.2f", draft.distance),
-		GrowDelay:      fmt.Sprintf("%.3fs", growDelay),
-		ShrinkDelay:    fmt.Sprintf("%.3fs", shrinkDelay),
-		GrowStartPct:   pct(growDelay, loopDuration),
-		GrowFadePct:    pct(growDelay+0.12, loopDuration),
-		GrowEndPct:     pct(growEnd, loopDuration),
-		ShrinkStartPct: pct(shrinkStart, loopDuration),
-		ShrinkEndPct:   pct(shrinkEnd, loopDuration),
-		HidePct:        pct(hideAt, loopDuration),
+	growDuration := growEnd - growDelay
+	shrinkDuration := shrinkEnd - shrinkStart
+
+	pts := draft.points
+	numEdges := len(pts) - 1
+	lengths := make([]float64, numEdges)
+	totalLength := 0.0
+	for i := 0; i < numEdges; i++ {
+		l := distance(pts[i], pts[i+1])
+		lengths[i] = l
+		totalLength += l
 	}
+
+	segments := make([]GoldenGuideSegment, numEdges)
+
+	currentGrow := growDelay
+	for i := 0; i < numEdges; i++ {
+		p0, p1 := pts[i], pts[i+1]
+		l := lengths[i]
+		ratioL := l / totalLength
+
+		dx, dy := p1.x-p0.x, p1.y-p0.y
+		angle := math.Atan2(dy, dx) * 180 / math.Pi
+
+		segGrowEnd := currentGrow + growDuration*ratioL
+
+		sumAfter := 0.0
+		for j := i + 1; j < numEdges; j++ {
+			sumAfter += lengths[j]
+		}
+
+		segShrinkStart := shrinkStart + shrinkDuration*(sumAfter/totalLength)
+		segShrinkEnd := segShrinkStart + shrinkDuration*ratioL
+
+		segments[i] = GoldenGuideSegment{
+			TranslateX: fmt.Sprintf("%.2f", p0.x),
+			TranslateY: fmt.Sprintf("%.2f", p0.y),
+			Rotation:   fmt.Sprintf("%.2f", angle),
+			Length:     fmt.Sprintf("%.2f", l),
+			Kind:       draft.kind,
+			Order:      baseOrder + i,
+
+			GrowStartPct: pct(currentGrow, loopDuration),
+			GrowFadePct:  pct(currentGrow+0.12, loopDuration),
+			GrowEndPct:   pct(segGrowEnd, loopDuration),
+
+			ShrinkStartPct: pct(segShrinkStart, loopDuration),
+			ShrinkEndPct:   pct(segShrinkEnd, loopDuration),
+
+			HidePct: pct(hideAt, loopDuration),
+		}
+
+		currentGrow = segGrowEnd
+	}
+
+	return segments
 }
 
 func distance(a, b point) float64 {

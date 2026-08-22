@@ -18,21 +18,12 @@
       {{.Spiral.CurveHidePct}}%, 100% { opacity: 0; stroke-dashoffset: 1; }
     }
 
-    {{range .Spiral.Diagonals}}
-    @keyframes g-d-{{.Order}} {
-      0%, {{.GrowStartPct}}%, {{.HidePct}}%, 100% { opacity: 0; stroke-dashoffset: 1; }
-      {{.GrowFadePct}}% { opacity: 1; stroke-dashoffset: 1; }
-      {{.GrowEndPct}}%, {{.ShrinkStartPct}}% { opacity: 1; stroke-dashoffset: 0; }
-      {{.ShrinkEndPct}}% { opacity: 1; stroke-dashoffset: 1; }
-    }
-    {{end}}
-
-    {{range .Spiral.Squares}}
-    @keyframes g-s-{{.Order}} {
-      0%, {{.GrowStartPct}}%, {{.HidePct}}%, 100% { opacity: 0; stroke-dashoffset: 1; }
-      {{.GrowFadePct}}% { opacity: 1; stroke-dashoffset: 1; }
-      {{.GrowEndPct}}%, {{.ShrinkStartPct}}% { opacity: 1; stroke-dashoffset: 0; }
-      {{.ShrinkEndPct}}% { opacity: 1; stroke-dashoffset: 1; }
+    {{range .Spiral.GuideSegments}}
+    @keyframes g-seg-{{.Order}} {
+      0%, {{.GrowStartPct}}%, {{.HidePct}}%, 100% { opacity: 0; transform: scaleX(0); }
+      {{.GrowFadePct}}% { opacity: 1; transform: scaleX(0); }
+      {{.GrowEndPct}}%, {{.ShrinkStartPct}}% { opacity: 1; transform: scaleX(1); }
+      {{.ShrinkEndPct}}% { opacity: 1; transform: scaleX(0); }
     }
     {{end}}
   </style>
@@ -40,11 +31,10 @@
   <div class="golden-spiral-layers" style="display: grid; width: 100%; height: 100%;">
     <svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" style="grid-area: 1 / 1;">
       <g class="golden-spiral-stage" style="--golden-loop-duration: {{.Spiral.LoopDuration}}; transform-origin: {{.Spiral.SpinCenterX}}px {{.Spiral.SpinCenterY}}px;">
-        {{range .Spiral.Diagonals}}
-        <path class="golden-diagonal" d="{{.D}}" pathLength="1" style="animation-name: g-d-{{.Order}};"></path>
-        {{end}}
-        {{range .Spiral.Squares}}
-        <path class="golden-rect" d="{{.D}}" pathLength="1" style="animation-name: g-s-{{.Order}};"></path>
+        {{range .Spiral.GuideSegments}}
+        <g class="guide-static-transform" transform="translate({{.TranslateX}} {{.TranslateY}}) rotate({{.Rotation}})">
+          <line class="golden-{{.Kind}}" x1="0" y1="0" x2="{{.Length}}" y2="0" style="animation-name: g-seg-{{.Order}}; transform-origin: 0 0;" />
+        </g>
         {{end}}
       </g>
     </svg>
