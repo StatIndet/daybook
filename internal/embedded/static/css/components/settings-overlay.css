@@ -46,7 +46,7 @@ html.has-custom-cursor .settings-overlay * {
 
 @font-face {
   font-family: 'Cormorant Garamond Settings';
-  src: url('/vendor/fonts/settings/cormorant-garamond-settings.woff2') format('woff2');
+  src: url('/vendor/fonts/settings/cormorant-garamond-latin-400-normal.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;

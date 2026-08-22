@@ -64,8 +64,9 @@ function initShareOverlay() {
     copyBtn.addEventListener("click", () => {
       const text = textarea.value;
       navigator.clipboard.writeText(text).then(() => {
-        const originalText = copyText.getAttribute("data-text-copy") || "Copy";
-        const copiedText = copyText.getAttribute("data-text-copied") || "Copied";
+        const lang = document.documentElement.lang.toLowerCase().startsWith("en") ? "en" : "zh";
+        const originalText = copyText.getAttribute(`data-text-copy-${lang}`) || "Copy";
+        const copiedText = copyText.getAttribute(`data-text-copied-${lang}`) || "Copied";
         copyText.textContent = copiedText;
         setTimeout(() => {
           copyText.textContent = originalText;
