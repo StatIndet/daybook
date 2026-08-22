@@ -3,6 +3,7 @@ package render
 import (
 	"math"
 	"strconv"
+	"os"
 	"strings"
 	"testing"
 )
@@ -92,5 +93,40 @@ func TestGoldenSpiralGeometryRegression(t *testing.T) {
 	// 4. Bézier path must contain 'C'
 	if !strings.Contains(spiral.SpiralPath, "C") {
 		t.Fatalf("Regression: Spiral path does not use Cubic Bézier segments. Path: %v", spiral.SpiralPath[:100])
+	}
+}
+
+func TestGoldenSpiralCSSRegression(t *testing.T) {
+	// 简单读取 about.css
+	content, err := os.ReadFile("../../internal/embedded/static/css/pages/about.css")
+	if err != nil {
+		t.Fatalf("无法读取 about.css: %v", err)
+	}
+	css := string(content)
+
+	// 1. 确保 .golden-curve 参与了公共样式（fill: none; 等）
+	if !strings.Contains(css, ".golden-rect,\n.golden-diagonal,\n.golden-curve {") {
+		t.Fatalf("回归: .golden-curve 没有包含在 .golden-rect, .golden-diagonal 的公共样式块中，会导致巨大黑块")
+	}
+
+	// 2. 检查 fill: none 和 animation 属性是否在公共块中
+	sharedBlockIndex := strings.Index(css, ".golden-rect,\n.golden-diagonal,\n.golden-curve {")
+	if sharedBlockIndex == -1 {
+		t.Fatal()
+	}
+	sharedBlockEnd := strings.Index(css[sharedBlockIndex:], "}")
+	if sharedBlockEnd == -1 {
+		t.Fatal()
+	}
+	sharedBlock := css[sharedBlockIndex : sharedBlockIndex+sharedBlockEnd]
+
+	if !strings.Contains(sharedBlock, "fill: none;") {
+		t.Errorf("回归: 公共块丢失了 fill: none;")
+	}
+	if !strings.Contains(sharedBlock, "animation-duration:") {
+		t.Errorf("回归: 公共块丢失了 animation-duration:")
+	}
+	if !strings.Contains(sharedBlock, "animation-iteration-count: infinite;") {
+		t.Errorf("回归: 公共块丢失了 animation-iteration-count: infinite;")
 	}
 }

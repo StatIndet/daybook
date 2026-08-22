@@ -134,7 +134,7 @@
 
 .golden-rect,
 .golden-diagonal,
-.golden-rect {
+.golden-curve {
   animation-duration: var(--golden-loop-duration);
   animation-fill-mode: both;
   animation-iteration-count: infinite;
