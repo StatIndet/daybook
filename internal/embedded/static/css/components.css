@@ -1350,8 +1350,9 @@ body.is-search-overlay-open .mobile-search-overlay {
   }
 }
 
-/* Reader Mode Toggle */
-.reader-mode-toggle {
+/* Reader Mode & Share Toggles */
+.reader-mode-toggle,
+.share-toggle-btn {
   align-items: center;
   background: transparent;
   border: 0;
@@ -1368,15 +1369,19 @@ body.is-search-overlay-open .mobile-search-overlay {
 }
 
 .reader-mode-toggle:hover,
-.reader-mode-toggle:focus-visible {
+.reader-mode-toggle:focus-visible,
+.share-toggle-btn:hover,
+.share-toggle-btn:focus-visible {
   color: var(--color-hover-text);
 }
 
-.reader-mode-toggle[aria-pressed="true"] {
+.reader-mode-toggle[aria-pressed="true"],
+.share-toggle-btn[aria-pressed="true"] {
   color: var(--color-accent);
 }
 
-.reader-mode-toggle .material-symbol {
+.reader-mode-toggle .material-symbol,
+.share-toggle-btn .material-symbol {
   font-size: 1.15em;
   line-height: 1;
 }
