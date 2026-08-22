@@ -7,10 +7,7 @@
       {{.Title}}
       {{if .HasTranslation}}
       <span class="note-bilingual-wrapper">
-        <button type="button" class="bilingual-toggle-btn" aria-label="Toggle Bilingual Translation" data-current-lang="{{.Lang}}" data-alt-fragment-url="{{if eq .Lang "en"}}/about/fragment.json{{else}}/en/about/fragment.json{{end}}">
-          <span class="bilingual-char bilingual-zh">中</span>
-          <span class="bilingual-char bilingual-en">En</span>
-        </button>
+        {{template "bilingual_toggle" .}}
       </span>
       {{end}}
     </h1>
