@@ -137,10 +137,6 @@ function handleMouseEnter(e: MouseEvent) {
 }
 
 function handleClick(e: MouseEvent) {
-  const path = window.location.pathname;
-  if (path.startsWith("/graph/") || path.startsWith("/about/")) {
-    return;
-  }
   if (document.documentElement.getAttribute('data-clock-cursor') !== 'true') {
     return;
   }

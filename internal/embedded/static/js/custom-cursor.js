@@ -387,10 +387,6 @@ function handleMouseEnter(e) {
   updateStateFromTarget(e.target);
 }
 function handleClick(e) {
-  const path = window.location.pathname;
-  if (path.startsWith("/graph/") || path.startsWith("/about/")) {
-    return;
-  }
   if (document.documentElement.getAttribute("data-clock-cursor") !== "true") {
     return;
   }
