@@ -67,6 +67,12 @@ await copyFileClean(
   path.join(root, "internal", "embedded", "static", "vendor", "fonts", "allura", "allura-latin-400-normal.woff2"),
 );
 
+// Copy Cormorant Garamond Meta (Italic)
+await copyFileClean(
+  path.join(root, "node_modules", "@fontsource", "cormorant-garamond", "files", "cormorant-garamond-latin-400-italic.woff2"),
+  path.join(root, "internal", "embedded", "static", "vendor", "fonts", "cormorant-garamond", "cormorant-garamond-latin-400-italic.woff2"),
+);
+
 // Copy Noto Serif SC Variable CSS
 await copyFileClean(
   path.join(root, "node_modules", "@fontsource-variable", "noto-serif-sc", "wght.css"),

@@ -128,9 +128,9 @@
   flex-direction: column;
   gap: 0.6rem;
   color: var(--color-muted);
-  font-family: var(--font-serif);
-  
-  font-weight: 500;
+  font-family: var(--font-meta);
+  font-style: italic;
+  font-weight: 600;
   font-size: clamp(0.95rem, 1.3vw, 1.12rem);
   line-height: 1;
 }
@@ -181,7 +181,7 @@
   float: left;
   font-family: var(--font-ui);
   font-size: 3.4em;
-  
+  font-style: italic;
   font-weight: 700;
   line-height: 0.92;
   margin-top: 4px;
