@@ -86,7 +86,7 @@
           
         {{end}}
       </div>
-      <p class="drawer-copyright">© 2026 {{.Config.Profile.Author.Name}}</p>
+      {{template "copyright" dict "Config" .Config "Class" "drawer-copyright"}}
     </div>
   </div>
 </aside>

@@ -1,3 +1,9 @@
+{{define "copyright"}}
+{{if .Config.Site.Copyright}}
+<p class="{{.Class}}">{{.Config.Site.Copyright}}</p>
+{{end}}
+{{end}}
+
 {{define "home_footer"}}
 <footer class="home-footer">
   <div class="footer-stats-row">
@@ -8,7 +14,7 @@
     <span class="footer-stat-item">{{T .Lang "footer.words"}} <strong>{{ formatNum .Site.TotalWordCount }}</strong> &middot;</span>
     <span class="footer-stat-item">{{T .Lang "footer.uptime"}} <strong data-site-uptime data-started-at="{{ .Site.StartedAt }}">--</strong></span>
   </div>
-  <p class="footer-copyright">© 2026 {{.Config.Profile.Author.Name}}</p>
+  {{template "copyright" dict "Config" .Config "Class" "footer-copyright"}}
 </footer>
 {{end}}
 
@@ -49,7 +55,7 @@
     <div class="notes-footer">
       {{template "notes_footer_actions" .}}
       {{template "notes_footer_links" .}}
-      <p>© 2026 {{.Config.Profile.Author.Name}}</p>
+      {{template "copyright" dict "Config" .Config "Class" ""}}
     </div>
   </div>
 </aside>
