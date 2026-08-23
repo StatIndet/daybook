@@ -108,6 +108,24 @@ func Process(input string, index Index, sourcePath string, bodyStartLine int) Re
 	return processWithContext(input, index, sourcePath, bodyStartLine, 0, nil)
 }
 
+func getMaskedInput(input string) string {
+	masked := []byte(input)
+	blankOut := func(pattern *regexp.Regexp) {
+		for _, loc := range pattern.FindAllIndex(masked, -1) {
+			for i := loc[0]; i < loc[1]; i++ {
+				if masked[i] != '\n' {
+					masked[i] = ' '
+				}
+			}
+		}
+	}
+	blankOut(regexp.MustCompile(`(?s)%%.*?%%`))
+	blankOut(regexp.MustCompile("(?sm)^ {0,3}````*.*?^ {0,3}````*[ \t]*$"))
+	blankOut(regexp.MustCompile("(?sm)^ {0,3}~~~~*.*?^ {0,3}~~~~*[ \t]*$"))
+	blankOut(regexp.MustCompile("(?s)`+.*?`+"))
+	return string(masked)
+}
+
 func processWithContext(input string, index Index, sourcePath string, bodyStartLine int, embedDepth int, visited map[string]bool) Result {
 	result := Result{
 		Text: input,
@@ -121,12 +139,12 @@ func processWithContext(input string, index Index, sourcePath string, bodyStartL
 
 	result.Text = replaceImageHTML(result.Text, true, result.HTML)
 	result.Text = replaceImageHTML(result.Text, false, result.HTML)
-	result.Text = rewriteMarkdownImagePaths(result.Text)
 	
+	maskedInputStr := getMaskedInput(input)
 	lastSearchIndex := 0
 
 	result.Text = markdownImagePattern.ReplaceAllStringFunc(result.Text, func(match string) string {
-		matchStart := strings.Index(input[lastSearchIndex:], match)
+		matchStart := strings.Index(maskedInputStr[lastSearchIndex:], match)
 		if matchStart != -1 {
 			matchStart += lastSearchIndex
 			lastSearchIndex = matchStart + len(match)
@@ -159,13 +177,17 @@ func processWithContext(input string, index Index, sourcePath string, bodyStartL
 				Candidates: candidates,
 			})
 		}
+		
+		if len(parts) == 4 {
+			return "![" + parts[1] + "](" + rewriteAssetPath(parts[2]) + parts[3] + ")"
+		}
 		return match
 	})
 	
 	lastSearchIndex = 0
 
 	result.Text = wikilinkPattern.ReplaceAllStringFunc(result.Text, func(match string) string {
-		matchStart := strings.Index(input[lastSearchIndex:], match)
+		matchStart := strings.Index(maskedInputStr[lastSearchIndex:], match)
 		if matchStart != -1 {
 			matchStart += lastSearchIndex
 			lastSearchIndex = matchStart + len(match)
@@ -513,15 +535,6 @@ func escapeMarkdownURL(text string) string {
 	return strings.ReplaceAll(text, " ", "%20")
 }
 
-func rewriteMarkdownImagePaths(text string) string {
-	return markdownImagePattern.ReplaceAllStringFunc(text, func(match string) string {
-		parts := markdownImagePattern.FindStringSubmatch(match)
-		if len(parts) != 4 {
-			return match
-		}
-		return "![" + parts[1] + "](" + rewriteAssetPath(parts[2]) + parts[3] + ")"
-	})
-}
 
 func replaceImageHTML(text string, centered bool, replacements map[string]string) string {
 	pattern := imageHTMLPattern

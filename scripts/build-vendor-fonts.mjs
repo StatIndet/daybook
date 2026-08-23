@@ -1,7 +1,6 @@
-import { cp, copyFile, mkdir, rm, stat, readFile } from "node:fs/promises";
+import { cp, copyFile, mkdir, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawn } from "node:child_process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,28 +55,28 @@ await copyFileClean(
   path.join(root, "internal", "embedded", "static", "vendor", "fonts", "material-symbols", "material-symbols-rounded.woff2"),
 );
 
-// Copy Cormorant Garamond Meta (Italic)
-await copyFileClean(
-  path.join(root, "node_modules", "@fontsource", "cormorant-garamond", "files", "cormorant-garamond-latin-400-italic.woff2"),
-  path.join(root, "internal", "embedded", "static", "vendor", "fonts", "cormorant-garamond", "cormorant-garamond-latin-400-italic.woff2"),
-);
-
-// Copy Cormorant Garamond Settings (Normal)
-await copyFileClean(
-  path.join(root, "node_modules", "@fontsource", "cormorant-garamond", "files", "cormorant-garamond-latin-400-normal.woff2"),
-  path.join(root, "internal", "embedded", "static", "vendor", "fonts", "settings", "cormorant-garamond-latin-400-normal.woff2"),
-);
-
 // Copy Fraunces (Italic)
 await copyFileClean(
   path.join(root, "node_modules", "@fontsource", "fraunces", "files", "fraunces-latin-400-italic.woff2"),
-  path.join(root, "internal", "embedded", "static", "vendor", "fonts", "decorative", "fraunces-latin-400-italic.woff2"),
+  path.join(root, "internal", "embedded", "static", "vendor", "fonts", "fraunces", "fraunces-latin-400-italic.woff2"),
 );
 
 // Copy Allura (Normal)
 await copyFileClean(
   path.join(root, "node_modules", "@fontsource", "allura", "files", "allura-latin-400-normal.woff2"),
-  path.join(root, "internal", "embedded", "static", "vendor", "fonts", "decorative", "allura-latin-400-normal.woff2"),
+  path.join(root, "internal", "embedded", "static", "vendor", "fonts", "allura", "allura-latin-400-normal.woff2"),
+);
+
+// Copy Noto Serif SC Variable CSS
+await copyFileClean(
+  path.join(root, "node_modules", "@fontsource-variable", "noto-serif-sc", "wght.css"),
+  path.join(root, "internal", "embedded", "static", "vendor", "fonts", "noto-serif-sc", "wght.css"),
+);
+
+// Copy Noto Serif SC Variable Files
+await copyDirClean(
+  path.join(root, "node_modules", "@fontsource-variable", "noto-serif-sc", "files"),
+  path.join(root, "internal", "embedded", "static", "vendor", "fonts", "noto-serif-sc", "files"),
 );
 
 console.log("Vendor fonts copied successfully.");

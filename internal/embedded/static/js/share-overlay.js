@@ -101,7 +101,7 @@ function initShareOverlay() {
       wrapper.style.position = "relative";
       if (oldText[i]) {
         const oldSpan = document.createElement("span");
-        oldSpan.textContent = oldText[i];
+        oldSpan.textContent = oldText[i] || null;
         oldSpan.style.position = newText[i] ? "absolute" : "relative";
         oldSpan.style.left = "0";
         oldSpan.style.top = "0";
@@ -112,7 +112,7 @@ function initShareOverlay() {
       if (newText[i]) {
         const newSpan = document.createElement("span");
         newSpan.className = "share-char-new";
-        newSpan.textContent = newText[i];
+        newSpan.textContent = newText[i] || null;
         newSpan.style.position = "relative";
         newSpan.style.animation = `shareRollIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards`;
         newSpan.style.animationDelay = `${i * 0.03}s`;

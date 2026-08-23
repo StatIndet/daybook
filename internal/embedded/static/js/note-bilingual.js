@@ -6,10 +6,28 @@
   function dispatchSwapEvent() {
     document.dispatchEvent(new CustomEvent("daybook:article-content-swapped"));
   }
-  function swapContent(state) {
+  function getHeadingIndex(id, headings) {
+    return headings.findIndex((h) => h.ID === id);
+  }
+  function swapContent(state, isAlt) {
     const postContent = document.querySelector(".post-content");
     const noteSummary = document.querySelector(".note-summary");
-    const tocList = document.querySelector(".note-toc-panel ol");
+    let newHash = "";
+    if (window.location.hash) {
+      let currentHashId = window.location.hash.slice(1);
+      try {
+        currentHashId = decodeURIComponent(currentHashId);
+      } catch {
+      }
+      const sourceHeadings = isAlt ? originalState?.headings : cachedAltFragment?.headings;
+      const targetHeadings = state.headings;
+      if (sourceHeadings && targetHeadings) {
+        const index = getHeadingIndex(currentHashId, sourceHeadings);
+        if (index !== -1 && index < targetHeadings.length) {
+          newHash = "#" + targetHeadings[index].ID;
+        }
+      }
+    }
     if (postContent) {
       postContent.setAttribute("lang", state.lang);
       postContent.innerHTML = state.html;
@@ -18,8 +36,19 @@
       noteSummary.innerHTML = state.summary || "";
       noteSummary.style.display = state.summary ? "block" : "none";
     }
-    if (tocList && state.headings) {
-      tocList.innerHTML = state.headings.map((h) => `<li class="note-toc-depth-${h.Level}"><a href="#${h.ID}">${h.Text}</a></li>`).join("");
+    const desktopTocList = document.querySelector(".note-toc-panel ol");
+    const mobileTocList = document.querySelector(".mobile-toc-nav ol");
+    const tocHtml = state.headings ? state.headings.map((h) => `<li class="note-toc-depth-${h.Level}"><a href="#${h.ID}">${h.Text}</a></li>`).join("") : "";
+    if (desktopTocList) {
+      desktopTocList.innerHTML = tocHtml;
+    }
+    if (mobileTocList) {
+      mobileTocList.innerHTML = tocHtml;
+    }
+    if (newHash && newHash !== window.location.hash) {
+      const newUrl = new URL(window.location.href);
+      newUrl.hash = newHash;
+      history.replaceState(history.state, "", newUrl.href);
     }
     dispatchSwapEvent();
   }
@@ -56,7 +85,7 @@
       const currentLang = toggleBtn.dataset.currentLang;
       const isAlt = currentLang !== originalState.lang;
       if (isAlt) {
-        swapContent(originalState);
+        swapContent(originalState, true);
         toggleBtn.dataset.currentLang = originalState.lang;
         toggleBtn.setAttribute("aria-pressed", "false");
       } else {
@@ -90,7 +119,7 @@
             summary: cachedAltFragment.summary,
             html: cachedAltFragment.html,
             headings: cachedAltFragment.headings || []
-          });
+          }, false);
           toggleBtn.dataset.currentLang = cachedAltFragment.lang;
           toggleBtn.setAttribute("aria-pressed", "true");
         }

@@ -1,6 +1,7 @@
 package markdown
 
 import (
+	"fmt"
 	"os/exec"
 	"strings"
 	"testing"
@@ -320,5 +321,74 @@ func TestToHTMLWithMath(t *testing.T) {
 
 	if strings.Contains(document.HTML, `<p><div class="math math-display">`) || strings.Contains(document.HTML, `<p><div class="katex-display">`) {
 		t.Fatalf("Display math should not be wrapped in <p> tag: %s", document.HTML)
+	}
+}
+
+func TestHeadingID(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		wantIDs  []string
+	}{
+		{
+			name:    "English",
+			input:   "## Installation",
+			wantIDs: []string{"#Installation"},
+		},
+		{
+			name:    "Whitespace",
+			input:   "## Getting   Started",
+			wantIDs: []string{"#Getting-Started"},
+		},
+		{
+			name:    "CJK",
+			input:   "## 安装方法",
+			wantIDs: []string{"#安装方法"},
+		},
+		{
+			name:    "Mixed language",
+			input:   "## Daybook 安装",
+			wantIDs: []string{"#Daybook-安装"},
+		},
+		{
+			name:    "Different levels",
+			input:   "## Test\n### Test\n#### Test",
+			wantIDs: []string{"#Test", "##Test", "###Test"},
+		},
+		{
+			name:    "Duplicate same-level headings",
+			input:   "## Test\n## Test\n## Test",
+			wantIDs: []string{"#Test", "#Test-2", "#Test-3"},
+		},
+		{
+			name:    "Collision",
+			input:   "## Test\n## Test\n## Test-2",
+			wantIDs: []string{"#Test", "#Test-2", "#Test-2-2"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			doc, err := ToHTMLWithHeadings(tt.input)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			
+			if len(doc.Headings) != len(tt.wantIDs) {
+				t.Fatalf("got %d headings, want %d", len(doc.Headings), len(tt.wantIDs))
+			}
+			
+			for i, h := range doc.Headings {
+				if h.ID != tt.wantIDs[i] {
+					t.Errorf("heading %d ID: got %q, want %q", i, h.ID, tt.wantIDs[i])
+				}
+				
+				// verify HTML id attribute
+				expectedAttr := fmt.Sprintf(`id="%s"`, h.ID)
+				if !strings.Contains(doc.HTML, expectedAttr) {
+					t.Errorf("HTML does not contain id attribute %q: %s", expectedAttr, doc.HTML)
+				}
+			}
+		})
 	}
 }

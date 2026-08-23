@@ -158,11 +158,22 @@ interface DaybookTransitionFinishedDetail {
     }
 
     // Pure hash jump on same page
-    if (url.pathname === location.pathname && url.search === location.search && url.hash !== location.hash) {
+    if (url.pathname === location.pathname && url.search === location.search && url.hash) {
       return false;
     }
 
     return true;
+  }
+
+  function getElementByHash(hash: string): HTMLElement | null {
+    if (!hash || hash === "#") return null;
+    let id = hash.slice(1);
+    try {
+      id = decodeURIComponent(id);
+    } catch {
+      // ignore malformed
+    }
+    return document.getElementById(id);
   }
 
   function saveCurrentScroll() {
@@ -263,7 +274,7 @@ interface DaybookTransitionFinishedDetail {
         if (isTraverse) {
           window.scrollTo({ left: newState.scrollX, top: newState.scrollY, behavior: "instant" });
         } else if (targetUrl.hash) {
-          const el = document.getElementById(targetUrl.hash.slice(1));
+          const el = getElementByHash(targetUrl.hash);
           if (el) el.scrollIntoView({ behavior: "instant" });
           else window.scrollTo({ left: 0, top: 0, behavior: "instant" });
         } else {

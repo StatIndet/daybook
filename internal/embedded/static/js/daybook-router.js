@@ -187,10 +187,19 @@ function initSiteUptime(root = document) {
       const excluded = ["pdf", "zip", "mp3", "png", "jpg", "jpeg", "webp", "svg", "gif", "xml", "json"];
       if (excluded.includes(ext)) return false;
     }
-    if (url.pathname === location.pathname && url.search === location.search && url.hash !== location.hash) {
+    if (url.pathname === location.pathname && url.search === location.search && url.hash) {
       return false;
     }
     return true;
+  }
+  function getElementByHash(hash) {
+    if (!hash || hash === "#") return null;
+    let id = hash.slice(1);
+    try {
+      id = decodeURIComponent(id);
+    } catch {
+    }
+    return document.getElementById(id);
   }
   function saveCurrentScroll() {
     if (isRouterState(history.state)) {
@@ -268,7 +277,7 @@ function initSiteUptime(root = document) {
         if (isTraverse) {
           window.scrollTo({ left: newState.scrollX, top: newState.scrollY, behavior: "instant" });
         } else if (targetUrl.hash) {
-          const el = document.getElementById(targetUrl.hash.slice(1));
+          const el = getElementByHash(targetUrl.hash);
           if (el) el.scrollIntoView({ behavior: "instant" });
           else window.scrollTo({ left: 0, top: 0, behavior: "instant" });
         } else {

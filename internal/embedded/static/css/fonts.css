@@ -5,13 +5,6 @@
   font-style: normal;
   font-display: block;
 }
-@font-face {
-  font-family: "Cormorant Garamond Meta";
-  src: url("/vendor/fonts/cormorant-garamond/cormorant-garamond-latin-400-italic.woff2") format("woff2");
-  font-weight: 300 700;
-  font-style: italic;
-  font-display: swap;
-}
 
 @font-face {
   font-family: "ShiZhi";

@@ -9,7 +9,7 @@
 
 /* Base styles are handled by .settings-overlay, .settings-paper etc. */
 .share-paper {
-  font-family: 'Cormorant Garamond Settings', var(--font-ui);
+  font-family: var(--font-serif);
 }
 
 .share-textarea {
