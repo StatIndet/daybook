@@ -80,6 +80,13 @@ func Build(options Options) (BuildResult, error) {
 		return BuildResult{}, err
 	}
 
+	if options.Config.Site.Favicon != "" {
+		faviconPath := filepath.Join(options.ContentDir, filepath.FromSlash(options.Config.Site.Favicon))
+		if _, err := os.Stat(faviconPath); err != nil {
+			return BuildResult{}, fmt.Errorf("favicon file not found: %s", options.Config.Site.Favicon)
+		}
+	}
+
 	totalWordCount := 0
 	for _, group := range groups {
 		if note, _ := group.SelectVersion("zh-CN"); note != nil && !note.Draft {

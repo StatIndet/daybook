@@ -95,6 +95,7 @@ type SiteConfig struct {
 	Title     string `yaml:"title"`
 	URL       string `yaml:"url"`
 	StartedAt string `yaml:"startedAt"`
+	Favicon   string `yaml:"favicon"`
 }
 
 type Config struct {
