@@ -192,6 +192,7 @@ func Load() (Config, error) {
 	}
 
 	// Defaults and Fallbacks
+  cfg.Profile.ParsedSocial = parseSocialLinks(cfg.Profile.Social)
 	if strings.TrimSpace(cfg.Site.Title) == "" {
 		cfg.Site.Title = "Daybook"
 	}

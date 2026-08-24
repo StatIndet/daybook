@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 echo "=> Building frontend assets..."
 npm ci
@@ -7,7 +7,7 @@ npm run build:js
 npm run build:vendor
 
 # Determine installation path
-if [ -n "$GOBIN" ]; then
+if [ -n "${GOBIN:-}" ]; then
     INSTALL_BIN="$GOBIN"
 else
     INSTALL_BIN="$(go env GOPATH)/bin"

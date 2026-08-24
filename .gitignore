@@ -1,9 +1,8 @@
 # Build output
 /public/
 /daybook
-/static/js/*.js
-/static/js/*.js.map
-!/static/js/vendor/
+/bin/
+
 # Go generated files
 *.test
 coverage.out
@@ -20,12 +19,11 @@ coverage.out
 # Temporary files
 *.tmp
 *.log
+
 # macOS
 .DS_Store
 
 # Obsidian
-# Daybook needs app.json for attachmentFolderPath,
-# but other Obsidian user/workspace settings stay private.
 **/.obsidian/*
 !**/.obsidian/app.json
 
@@ -36,16 +34,11 @@ Thumbs.db
 .env
 .env.*
 !.env.example
-.dev.vars
-.dev.vars.*
-.vercel/
 /config.yaml
 
 # Editors
 .vscode/
 .idea/
-
-
 
 # Dependencies
 node_modules/
@@ -54,7 +47,3 @@ node_modules/
 [Rr][Ee][Aa][Dd][Mm][Ee].*
 !/README.md
 !/readme.md
-
-tools/font-subsets/source/
-
-

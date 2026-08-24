@@ -1,60 +1,31 @@
 {
   "name": "daybook",
+  "private": true,
+  "type": "module",
   "engines": {
     "node": ">=24"
   },
-  "private": true,
-  "type": "module",
   "scripts": {
     "build:vendor-fonts": "node scripts/build-vendor-fonts.mjs",
-    "build:all-fonts": "npm run build:vendor-fonts",
     "build:vendor-katex": "node scripts/build-vendor-katex.mjs",
     "build:vendor-waline": "node scripts/build-vendor-waline.mjs",
     "build:vendor": "npm run build:vendor-fonts && npm run build:vendor-katex && npm run build:vendor-waline",
-    "render:katex": "node scripts/render-katex.mjs",
     "test:reading-rail": "node --test test/reading-toc-rail.test.mjs",
     "typecheck": "tsc --noEmit",
     "build:js": "node scripts/build-js.mjs",
-    "watch:js": "node scripts/build-js.mjs --watch",
-    "build": "./scripts/build.sh",
-    "server": "./scripts/serve.sh"
+    "watch:js": "node scripts/build-js.mjs --watch"
   },
-  "dependencies": {
+  "devDependencies": {
+    "@chinese-fonts/maple-mono-cn": "^2.0.0",
     "@fontsource-variable/noto-serif-sc": "^5.3.0",
     "@fontsource/allura": "^5.3.0",
     "@fontsource/cormorant-garamond": "^5.3.0",
     "@fontsource/fraunces": "^5.3.0",
     "@waline/client": "^3.15.2",
-    "jsdom": "^30.0.1",
-    "katex": "^0.18.4",
-    "puppeteer": "^25.8.0"
-  },
-  "version": "1.0.0",
-  "description": "A minimalist static blog generator for Go and HTML beginners.",
-  "main": "patch.js",
-  "directories": {
-    "doc": "docs"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/StatIndet/daybook.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/StatIndet/daybook/issues"
-  },
-  "homepage": "https://github.com/StatIndet/daybook#readme",
-  "devDependencies": {
-    "@chinese-fonts/maple-mono-cn": "^2.0.0",
-    "concurrently": "^10.0.5",
     "esbuild": "^0.28.2",
+    "katex": "^0.18.4",
     "lxgw-wenkai-screen-web": "^1.522.0",
     "material-symbols": "^0.46.0",
     "typescript": "^7.0.2"
-  },
-  "allowScripts": {
-    "puppeteer@25.8.0": true
   }
 }

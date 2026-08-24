@@ -9,28 +9,17 @@ const root = path.resolve(__dirname, '..');
 
 const isWatch = process.argv.includes('--watch');
 
-// Ensure assets/ts exists, or the script will fail if run before migration
-if (!fs.existsSync(path.join(root, 'assets/ts'))) {
-  console.log('No assets/ts directory found. Skipping JS build.');
-  process.exit(0);
-}
-
-// Find all .ts files directly in assets/ts/
 const tsFiles = fs.readdirSync(path.join(root, 'assets', 'ts'))
   .filter(file => file.endsWith('.ts'))
   .map(file => path.join(root, 'assets', 'ts', file));
 
-if (tsFiles.length === 0) {
-  console.log('No .ts files found in assets/ts. Skipping JS build.');
-  process.exit(0);
-}
-
 const buildOptions = {
   entryPoints: tsFiles,
   outdir: path.join(root, 'internal', 'embedded', 'static', 'js'),
-  bundle: true, // Enable bundling so imported modules like embed-loading.ts are inlined
-  sourcemap: true,
-  format: 'esm', // Standard output format
+  bundle: true,
+  sourcemap: isWatch ? 'inline' : false,
+  minify: !isWatch,
+  format: 'esm',
   target: ['es2020'],
   external: ['/vendor/*'],
   logLevel: 'info',
