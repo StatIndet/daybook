@@ -1,1 +1,165 @@
-var w=!1,a=!1,e=!1,u=window.scrollY,m=!1,p=null;function k(){let l=document.querySelector(".note")!==null;w||(window.addEventListener("scroll",A,{passive:!0}),document.addEventListener("daybook:reader-mode-change",r=>{let s=r;requestAnimationFrame(()=>{b()}),s.detail&&s.detail.enabled&&d()}),window.visualViewport&&(window.visualViewport.addEventListener("scroll",d,{passive:!0}),window.visualViewport.addEventListener("resize",d,{passive:!0})),w=!0),l?(requestAnimationFrame(()=>{b()}),d()):(document.body.classList.remove("mobile-top-bar-hidden"),e=!1)}function d(){m||(m=!0,requestAnimationFrame(()=>{B(),m=!1}))}function B(){let l=document.body.dataset.readerMode==="immersive",r=window.innerWidth<=960;if(!l||!r)return;let s=window.visualViewport?window.visualViewport.offsetTop:0;(p===null||Math.abs(s-p)>.05)&&(document.body.style.setProperty("--reader-progress-visual-top",`${s}px`),p=s)}function A(){a||(window.requestAnimationFrame(()=>{b(),a=!1}),a=!0)}function b(){if(!(document.querySelector(".note")!==null))return;let r=document.getElementById("mobile-top-bar"),s=document.querySelectorAll("[data-desktop-progress-text]"),y=document.querySelectorAll("[data-mobile-progress-text]"),v=document.querySelectorAll(".back-to-top-btn, .mobile-top-btn"),L=document.querySelectorAll(".go-to-bottom-btn, .mobile-bottom-btn, .reading-progress-btn");v.forEach(t=>{let o=t;o.dataset.rcBound||(o.addEventListener("click",()=>window.scrollTo({top:0,behavior:"smooth"})),o.dataset.rcBound="true")}),L.forEach(t=>{let o=t;o.dataset.rcBound||(o.addEventListener("click",()=>{let c=document.querySelectorAll(".post-content h1, .post-content h2, .post-content h3, .post-content h4, .post-content h5, .post-content h6");if(c.length>0){let h=c[c.length-1];if(h){let C=h.getBoundingClientRect().top+window.scrollY-100;window.scrollTo({top:C,behavior:"smooth"});return}}window.scrollTo({top:document.documentElement.scrollHeight,behavior:"smooth"})}),o.dataset.rcBound="true")});let n=window.scrollY,E=80;n<=0?document.body.classList.add("is-at-top"):document.body.classList.remove("is-at-top");let S=document.documentElement.scrollHeight,T=window.innerHeight,f=S-T,i=0;f>0&&(i=Math.round(n/f*100),i=Math.max(0,Math.min(100,i))),s.forEach(t=>t.textContent=`${i}%`),y.forEach(t=>t.textContent=`${i}%`);let M=document.querySelectorAll("[data-progress-circle]"),g=62.8318;M.forEach(t=>{let o=g-i/100*g;t.style.strokeDashoffset=o.toString()});let R=`${i}%`;document.body.style.setProperty("--reading-progress",R);let q=document.body.dataset.readerMode==="immersive";window.innerWidth<=960?!q&&r&&(document.body.classList.contains("is-mobile-drawer-open")||document.body.classList.contains("is-search-overlay-open")||document.body.classList.contains("is-tags-overlay-open")||n<=0?e&&(document.body.classList.remove("mobile-top-bar-hidden"),e=!1):n>u?(document.body.classList.add("is-scrolling-down"),document.body.classList.remove("is-scrolling-up"),n>E&&!e&&(document.body.classList.add("mobile-top-bar-hidden"),e=!0)):n<u&&(document.body.classList.add("is-scrolling-up"),document.body.classList.remove("is-scrolling-down"),e&&(document.body.classList.remove("mobile-top-bar-hidden"),e=!1))):e&&(document.body.classList.remove("mobile-top-bar-hidden"),e=!1),u=n}export{k as initReadingControls};
+// assets/ts/reading-controls.ts
+var scrollListenerAdded = false;
+var ticking = false;
+var isHidden = false;
+var lastScrollY = window.scrollY;
+var viewportOffsetTicking = false;
+var lastReaderProgressVisualTop = null;
+function initReadingControls() {
+  const isNotePage = document.querySelector(".note") !== null;
+  if (!scrollListenerAdded) {
+    window.addEventListener("scroll", onScroll, { passive: true });
+    document.addEventListener("daybook:reader-mode-change", (e) => {
+      const customEvent = e;
+      requestAnimationFrame(() => {
+        updateReadingControls();
+      });
+      if (customEvent.detail && customEvent.detail.enabled) {
+        requestReaderProgressVisualSync();
+      }
+    });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("scroll", requestReaderProgressVisualSync, { passive: true });
+      window.visualViewport.addEventListener("resize", requestReaderProgressVisualSync, { passive: true });
+    }
+    scrollListenerAdded = true;
+  }
+  if (isNotePage) {
+    requestAnimationFrame(() => {
+      updateReadingControls();
+    });
+    requestReaderProgressVisualSync();
+  } else {
+    document.body.classList.remove("mobile-top-bar-hidden");
+    isHidden = false;
+  }
+}
+function requestReaderProgressVisualSync() {
+  if (viewportOffsetTicking) return;
+  viewportOffsetTicking = true;
+  requestAnimationFrame(() => {
+    syncReaderProgressVisualTop();
+    viewportOffsetTicking = false;
+  });
+}
+function syncReaderProgressVisualTop() {
+  const isReaderMode = document.body.dataset.readerMode === "immersive";
+  const isMobile = window.innerWidth <= 960;
+  if (!isReaderMode || !isMobile) return;
+  const rawOffset = window.visualViewport ? window.visualViewport.offsetTop : 0;
+  if (lastReaderProgressVisualTop === null || Math.abs(rawOffset - lastReaderProgressVisualTop) > 0.05) {
+    document.body.style.setProperty("--reader-progress-visual-top", `${rawOffset}px`);
+    lastReaderProgressVisualTop = rawOffset;
+  }
+}
+function onScroll() {
+  if (!ticking) {
+    window.requestAnimationFrame(() => {
+      updateReadingControls();
+      ticking = false;
+    });
+    ticking = true;
+  }
+}
+function updateReadingControls() {
+  const isNotePage = document.querySelector(".note") !== null;
+  if (!isNotePage) return;
+  const topBar = document.getElementById("mobile-top-bar");
+  const desktopTexts = document.querySelectorAll("[data-desktop-progress-text]");
+  const mobileTexts = document.querySelectorAll("[data-mobile-progress-text]");
+  const backToTopBtns = document.querySelectorAll(".back-to-top-btn, .mobile-top-btn");
+  const goToBottomBtns = document.querySelectorAll(".go-to-bottom-btn, .mobile-bottom-btn, .reading-progress-btn");
+  backToTopBtns.forEach((btn) => {
+    const htmlBtn = btn;
+    if (!htmlBtn.dataset.rcBound) {
+      htmlBtn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+      htmlBtn.dataset.rcBound = "true";
+    }
+  });
+  goToBottomBtns.forEach((btn) => {
+    const htmlBtn = btn;
+    if (!htmlBtn.dataset.rcBound) {
+      htmlBtn.addEventListener("click", () => {
+        const headings = document.querySelectorAll(".post-content h1, .post-content h2, .post-content h3, .post-content h4, .post-content h5, .post-content h6");
+        if (headings.length > 0) {
+          const lastHeading = headings[headings.length - 1];
+          if (lastHeading) {
+            const y = lastHeading.getBoundingClientRect().top + window.scrollY - 100;
+            window.scrollTo({ top: y, behavior: "smooth" });
+            return;
+          }
+        }
+        window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
+      });
+      htmlBtn.dataset.rcBound = "true";
+    }
+  });
+  const currentScrollY = window.scrollY;
+  const SCROLL_THRESHOLD = 80;
+  if (currentScrollY <= 0) {
+    document.body.classList.add("is-at-top");
+  } else {
+    document.body.classList.remove("is-at-top");
+  }
+  const scrollHeight = document.documentElement.scrollHeight;
+  const innerHeight = window.innerHeight;
+  const scrollRange = scrollHeight - innerHeight;
+  let progress = 0;
+  if (scrollRange > 0) {
+    progress = Math.round(currentScrollY / scrollRange * 100);
+    progress = Math.max(0, Math.min(100, progress));
+  }
+  desktopTexts.forEach((el) => el.textContent = `${progress}%`);
+  mobileTexts.forEach((el) => el.textContent = `${progress}%`);
+  const progressCircles = document.querySelectorAll("[data-progress-circle]");
+  const CIRCLE_CIRCUMFERENCE = 62.8318;
+  progressCircles.forEach((circle) => {
+    const offset = CIRCLE_CIRCUMFERENCE - progress / 100 * CIRCLE_CIRCUMFERENCE;
+    circle.style.strokeDashoffset = offset.toString();
+  });
+  const progressStr = `${progress}%`;
+  document.body.style.setProperty("--reading-progress", progressStr);
+  const isReaderMode = document.body.dataset.readerMode === "immersive";
+  const isMobile = window.innerWidth <= 960;
+  if (isMobile) {
+    if (!isReaderMode && topBar) {
+      const overlaysOpen = document.body.classList.contains("is-mobile-drawer-open") || document.body.classList.contains("is-search-overlay-open") || document.body.classList.contains("is-tags-overlay-open");
+      if (overlaysOpen) {
+        if (isHidden) {
+          document.body.classList.remove("mobile-top-bar-hidden");
+          isHidden = false;
+        }
+      } else {
+        if (currentScrollY <= 0) {
+          if (isHidden) {
+            document.body.classList.remove("mobile-top-bar-hidden");
+            isHidden = false;
+          }
+        } else if (currentScrollY > lastScrollY) {
+          document.body.classList.add("is-scrolling-down");
+          document.body.classList.remove("is-scrolling-up");
+          if (currentScrollY > SCROLL_THRESHOLD && !isHidden) {
+            document.body.classList.add("mobile-top-bar-hidden");
+            isHidden = true;
+          }
+        } else if (currentScrollY < lastScrollY) {
+          document.body.classList.add("is-scrolling-up");
+          document.body.classList.remove("is-scrolling-down");
+          if (isHidden) {
+            document.body.classList.remove("mobile-top-bar-hidden");
+            isHidden = false;
+          }
+        }
+      }
+    }
+  } else {
+    if (isHidden) {
+      document.body.classList.remove("mobile-top-bar-hidden");
+      isHidden = false;
+    }
+  }
+  lastScrollY = currentScrollY;
+}
+export {
+  initReadingControls
+};

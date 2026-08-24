@@ -1,1 +1,229 @@
-(function(){var h="/js/vendor/mermaid.min.js",E="/assets-manifest.json",f=null,o=null,w=0,y=l();function M(r){return Array.prototype.slice.call((r||document).querySelectorAll(".mermaid-block"))}function l(){return document.documentElement.dataset.theme==="dark"?"dark":"default"}function L(){return f||(f=fetch(E,{credentials:"same-origin"}).then(function(r){if(!r.ok)throw new Error("assets manifest not found");return r.json()}).catch(function(){return{}})),f}function g(r){return L().then(function(e){return e[r]||r})}function T(){return window.mermaid?Promise.resolve(window.mermaid):o||(o=g(h).then(function(r){return new Promise(function(e,t){var a=document.querySelector("script[data-daybook-mermaid-lib]");if(a){if(window.mermaid){e(window.mermaid);return}a.addEventListener("load",function(){window.mermaid?e(window.mermaid):t(new Error("Mermaid library did not initialize."))},{once:!0}),a.addEventListener("error",function(){t(new Error("Mermaid library failed to load."))},{once:!0});return}var n=document.createElement("script");n.async=!0,n.src=r,n.dataset.daybookMermaidLib="true",n.addEventListener("load",function(){window.mermaid?e(window.mermaid):t(new Error("Mermaid library did not initialize."))},{once:!0}),n.addEventListener("error",function(){t(new Error("Mermaid library failed to load."))},{once:!0}),document.head.appendChild(n)})}),o=o.catch(function(r){throw o=null,r}),o)}function P(r){var e=r.querySelector(".mermaid-source code");return e&&e.textContent||""}function s(r,e){var t=r.querySelector(".mermaid-diagram"),a=r.querySelector(".mermaid-error");r.classList.remove("is-rendered"),r.classList.add("is-error"),r.dataset.mermaidStatus="error",t&&(t&&(t.innerHTML=""),t.setAttribute("aria-hidden","true")),a&&(a.hidden=!1,a.textContent=e)}function S(r){var e=r.querySelector(".mermaid-error");r.classList.remove("is-error"),e&&(e.hidden=!0,e.textContent="")}function b(r,e,t,a,n){if(!n&&e.dataset.mermaidStatus==="rendered"&&e.dataset.mermaidTheme===a)return Promise.resolve();var m=P(e);if(m.trim()==="")return s(e,"Mermaid source is empty."),Promise.resolve();var i=e.querySelector(".mermaid-diagram");if(!i)return s(e,"Mermaid diagram container is missing."),Promise.resolve();var v=String(w)+"-"+String(t),H="daybook-mermaid-"+v;return e.dataset.mermaidToken=v,e.dataset.mermaidStatus="rendering",e.classList.remove("is-rendered"),S(e),i&&(i.innerHTML=""),i.setAttribute("aria-hidden","true"),Promise.resolve(r.render(H,m)).then(function(d){e.dataset.mermaidToken===v&&(i&&(i.innerHTML=d.svg||""),typeof d.bindFunctions=="function"&&d.bindFunctions(i),i&&i.removeAttribute("aria-hidden"),e.classList.add("is-rendered"),e.dataset.mermaidStatus="rendered",e.dataset.mermaidTheme=a)}).catch(function(d){var q=d&&d.message?d.message:"Mermaid render failed.";s(e,q)})}function p(r){var e=M(document);if(e.length===0)return Promise.resolve();var t=l(),a=!!(r&&r.force);return w+=1,T().then(function(n){if(!n||typeof n.initialize!="function"||typeof n.render!="function")throw new Error("Mermaid library is not available.");return n.initialize({startOnLoad:!1,theme:t,securityLevel:"strict"}),Promise.all(e.map(function(m,i){return b(n,m,i,t,a)}))}).catch(function(n){var m=n&&n.message?n.message:"Mermaid failed to load.";e.forEach(function(i){s(i,m)})})}var u=0;function c(r){u&&window.clearTimeout(u),u=window.setTimeout(function(){u=0,p(r)},10)}window.DaybookMermaid={init:c},window.MutationObserver&&new MutationObserver(function(){var r=l();r!==y&&(y=r,c({force:!0}))}).observe(document.documentElement,{attributes:!0,attributeFilter:["data-theme"]}),document.addEventListener("daybook:page-load",function(){c()}),document.addEventListener("daybook:article-content-swapped",function(){c()})})();
+"use strict";
+(() => {
+  // assets/ts/mermaid-loader.ts
+  (function() {
+    var mermaidAssetPath = "/js/vendor/mermaid.min.js";
+    var manifestPath = "/assets-manifest.json";
+    var manifestPromise = null;
+    var mermaidPromise = null;
+    var renderRun = 0;
+    var observedTheme = currentTheme();
+    function mermaidBlocks(root) {
+      return Array.prototype.slice.call((root || document).querySelectorAll(".mermaid-block"));
+    }
+    function currentTheme() {
+      return document.documentElement.dataset.theme === "dark" ? "dark" : "default";
+    }
+    function loadManifest() {
+      if (!manifestPromise) {
+        manifestPromise = fetch(manifestPath, { credentials: "same-origin" }).then(function(response) {
+          if (!response.ok) {
+            throw new Error("assets manifest not found");
+          }
+          return response.json();
+        }).catch(function() {
+          return {};
+        });
+      }
+      return manifestPromise;
+    }
+    function assetPath(originalPath) {
+      return loadManifest().then(function(manifest) {
+        return manifest[originalPath] || originalPath;
+      });
+    }
+    function loadMermaid() {
+      if (window.mermaid) {
+        return Promise.resolve(window.mermaid);
+      }
+      if (mermaidPromise) {
+        return mermaidPromise;
+      }
+      mermaidPromise = assetPath(mermaidAssetPath).then(function(src) {
+        return new Promise(function(resolve, reject) {
+          var existing = document.querySelector("script[data-daybook-mermaid-lib]");
+          if (existing) {
+            if (window.mermaid) {
+              resolve(window.mermaid);
+              return;
+            }
+            existing.addEventListener(
+              "load",
+              function() {
+                if (window.mermaid) {
+                  resolve(window.mermaid);
+                } else {
+                  reject(new Error("Mermaid library did not initialize."));
+                }
+              },
+              { once: true }
+            );
+            existing.addEventListener(
+              "error",
+              function() {
+                reject(new Error("Mermaid library failed to load."));
+              },
+              { once: true }
+            );
+            return;
+          }
+          var script = document.createElement("script");
+          script.async = true;
+          script.src = src;
+          script.dataset.daybookMermaidLib = "true";
+          script.addEventListener(
+            "load",
+            function() {
+              if (window.mermaid) {
+                resolve(window.mermaid);
+              } else {
+                reject(new Error("Mermaid library did not initialize."));
+              }
+            },
+            { once: true }
+          );
+          script.addEventListener(
+            "error",
+            function() {
+              reject(new Error("Mermaid library failed to load."));
+            },
+            { once: true }
+          );
+          document.head.appendChild(script);
+        });
+      });
+      mermaidPromise = mermaidPromise.catch(function(error) {
+        mermaidPromise = null;
+        throw error;
+      });
+      return mermaidPromise;
+    }
+    function blockSource(block) {
+      var code = block.querySelector(".mermaid-source code");
+      return code ? code.textContent || "" : "";
+    }
+    function markError(block, message) {
+      var diagram = block.querySelector(".mermaid-diagram");
+      var error = block.querySelector(".mermaid-error");
+      block.classList.remove("is-rendered");
+      block.classList.add("is-error");
+      block.dataset.mermaidStatus = "error";
+      if (diagram) {
+        if (diagram) diagram.innerHTML = "";
+        diagram.setAttribute("aria-hidden", "true");
+      }
+      if (error) {
+        error.hidden = false;
+        error.textContent = message;
+      }
+    }
+    function clearError(block) {
+      var error = block.querySelector(".mermaid-error");
+      block.classList.remove("is-error");
+      if (error) {
+        error.hidden = true;
+        error.textContent = "";
+      }
+    }
+    function renderBlock(mermaid, block, index, theme, force) {
+      if (!force && block.dataset.mermaidStatus === "rendered" && block.dataset.mermaidTheme === theme) {
+        return Promise.resolve();
+      }
+      var source = blockSource(block);
+      if (source.trim() === "") {
+        markError(block, "Mermaid source is empty.");
+        return Promise.resolve();
+      }
+      var diagram = block.querySelector(".mermaid-diagram");
+      if (!diagram) {
+        markError(block, "Mermaid diagram container is missing.");
+        return Promise.resolve();
+      }
+      var token = String(renderRun) + "-" + String(index);
+      var id = "daybook-mermaid-" + token;
+      block.dataset.mermaidToken = token;
+      block.dataset.mermaidStatus = "rendering";
+      block.classList.remove("is-rendered");
+      clearError(block);
+      if (diagram) diagram.innerHTML = "";
+      diagram.setAttribute("aria-hidden", "true");
+      return Promise.resolve(mermaid.render(id, source)).then(function(result) {
+        if (block.dataset.mermaidToken !== token) {
+          return;
+        }
+        if (diagram) diagram.innerHTML = result.svg || "";
+        if (typeof result.bindFunctions === "function") {
+          result.bindFunctions(diagram);
+        }
+        if (diagram) diagram.removeAttribute("aria-hidden");
+        block.classList.add("is-rendered");
+        block.dataset.mermaidStatus = "rendered";
+        block.dataset.mermaidTheme = theme;
+      }).catch(function(error) {
+        var message = error && error.message ? error.message : "Mermaid render failed.";
+        markError(block, message);
+      });
+    }
+    function init(options) {
+      var blocks = mermaidBlocks(document);
+      if (blocks.length === 0) {
+        return Promise.resolve();
+      }
+      var theme = currentTheme();
+      var force = Boolean(options && options.force);
+      renderRun += 1;
+      return loadMermaid().then(function(mermaid) {
+        if (!mermaid || typeof mermaid.initialize !== "function" || typeof mermaid.render !== "function") {
+          throw new Error("Mermaid library is not available.");
+        }
+        mermaid.initialize({
+          startOnLoad: false,
+          theme,
+          securityLevel: "strict"
+        });
+        return Promise.all(
+          blocks.map(function(block, index) {
+            return renderBlock(mermaid, block, index, theme, force);
+          })
+        );
+      }).catch(function(error) {
+        var message = error && error.message ? error.message : "Mermaid failed to load.";
+        blocks.forEach(function(block) {
+          markError(block, message);
+        });
+      });
+    }
+    var initTimer = 0;
+    function scheduleInit(options) {
+      if (initTimer) {
+        window.clearTimeout(initTimer);
+      }
+      initTimer = window.setTimeout(function() {
+        initTimer = 0;
+        init(options);
+      }, 10);
+    }
+    window.DaybookMermaid = {
+      init: scheduleInit
+    };
+    if (window.MutationObserver) {
+      new MutationObserver(function() {
+        var nextTheme = currentTheme();
+        if (nextTheme === observedTheme) {
+          return;
+        }
+        observedTheme = nextTheme;
+        scheduleInit({ force: true });
+      }).observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["data-theme"]
+      });
+    }
+    document.addEventListener("daybook:page-load", function() {
+      scheduleInit();
+    });
+    document.addEventListener("daybook:article-content-swapped", function() {
+      scheduleInit();
+    });
+  })();
+})();

@@ -1,1 +1,127 @@
-(function(){let h="/js/vendor/d3.min.js",w="/js/graph.js",p="/assets-manifest.json",s=null,i=null,r=null;function m(){return s||(s=fetch(p,{credentials:"same-origin"}).then(function(n){if(!n.ok)throw new Error("assets manifest not found");return n.json()}).catch(function(){return{}})),s}function y(n){return m().then(function(o){return o[n]||n})}function l(n,o,u){return y(n).then(function(e){return new Promise(function(c,d){let f=document.querySelector("script["+o+"]");if(f){if(u()){c();return}f.addEventListener("load",function(){u()?c():d(new Error("Script did not initialize: "+e))},{once:!0}),f.addEventListener("error",function(){d(new Error("Script failed to load: "+e))},{once:!0});return}let t=document.createElement("script");t.async=!0,t.src=e,t.setAttribute(o,"true"),t.addEventListener("load",function(){u()?c():d(new Error("Script did not initialize: "+e))},{once:!0}),t.addEventListener("error",function(){d(new Error("Script failed to load: "+e))},{once:!0}),document.head.appendChild(t)})})}function P(){return window.d3?Promise.resolve():(i||(i=l(h,"data-daybook-d3",function(){return!!window.d3}).catch(function(n){throw i=null,n})),i)}function g(){return window.DaybookGraph?Promise.resolve():(r||(r=l(w,"data-daybook-graph",function(){return!!window.DaybookGraph}).catch(function(n){throw r=null,n})),r)}function b(){let n=document.querySelector(".graph-shell");if(!n){window.DaybookGraph&&typeof window.DaybookGraph.destroy=="function"&&window.DaybookGraph.destroy();return}n.dataset.graphInitialized!=="true"&&Promise.all([P(),g()]).then(function(){window.DaybookGraph&&typeof window.DaybookGraph.init=="function"&&(window.DaybookGraph.init(document),n.dataset.graphInitialized="true")}).catch(function(o){console.error("Failed to load graph dependencies",o)})}let a=0;function k(){a&&window.clearTimeout(a),a=window.setTimeout(function(){a=0,b()},10)}document.addEventListener("daybook:page-load",k),document.addEventListener("daybook:before-swap",function(){window.DaybookGraph&&typeof window.DaybookGraph.destroy=="function"&&window.DaybookGraph.destroy()})})();
+"use strict";
+(() => {
+  // assets/ts/graph-loader.ts
+  (function() {
+    const d3AssetPath = "/js/vendor/d3.min.js";
+    const graphAssetPath = "/js/graph.js";
+    const manifestPath = "/assets-manifest.json";
+    let manifestPromise = null;
+    let d3Promise = null;
+    let graphPromise = null;
+    function loadManifest() {
+      if (!manifestPromise) {
+        manifestPromise = fetch(manifestPath, { credentials: "same-origin" }).then(function(response) {
+          if (!response.ok) {
+            throw new Error("assets manifest not found");
+          }
+          return response.json();
+        }).catch(function() {
+          return {};
+        });
+      }
+      return manifestPromise;
+    }
+    function assetPath(originalPath) {
+      return loadManifest().then(function(manifest) {
+        return manifest[originalPath] || originalPath;
+      });
+    }
+    function loadScript(assetPathKey, dataAttr, globalCheck) {
+      return assetPath(assetPathKey).then(function(src) {
+        return new Promise(function(resolve, reject) {
+          const existing = document.querySelector("script[" + dataAttr + "]");
+          if (existing) {
+            if (globalCheck()) {
+              resolve();
+              return;
+            }
+            existing.addEventListener("load", function() {
+              if (globalCheck()) {
+                resolve();
+              } else {
+                reject(new Error("Script did not initialize: " + src));
+              }
+            }, { once: true });
+            existing.addEventListener("error", function() {
+              reject(new Error("Script failed to load: " + src));
+            }, { once: true });
+            return;
+          }
+          const script = document.createElement("script");
+          script.async = true;
+          script.src = src;
+          script.setAttribute(dataAttr, "true");
+          script.addEventListener("load", function() {
+            if (globalCheck()) {
+              resolve();
+            } else {
+              reject(new Error("Script did not initialize: " + src));
+            }
+          }, { once: true });
+          script.addEventListener("error", function() {
+            reject(new Error("Script failed to load: " + src));
+          }, { once: true });
+          document.head.appendChild(script);
+        });
+      });
+    }
+    function loadD3() {
+      if (window.d3) return Promise.resolve();
+      if (!d3Promise) {
+        d3Promise = loadScript(d3AssetPath, "data-daybook-d3", function() {
+          return !!window.d3;
+        }).catch(function(err) {
+          d3Promise = null;
+          throw err;
+        });
+      }
+      return d3Promise;
+    }
+    function loadGraph() {
+      if (window.DaybookGraph) return Promise.resolve();
+      if (!graphPromise) {
+        graphPromise = loadScript(graphAssetPath, "data-daybook-graph", function() {
+          return !!window.DaybookGraph;
+        }).catch(function(err) {
+          graphPromise = null;
+          throw err;
+        });
+      }
+      return graphPromise;
+    }
+    function checkAndInit() {
+      const graphShell = document.querySelector(".graph-shell");
+      if (!graphShell) {
+        if (window.DaybookGraph && typeof window.DaybookGraph.destroy === "function") {
+          window.DaybookGraph.destroy();
+        }
+        return;
+      }
+      if (graphShell.dataset["graphInitialized"] === "true") {
+        return;
+      }
+      Promise.all([loadD3(), loadGraph()]).then(function() {
+        if (window.DaybookGraph && typeof window.DaybookGraph.init === "function") {
+          window.DaybookGraph.init(document);
+          graphShell.dataset["graphInitialized"] = "true";
+        }
+      }).catch(function(error) {
+        console.error("Failed to load graph dependencies", error);
+      });
+    }
+    let initTimer = 0;
+    function scheduleCheck() {
+      if (initTimer) window.clearTimeout(initTimer);
+      initTimer = window.setTimeout(function() {
+        initTimer = 0;
+        checkAndInit();
+      }, 10);
+    }
+    document.addEventListener("daybook:page-load", scheduleCheck);
+    document.addEventListener("daybook:before-swap", function() {
+      if (window.DaybookGraph && typeof window.DaybookGraph.destroy === "function") {
+        window.DaybookGraph.destroy();
+      }
+    });
+  })();
+})();

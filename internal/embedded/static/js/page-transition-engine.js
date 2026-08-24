@@ -1,1 +1,187 @@
-(()=>{let w="(max-width: 1280px)";function u(){return document.documentElement.getAttribute("data-reduced-motion")==="true"||window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches}function p(e,t){let n=window.getComputedStyle(document.documentElement).getPropertyValue(e).trim(),i=Number.parseFloat(n);return Number.isFinite(i)?n.endsWith("s")&&!n.endsWith("ms")?i*1e3:i:t}function d(e){let t=e.pathname;return t.length>1&&t.endsWith("/")&&(t=t.slice(0,-1)),t.endsWith("/index.html")&&(t=t.slice(0,-11)||"/"),t}function m(e){let t=d(e);if(t.endsWith("/index.html")&&(t=t.substring(0,t.length-11)),t.endsWith("/")&&(t=t.substring(0,t.length-1)),t.startsWith("/en/")&&(t="/"+t.substring(4)),t.startsWith("/notes/")){let n=t.substring(7);if(n.length>0)return decodeURIComponent(n)}return null}function g(e){let t=d(e);return t.endsWith("/index.html")&&(t=t.substring(0,t.length-11)),t.endsWith("/")&&(t=t.substring(0,t.length-1)),t.startsWith("/en/")&&(t="/"+t.substring(4)),t==="/notes"}function h(e,t){try{let n=new URL(e,location.origin),i=new URL(t,location.origin),s=m(n),r=m(i),o=g(n),a=g(i);if(o&&r)return{direction:"to-detail",slug:r};if(s&&a)return{direction:"to-list",slug:s}}catch{return null}return null}function E(e,t){return u()?!1:!!h(e,t)}function l(e,t,n){if(!e||!n)return null;let i=e.querySelectorAll(`[${t}]`);for(let s of Array.from(i))if(s.getAttribute(t)===n)return s;return null}function f(e,t){return l(e,"data-title-transition-key",t)||l(e,"data-title-id",t)}function y(e){e&&(e.querySelectorAll(".title-glyph").forEach(t=>{t.style.removeProperty("view-transition-name")}),e.querySelectorAll("[data-title-transition-key]").forEach(t=>{t.style.removeProperty("view-transition-name")}),e.querySelectorAll("[data-article-shared]").forEach(t=>{t.style.removeProperty("view-transition-name")}))}function L(e,t,n){y(document);let i=h(e,t);if(!i||!i.slug)return null;let s=f(document,i.slug);n&&n.matches("[data-title-transition-key]")&&(s=n),s&&s.querySelectorAll(".title-glyph").forEach(a=>{let c=a;c.style.viewTransitionName=`title-glyph-${c.dataset.glyphIndex}`});let r=l(document,"data-transition-scope",i.slug);return r&&(r.querySelectorAll("[data-article-shared]").forEach(a=>{let c=a.getAttribute("data-article-shared");a.style.viewTransitionName=`article-shared-${c}`}),document.documentElement.classList.add("meta-shared-transition")),i}function T(e){if(!e||!e.slug)return;let t=f(document,e.slug);t&&t.querySelectorAll(".title-glyph").forEach(s=>{let r=s;r.style.viewTransitionName=`title-glyph-${r.dataset.glyphIndex}`});let n=l(document,"data-transition-scope",e.slug);n&&(n.querySelectorAll("[data-article-shared]").forEach(s=>{let r=s.getAttribute("data-article-shared");s.style.viewTransitionName=`article-shared-${r}`}),n.classList.add("meta-shared-target"))}function b(e){return e.classList.contains("home-body")?"home-exiting":"page-exiting"}function A(e){return e.classList.contains("home-body")?"home-entering":"page-entering"}function M(){document.documentElement.classList.remove("is-transitioning","article-transition","meta-shared-transition"),document.body&&document.body.classList.remove("home-exiting","page-exiting","home-entering","page-entering")}function S(e,t){let n=e.querySelectorAll("[data-transition-region]"),i=t.querySelectorAll("[data-transition-region]"),s=new Map;n.forEach(r=>{s.set(r.getAttribute("data-transition-region"),r),r.classList.remove("transition-stable")}),i.forEach(r=>{let o=r.getAttribute("data-transition-region"),a=s.get(o);r.classList.remove("transition-stable"),a&&(a.classList.add("transition-stable"),r.classList.add("transition-stable"))})}window.DaybookTransitionEngine={reducedMotion:u,cssDuration:p,isArticleTransition:E,prepareArticleTransitionSource:L,prepareArticleTransitionTarget:T,clearArticleSharedTransitions:y,exitClassName:b,enterClassName:A,clearTransitionClasses:M,resolveStableRegions:S}})();
+"use strict";
+(() => {
+  // assets/ts/page-transition-engine.ts
+  (() => {
+    const ARTICLE_MOBILE_QUERY = "(max-width: 1280px)";
+    function reducedMotion() {
+      return document.documentElement.getAttribute("data-reduced-motion") === "true" || window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    }
+    function cssDuration(name, fallback) {
+      const rawValue = window.getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+      const value = Number.parseFloat(rawValue);
+      if (!Number.isFinite(value)) return fallback;
+      if (rawValue.endsWith("s") && !rawValue.endsWith("ms")) return value * 1e3;
+      return value;
+    }
+    function cleanPath(url) {
+      let path = url.pathname;
+      if (path.length > 1 && path.endsWith("/")) path = path.slice(0, -1);
+      if (path.endsWith("/index.html")) path = path.slice(0, -11) || "/";
+      return path;
+    }
+    function noteSlugFromURL(url) {
+      let p = cleanPath(url);
+      if (p.endsWith("/index.html")) p = p.substring(0, p.length - 11);
+      if (p.endsWith("/")) p = p.substring(0, p.length - 1);
+      if (p.startsWith("/en/")) {
+        p = "/" + p.substring(4);
+      }
+      if (p.startsWith("/notes/")) {
+        const slug = p.substring(7);
+        if (slug.length > 0) {
+          return decodeURIComponent(slug);
+        }
+      }
+      return null;
+    }
+    function isNotesIndex(url) {
+      let p = cleanPath(url);
+      if (p.endsWith("/index.html")) p = p.substring(0, p.length - 11);
+      if (p.endsWith("/")) p = p.substring(0, p.length - 1);
+      if (p.startsWith("/en/")) p = "/" + p.substring(4);
+      return p === "/notes";
+    }
+    function articleTransitionInfo(currentUrlStr, targetUrlStr) {
+      try {
+        const currentURL = new URL(currentUrlStr, location.origin);
+        const targetURL = new URL(targetUrlStr, location.origin);
+        const currentSlug = noteSlugFromURL(currentURL);
+        const targetSlug = noteSlugFromURL(targetURL);
+        const currentIsIndex = isNotesIndex(currentURL);
+        const targetIsIndex = isNotesIndex(targetURL);
+        if (currentIsIndex && targetSlug) {
+          return { direction: "to-detail", slug: targetSlug };
+        }
+        if (currentSlug && targetIsIndex) {
+          return { direction: "to-list", slug: currentSlug };
+        }
+      } catch {
+        return null;
+      }
+      return null;
+    }
+    function isArticleTransition(currentUrlStr, targetUrlStr) {
+      if (reducedMotion()) return false;
+      return Boolean(articleTransitionInfo(currentUrlStr, targetUrlStr));
+    }
+    function findDataElement(root, attributeName, value) {
+      if (!root || !value) return null;
+      const elements = root.querySelectorAll(`[${attributeName}]`);
+      for (const element of Array.from(elements)) {
+        if (element.getAttribute(attributeName) === value) {
+          return element;
+        }
+      }
+      return null;
+    }
+    function findTitleBySlug(root, slug) {
+      return findDataElement(root, "data-title-transition-key", slug) || findDataElement(root, "data-title-id", slug);
+    }
+    function clearArticleSharedTransitions(root) {
+      if (!root) return;
+      root.querySelectorAll(".title-glyph").forEach((el) => {
+        el.style.removeProperty("view-transition-name");
+      });
+      root.querySelectorAll("[data-title-transition-key]").forEach((el) => {
+        el.style.removeProperty("view-transition-name");
+      });
+      root.querySelectorAll("[data-article-shared]").forEach((el) => {
+        el.style.removeProperty("view-transition-name");
+      });
+    }
+    function prepareArticleTransitionSource(currentUrlStr, targetUrlStr, sourceLink) {
+      clearArticleSharedTransitions(document);
+      const info = articleTransitionInfo(currentUrlStr, targetUrlStr);
+      if (!info || !info.slug) return null;
+      let sourceTitle = findTitleBySlug(document, info.slug);
+      if (sourceLink && sourceLink.matches("[data-title-transition-key]")) {
+        sourceTitle = sourceLink;
+      }
+      if (sourceTitle) {
+        const sourceGlyphs = sourceTitle.querySelectorAll(".title-glyph");
+        sourceGlyphs.forEach((el) => {
+          const sg = el;
+          sg.style.viewTransitionName = `title-glyph-${sg.dataset.glyphIndex}`;
+        });
+      }
+      const sourceScope = findDataElement(document, "data-transition-scope", info.slug);
+      if (sourceScope) {
+        const sharedElements = sourceScope.querySelectorAll("[data-article-shared]");
+        sharedElements.forEach((el) => {
+          const name = el.getAttribute("data-article-shared");
+          el.style.viewTransitionName = `article-shared-${name}`;
+        });
+        document.documentElement.classList.add("meta-shared-transition");
+      }
+      return info;
+    }
+    function prepareArticleTransitionTarget(info) {
+      if (!info || !info.slug) return;
+      let targetTitle = findTitleBySlug(document, info.slug);
+      if (targetTitle) {
+        const targetGlyphs = targetTitle.querySelectorAll(".title-glyph");
+        targetGlyphs.forEach((el) => {
+          const tg = el;
+          tg.style.viewTransitionName = `title-glyph-${tg.dataset.glyphIndex}`;
+        });
+      }
+      const targetScope = findDataElement(document, "data-transition-scope", info.slug);
+      if (targetScope) {
+        const sharedElements = targetScope.querySelectorAll("[data-article-shared]");
+        sharedElements.forEach((el) => {
+          const name = el.getAttribute("data-article-shared");
+          el.style.viewTransitionName = `article-shared-${name}`;
+        });
+        targetScope.classList.add("meta-shared-target");
+      }
+    }
+    function exitClassName(body) {
+      if (body.classList.contains("home-body")) return "home-exiting";
+      return "page-exiting";
+    }
+    function enterClassName(body) {
+      if (body.classList.contains("home-body")) return "home-entering";
+      return "page-entering";
+    }
+    function clearTransitionClasses() {
+      document.documentElement.classList.remove(
+        "is-transitioning",
+        "article-transition",
+        "meta-shared-transition"
+      );
+      if (document.body) {
+        document.body.classList.remove("home-exiting", "page-exiting", "home-entering", "page-entering");
+      }
+    }
+    function resolveStableRegions(oldDoc, newDoc) {
+      const oldRegions = oldDoc.querySelectorAll("[data-transition-region]");
+      const newRegions = newDoc.querySelectorAll("[data-transition-region]");
+      const oldMap = /* @__PURE__ */ new Map();
+      oldRegions.forEach((el) => {
+        oldMap.set(el.getAttribute("data-transition-region"), el);
+        el.classList.remove("transition-stable");
+      });
+      newRegions.forEach((newEl) => {
+        const region = newEl.getAttribute("data-transition-region");
+        const oldEl = oldMap.get(region);
+        newEl.classList.remove("transition-stable");
+        if (oldEl) {
+          oldEl.classList.add("transition-stable");
+          newEl.classList.add("transition-stable");
+        }
+      });
+    }
+    window.DaybookTransitionEngine = {
+      reducedMotion,
+      cssDuration,
+      isArticleTransition,
+      prepareArticleTransitionSource,
+      prepareArticleTransitionTarget,
+      clearArticleSharedTransitions,
+      exitClassName,
+      enterClassName,
+      clearTransitionClasses,
+      resolveStableRegions
+    };
+  })();
+})();

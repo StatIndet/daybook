@@ -1,1 +1,60 @@
-(function(){var i=1400;function n(o,t){let e=o.querySelector(".material-symbol");e&&(e.textContent=t)}function a(o){let t=document.createElement("textarea");t.value=o,t.setAttribute("readonly",""),t.style.position="fixed",t.style.left="-9999px",t.style.top="0",document.body.appendChild(t),t.select();try{return document.execCommand("copy"),!0}finally{t.remove()}}async function s(o){return navigator.clipboard&&window.isSecureContext?(await navigator.clipboard.writeText(o),!0):a(o)}document.addEventListener("click",async function(o){let e=o.target.closest(".code-copy-button");if(!e)return;let r=e.closest(".highlight"),c=r&&r.querySelector("pre code");if(c){try{await s(c.textContent)}catch{return}window.clearTimeout(e._daybookCopyTimer),e.classList.add("is-copied"),n(e,"check"),e._daybookCopyTimer=window.setTimeout(function(){e.classList.remove("is-copied"),n(e,"content_copy")},i)}})})();
+"use strict";
+(() => {
+  // assets/ts/code-copy.ts
+  (function() {
+    var resetDelay = 1400;
+    function setButtonState(button, iconName) {
+      const icon = button.querySelector(".material-symbol");
+      if (icon) {
+        icon.textContent = iconName;
+      }
+    }
+    function fallbackCopy(text) {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      textarea.style.top = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand("copy");
+        return true;
+      } finally {
+        textarea.remove();
+      }
+    }
+    async function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+      return fallbackCopy(text);
+    }
+    document.addEventListener("click", async function(event) {
+      const target = event.target;
+      const button = target.closest(".code-copy-button");
+      if (!button) {
+        return;
+      }
+      const block = button.closest(".highlight");
+      const code = block && block.querySelector("pre code");
+      if (!code) {
+        return;
+      }
+      try {
+        await copyText(code.textContent);
+      } catch (error) {
+        return;
+      }
+      window.clearTimeout(button._daybookCopyTimer);
+      button.classList.add("is-copied");
+      setButtonState(button, "check");
+      button._daybookCopyTimer = window.setTimeout(function() {
+        button.classList.remove("is-copied");
+        setButtonState(button, "content_copy");
+      }, resetDelay);
+    });
+  })();
+})();
