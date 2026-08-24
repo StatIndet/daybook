@@ -25,20 +25,22 @@ my-vault/
 ## Installation
 
 ### Prebuilt Binaries (Recommended)
-You can download prebuilt standalone binaries for your platform from [GitHub Releases](https://github.com/StatIndet/daybook/releases).
-Supported platforms: Linux (amd64/arm64) and macOS (Intel/Apple Silicon).
+The easiest way to install Daybook is using our release installer. This script will automatically detect your OS and architecture, download the latest prebuilt CLI, verify its checksum, and install it to `~/.local/bin`.
 
-Extract the archive and place the `daybook` executable in your system's `PATH`.
+```bash
+curl -fsSL https://github.com/StatIndet/daybook/releases/latest/download/install.sh | bash
+```
+Alternatively, you can manually download the binaries from [GitHub Releases](https://github.com/StatIndet/daybook/releases).
 
 ### Build from Source
-To build the CLI from source, ensure you have **Go** and **Node.js** (>=24) installed.
+Building from source is recommended for development. Ensure you have **Go**, **Node.js** (>=24), and **npm** installed.
 
 ```bash
 git clone https://github.com/StatIndet/daybook.git
 cd daybook
 ./scripts/install-cli.sh
 ```
-This script installs npm dependencies, builds frontend assets, and installs the `daybook` executable to your Go bin path.
+This script installs npm dependencies, builds frontend assets, and installs the `daybook` executable to your Go bin path (`$GOBIN` or `$(go env GOPATH)/bin`).
 
 ## CLI Commands
 
