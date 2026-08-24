@@ -1,12 +1,4 @@
-import { test, expect, chromium } from '@playwright/test';
-import { spawn } from 'child_process';
-import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const root = path.resolve(__dirname, '..');
+import { chromium } from 'playwright';
 
 const serverPort = 1313;
 const serverUrl = `http://localhost:${serverPort}`;
@@ -22,8 +14,6 @@ async function run() {
   const errors = [];
   
   page.on('pageerror', err => {
-    // Ignore unrelated pre-existing bugs 
-    if (err.message.includes('target.closest is not a function')) return;
     errors.push(`PageError: ${err.message}`);
   });
   
@@ -82,6 +72,17 @@ async function run() {
     if (initialPath === scrolledPath) {
       throw new Error('TOC SVG path did not animate after scrolling (spring physics inactive).');
     }
+    
+    console.log('Testing custom cursor regression...');
+    await page.evaluate(() => {
+      const enterEvent = new MouseEvent('mouseenter', { bubbles: true });
+      document.dispatchEvent(enterEvent);
+      
+      const leaveEvent = new MouseEvent('mouseleave', { bubbles: true });
+      document.dispatchEvent(leaveEvent);
+    });
+    
+    if (errors.length > 0) throw new Error(errors.join('\n'));
     
     console.log('Testing browser back...');
     await page.goBack();
