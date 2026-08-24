@@ -115,31 +115,40 @@ daybook/
 
 ## 快速开始
 
-### 依赖环境
-* **Go**：版本以 `go.mod` 为准 (通常为 1.26+)。
-* **Node.js & npm**：用于前端 TypeScript 依赖安装与打包。
+### Prebuilt binaries
 
-### 本地安装与预览
+用户可以从 [GitHub Releases](https://github.com/StatIndet/daybook/releases) 下载对应平台的预编译压缩包：
+* Linux x86_64
+* Linux ARM64
+* macOS Intel
+* macOS Apple Silicon
 
-1. 克隆项目：
+解压后将 `daybook` 可执行文件放到系统的 `PATH` 目录中即可。
+例如，可以将其安装到当前用户的本地目录：
 ```bash
-# 将远程仓库代码克隆到本地
-git clone https://github.com/StatIndet/daybook.git
-cd daybook
+mv daybook ~/.local/bin/
 ```
+或者自行选择放到 `/usr/local/bin/` 等全局路径中。
 
-2. 安装前端依赖：
-```bash
-# 根据 package-lock.json 安装确切版本的前端依赖，不修改锁定文件
-npm ci
-```
+### Build from source
 
-3. 启动开发服务器：
+**依赖环境**：
+* **Go**：版本以 `go.mod` 为准
+* **Node.js & npm**：用于前端 TypeScript 依赖安装与打包
+
+克隆项目后，执行以下脚本从源码进行编译和安装：
 ```bash
-# 启动本地开发环境，包含前端 esbuild 的增量编译监听和 Go 本地预览服务
-npm run server
+./scripts/install-cli.sh
 ```
-访问 `http://localhost:1313` 进行预览。  
+该脚本会将 CLI 安装到 Go 标准安装位置：优先使用 `$GOBIN`，如果未设置则默认安装到 `$GOPATH/bin`。
+
+### 本地预览
+
+安装完成后，在你的 Daybook 笔记目录 (vault) 运行以下命令启动本地开发环境：
+```bash
+daybook serve
+```
+访问 `http://localhost:1313` 进行预览。
 
 ---
 
