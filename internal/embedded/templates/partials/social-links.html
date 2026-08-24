@@ -1,0 +1,11 @@
+{{define "social_links"}}
+<nav class="hero-social" aria-label="Social Links">
+  {{$socials := .Config.GetSocialLinks .Lang}}
+  {{range $socials}}
+    <a href="{{.URL}}" aria-label="{{.Label}}" 
+      {{if and (not (eq .Type "email")) (not (eq .Type "rss"))}}target="_blank" rel="noopener noreferrer"{{end}}>
+      <img src="{{.Icon}}" alt="" aria-hidden="true">
+    </a>
+  {{end}}
+</nav>
+{{end}}

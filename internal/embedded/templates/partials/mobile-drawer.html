@@ -1,0 +1,93 @@
+{{define "mobile_drawer"}}
+<div class="mobile-drawer-mask" id="mobile-drawer-mask" aria-hidden="true"></div>
+<aside class="mobile-drawer" id="mobile-drawer" aria-label="移动端导航" aria-hidden="true">
+  <div class="mobile-drawer-content">
+    <nav class="mobile-drawer-nav" aria-label="主导航">
+      <a class="drawer-nav-link" href="{{if eq .Lang "en"}}/en{{end}}/">
+        <span class="material-symbol" aria-hidden="true">home</span>
+        <span class="drawer-nav-label">{{T .Lang "nav.home"}}</span>
+      </a>
+      <a class="drawer-nav-link" href="{{if eq .Lang "en"}}/en{{end}}/notes/">
+        <span class="material-symbol" aria-hidden="true">article</span>
+        <span class="drawer-nav-label">{{T .Lang "nav.notes"}}</span>
+      </a>
+      <a class="drawer-nav-link" href="{{if eq .Lang "en"}}/en{{end}}/archive/">
+        <span class="material-symbol" aria-hidden="true">archive</span>
+        <span class="drawer-nav-label">{{T .Lang "nav.archive"}}</span>
+      </a>
+      <a class="drawer-nav-link" href="{{if eq .Lang "en"}}/en{{end}}/graph/">
+        <span class="material-symbol" aria-hidden="true">account_tree</span>
+        <span class="drawer-nav-label">{{T .Lang "nav.graph"}}</span>
+      </a>
+      <a class="drawer-nav-link" href="{{if eq .Lang "en"}}/en{{end}}/about/">
+        <span class="material-symbol" aria-hidden="true">info</span>
+        <span class="drawer-nav-label">{{T .Lang "nav.about"}}</span>
+      </a>
+    </nav>
+
+    <div class="mobile-drawer-divider"></div>
+
+    <div class="mobile-drawer-funcs" data-mobile-overlay-tools>
+      <button class="drawer-nav-link" type="button" aria-expanded="false" data-mobile-overlay-target="search" id="drawer-search-btn">
+        <span class="material-symbol" aria-hidden="true">search</span>
+        <span class="drawer-nav-label">{{T .Lang "action.search"}}</span>
+      </button>
+      <button class="drawer-nav-link" type="button" aria-expanded="false" data-mobile-overlay-target="tags" id="drawer-tags-btn">
+        <span class="material-symbol" aria-hidden="true">sell</span>
+        <span class="drawer-nav-label">{{T .Lang "action.tags"}}</span>
+      </button>
+
+    </div>
+
+    <div class="mobile-drawer-switches">
+      <div class="drawer-switch-item" role="radiogroup" aria-label="{{T .Lang "action.theme"}}">
+        <div class="drawer-switch-label">
+          <span class="drawer-switch-text">{{T .Lang "action.theme"}}</span>
+        </div>
+        <div class="mobile-theme-selector" id="mobile-theme-selector">
+          <div class="theme-selector-indicator"></div>
+          <button type="button" class="theme-selector-btn" role="radio" aria-checked="false" aria-label="{{T .Lang "theme.light"}}" data-mode="light">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun-icon lucide-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+          </button>
+          <button type="button" class="theme-selector-btn" role="radio" aria-checked="false" aria-label="{{T .Lang "theme.system"}}" data-mode="system">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun-moon-icon lucide-sun-moon"><path d="M12 2v2"/><path d="M14.837 16.385a6 6 0 1 1-7.223-7.222c.624-.147.97.66.715 1.248a4 4 0 0 0 5.26 5.259c.589-.255 1.396.09 1.248.715"/><path d="M16 12a4 4 0 0 0-4-4"/><path d="m19 5-1.256 1.256"/><path d="M20 12h2"/></svg>
+          </button>
+          <button type="button" class="theme-selector-btn" role="radio" aria-checked="false" aria-label="{{T .Lang "theme.dark"}}" data-mode="dark">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon-icon lucide-moon"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <label class="drawer-switch-item">
+        <div class="drawer-switch-label">
+          <span class="drawer-switch-text">{{T .Lang "palette.warm_theme"}}</span>
+        </div>
+        <button type="button" class="material-switch drawer-palette-toggle palette-toggle" role="switch" aria-checked="false" aria-label="{{T .Lang "palette.warm_theme"}}">
+          <span class="switch-track"></span>
+          <span class="switch-thumb"></span>
+        </button>
+      </label>
+      
+      <a class="drawer-switch-item" href="{{.AlternateURL}}" style="text-decoration: none; color: inherit;">
+        <div class="drawer-switch-label">
+          <span class="material-symbol" aria-hidden="true">translate</span>
+          <span class="drawer-switch-text">中/EN</span>
+        </div>
+      </a>
+    </div>
+
+    <div class="mobile-drawer-footer">
+      <div class="drawer-footer-row" style="display: flex; flex-wrap: wrap; gap: 0 8px; justify-content: center; padding: 0 16px;">
+        {{$socials := .Config.GetSocialLinks .Lang}}
+                {{range $index, $social := $socials}}
+          {{if gt $index 0}}<span class="footer-separator" aria-hidden="true">/</span>{{end}}
+    <a href="{{.URL}}" 
+            {{if and (not (eq .Type "email")) (not (eq .Type "rss"))}}target="_blank" rel="noopener noreferrer"{{end}}>{{.Label}}</a>
+          
+        {{end}}
+      </div>
+      {{template "copyright" dict "Config" .Config "Class" "drawer-copyright"}}
+    </div>
+  </div>
+</aside>
+{{end}}

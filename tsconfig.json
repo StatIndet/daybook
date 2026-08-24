@@ -11,9 +11,8 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "ignoreDeprecations": "6.0",
-    "baseUrl": ".",
     "paths": {
-      "/*": ["static/*"]
+      "/*": ["./static/*"]
     }
   },
   "include": [

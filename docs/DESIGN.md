@@ -27,7 +27,6 @@ daybook 的当前视觉结构已经稳定，本文件只记录维护边界。
 尽管 Daybook 主要是 SSG (Static Site Generator)，但它使用 **Cloudflare Pages Functions + D1 (Serverless SQLite)** 实现了全站访客、独立访客 (UV) 和单页阅读量 (PV) 的统计。
 - **架构**：在 `functions/api/hit.ts` 与 `stats.ts` 中处理所有计数与查询请求。
 - **性能**：使用 D1 的 Batch API 将页阅读、全站阅读和独立访客追踪合并为一个数据库事务。
-- **隐私**：前端通过 `crypto.randomUUID()` 颁发 `localStorage` 访问凭证，后端通过带有 `STATS_SALT` 的 `SHA-256` 摘要哈希加密，杜绝用户隐私泄漏。
 
 ### 2. 动态 R2 附件挂载推断 (Dynamic Remote Resolution)
 为了解决大型音视频、PDF 及图片文件体积过大、拖慢 Git 仓库的问题，项目实现了动态的 Obsidian 附件推断。

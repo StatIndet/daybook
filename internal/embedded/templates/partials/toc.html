@@ -1,0 +1,72 @@
+{{define "toc"}}
+{{if .Note.Headings}}
+<div class="note-toc-stage" data-note-toc-stage>
+  <aside class="note-toc is-open" data-note-toc aria-label="文章目录">
+    <div class="note-toc-header">
+      <button class="note-toc-toggle" type="button" aria-expanded="true" aria-controls="note-toc-list" aria-label="展开或收起文章目录">
+        <span class="material-symbol" aria-hidden="true">menu_open</span>
+      </button>
+      <span class="note-toc-title">目录</span>
+    </div>
+    <nav class="note-toc-panel" id="note-toc-list" aria-label="文章目录">
+      <div class="note-toc-indicator" aria-hidden="true"></div>
+      <ol>
+        {{range $index, $heading := .Note.Headings}}
+        <li class="note-toc-depth-{{$heading.Level}}" style="--toc-index: {{$index}}">
+          <a href="#{{$heading.ID}}">{{$heading.Text}}</a>
+        </li>
+        {{end}}
+      </ol>
+    </nav>
+    <div class="note-toc-divider" aria-hidden="true" style="--toc-index: {{len .Note.Headings}}"></div>
+    <div class="note-toc-reading-controls" style="--toc-index: {{len .Note.Headings}}">
+      {{template "reading_controls" .}}
+    </div>
+  </aside>
+
+  <nav class="reading-toc-rail" data-reading-toc-rail aria-label="{{if eq .Lang "en"}}Reading progress{{else}}阅读进度{{end}}" aria-hidden="true" inert>
+    <svg class="reading-toc-rail-svg" data-reading-toc-rail-svg viewBox="0 0 208 640" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <path class="reading-toc-rail-base" data-reading-toc-rail-base d="M 0 0"></path>
+      <path class="reading-toc-rail-accent" data-reading-toc-rail-accent d="M 0 0" pathLength="1" stroke-dasharray="0.12 2" stroke-dashoffset="0.06"></path>
+    </svg>
+    <div class="reading-toc-rail-dots" data-reading-toc-rail-dots></div>
+    <a class="reading-toc-rail-current" data-reading-toc-rail-label data-reading-toc-rail-link href="#" aria-label="{{if eq .Lang "en"}}Jump to current section{{else}}跳转到当前章节{{end}}">
+      <span class="reading-toc-rail-title-stage">
+        <span class="reading-toc-rail-title is-active" data-reading-toc-rail-title></span>
+        <span class="reading-toc-rail-title" data-reading-toc-rail-title aria-hidden="true"></span>
+      </span>
+      <span class="reading-toc-rail-percent" data-reading-toc-rail-percent>0%</span>
+    </a>
+  </nav>
+</div>
+{{end}}
+{{end}}
+
+{{/* 移动端专用的独立 TOC 结构 */}}
+{{define "mobile-toc"}}
+{{if .Note.Headings}}
+<button class="mobile-toc-fab" data-mobile-toc-fab aria-label="{{if eq .Lang "en"}}Open Table of Contents{{else}}打开文章目录{{end}}">
+  <span class="material-symbol">format_list_bulleted</span>
+</button>
+
+<div class="mobile-toc-sheet" data-mobile-toc-sheet aria-hidden="true" inert>
+  <div class="mobile-toc-backdrop" data-mobile-toc-backdrop></div>
+  <div class="mobile-toc-panel">
+    <div class="mobile-toc-drag-handle" data-mobile-toc-drag-handle></div>
+    <div class="mobile-toc-header">
+      <span class="note-toc-title">{{if eq .Lang "en"}}Table of Contents{{else}}目录{{end}}</span>
+    </div>
+    <nav class="mobile-toc-nav" aria-label="文章目录">
+      <div class="note-toc-indicator" data-mobile-toc-indicator aria-hidden="true"></div>
+      <ol>
+        {{range $index, $heading := .Note.Headings}}
+        <li class="note-toc-depth-{{$heading.Level}}" style="--toc-index: {{$index}}">
+          <a href="#{{$heading.ID}}">{{$heading.Text}}</a>
+        </li>
+        {{end}}
+      </ol>
+    </nav>
+  </div>
+</div>
+{{end}}
+{{end}}

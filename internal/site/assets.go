@@ -13,6 +13,8 @@ import (
 	"strings"
 
 	"github.com/StatIndet/daybook/internal/render"
+	"github.com/StatIndet/daybook/internal/embedded"
+	"io/fs"
 )
 
 const assetHashLength = 10
@@ -82,6 +84,7 @@ func requireTemplateAssets(manifest map[string]string) error {
 		"/js/mobile-drawer.js",
 		"/js/search-overlay.js",
 		"/js/daybook-router.js",
+		"/js/katex-loader.js",
 	}
 
 	for _, originalPath := range requiredPaths {
@@ -93,7 +96,7 @@ func requireTemplateAssets(manifest map[string]string) error {
 }
 
 func copyStaticDir(sourceDir, targetDir string) error {
-	return copyDirFiltered(sourceDir, targetDir, func(relativePath string, entry os.DirEntry) bool {
+	return copyEmbeddedDirFiltered(sourceDir, targetDir, func(relativePath string, entry fs.DirEntry) bool {
 		if entry.IsDir() {
 			return false
 		}
@@ -106,35 +109,28 @@ func copyStaticDir(sourceDir, targetDir string) error {
 }
 
 func findAssetFiles(staticDir, subDir, ext string) ([]string, error) {
-	root := filepath.Join(staticDir, subDir)
-	if _, err := os.Stat(root); os.IsNotExist(err) {
-		return nil, nil
-	} else if err != nil {
-		return nil, fmt.Errorf("读取静态资源目录 %s: %w", root, err)
-	}
-
+	root := path.Join(staticDir, subDir)
 	var files []string
-	if err := filepath.WalkDir(root, func(filePath string, entry os.DirEntry, err error) error {
+	err := fs.WalkDir(embedded.FS, root, func(filePath string, entry fs.DirEntry, err error) error {
 		if err != nil {
-			return fmt.Errorf("读取静态资源路径 %s: %w", filePath, err)
+			return nil
 		}
 		if entry.IsDir() || !entry.Type().IsRegular() {
 			return nil
 		}
-		if !strings.EqualFold(filepath.Ext(filePath), ext) {
+		if !strings.EqualFold(path.Ext(filePath), ext) {
 			return nil
 		}
-
-		relativePath, err := filepath.Rel(staticDir, filePath)
-		if err != nil {
-			return fmt.Errorf("计算静态资源相对路径: %w", err)
+		relativePath := filePath
+		if strings.HasPrefix(filePath, staticDir+"/") {
+			relativePath = filePath[len(staticDir)+1:]
 		}
-		files = append(files, "/"+filepath.ToSlash(relativePath))
+		files = append(files, "/"+relativePath)
 		return nil
-	}); err != nil {
+	})
+	if err != nil {
 		return nil, err
 	}
-
 	sort.Strings(files)
 	return files, nil
 }
@@ -152,7 +148,7 @@ func (builder *assetBuilder) processCSSAsset(webPath string) (string, error) {
 	defer delete(builder.processingCSS, webPath)
 
 	sourcePath := builder.sourcePath(webPath)
-	content, err := os.ReadFile(sourcePath)
+	content, err := fs.ReadFile(embedded.FS, sourcePath)
 	if err != nil {
 		return "", fmt.Errorf("读取 CSS 资源 %s: %w", webPath, err)
 	}
@@ -178,7 +174,7 @@ func (builder *assetBuilder) processJSAsset(webPath string) (string, error) {
 	}
 
 	sourcePath := builder.sourcePath(webPath)
-	content, err := os.ReadFile(sourcePath)
+	content, err := fs.ReadFile(embedded.FS, sourcePath)
 	if err != nil {
 		return "", fmt.Errorf("读取 JS 资源 %s: %w", webPath, err)
 	}
@@ -332,7 +328,7 @@ func cleanAssetWebPath(webPath string) string {
 
 func (builder *assetBuilder) sourcePath(webPath string) string {
 	webPath = cleanAssetWebPath(webPath)
-	return filepath.Join(builder.staticDir, filepath.FromSlash(strings.TrimPrefix(webPath, "/")))
+	return path.Join(builder.staticDir, strings.TrimPrefix(webPath, "/"))
 }
 
 func fingerprintedAssetPath(webPath string, content []byte) string {
@@ -397,4 +393,46 @@ func trimCSSSpacesRight(text string, start, end int) int {
 
 func isCSSSpace(char byte) bool {
 	return char == ' ' || char == '\n' || char == '\r' || char == '\t' || char == '\f'
+}
+
+func copyEmbeddedDirFiltered(sourceDir, targetDir string, skip func(string, fs.DirEntry) bool) error {
+	return fs.WalkDir(embedded.FS, sourceDir, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		
+		relativePath := path
+		if path == sourceDir {
+			relativePath = "."
+		} else if strings.HasPrefix(path, sourceDir+"/") {
+			relativePath = path[len(sourceDir)+1:]
+		}
+
+		if skip != nil && skip(relativePath, entry) {
+			if entry.IsDir() {
+				return fs.SkipDir
+			}
+			return nil
+		}
+		
+		if relativePath == "." {
+			return nil
+		}
+
+		targetPath := filepath.Join(targetDir, filepath.FromSlash(relativePath))
+
+		if entry.IsDir() {
+			return os.MkdirAll(targetPath, 0755)
+		}
+
+		content, err := fs.ReadFile(embedded.FS, path)
+		if err != nil {
+			return fmt.Errorf("复制 static 文件 %s: %w", path, err)
+		}
+		if err := os.WriteFile(targetPath, content, 0644); err != nil {
+			return fmt.Errorf("写入 static 文件 %s: %w", targetPath, err)
+		}
+
+		return nil
+	})
 }

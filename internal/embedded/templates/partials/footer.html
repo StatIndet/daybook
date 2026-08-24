@@ -1,0 +1,85 @@
+{{define "copyright"}}
+{{if .Config.Site.Copyright}}
+<p class="{{.Class}}">{{.Config.Site.Copyright}}</p>
+{{end}}
+{{end}}
+
+{{define "home_footer"}}
+<footer class="home-footer">
+  <div class="footer-stats-row">
+    {{if .Config.Stats.Enabled}}
+    <span class="footer-stat-item">{{T .Lang "footer.visitors"}} <strong data-site-visitors>--</strong> &middot;</span>
+    <span class="footer-stat-item">{{T .Lang "footer.views"}} <strong data-site-views>--</strong> &middot;</span>
+    {{end}}
+    <span class="footer-stat-item">{{T .Lang "footer.words"}} <strong>{{ formatNum .Site.TotalWordCount }}</strong> &middot;</span>
+    <span class="footer-stat-item">{{T .Lang "footer.uptime"}} <strong data-site-uptime data-started-at="{{ .Site.StartedAt }}">--</strong></span>
+  </div>
+  {{template "copyright" dict "Config" .Config "Class" "footer-copyright"}}
+</footer>
+{{end}}
+
+{{define "notes_aside"}}
+<aside class="notes-aside" aria-label="站点信息" data-transition-region="notes-aside">
+  <div class="notes-brand notes-aside-identity">
+    <h1 class="notes-brand-name">
+      <span class="notes-brand-cn{{if .Config.Profile.HasSignatureFont}} use-signature-font{{end}}">{{.Config.Profile.Author.Name}}</span>
+      <span class="notes-brand-en">{{.Config.Profile.Author.NameEn}}</span>
+    </h1>
+    <p class="notes-brand-slogan">{{morphableText (.Config.Profile.GetSlogan .Lang) "site-slogan" "slogan"}}</p>
+  </div>
+
+  <div class="notes-aside-controls">
+    <div class="notes-tools" data-notes-tools>
+      <div class="notes-tool-panel notes-search-panel" id="notes-search-panel" data-notes-panel="search" aria-hidden="true">
+        <input class="notes-search-input" type="search" placeholder="{{T .Lang "search.placeholder"}}" autocomplete="off" spellcheck="false" aria-label="{{T .Lang "search.placeholder"}}" data-notes-search>
+      </div>
+
+      <div class="notes-tool-panel notes-tags-panel" id="notes-tags-panel" data-notes-panel="tags" aria-hidden="true">
+        {{if .Tags}}
+        <div class="notes-tags-scroll-viewport">
+          <nav class="notes-tag-list" aria-label="标签筛选">
+            {{range .Tags}}
+            <a class="notes-tag-link" href="{{.URL}}" data-notes-tag="{{.Name}}" style="--tag-index: {{.Index}}; --tag-exit-index: {{.ReverseIndex}};">
+              <span class="notes-tag-text">{{.Name}}</span>
+            </a>
+            {{end}}
+          </nav>
+        </div>
+        <div class="notes-tags-scrollbar"><div class="notes-tags-scrollbar-thumb"></div></div>
+        {{else}}
+        <p class="notes-tool-empty">{{T .Lang "tag.empty"}}</p>
+        {{end}}
+      </div>
+    </div>
+
+    <div class="notes-footer">
+      {{template "notes_footer_actions" .}}
+      {{template "notes_footer_links" .}}
+      {{template "copyright" dict "Config" .Config "Class" ""}}
+    </div>
+  </div>
+</aside>
+{{end}}
+
+{{define "notes_footer_actions"}}
+<div class="notes-footer-actions" aria-label="页面操作">
+  <button class="notes-action-button" type="button" aria-label="{{T .Lang "action.search"}}" aria-expanded="false" aria-controls="notes-search-panel" data-tooltip="{{T .Lang "tooltip.search"}}" data-notes-tool="search">
+    <span class="material-symbol" aria-hidden="true">search</span>
+  </button>
+  <button class="notes-action-button" type="button" aria-label="{{T .Lang "action.tags"}}" aria-expanded="false" aria-controls="notes-tags-panel" data-tooltip="{{T .Lang "tooltip.tags"}}" data-notes-tool="tags">
+    <span class="material-symbol" aria-hidden="true">sell</span>
+  </button>
+  {{template "theme_toggle_action" .}}
+</div>
+{{end}}
+
+{{define "notes_footer_links"}}
+<nav class="notes-footer-links" aria-label="页脚链接" style="display: flex; flex-wrap: wrap; gap: 0 8px;">
+  {{$socials := .Config.GetSocialLinks .Lang}}
+  {{range $index, $social := $socials}}
+    {{if gt $index 0}}<span class="footer-separator" aria-hidden="true">/</span>{{end}}
+    <a href="{{.URL}}" 
+      {{if and (not (eq .Type "email")) (not (eq .Type "rss"))}}target="_blank" rel="noopener noreferrer"{{end}}>{{.Label}}</a>
+  {{end}}
+</nav>
+{{end}}

@@ -23,6 +23,7 @@ type Note struct {
 	Listed         *bool
 	Math           bool
 	Pin            bool
+	HasMusic       bool
 	Body           string
 	BodyStartLine  int
 	URL            string
@@ -135,6 +136,7 @@ func Parse(sourcePath, text string, slug string) (Note, error) {
 		Listed:        meta.Listed,
 		Math:          meta.Math,
 		Pin:           meta.Pin,
+		HasMusic:      strings.Contains(cleanBody(body), "::music{"),
 		Toc:           meta.Toc,
 		Comment:       meta.Comment,
 		Body:          body,
@@ -203,7 +205,7 @@ func validate(note Note) error {
 	return nil
 }
 
-func countWords(text string) int {
+func cleanBody(text string) string {
 	reCodeBlock := regexp.MustCompile("(?s)```.*?```")
 	text = reCodeBlock.ReplaceAllString(text, "")
 
@@ -215,6 +217,12 @@ func countWords(text string) int {
 
 	reHTML := regexp.MustCompile(`(?s)<.*?>`)
 	text = reHTML.ReplaceAllString(text, "")
+	
+	return text
+}
+
+func countWords(text string) int {
+	text = cleanBody(text)
 
 	reLink := regexp.MustCompile(`!?\[(.*?)\]\(.*?\)`)
 	text = reLink.ReplaceAllString(text, "$1")

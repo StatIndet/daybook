@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../../assets/ts/gallery.ts"],
+  "sourcesContent": ["(function () {\n  function handleGalleryWheel(e: WheelEvent) {\n    const target = e.target as HTMLElement;\n    var container = target.closest(\".md-gallery\") as HTMLElement | null;\n    if (!container) {\n      return;\n    }\n\n    var previousScrollLeft = container.scrollLeft;\n    container.scrollLeft += e.deltaY;\n    if (container.scrollLeft === previousScrollLeft) {\n      return;\n    }\n\n    e.preventDefault();\n  }\n\n  document.addEventListener(\"wheel\", handleGalleryWheel, { passive: false });\n})();\n"],
+  "mappings": ";CAAC,WAAY;AACX,WAAS,mBAAmB,GAAe;AACzC,UAAM,SAAS,EAAE;AACjB,QAAI,YAAY,OAAO,QAAQ,aAAa;AAC5C,QAAI,CAAC,WAAW;AACd;AAAA,IACF;AAEA,QAAI,qBAAqB,UAAU;AACnC,cAAU,cAAc,EAAE;AAC1B,QAAI,UAAU,eAAe,oBAAoB;AAC/C;AAAA,IACF;AAEA,MAAE,eAAe;AAAA,EACnB;AAEA,WAAS,iBAAiB,SAAS,oBAAoB,EAAE,SAAS,MAAM,CAAC;AAC3E,GAAG;",
+  "names": []
+}

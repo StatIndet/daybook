@@ -1,10 +1,10 @@
 package obsidian
 
 import (
+	"net/url"
 	"fmt"
 	stdhtml "html"
-	"net/url"
-	"path"
+		"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -33,11 +33,13 @@ type Attachment struct {
 }
 
 type Index struct {
-	targets             map[string]Target
+	allTargets          []Target
+	targets             map[string]Target // deprecated map for fast lookup of exact unique matches (optional)
 	attachments         map[string]Attachment
 	allAttachments      []Attachment
 	publicPath          string
 	appAttachmentFolder string
+	newLinkFormat       string
 }
 
 type Result struct {
@@ -64,13 +66,18 @@ var (
 	attrPattern            = regexp.MustCompile(`(?is)([a-zA-Z][a-zA-Z0-9_-]*)\s*=\s*(?:"([^"]*)"|'([^']*)')`)
 )
 
-func NewIndex(targets []Target, attachments []Attachment, publicPath string, appAttachmentFolder string) Index {
+func NewIndex(targets []Target, attachments []Attachment, publicPath string, appAttachmentFolder string, newLinkFormat string) Index {
+	if newLinkFormat == "" {
+		newLinkFormat = "shortest"
+	}
 	index := Index{
+		allTargets:          targets,
 		targets:             make(map[string]Target),
 		attachments:         make(map[string]Attachment),
 		allAttachments:      attachments,
 		publicPath:          publicPath,
 		appAttachmentFolder: appAttachmentFolder,
+		newLinkFormat:       newLinkFormat,
 	}
 	for _, target := range targets {
 		for _, key := range targetKeys(target) {
@@ -98,6 +105,28 @@ func NewIndex(targets []Target, attachments []Attachment, publicPath string, app
 }
 
 func Process(input string, index Index, sourcePath string, bodyStartLine int) Result {
+	return processWithContext(input, index, sourcePath, bodyStartLine, 0, nil)
+}
+
+func getMaskedInput(input string) string {
+	masked := []byte(input)
+	blankOut := func(pattern *regexp.Regexp) {
+		for _, loc := range pattern.FindAllIndex(masked, -1) {
+			for i := loc[0]; i < loc[1]; i++ {
+				if masked[i] != '\n' {
+					masked[i] = ' '
+				}
+			}
+		}
+	}
+	blankOut(regexp.MustCompile(`(?s)%%.*?%%`))
+	blankOut(regexp.MustCompile("(?sm)^ {0,3}````*.*?^ {0,3}````*[ \t]*$"))
+	blankOut(regexp.MustCompile("(?sm)^ {0,3}~~~~*.*?^ {0,3}~~~~*[ \t]*$"))
+	blankOut(regexp.MustCompile("(?s)`+.*?`+"))
+	return string(masked)
+}
+
+func processWithContext(input string, index Index, sourcePath string, bodyStartLine int, embedDepth int, visited map[string]bool) Result {
 	result := Result{
 		Text: input,
 		HTML: make(map[string]string),
@@ -110,12 +139,12 @@ func Process(input string, index Index, sourcePath string, bodyStartLine int) Re
 
 	result.Text = replaceImageHTML(result.Text, true, result.HTML)
 	result.Text = replaceImageHTML(result.Text, false, result.HTML)
-	result.Text = rewriteMarkdownImagePaths(result.Text)
 	
+	maskedInputStr := getMaskedInput(input)
 	lastSearchIndex := 0
 
 	result.Text = markdownImagePattern.ReplaceAllStringFunc(result.Text, func(match string) string {
-		matchStart := strings.Index(input[lastSearchIndex:], match)
+		matchStart := strings.Index(maskedInputStr[lastSearchIndex:], match)
 		if matchStart != -1 {
 			matchStart += lastSearchIndex
 			lastSearchIndex = matchStart + len(match)
@@ -148,13 +177,17 @@ func Process(input string, index Index, sourcePath string, bodyStartLine int) Re
 				Candidates: candidates,
 			})
 		}
+		
+		if len(parts) == 4 {
+			return "![" + parts[1] + "](" + rewriteAssetPath(parts[2]) + parts[3] + ")"
+		}
 		return match
 	})
 	
 	lastSearchIndex = 0
 
 	result.Text = wikilinkPattern.ReplaceAllStringFunc(result.Text, func(match string) string {
-		matchStart := strings.Index(input[lastSearchIndex:], match)
+		matchStart := strings.Index(maskedInputStr[lastSearchIndex:], match)
 		if matchStart != -1 {
 			matchStart += lastSearchIndex
 			lastSearchIndex = matchStart + len(match)
@@ -167,46 +200,164 @@ func Process(input string, index Index, sourcePath string, bodyStartLine int) Re
 			return match
 		}
 
+		// 1. Parse semantics
 		targetText, label := splitAlias(inner)
+		noteText, headingText := splitHeading(targetText)
 
-		// 1. Check if it's an attachment
-		if att, ok, candidates := index.ResolveAttachment(targetText, sourcePath); ok {
-			result.Attachments = append(result.Attachments, att)
-			if isEmbed {
-				html, ok := renderAttachmentEmbed(att, label)
-				if ok {
+		// Determine if it has a definite media extension
+		ext := filepath.Ext(targetText)
+		isDefiniteMedia := IsImageExt(ext) || IsAudioExt(ext) || IsVideoExt(ext) || ext == ".pdf"
+
+		var tryResolveNote = func() (bool, string) {
+			target, ok, candidates := index.ResolveNote(noteText, sourcePath)
+			if ok {
+				link := Link{
+					Raw:    match,
+					Target: noteText,
+					Alias:  label,
+					Exists: true,
+					Slug:   target.Slug,
+				}
+				result.Links = append(result.Links, link)
+
+				href := "/notes/" + target.Slug + "/"
+				if headingText != "" {
+					if id := target.headingID(headingText); id != "" {
+						href += "#" + url.PathEscape(id)
+					} else if !strings.HasPrefix(headingText, "^") {
+						line, col, snippet := getLineColSnippet(input, matchStart, bodyStartLine)
+						result.Diagnostics = append(result.Diagnostics, Diagnostic{
+							Severity:   "warning",
+							Code:       "obsidian/missing-heading",
+							Message:    fmt.Sprintf("missing heading: %q in %s", headingText, target.Slug),
+							SourcePath: sourcePath,
+							Line:       line,
+							Column:     col,
+							Snippet:    snippet,
+						})
+					}
+				}
+
+				if isEmbed {
+					html, missingBlock := renderNoteEmbed(target, headingText, href, index, embedDepth, visited)
+					if missingBlock {
+						line, col, snippet := getLineColSnippet(input, matchStart, bodyStartLine)
+						result.Diagnostics = append(result.Diagnostics, Diagnostic{
+							Severity:   "warning",
+							Code:       "obsidian/missing-block",
+							Message:    fmt.Sprintf("missing block or section for heading: %q in %s", headingText, target.Slug),
+							SourcePath: sourcePath,
+							Line:       line,
+							Column:     col,
+							Snippet:    snippet,
+						})
+					}
 					token := fmt.Sprintf("DAYBOOK_HTML_EMBED_%d", len(result.HTML))
 					result.HTML[token] = html
-					return token
+					return true, token
 				}
+
+				if label == "" {
+					if headingText != "" && !strings.HasPrefix(headingText, "^") {
+						label = headingText
+					} else {
+						label = target.Title
+					}
+				}
+				return true, "[" + escapeMarkdownLabel(label) + "](" + escapeMarkdownURL(href) + ")"
+			}
+			
+			if len(candidates) > 0 {
 				line, col, snippet := getLineColSnippet(input, matchStart, bodyStartLine)
+				msg := "note \"" + noteText + "\" matches multiple files\n  candidates:\n"
+				for _, c := range candidates {
+					msg += "    " + c + "\n"
+				}
 				result.Diagnostics = append(result.Diagnostics, Diagnostic{
 					Severity:   "warning",
-					Code:       "obsidian/unsupported-attachment",
-					Message:    fmt.Sprintf("unsupported attachment embed: %q", targetText),
+					Code:       "obsidian/ambiguous-note",
+					Message:    msg,
 					SourcePath: sourcePath,
 					Line:       line,
 					Column:     col,
 					Snippet:    snippet,
 				})
-				return match
+				
+				fallbackText := label
+				if fallbackText == "" {
+					fallbackText = inner
+				}
+				return true, fmt.Sprintf("<a class=\"wiki-link is-unresolved\" href=\"#\">%s</a>", stdhtml.EscapeString(fallbackText))
 			}
-			return "[" + escapeMarkdownLabel(label) + "](" + escapeMarkdownURL(att.PublicURL) + ")"
-		} else if len(candidates) > 0 {
-			line, col, snippet := getLineColSnippet(input, matchStart, bodyStartLine)
-			result.Diagnostics = append(result.Diagnostics, Diagnostic{
-				Severity:   "warning",
-				Code:       "obsidian/ambiguous-attachment",
-				Message:    fmt.Sprintf("attachment %q matches multiple files", targetText),
-				SourcePath: sourcePath,
-				Line:       line,
-				Column:     col,
-				Snippet:    snippet,
-				Candidates: candidates,
-			})
-			return fmt.Sprintf(`<a class="wiki-link is-unresolved" href="#">%s</a>`, stdhtml.EscapeString(targetText))
-		} else if isEmbed || IsImageExt(filepath.Ext(targetText)) || IsAudioExt(filepath.Ext(targetText)) || IsVideoExt(filepath.Ext(targetText)) || filepath.Ext(targetText) == ".pdf" {
-			line, col, snippet := getLineColSnippet(input, matchStart, bodyStartLine)
+			return false, ""
+		}
+
+		var tryResolveAttachment = func() (bool, string) {
+			att, ok, candidates := index.ResolveAttachment(targetText, sourcePath)
+			if ok {
+				result.Attachments = append(result.Attachments, att)
+				if isEmbed {
+					html, ok := renderAttachmentEmbed(att, label)
+					if ok {
+						token := fmt.Sprintf("DAYBOOK_HTML_EMBED_%d", len(result.HTML))
+						result.HTML[token] = html
+						return true, token
+					}
+					line, col, snippet := getLineColSnippet(input, matchStart, bodyStartLine)
+					result.Diagnostics = append(result.Diagnostics, Diagnostic{
+						Severity:   "warning",
+						Code:       "obsidian/unsupported-attachment",
+						Message:    fmt.Sprintf("unsupported attachment embed: %q", targetText),
+						SourcePath: sourcePath,
+						Line:       line,
+						Column:     col,
+						Snippet:    snippet,
+					})
+					return true, match
+				}
+				return true, "[" + escapeMarkdownLabel(label) + "](" + escapeMarkdownURL(att.PublicURL) + ")"
+			}
+			if len(candidates) > 0 {
+				line, col, snippet := getLineColSnippet(input, matchStart, bodyStartLine)
+				msg := "attachment \"" + targetText + "\" matches multiple files\n  candidates:\n"
+				for _, c := range candidates {
+					msg += "    " + c + "\n"
+				}
+				result.Diagnostics = append(result.Diagnostics, Diagnostic{
+					Severity:   "warning",
+					Code:       "obsidian/ambiguous-attachment",
+					Message:    msg,
+					SourcePath: sourcePath,
+					Line:       line,
+					Column:     col,
+					Snippet:    snippet,
+				})
+				fallbackText := label
+				if fallbackText == "" {
+					fallbackText = inner
+				}
+				return true, fmt.Sprintf("<a class=\"wiki-link is-unresolved\" href=\"#\">%s</a>", stdhtml.EscapeString(fallbackText))
+			}
+			return false, ""
+		}
+
+		// 2. Dispatch based on semantics
+		if isDefiniteMedia {
+			if handled, res := tryResolveAttachment(); handled {
+				return res
+			}
+		} else {
+			if handled, res := tryResolveNote(); handled {
+				return res
+			}
+			if handled, res := tryResolveAttachment(); handled {
+				return res
+			}
+		}
+
+		// 3. Fallback (both failed)
+		line, col, snippet := getLineColSnippet(input, matchStart, bodyStartLine)
+		if isDefiniteMedia {
 			result.Diagnostics = append(result.Diagnostics, Diagnostic{
 				Severity:   "warning",
 				Code:       "obsidian/unresolved-attachment",
@@ -216,27 +367,7 @@ func Process(input string, index Index, sourcePath string, bodyStartLine int) Re
 				Column:     col,
 				Snippet:    snippet,
 			})
-			return fmt.Sprintf(`<a class="wiki-link is-unresolved" href="#">%s</a>`, stdhtml.EscapeString(targetText))
-		}
-
-		// 2. Check if it's a note
-		noteText, headingText := splitHeading(targetText)
-		target, ok := index.find(noteText)
-
-		link := Link{
-			Raw:    match,
-			Target: noteText,
-			Alias:  label,
-			Exists: ok,
-		}
-
-		if ok {
-			link.Slug = target.Slug
-		}
-		result.Links = append(result.Links, link)
-
-		if !ok {
-			line, col, snippet := getLineColSnippet(input, matchStart, bodyStartLine)
+		} else {
 			result.Diagnostics = append(result.Diagnostics, Diagnostic{
 				Severity:   "warning",
 				Code:       "obsidian/unresolved-note",
@@ -246,60 +377,20 @@ func Process(input string, index Index, sourcePath string, bodyStartLine int) Re
 				Column:     col,
 				Snippet:    snippet,
 			})
-			fallbackText := label
-			if fallbackText == "" {
-				fallbackText = inner
+			link := Link{
+				Raw:    match,
+				Target: noteText,
+				Alias:  label,
+				Exists: false,
 			}
-			return fmt.Sprintf(`<a class="wiki-link is-unresolved" href="#">%s</a>`, stdhtml.EscapeString(fallbackText))
+			result.Links = append(result.Links, link)
 		}
 
-		href := "/notes/" + target.Slug + "/"
-		if headingText != "" {
-			if id := target.headingID(headingText); id != "" {
-				href += "#" + url.PathEscape(id)
-			} else if !strings.HasPrefix(headingText, "^") {
-				line, col, snippet := getLineColSnippet(input, matchStart, bodyStartLine)
-				result.Diagnostics = append(result.Diagnostics, Diagnostic{
-					Severity:   "warning",
-					Code:       "obsidian/missing-heading",
-					Message:    fmt.Sprintf("missing heading: %q in %s", headingText, target.Slug),
-					SourcePath: sourcePath,
-					Line:       line,
-					Column:     col,
-					Snippet:    snippet,
-				})
-			}
+		fallbackText := label
+		if fallbackText == "" {
+			fallbackText = inner
 		}
-
-		if isEmbed {
-			// Page / Heading / Block embed
-			html, missingBlock := renderNoteEmbed(target, headingText, href, index)
-			if missingBlock {
-				line, col, snippet := getLineColSnippet(input, matchStart, bodyStartLine)
-				result.Diagnostics = append(result.Diagnostics, Diagnostic{
-					Severity:   "warning",
-					Code:       "obsidian/missing-block",
-					Message:    fmt.Sprintf("missing block or section: %q in %s", headingText, target.Slug),
-					SourcePath: sourcePath,
-					Line:       line,
-					Column:     col,
-					Snippet:    snippet,
-				})
-			}
-			token := fmt.Sprintf("DAYBOOK_HTML_EMBED_%d", len(result.HTML))
-			result.HTML[token] = html
-			return token
-		}
-
-		if label == "" {
-			if headingText != "" {
-				label = headingText
-			} else {
-				label = target.Title
-			}
-		}
-
-		return "[" + escapeMarkdownLabel(label) + "](" + escapeMarkdownURL(href) + ")"
+		return fmt.Sprintf("<a class=\"wiki-link is-unresolved\" href=\"#\">%s</a>", stdhtml.EscapeString(fallbackText))
 	})
 
 	// Restore protected text
@@ -319,10 +410,6 @@ func RestoreHTML(html string, replacements map[string]string) string {
 	return html
 }
 
-func (index Index) find(key string) (Target, bool) {
-	target, ok := index.targets[normalize(key)]
-	return target, ok
-}
 
 // ResolveAttachment resolves an attachment reference according to Obsidian rules.
 func (idx Index) ResolveAttachment(target string, sourcePath string) (Attachment, bool, []string) {
@@ -448,15 +535,6 @@ func escapeMarkdownURL(text string) string {
 	return strings.ReplaceAll(text, " ", "%20")
 }
 
-func rewriteMarkdownImagePaths(text string) string {
-	return markdownImagePattern.ReplaceAllStringFunc(text, func(match string) string {
-		parts := markdownImagePattern.FindStringSubmatch(match)
-		if len(parts) != 4 {
-			return match
-		}
-		return "![" + parts[1] + "](" + rewriteAssetPath(parts[2]) + parts[3] + ")"
-	})
-}
 
 func replaceImageHTML(text string, centered bool, replacements map[string]string) string {
 	pattern := imageHTMLPattern
@@ -537,37 +615,33 @@ func renderAttachmentEmbed(att Attachment, label string) (string, bool) {
 	if label != "" {
 		alt = strings.SplitN(label, "|", 2)[0]
 	}
-	escapedAlt := stdhtml.EscapeString(alt)
+
+	m := markdown.MediaEmbed{
+		URL:   att.PublicURL,
+		Alt:   alt,
+		Width: attrs.Width,
+		Align: attrs.Align,
+	}
+
+	// We only map label to Caption if it explicitly looks like a caption? 
+	// The user said: "只有用户显式指定 caption 时，才显示 figcaption。本地 alias 如果当前存在可合理映射为 caption 的语义，再按照现有语法兼容；不要随便把 center/500 当 caption。"
+	// If label is not empty and not just width/align, we can use it as Alt. Should it be Caption?
+	// Obsidian natively uses the alias (label) as Alt text, not caption. We'll leave Caption empty unless it's explicitly supported in some way. We'll just use it for Alt.
 
 	switch att.MediaType {
 	case "pdf":
-		return fmt.Sprintf(`<figure class="obsidian-embed obsidian-pdf"><iframe src="%s" loading="lazy" title="%s"></iframe><figcaption><a href="%s" target="_blank" rel="noopener">打开 PDF：%s</a></figcaption></figure>`, att.PublicURL, escapedAlt, att.PublicURL, escapedAlt), true
+		m.Kind = "pdf"
+		m.Alt = alt
+		return markdown.RenderMediaEmbed(m), true
 	case "image":
-		var style string
-		if attrs.Width != "" {
-			style = fmt.Sprintf(` style="--image-width: %spx"`, attrs.Width)
-		}
-		classes := "obsidian-embed obsidian-image"
-		if attrs.Align != "" {
-			classes += " is-" + attrs.Align
-		}
-		return fmt.Sprintf(`<figure class="%s"%s><img src="%s" alt="%s" loading="lazy" decoding="async"></figure>`, classes, style, att.PublicURL, escapedAlt), true
+		m.Kind = "image"
+		return markdown.RenderMediaEmbed(m), true
 	case "audio":
-		var classes = "obsidian-embed obsidian-audio"
-		if attrs.Align == "center" {
-			classes += " is-center" // Assuming similar align class for simplicity, wait, user wants `class="obsidian-embed obsidian-audio is-center"` if center? I'll use standard classes and CSS.
-		}
-		return fmt.Sprintf(`<figure class="%s"><audio controls preload="metadata" src="%s"></audio><figcaption>%s</figcaption></figure>`, classes, att.PublicURL, escapedAlt), true
+		m.Kind = "audio"
+		return markdown.RenderMediaEmbed(m), true
 	case "video":
-		var classes = "obsidian-embed obsidian-video"
-		if attrs.Align != "" {
-			classes += " is-" + attrs.Align
-		}
-		var widthAttr string
-		if attrs.Width != "" {
-			widthAttr = fmt.Sprintf(` width="%s"`, stdhtml.EscapeString(attrs.Width))
-		}
-		return fmt.Sprintf(`<figure class="%s"><video controls preload="metadata" src="%s"%s></video><figcaption>%s</figcaption></figure>`, classes, att.PublicURL, widthAttr, escapedAlt), true
+		m.Kind = "video"
+		return markdown.RenderMediaEmbed(m), true
 	}
 
 	return "", false
@@ -682,15 +756,33 @@ func extractHeadingSection(content string, targetHeading string) string {
 	return strings.Join(section, "\n")
 }
 
-func renderNoteEmbed(target Target, heading string, href string, index Index) (string, bool) {
+func renderNoteEmbed(target Target, heading string, href string, index Index, embedDepth int, visited map[string]bool) (string, bool) {
+	if visited == nil {
+		visited = make(map[string]bool)
+	}
+
+	if embedDepth > 5 || visited[target.SourcePath] {
+		label := target.Title
+		if heading != "" {
+			label += "#" + heading
+		}
+		fallback := fmt.Sprintf(`<a class="wiki-link is-unresolved" href="%s" data-tooltip="Cycle detected">%s</a>`, escapeMarkdownURL(href), stdhtml.EscapeString(label))
+		return fallback, false
+	}
+	
+	newVisited := make(map[string]bool)
+	for k, v := range visited {
+		newVisited[k] = v
+	}
+	newVisited[target.SourcePath] = true
+
 	var rawMarkdown string
-	isBlockOrSection := false
 	missingBlock := false
+	isWholeNote := false
 
 	if heading != "" && strings.HasPrefix(heading, "^") {
 		if block, ok := target.Blocks[heading[1:]]; ok {
 			rawMarkdown = block
-			isBlockOrSection = true
 		} else {
 			missingBlock = true
 			return fmt.Sprintf(`<blockquote class="obsidian-embed obsidian-note-embed" data-embed-type="note"><div class="obsidian-embed-content">未找到目标区块</div><a href="%s" data-tooltip="在新页面打开" aria-label="在新页面打开" class="obsidian-embed-link" target="_blank" rel="noopener"><span class="material-symbol">open_in_new</span></a></blockquote>`, escapeMarkdownURL(href)), missingBlock
@@ -700,37 +792,26 @@ func renderNoteEmbed(target Target, heading string, href string, index Index) (s
 		if rawMarkdown == "" {
 			missingBlock = true
 			return fmt.Sprintf(`<blockquote class="obsidian-embed obsidian-note-embed" data-embed-type="note"><div class="obsidian-embed-content">未找到目标小节</div><a href="%s" data-tooltip="在新页面打开" aria-label="在新页面打开" class="obsidian-embed-link" target="_blank" rel="noopener"><span class="material-symbol">open_in_new</span></a></blockquote>`, escapeMarkdownURL(href)), missingBlock
-		} else {
-			isBlockOrSection = true
 		}
 	} else {
-		titleHTML := fmt.Sprintf(`<div class="obsidian-embed-title">%s</div>`, stdhtml.EscapeString(target.Title))
-		if target.Summary != "" {
-			rawMarkdown = titleHTML + "\n" + fmt.Sprintf(`<div class="obsidian-embed-summary">%s</div>`, stdhtml.EscapeString(target.Summary))
-		} else {
-			rawMarkdown = titleHTML
-		}
+		isWholeNote = true
+		rawMarkdown = target.Content
 	}
 
+	result := processWithContext(rawMarkdown, index, target.SourcePath, 1, embedDepth+1, newVisited)
+
 	var contentHTML string
-	if isBlockOrSection {
-		// Escape nested embeds to prevent infinite recursion
-		safeMarkdown := strings.ReplaceAll(rawMarkdown, "![[", "[[")
-
-		// Process standard wikilinks with the target's SourcePath context
-		result := Process(safeMarkdown, index, target.SourcePath, 1)
-
-		// Convert to HTML
-		htmlBytes, err := markdown.ToHTML(result.Text)
-		if err == nil {
-			contentHTML = htmlBytes
-			contentHTML = RestoreHTML(contentHTML, result.HTML)
-		} else {
-			contentHTML = stdhtml.EscapeString(rawMarkdown)
-		}
+	htmlBytes, err := markdown.ToHTML(result.Text)
+	if err == nil {
+		contentHTML = htmlBytes
+		contentHTML = RestoreHTML(contentHTML, result.HTML)
 	} else {
-		// For full note embed summary, it's already HTML
-		contentHTML = rawMarkdown
+		contentHTML = stdhtml.EscapeString(rawMarkdown)
+	}
+	
+	if isWholeNote {
+		titleHTML := fmt.Sprintf(`<div class="obsidian-embed-title">%s</div>`, stdhtml.EscapeString(target.Title))
+		contentHTML = titleHTML + "\n" + contentHTML
 	}
 
 	return fmt.Sprintf(`<blockquote class="obsidian-embed obsidian-note-embed" data-embed-type="note"><div class="obsidian-embed-content">%s</div><a href="%s" data-tooltip="在新页面打开" aria-label="在新页面打开" class="obsidian-embed-link" target="_blank" rel="noopener"><span class="material-symbol">open_in_new</span></a></blockquote>`, contentHTML, escapeMarkdownURL(href)), missingBlock

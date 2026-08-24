@@ -158,11 +158,22 @@ interface DaybookTransitionFinishedDetail {
     }
 
     // Pure hash jump on same page
-    if (url.pathname === location.pathname && url.search === location.search && url.hash !== location.hash) {
+    if (url.pathname === location.pathname && url.search === location.search && url.hash) {
       return false;
     }
 
     return true;
+  }
+
+  function getElementByHash(hash: string): HTMLElement | null {
+    if (!hash || hash === "#") return null;
+    let id = hash.slice(1);
+    try {
+      id = decodeURIComponent(id);
+    } catch {
+      // ignore malformed
+    }
+    return document.getElementById(id);
   }
 
   function saveCurrentScroll() {
@@ -222,8 +233,12 @@ interface DaybookTransitionFinishedDetail {
       const parser = new DOMParser();
       const newDocument = parser.parseFromString(html, "text/html");
 
+      
       const currentContainer = document.querySelector("[data-daybook-page]");
       const newContainer = newDocument.querySelector("[data-daybook-page]");
+
+      await preloadStylesheets(newDocument);
+
 
       if (!currentContainer || !newContainer) {
         throw new Error("Missing data-daybook-page");
@@ -259,7 +274,7 @@ interface DaybookTransitionFinishedDetail {
         if (isTraverse) {
           window.scrollTo({ left: newState.scrollX, top: newState.scrollY, behavior: "instant" });
         } else if (targetUrl.hash) {
-          const el = document.getElementById(targetUrl.hash.slice(1));
+          const el = getElementByHash(targetUrl.hash);
           if (el) el.scrollIntoView({ behavior: "instant" });
           else window.scrollTo({ left: 0, top: 0, behavior: "instant" });
         } else {
@@ -290,10 +305,9 @@ interface DaybookTransitionFinishedDetail {
           document.documentElement.classList.add("article-transition");
           transitionInfo = engine.prepareArticleTransitionSource(oldUrl, targetUrl.href, sourceLink);
         } else if (!isTraverse) { // Push transition
+          engine.resolveStableRegions(document, newDocument);
           document.body.classList.add(engine.exitClassName(document.body));
-          if (engine.shouldAnimateIdentityExit(newDocument)) {
-            document.documentElement.classList.add("identity-exit-down");
-          }
+          
           await new Promise(r => setTimeout(r, engine.cssDuration("--transition-exit-delay", 260)));
         }
       }
@@ -394,6 +408,55 @@ interface DaybookTransitionFinishedDetail {
     }
   }
 
+    function preloadStylesheets(newDocument: Document): Promise<void> {
+    const newLinks = Array.from(newDocument.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'));
+    const promises: Promise<void>[] = [];
+
+    newLinks.forEach(newLink => {
+      const href = newLink.getAttribute("href");
+      if (!href) return;
+
+      const newUrl = new URL(href, location.href).href;
+      
+      // Check if already in current head
+      const exists = Array.from(document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'))
+        .some(link => link.href && new URL(link.href, location.href).href === newUrl);
+        
+      if (!exists) {
+        // Preload it
+        const promise = new Promise<void>(resolve => {
+          const preload = document.createElement("link");
+          preload.rel = "preload";
+          preload.as = "style";
+          preload.href = href;
+          if (newLink.crossOrigin) preload.crossOrigin = newLink.crossOrigin;
+          if (newLink.integrity) preload.integrity = newLink.integrity;
+          if (newLink.referrerPolicy) preload.referrerPolicy = newLink.referrerPolicy;
+          
+          let timeout = setTimeout(() => {
+            console.warn("Timeout preloading stylesheet:", href);
+            resolve();
+          }, 3000); // 3s safeguard
+          
+          preload.onload = () => {
+            clearTimeout(timeout);
+            resolve();
+          };
+          preload.onerror = () => {
+            clearTimeout(timeout);
+            console.warn("Failed to preload stylesheet:", href);
+            resolve();
+          };
+          
+          document.head.appendChild(preload);
+        });
+        promises.push(promise);
+      }
+    });
+
+    return Promise.all(promises).then(() => {});
+  }
+
   function updateHead(newDocument: Document) {
     if (newDocument.title) document.title = newDocument.title;
 
@@ -426,10 +489,15 @@ interface DaybookTransitionFinishedDetail {
       });
     });
 
-    const newStylesheets = newDocument.head.querySelectorAll('link[rel="stylesheet"]');
+    const newStylesheets = Array.from(newDocument.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'));
     newStylesheets.forEach(newLink => {
       const href = newLink.getAttribute("href");
-      if (href && !document.head.querySelector(`link[rel="stylesheet"][href="${href}"]`)) {
+      if (!href) return;
+      const newUrl = new URL(href, location.href).href;
+      const exists = Array.from(document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'))
+        .some(link => link.href && new URL(link.href, location.href).href === newUrl);
+      
+      if (!exists) {
         document.head.appendChild(newLink.cloneNode(true));
       }
     });

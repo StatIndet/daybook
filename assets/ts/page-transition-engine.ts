@@ -22,26 +22,49 @@
     return path;
   }
 
-  function isNotesIndex(url: URL): boolean {
-    return cleanPath(url) === "/notes";
+    function noteSlugFromURL(url: URL): string | null {
+    let p = cleanPath(url);
+    if (p.endsWith('/index.html')) p = p.substring(0, p.length - 11);
+    if (p.endsWith('/')) p = p.substring(0, p.length - 1);
+    
+    // strip /en prefix if present
+    if (p.startsWith('/en/')) {
+        p = '/' + p.substring(4);
+    }
+    
+    if (p.startsWith('/notes/')) {
+        const slug = p.substring(7); // remove /notes/
+        if (slug.length > 0) {
+            return decodeURIComponent(slug);
+        }
+    }
+    return null;
   }
 
-  function isNoteDetail(url: URL): boolean {
-    return /^\/notes\/[^/]+$/.test(cleanPath(url));
+  function isNotesIndex(url: URL): boolean {
+    let p = cleanPath(url);
+    if (p.endsWith('/index.html')) p = p.substring(0, p.length - 11);
+    if (p.endsWith('/')) p = p.substring(0, p.length - 1);
+    if (p.startsWith('/en/')) p = '/' + p.substring(4);
+    return p === '/notes';
   }
 
   function articleTransitionInfo(currentUrlStr: string, targetUrlStr: string): { direction: "to-detail" | "to-list", slug: string } | null {
     try {
       const currentURL = new URL(currentUrlStr, location.origin);
       const targetURL = new URL(targetUrlStr, location.origin);
+      
+      const currentSlug = noteSlugFromURL(currentURL);
+      const targetSlug = noteSlugFromURL(targetURL);
+      
+      const currentIsIndex = isNotesIndex(currentURL);
+      const targetIsIndex = isNotesIndex(targetURL);
 
-      if (isNotesIndex(currentURL) && isNoteDetail(targetURL)) {
-        const parts = cleanPath(targetURL).split("/");
-        return { direction: "to-detail", slug: decodeURIComponent(parts[parts.length - 1] || "") };
+      if (currentIsIndex && targetSlug) {
+        return { direction: "to-detail", slug: targetSlug };
       }
-      if (isNoteDetail(currentURL) && isNotesIndex(targetURL)) {
-        const parts = cleanPath(currentURL).split("/");
-        return { direction: "to-list", slug: decodeURIComponent(parts[parts.length - 1] || "") };
+      if (currentSlug && targetIsIndex) {
+        return { direction: "to-list", slug: currentSlug };
       }
     } catch {
       return null;
@@ -69,10 +92,6 @@
     return findDataElement(root, "data-title-transition-key", slug) || findDataElement(root, "data-title-id", slug);
   }
 
-  function findMetaBySlug(root: Document | HTMLElement, slug: string): HTMLElement | null {
-    return findDataElement(root, "data-meta-transition-key", slug);
-  }
-
   function clearArticleSharedTransitions(root: Document | HTMLElement | null) {
     if (!root) return;
     root.querySelectorAll(".title-glyph").forEach(el => {
@@ -81,7 +100,7 @@
     root.querySelectorAll("[data-title-transition-key]").forEach(el => {
       (el as HTMLElement).style.removeProperty("view-transition-name");
     });
-    root.querySelectorAll("[data-meta-transition-key]").forEach(el => {
+    root.querySelectorAll("[data-article-shared]").forEach(el => {
       (el as HTMLElement).style.removeProperty("view-transition-name");
     });
   }
@@ -105,9 +124,13 @@
       });
     }
 
-    const sourceMeta = findMetaBySlug(document, info.slug);
-    if (sourceMeta) {
-      sourceMeta.style.viewTransitionName = "meta-item-shared";
+    const sourceScope = findDataElement(document, "data-transition-scope", info.slug);
+    if (sourceScope) {
+      const sharedElements = sourceScope.querySelectorAll("[data-article-shared]");
+      sharedElements.forEach(el => {
+        const name = el.getAttribute("data-article-shared");
+        (el as HTMLElement).style.viewTransitionName = `article-shared-${name}`;
+      });
       document.documentElement.classList.add("meta-shared-transition");
     }
 
@@ -126,19 +149,15 @@
       });
     }
 
-    const targetMeta = findMetaBySlug(document, info.slug);
-    if (targetMeta) {
-      targetMeta.style.viewTransitionName = "meta-item-shared";
-      targetMeta.classList.add("meta-shared-target");
+    const targetScope = findDataElement(document, "data-transition-scope", info.slug);
+    if (targetScope) {
+      const sharedElements = targetScope.querySelectorAll("[data-article-shared]");
+      sharedElements.forEach(el => {
+        const name = el.getAttribute("data-article-shared");
+        (el as HTMLElement).style.viewTransitionName = `article-shared-${name}`;
+      });
+      targetScope.classList.add("meta-shared-target");
     }
-  }
-
-  function hasSiteIdentity(root: Document | HTMLElement): boolean {
-    return Boolean(root.querySelector(".hero-identity, .notes-aside-identity"));
-  }
-
-  function shouldAnimateIdentityExit(nextDocument: Document): boolean {
-    return hasSiteIdentity(document) && !hasSiteIdentity(nextDocument);
   }
 
   function exitClassName(body: HTMLElement): string {
@@ -155,12 +174,32 @@
     document.documentElement.classList.remove(
       "is-transitioning",
       "article-transition",
-      "identity-exit-down",
       "meta-shared-transition"
     );
     if (document.body) {
       document.body.classList.remove("home-exiting", "page-exiting", "home-entering", "page-entering");
     }
+  }
+
+  function resolveStableRegions(oldDoc: Document, newDoc: Document) {
+    const oldRegions = oldDoc.querySelectorAll("[data-transition-region]");
+    const newRegions = newDoc.querySelectorAll("[data-transition-region]");
+    const oldMap = new Map();
+    
+    oldRegions.forEach(el => {
+      oldMap.set(el.getAttribute("data-transition-region"), el);
+      el.classList.remove("transition-stable");
+    });
+
+    newRegions.forEach(newEl => {
+      const region = newEl.getAttribute("data-transition-region");
+      const oldEl = oldMap.get(region);
+      newEl.classList.remove("transition-stable");
+      if (oldEl) {
+         oldEl.classList.add("transition-stable");
+         newEl.classList.add("transition-stable");
+      }
+    });
   }
 
   window.DaybookTransitionEngine = {
@@ -170,10 +209,10 @@
     prepareArticleTransitionSource,
     prepareArticleTransitionTarget,
     clearArticleSharedTransitions,
-    shouldAnimateIdentityExit,
     exitClassName,
     enterClassName,
-    clearTransitionClasses
+    clearTransitionClasses,
+    resolveStableRegions
   };
 
 })();

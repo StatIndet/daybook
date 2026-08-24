@@ -8,6 +8,8 @@ import (
 	"github.com/StatIndet/daybook/internal/site"
 )
 
+var Version = "daybook dev"
+
 func main() {
 	if err := run(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -15,9 +17,29 @@ func main() {
 	}
 }
 
+func printHelp() {
+	fmt.Println("Usage:")
+	fmt.Println("  daybook build    Build the current Daybook vault into ./public")
+	fmt.Println("  daybook serve    Serve the existing ./public directory locally")
+	fmt.Println("  daybook version  Print Daybook version")
+}
+
 func run() error {
 	if len(os.Args) < 2 {
-		return fmt.Errorf("用法: go run ./cmd/daybook [build|serve]")
+		printHelp()
+		return nil
+	}
+
+	command := os.Args[1]
+
+	if command == "version" || command == "--version" || command == "-v" {
+		fmt.Println(Version)
+		return nil
+	}
+
+	if command != "build" && command != "serve" {
+		printHelp()
+		return fmt.Errorf("unknown command: %s", command)
 	}
 
 	cfg, err := config.Load()
@@ -25,17 +47,19 @@ func run() error {
 		return err
 	}
 
-	options := site.Options{
-		Config:       cfg,
-		ContentDir:   "content",
-		NotesDir:     "content/notes",
-		TemplatesDir: "templates",
-		StaticDir:    "static",
-		PublicDir:    "public",
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current working directory: %w", err)
 	}
 
-	switch os.Args[1] {
-	case "build":
+	options := site.Options{
+		Config:     cfg,
+		ContentDir: cwd,
+		NotesDir:   "notes",
+		PublicDir:  "public",
+	}
+
+	if command == "build" {
 		if cfg.Stats.Enabled {
 			fmt.Println("[daybook] stats: enabled=true")
 		} else {
@@ -52,11 +76,13 @@ func run() error {
 		}
 
 		fmt.Printf("构建完成: 生成 %d 篇笔记到 public/\n", len(result.Notes))
-		return nil
-	case "serve":
-		fmt.Println("预览地址: http://localhost:1313")
-		return site.Serve(options.PublicDir, ":1313")
-	default:
-		return fmt.Errorf("未知命令: %s", os.Args[1])
 	}
+
+	if command == "serve" {
+		
+		
+		return site.Serve(options.PublicDir, ":1313")
+	}
+
+	return nil
 }

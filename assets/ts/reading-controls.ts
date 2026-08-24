@@ -3,23 +3,69 @@ let ticking = false;
 let isHidden = false;
 let lastScrollY = window.scrollY;
 
+let viewportOffsetTicking = false;
+let lastReaderProgressVisualTop: number | null = null;
+
 export function initReadingControls() {
   const isNotePage = document.querySelector('.note') !== null;
   
   if (!scrollListenerAdded) {
     window.addEventListener('scroll', onScroll, { passive: true });
+    
+    document.addEventListener('daybook:reader-mode-change', (e: Event) => {
+      const customEvent = e as CustomEvent;
+      requestAnimationFrame(() => {
+        updateReadingControls();
+      });
+      if (customEvent.detail && customEvent.detail.enabled) {
+        requestReaderProgressVisualSync();
+      }
+    });
+    
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('scroll', requestReaderProgressVisualSync, { passive: true });
+      window.visualViewport.addEventListener('resize', requestReaderProgressVisualSync, { passive: true });
+    }
+    
     scrollListenerAdded = true;
   }
   
   // Initial update
   if (isNotePage) {
-    requestAnimationFrame(updateReadingControls);
+    requestAnimationFrame(() => {
+      updateReadingControls();
+    });
+    requestReaderProgressVisualSync();
   } else {
     // Reset if leaving note page
     document.body.classList.remove('mobile-top-bar-hidden');
     isHidden = false;
   }
 }
+
+function requestReaderProgressVisualSync() {
+  if (viewportOffsetTicking) return;
+  viewportOffsetTicking = true;
+  requestAnimationFrame(() => {
+    syncReaderProgressVisualTop();
+    viewportOffsetTicking = false;
+  });
+}
+
+function syncReaderProgressVisualTop() {
+  const isReaderMode = document.body.dataset.readerMode === 'immersive';
+  const isMobile = window.innerWidth <= 960;
+  if (!isReaderMode || !isMobile) return;
+
+  const rawOffset = window.visualViewport ? window.visualViewport.offsetTop : 0;
+  
+  if (lastReaderProgressVisualTop === null || Math.abs(rawOffset - lastReaderProgressVisualTop) > 0.05) {
+    document.body.style.setProperty('--reader-progress-visual-top', `${rawOffset}px`);
+    lastReaderProgressVisualTop = rawOffset;
+  }
+}
+
+
 
 function onScroll() {
   if (!ticking) {
@@ -38,7 +84,6 @@ function updateReadingControls() {
   const topBar = document.getElementById('mobile-top-bar');
   const desktopTexts = document.querySelectorAll('[data-desktop-progress-text]');
   const mobileTexts = document.querySelectorAll('[data-mobile-progress-text]');
-  const controlStrips = document.querySelectorAll('.mobile-reading-controls');
   const backToTopBtns = document.querySelectorAll('.back-to-top-btn, .mobile-top-btn');
   const goToBottomBtns = document.querySelectorAll('.go-to-bottom-btn, .mobile-bottom-btn, .reading-progress-btn');
   
@@ -101,15 +146,14 @@ function updateReadingControls() {
   });
   
   const progressStr = `${progress}%`;
-  controlStrips.forEach(el => {
-    (el as HTMLElement).style.setProperty('--reading-progress', progressStr);
-  });
+  document.body.style.setProperty('--reading-progress', progressStr);
 
   // 2. Auto-hide mobile top bar logic
-  if (topBar) {
-    const isMobile = window.innerWidth <= 960;
-    
-    if (isMobile) {
+  const isReaderMode = document.body.dataset.readerMode === 'immersive';
+  const isMobile = window.innerWidth <= 960;
+  
+  if (isMobile) {
+    if (!isReaderMode && topBar) {
       const overlaysOpen = document.body.classList.contains('is-mobile-drawer-open') || 
                            document.body.classList.contains('is-search-overlay-open') || 
                            document.body.classList.contains('is-tags-overlay-open');
@@ -141,12 +185,12 @@ function updateReadingControls() {
           }
         }
       }
-    } else {
+    }
+  } else {
       if (isHidden) {
         document.body.classList.remove('mobile-top-bar-hidden');
         isHidden = false;
       }
-    }
   }
 
   lastScrollY = currentScrollY;

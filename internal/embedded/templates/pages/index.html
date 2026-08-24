@@ -1,0 +1,24 @@
+{{define "content"}}
+<section class="home-hero" aria-label="{{T .Lang "home.hero_label"}}">
+  <div class="hero-avatar-wrap" data-site-avatar>
+    {{if .Config.Profile.Author.Avatar}}
+    <img class="hero-avatar" src="{{.Config.Profile.Author.Avatar}}" alt="">
+    {{end}}
+  </div>
+
+  <div class="hero-content">
+    <div class="hero-identity">
+      <h1 class="hero-name">
+        <span class="hero-name-cn{{if .Config.Profile.HasSignatureFont}} use-signature-font{{end}}">{{.Config.Profile.Author.Name}}</span>
+        <span class="hero-name-en">{{.Config.Profile.Author.NameEn}}</span>
+      </h1>
+
+      <p class="hero-slogan">{{morphableText (.Config.Profile.GetSlogan .Lang) "site-slogan" "slogan"}}</p>
+    </div>
+
+    {{template "social_links" .}}
+  </div>
+</section>
+
+{{template "home_footer" .}}
+{{end}}

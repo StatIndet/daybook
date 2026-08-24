@@ -1,5 +1,8 @@
 interface GraphMeta {
-  defaultScale?: number;
+  layoutDiameter?: number;
+  nodeCount?: number;
+  linkCount?: number;
+  maxDegree?: number;
 }
 
 export interface TagNode {
@@ -169,6 +172,32 @@ interface GraphData {
     return baseR + Math.sqrt(degree) * 1.5;
   }
 
+  function getDefaultGraphTransform(width: number, height: number): { transform: any, scale: number } {
+    const d3 = window.d3;
+    let logicalDiameter = 10;
+    if (graphMeta && graphMeta.layoutDiameter) {
+      logicalDiameter = graphMeta.layoutDiameter;
+    }
+    
+    // Convert logical diameter to a base visual size.
+    // Assuming each logical unit represents roughly 120 pixels of graph space.
+    const logicalPixels = logicalDiameter * 120;
+    
+    const GRAPH_VIEW_PADDING = 0.18; // 18% padding to ensure edge labels aren't cut off
+    const paddingMultiplier = 1 - GRAPH_VIEW_PADDING;
+    const availableSize = Math.min(width, height) * paddingMultiplier;
+    
+    let fitScale = availableSize / logicalPixels;
+    // Clamp the scale to prevent extreme zooming
+    if (fitScale > 1.8) fitScale = 1.8;
+    if (fitScale < 0.1) fitScale = 0.1;
+
+    return {
+      transform: d3.zoomIdentity.translate(width / 2, height / 2).scale(fitScale).translate(-width / 2, -height / 2),
+      scale: fitScale
+    };
+  }
+
   function render(initialAlpha = 1) {
     let currentPositions = new Map<string, { x?: number, y?: number, vx?: number, vy?: number }>();
     let currentTransform: any | null = null;
@@ -334,17 +363,8 @@ interface GraphData {
     if (currentTransform) {
       svg!.call(zoomBehavior.transform, currentTransform);
     } else {
-      let initialScale = 1.0;
-      if (graphMeta && graphMeta.defaultScale) {
-        initialScale = graphMeta.defaultScale;
-      }
-      const isMobile = window.matchMedia("(max-width: 768px)").matches;
-      initialScale = isMobile ? Math.min(initialScale, 1.15) : initialScale;
-
-      svg!.call(
-        zoomBehavior.transform, 
-        window.d3.zoomIdentity.translate(width/2, height/2).scale(initialScale).translate(-width/2, -height/2)
-      );
+      const defaultFit = getDefaultGraphTransform(width, height);
+      svg!.call(zoomBehavior.transform, defaultFit.transform);
     }
 
     simulation = window.d3.forceSimulation(nodes)
@@ -461,15 +481,42 @@ interface GraphData {
     
     // Expose for search
     (window as any).__graphNodes = nodeGroup;
+    
+    // Sync initial LOD state
+    if (svg && svg.node()) {
+      updateLabelVisibility(window.d3.zoomTransform(svg.node()!).k);
+    }
   }
 
   function updateLabelVisibility(scale: number) {
     if (!(window as any).__graphNodes) return;
+    
+    const w = container?.clientWidth || 800;
+    const h = container?.clientHeight || 600;
+    const defaultFit = getDefaultGraphTransform(w, h);
+    const fitScale = defaultFit.scale;
+    
+    const relativeScale = scale / fitScale;
+    
+    const avgDegree = (graphMeta && graphMeta.linkCount && graphMeta.nodeCount) 
+                      ? (graphMeta.linkCount * 2 / graphMeta.nodeCount) 
+                      : 2;
+    const importantThreshold = Math.max(3, avgDegree * 1.5);
+    
+    const LABEL_ALL_MIN_RELATIVE_SCALE = 0.80;
+    const LABEL_IMPORTANT_MIN_RELATIVE_SCALE = 0.55;
+    
     (window as any).__graphNodes.selectAll('.graph-label')
       .style('opacity', function(this: Element, d: GraphNode) {
         if (this.classList.contains('is-match') || this.classList.contains('is-highlight')) return 1;
-        if (scale > 1.5) return 1;
-        return d.degree > 3 ? 1 : 0;
+        
+        if (relativeScale >= LABEL_ALL_MIN_RELATIVE_SCALE) return 1; // Show all labels
+        if (relativeScale >= LABEL_IMPORTANT_MIN_RELATIVE_SCALE) { // Show important labels only
+          return d.degree >= importantThreshold ? 1 : 0;
+        }
+        
+        // Far zoomed out: no normal labels
+        return 0;
       });
   }
 
@@ -516,18 +563,10 @@ interface GraphData {
         } else if (svg && zoomBehavior && container) {
           const w = container.clientWidth || 800;
           const h = container.clientHeight || 600;
-          
-          let resetScale = 1.0;
-          if (graphMeta && graphMeta.defaultScale) {
-            resetScale = graphMeta.defaultScale;
-          }
-          const isMobile = window.matchMedia("(max-width: 768px)").matches;
-          resetScale = isMobile ? Math.min(resetScale, 1.15) : resetScale;
-
-          const d3 = window.d3;
+          const defaultFit = getDefaultGraphTransform(w, h);
           svg.transition().duration(750).call(
             zoomBehavior.transform as any,
-            window.d3.zoomIdentity.translate(w/2, h/2).scale(resetScale).translate(-w/2, -h/2)
+            defaultFit.transform
           );
         }
       };

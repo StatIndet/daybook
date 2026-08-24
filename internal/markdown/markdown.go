@@ -78,9 +78,11 @@ func (renderer markdownRenderer) render(input string, includeHeadings bool, dept
 
 	source := []byte(processed)
 	root := renderer.markdown.Parser().Parse(gmtext.NewReader(source))
-	headings := []Heading{}
+	
+	processedHeadings := processHeadings(root, source)
+	var headings []Heading
 	if includeHeadings {
-		headings = collectHeadings(root, source)
+		headings = processedHeadings
 	}
 
 	var output bytes.Buffer
@@ -107,8 +109,9 @@ func (renderer markdownRenderer) renderFragment(input string, depth int) (string
 	return strings.TrimSpace(document.HTML), nil
 }
 
-func collectHeadings(root ast.Node, source []byte) []Heading {
+func processHeadings(root ast.Node, source []byte) []Heading {
 	var headings []Heading
+	usedIDs := make(map[string]int)
 
 	_ = ast.Walk(root, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering || node.Kind() != ast.KindHeading {
@@ -116,21 +119,42 @@ func collectHeadings(root ast.Node, source []byte) []Heading {
 		}
 
 		heading := node.(*ast.Heading)
-		if heading.Level < 2 || heading.Level > 4 {
+		if heading.Level > 4 {
 			return ast.WalkContinue, nil
 		}
 
 		text := strings.TrimSpace(string(heading.Text(source)))
-		id := headingID(heading)
-		if text == "" || id == "" {
+		if text == "" {
 			return ast.WalkContinue, nil
 		}
 
-		headings = append(headings, Heading{
-			Level: heading.Level,
-			Text:  text,
-			ID:    id,
-		})
+		baseID := generateHeadingID(text, heading.Level)
+		id := baseID
+		
+		count := usedIDs[id]
+		if count > 0 {
+			for {
+				count++
+				candidate := fmt.Sprintf("%s-%d", baseID, count)
+				if usedIDs[candidate] == 0 {
+					id = candidate
+					usedIDs[baseID] = count
+					break
+				}
+			}
+		}
+		usedIDs[id] = 1
+
+		heading.SetAttributeString("id", []byte(id))
+
+		// TOC only includes H2-H4
+		if heading.Level >= 2 && heading.Level <= 4 {
+			headings = append(headings, Heading{
+				Level: heading.Level,
+				Text:  text,
+				ID:    id,
+			})
+		}
 
 		return ast.WalkContinue, nil
 	})
@@ -138,20 +162,37 @@ func collectHeadings(root ast.Node, source []byte) []Heading {
 	return headings
 }
 
-func headingID(heading *ast.Heading) string {
-	value, ok := heading.AttributeString("id")
-	if !ok {
-		return ""
-	}
+func generateHeadingID(text string, level int) string {
+	var b strings.Builder
+	var lastIsSpace bool
 
-	switch id := value.(type) {
-	case string:
-		return id
-	case []byte:
-		return string(id)
-	default:
-		return fmt.Sprint(id)
+	for _, r := range text {
+		if r < 32 || r == 127 {
+			continue
+		}
+		
+		if r == ' ' || r == '\t' || r == '\n' || r == '\r' || r == '\u00A0' || r == '\u3000' {
+			if !lastIsSpace {
+				b.WriteRune('-')
+				lastIsSpace = true
+			}
+		} else {
+			b.WriteRune(r)
+			lastIsSpace = false
+		}
 	}
+	
+	res := strings.Trim(b.String(), "-")
+	if res == "" {
+		res = "section"
+	}
+	
+	prefix := ""
+	for i := 1; i < level; i++ {
+		prefix += "#"
+	}
+	
+	return prefix + res
 }
 
 type codeBlockPreWrapper struct{}

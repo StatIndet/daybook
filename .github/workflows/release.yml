@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      - name: Build Frontend Assets
+        run: |
+          npm ci
+          npm run typecheck
+          npm run test:reading-rail
+          npm run build:js
+          npm run build:vendor
+
+      - name: Build Binaries
+        env:
+          CGO_ENABLED: 0
+        run: |
+          VERSION=${GITHUB_REF_NAME}
+          LDFLAGS="-s -w -X 'main.Version=daybook ${VERSION}'"
+          
+          mkdir -p release/linux_amd64 release/linux_arm64 release/darwin_amd64 release/darwin_arm64
+          cp LICENSE release/linux_amd64/
+          cp LICENSE release/linux_arm64/
+          cp LICENSE release/darwin_amd64/
+          cp LICENSE release/darwin_arm64/
+
+          GOOS=linux GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o release/linux_amd64/daybook ./cmd/daybook
+          GOOS=linux GOARCH=arm64 go build -ldflags "${LDFLAGS}" -o release/linux_arm64/daybook ./cmd/daybook
+          GOOS=darwin GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o release/darwin_amd64/daybook ./cmd/daybook
+          GOOS=darwin GOARCH=arm64 go build -ldflags "${LDFLAGS}" -o release/darwin_arm64/daybook ./cmd/daybook
+
+          cd release/linux_amd64 && tar -czf ../../daybook_${VERSION}_linux_amd64.tar.gz daybook LICENSE && cd ../..
+          cd release/linux_arm64 && tar -czf ../../daybook_${VERSION}_linux_arm64.tar.gz daybook LICENSE && cd ../..
+          cd release/darwin_amd64 && tar -czf ../../daybook_${VERSION}_darwin_amd64.tar.gz daybook LICENSE && cd ../..
+          cd release/darwin_arm64 && tar -czf ../../daybook_${VERSION}_darwin_arm64.tar.gz daybook LICENSE && cd ../..
+
+      - name: Generate Checksums
+        run: |
+          sha256sum daybook_*.tar.gz > checksums.txt
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            daybook_*.tar.gz
+            checksums.txt
+          generate_release_notes: true

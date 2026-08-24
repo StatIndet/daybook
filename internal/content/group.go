@@ -6,6 +6,7 @@ import (
 )
 
 type ArticleGroup struct {
+	Key      string
 	I18nKey  string
 	Versions map[string]*Note
 }
@@ -61,6 +62,7 @@ func GroupNotes(notes []Note) ([]*ArticleGroup, error) {
 		group, ok := groupsMap[groupKey]
 		if !ok {
 			group = &ArticleGroup{
+				Key:      groupKey,
 				I18nKey:  note.I18nKey, // might be empty
 				Versions: make(map[string]*Note),
 			}

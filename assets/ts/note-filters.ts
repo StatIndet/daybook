@@ -367,6 +367,84 @@
     syncToolsState(false, false, false);
   });
 
+  
+
+  // Overlay scrollbar synchronization
+  function syncTagsScrollbar() {
+    const panels = document.querySelectorAll('.notes-tags-panel:not(.mobile-tags-panel)');
+    panels.forEach(panel => {
+      if (panel.hasAttribute('data-scrollbar-initialized')) return;
+      panel.setAttribute('data-scrollbar-initialized', 'true');
+
+      const viewport = panel.querySelector('.notes-tags-scroll-viewport') as HTMLElement | null;
+      const scrollbar = panel.querySelector('.notes-tags-scrollbar') as HTMLElement | null;
+      const thumb = panel.querySelector('.notes-tags-scrollbar-thumb') as HTMLElement | null;
+
+      if (!viewport || !scrollbar || !thumb) return;
+
+      let hideTimer: number | null = null;
+
+      const updateTagsScrollbarGeometry = () => {
+        const clientHeight = viewport.clientHeight;
+        const scrollHeight = viewport.scrollHeight;
+        const scrollTop = viewport.scrollTop;
+
+        if (scrollHeight <= clientHeight || clientHeight === 0) {
+          scrollbar.classList.remove('is-visible');
+          return;
+        }
+
+        const minThumb = 30;
+        const ratio = clientHeight / scrollHeight;
+        const thumbHeight = Math.max(minThumb, clientHeight * ratio);
+        
+        const scrollRange = scrollHeight - clientHeight;
+        const thumbRange = clientHeight - thumbHeight;
+        const progress = scrollRange > 0 ? scrollTop / scrollRange : 0;
+        const thumbTop = progress * thumbRange;
+
+        thumb.style.height = `${thumbHeight}px`;
+        thumb.style.transform = `translateY(${thumbTop}px)`;
+      };
+
+      const showTagsScrollbarTemporarily = () => {
+        const clientHeight = viewport.clientHeight;
+        const scrollHeight = viewport.scrollHeight;
+        if (scrollHeight <= clientHeight || clientHeight === 0) return;
+
+        scrollbar.classList.add('is-visible');
+        
+        if (hideTimer !== null) {
+          window.clearTimeout(hideTimer);
+        }
+        hideTimer = window.setTimeout(() => {
+          scrollbar.classList.remove('is-visible');
+        }, 800);
+      };
+
+      viewport.addEventListener('scroll', () => {
+        updateTagsScrollbarGeometry();
+        showTagsScrollbarTemporarily();
+      }, { passive: true });
+
+      const observer = new ResizeObserver(() => {
+        updateTagsScrollbarGeometry();
+      });
+      observer.observe(viewport);
+      const tagList = viewport.querySelector('.notes-tag-list');
+      if (tagList) observer.observe(tagList);
+      
+      updateTagsScrollbarGeometry();
+    });
+  }
+
+  document.addEventListener("daybook:page-load", syncTagsScrollbar);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", syncTagsScrollbar);
+  } else {
+    syncTagsScrollbar();
+  }
+
   window.daybookSyncNoteFilters = syncNoteFilters;
   document.addEventListener("daybook:page-load", syncNoteFilters);
   syncNoteFilters();

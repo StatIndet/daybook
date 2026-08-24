@@ -21,10 +21,29 @@
     document.dispatchEvent(new CustomEvent("daybook:article-content-swapped"));
   }
 
-  function swapContent(state: { lang: string; summary: string; html: string; headings: any[] }) {
+  function getHeadingIndex(id: string, headings: { ID: string }[]): number {
+    return headings.findIndex(h => h.ID === id);
+  }
+
+  function swapContent(state: { lang: string; summary: string; html: string; headings: any[] }, isAlt: boolean) {
     const postContent = document.querySelector(".post-content") as HTMLElement;
     const noteSummary = document.querySelector(".note-summary") as HTMLElement;
-    const tocList = document.querySelector(".note-toc-panel ol");
+    
+    let newHash = "";
+    if (window.location.hash) {
+      let currentHashId = window.location.hash.slice(1);
+      try { currentHashId = decodeURIComponent(currentHashId); } catch {}
+      
+      const sourceHeadings = isAlt ? originalState?.headings : cachedAltFragment?.headings;
+      const targetHeadings = state.headings;
+      
+      if (sourceHeadings && targetHeadings) {
+        const index = getHeadingIndex(currentHashId, sourceHeadings);
+        if (index !== -1 && index < targetHeadings.length) {
+           newHash = "#" + targetHeadings[index].ID;
+        }
+      }
+    }
 
     if (postContent) {
       postContent.setAttribute("lang", state.lang);
@@ -36,8 +55,21 @@
       noteSummary.style.display = state.summary ? "block" : "none";
     }
 
-    if (tocList && state.headings) {
-      tocList.innerHTML = state.headings.map(h => `<li class="note-toc-depth-${h.Level}"><a href="#${h.ID}">${h.Text}</a></li>`).join("");
+    const desktopTocList = document.querySelector(".note-toc-panel ol");
+    const mobileTocList = document.querySelector(".mobile-toc-nav ol");
+    const tocHtml = state.headings ? state.headings.map(h => `<li class="note-toc-depth-${h.Level}"><a href="#${h.ID}">${h.Text}</a></li>`).join("") : "";
+    
+    if (desktopTocList) {
+      desktopTocList.innerHTML = tocHtml;
+    }
+    if (mobileTocList) {
+      mobileTocList.innerHTML = tocHtml;
+    }
+
+    if (newHash && newHash !== window.location.hash) {
+      const newUrl = new URL(window.location.href);
+      newUrl.hash = newHash;
+      history.replaceState(history.state, "", newUrl.href);
     }
 
     dispatchSwapEvent();
@@ -84,7 +116,7 @@
 
       if (isAlt) {
         // Revert to original
-        swapContent(originalState);
+        swapContent(originalState, true);
         toggleBtn.dataset.currentLang = originalState.lang;
         toggleBtn.setAttribute("aria-pressed", "false");
       } else {
@@ -122,7 +154,7 @@
              summary: cachedAltFragment.summary,
              html: cachedAltFragment.html,
              headings: cachedAltFragment.headings || []
-          });
+          }, false);
           
           toggleBtn.dataset.currentLang = cachedAltFragment.lang;
           toggleBtn.setAttribute("aria-pressed", "true");

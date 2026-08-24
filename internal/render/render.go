@@ -6,11 +6,12 @@ import (
 	"math"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/StatIndet/daybook/internal/config"
+	"github.com/StatIndet/daybook/internal/embedded"
 	"github.com/StatIndet/daybook/internal/i18n"
+	"github.com/StatIndet/daybook/internal/morphable"
 	"github.com/StatIndet/daybook/internal/seo"
 )
 
@@ -19,9 +20,9 @@ type Renderer struct {
 }
 
 type SiteData struct {
-	Title            string
-	StartedAt        string
-	TotalWordCount   int
+	Title          string
+	StartedAt      string
+	TotalWordCount int
 }
 
 type Assets struct {
@@ -54,6 +55,7 @@ type NoteLink struct {
 	URL                 string
 	Slug                string
 	Pin                 bool
+	HasMusic            bool
 	HasTranslation      bool
 	TitleLayout         template.HTML
 	TitleTransitionName string
@@ -74,6 +76,8 @@ type NotePage struct {
 	WordCount           int
 	ReadingMinutes      int
 	CanonicalPath       string
+	ShareURL            string
+	ShareText           string
 	HTML                template.HTML
 	Headings            []Heading
 	HasMermaid          bool
@@ -82,28 +86,46 @@ type NotePage struct {
 	CommentEnabled      bool
 	IsFallback          bool
 	HasTranslation      bool
+	Pin                 bool
+	HasMusic            bool
 	TitleLayout         template.HTML
 	TitleTransitionName string
 	DateTransitionName  string
 }
 
-type GoldenPath struct {
-	D              string
-	Order          int
-	Distance       string
-	GrowDelay      string
-	ShrinkDelay    string
+type GoldenGuide struct {
+	Order int
+	Kind  string
+
+	GrowStartPct string
+	GrowFadePct  string
+	GrowEndPct   string
+
+	ShrinkStartPct string
+	ShrinkEndPct   string
+
+	HidePct string
+
+	Segments []GoldenGuideSegment
+}
+
+type GoldenGuideSegment struct {
+	TranslateX string
+	TranslateY string
+	Rotation   string
+	Length     string
+	Order      int
+
 	GrowStartPct   string
-	GrowFadePct    string
 	GrowEndPct     string
 	ShrinkStartPct string
 	ShrinkEndPct   string
-	HidePct        string
 }
 
 type goldenGuideDraft struct {
-	d        string
+	points   []point
 	distance float64
+	kind     string
 }
 
 type goldenRect struct {
@@ -117,14 +139,6 @@ type goldenSquare struct {
 	x float64
 	y float64
 	s float64
-}
-
-type GoldenLayer struct {
-	Index               int
-	Transform           template.CSS
-	RectStrokeWidth     string
-	DiagonalStrokeWidth string
-	CurveStrokeWidth    string
 }
 
 type GoldenSpiral struct {
@@ -152,10 +166,8 @@ type GoldenSpiral struct {
 	CurveShrinkStartPct     string
 	CurveShrinkEndPct       string
 	CurveHidePct            string
-	Squares                 []GoldenPath
-	Diagonals               []GoldenPath
+	Guides                  []GoldenGuide
 	SpiralPath              string
-	Layers                  []GoldenLayer
 }
 
 type IndexData struct {
@@ -351,7 +363,7 @@ func NewGoldenSpiral() GoldenSpiral {
 	}
 
 	baseOuterAnchor := point{x: baseOuterRect.x, y: baseOuterRect.y + baseOuterRect.h}
-	_, visualAnchor, _ := buildSpiralPath(basePole, baseOuterAnchor, float64(len(baseSquares)), 0, math.Pi/180)
+	_, visualAnchor, _ := buildSpiralPath(basePole, baseOuterAnchor, float64(len(baseSquares)), 0)
 
 	outerRect := scaleRectAround(baseOuterRect, visualAnchor, phi*phi*phi)
 	squares, pole := subdivideGoldenRect(outerRect, maxSquares)
@@ -376,8 +388,8 @@ func NewGoldenSpiral() GoldenSpiral {
 	}
 	squareDrafts := make([]goldenGuideDraft, 0, len(squares))
 	for _, square := range squares {
-		d, distance := squareFromPole(square.x, square.y, square.s, pole)
-		squareDrafts = append(squareDrafts, goldenGuideDraft{d: d, distance: distance})
+		draft := squareFromPole(square.x, square.y, square.s, pole)
+		squareDrafts = append(squareDrafts, draft)
 	}
 
 	allGuides := append([]goldenGuideDraft{}, diagonalDrafts...)
@@ -405,30 +417,26 @@ func NewGoldenSpiral() GoldenSpiral {
 
 	loopDuration := guideHideAt + hiddenDuration
 
-	diagonals := make([]GoldenPath, 0, len(diagonalDrafts))
-	for i, draft := range diagonalDrafts {
-		diagonals = append(diagonals, goldenPathFromDraft(i, draft, minDistance, maxDistance, phi, guideGrowEnd, guideShrinkStart, guideShrinkEnd, guideHideAt, loopDuration))
+	guides := make([]GoldenGuide, 0, len(diagonalDrafts)+len(squareDrafts))
+	guideOrder := 0
+	segOrder := 0
+	for _, draft := range diagonalDrafts {
+		g := guideFromDraft(guideOrder, segOrder, draft, minDistance, maxDistance, phi, guideGrowEnd, guideShrinkStart, guideShrinkEnd, guideHideAt, loopDuration)
+		guides = append(guides, g)
+		guideOrder++
+		segOrder += len(g.Segments)
 	}
-
-	squarePaths := make([]GoldenPath, 0, len(squareDrafts))
-	for i, draft := range squareDrafts {
-		squarePaths = append(squarePaths, goldenPathFromDraft(i+len(diagonalDrafts), draft, minDistance, maxDistance, phi, guideGrowEnd, guideShrinkStart, guideShrinkEnd, guideHideAt, loopDuration))
+	for _, draft := range squareDrafts {
+		g := guideFromDraft(guideOrder, segOrder, draft, minDistance, maxDistance, phi, guideGrowEnd, guideShrinkStart, guideShrinkEnd, guideHideAt, loopDuration)
+		guides = append(guides, g)
+		guideOrder++
+		segOrder += len(g.Segments)
 	}
 
 	spiralOuterAnchor := point{x: outerRect.x, y: outerRect.y + outerRect.h}
 	spiralInnerQuarterTurns := float64(len(squares))
 	outerQuarterTurns := 0.0
-	spiralPath, spiralStart, spiralEnd := buildSpiralPath(pole, spiralOuterAnchor, spiralInnerQuarterTurns, outerQuarterTurns, math.Pi/180)
-
-	layers := make([]GoldenLayer, 0, 1)
-	scale := 1.0
-	layers = append(layers, GoldenLayer{
-		Index:               0,
-		Transform:           "",
-		RectStrokeWidth:     fmt.Sprintf("%.3f", 1.0/scale),
-		DiagonalStrokeWidth: fmt.Sprintf("%.3f", 0.8/scale),
-		CurveStrokeWidth:    fmt.Sprintf("%.3f", 1.55/scale),
-	})
+	spiralPath, spiralStart, spiralEnd := buildSpiralPath(pole, spiralOuterAnchor, spiralInnerQuarterTurns, outerQuarterTurns)
 
 	return GoldenSpiral{
 		PoleX:                   fmt.Sprintf("%.2f", pole.x),
@@ -451,10 +459,8 @@ func NewGoldenSpiral() GoldenSpiral {
 		CurveShrinkStartPct:     pct(curveShrinkStart, loopDuration),
 		CurveShrinkEndPct:       pct(curveShrinkEnd, loopDuration),
 		CurveHidePct:            pct(curveHideAt, loopDuration),
-		Squares:                 squarePaths,
-		Diagonals:               diagonals,
+		Guides:                  guides,
 		SpiralPath:              spiralPath,
-		Layers:                  layers,
 	}
 }
 
@@ -517,39 +523,53 @@ func subdivideGoldenRect(rect goldenRect, maxSquares int) ([]goldenSquare, point
 	return squares, point{x: cx + cw/2, y: cy + ch/2}
 }
 
-func buildSpiralPath(pole, outerAnchor point, innerQuarterTurns, outerQuarterTurns, step float64) (string, point, point) {
+func buildSpiralPath(pole, outerAnchor point, innerQuarterTurns, outerQuarterTurns float64) (string, point, point) {
 	const quarter = math.Pi / 2
-
 	b := math.Log((1+math.Sqrt(5))/2) / quarter
 	r0 := distance(outerAnchor, pole)
 	theta0 := math.Atan2(outerAnchor.y-pole.y, outerAnchor.x-pole.x)
 	outerT := -outerQuarterTurns * quarter
 	innerT := innerQuarterTurns * quarter
+	const bezierStep = math.Pi / 12
 
-	points := make([]point, 0, int((innerT-outerT)/step)+2)
-	for t := innerT; t > outerT; t -= step {
-		points = append(points, spiralPoint(pole, r0, theta0, b, t))
+	P := func(t float64) point {
+		r := r0 * math.Exp(-b*t)
+		a := theta0 + t
+		return point{pole.x + r*math.Cos(a), pole.y + r*math.Sin(a)}
 	}
-	points = append(points, spiralPoint(pole, r0, theta0, b, outerT))
-
-	parts := make([]string, 0, len(points))
-	for _, point := range points {
-		parts = append(parts, fmt.Sprintf("%.2f %.2f", point.x, point.y))
+	Pd := func(t float64) point {
+		r := r0 * math.Exp(-b*t)
+		a := theta0 + t
+		dx := r * (-b*math.Cos(a) - math.Sin(a))
+		dy := r * (-b*math.Sin(a) + math.Cos(a))
+		return point{dx, dy}
 	}
 
-	return "M " + strings.Join(parts, " L "), points[0], points[len(points)-1]
+	parts := make([]string, 0)
+	startPoint := P(innerT)
+	parts = append(parts, fmt.Sprintf("M %.2f %.2f", startPoint.x, startPoint.y))
+
+	for t := innerT; t > outerT; t -= bezierStep {
+		tNext := t - bezierStep
+		if tNext < outerT {
+			tNext = outerT
+		}
+		delta := t - tNext
+		p0, pd0 := P(t), Pd(t)
+		p1, pd1 := P(tNext), Pd(tNext)
+		c1x := p0.x - pd0.x*delta/3
+		c1y := p0.y - pd0.y*delta/3
+		c2x := p1.x + pd1.x*delta/3
+		c2y := p1.y + pd1.y*delta/3
+		parts = append(parts, fmt.Sprintf("C %.2f %.2f, %.2f %.2f, %.2f %.2f", c1x, c1y, c2x, c2y, p1.x, p1.y))
+		if tNext <= outerT {
+			break
+		}
+	}
+
+	return strings.Join(parts, " "), startPoint, P(outerT)
 }
-
-func spiralPoint(pole point, r0, theta0, b, t float64) point {
-	r := r0 * math.Exp(-b*t)
-	a := theta0 + t
-	return point{
-		x: pole.x + r*math.Cos(a),
-		y: pole.y + r*math.Sin(a),
-	}
-}
-
-func squareFromPole(x, y, size float64, pole point) (string, float64) {
+func squareFromPole(x, y, size float64, pole point) goldenGuideDraft {
 	corners := []point{
 		{x: x, y: y},
 		{x: x + size, y: y},
@@ -571,23 +591,21 @@ func squareFromPole(x, y, size float64, pole point) (string, float64) {
 		ordered = append(ordered, corners[(start+i)%len(corners)])
 	}
 
-	return fmt.Sprintf(
-		"M %.2f %.2f L %.2f %.2f L %.2f %.2f L %.2f %.2f Z",
-		ordered[0].x, ordered[0].y,
-		ordered[1].x, ordered[1].y,
-		ordered[2].x, ordered[2].y,
-		ordered[3].x, ordered[3].y,
-	), minDistance
+	return goldenGuideDraft{
+		points:   []point{ordered[0], ordered[1], ordered[2], ordered[3], ordered[0]},
+		distance: minDistance,
+		kind:     "rect",
+	}
 }
 
 func diagonalFromPole(a, b, pole point) goldenGuideDraft {
 	if distance(b, pole) < distance(a, pole) {
 		a, b = b, a
 	}
-
 	return goldenGuideDraft{
-		d:        fmt.Sprintf("M %.2f %.2f L %.2f %.2f", a.x, a.y, b.x, b.y),
+		points:   []point{a, b},
 		distance: distance(a, pole),
+		kind:     "diagonal",
 	}
 }
 
@@ -609,24 +627,96 @@ func guideDistanceRange(guides []goldenGuideDraft) (float64, float64) {
 	return minDistance, maxDistance
 }
 
-func goldenPathFromDraft(order int, draft goldenGuideDraft, minDistance, maxDistance, maxDelay, growEnd, shrinkBase, shrinkEnd, hideAt, loopDuration float64) GoldenPath {
-	ratio := (draft.distance - minDistance) / (maxDistance - minDistance)
+func guideFromDraft(guideOrder, baseSegOrder int, draft goldenGuideDraft, minDistance, maxDistance, maxDelay, growEnd, shrinkBase, shrinkEnd, hideAt, loopDuration float64) GoldenGuide {
+	ratio := 0.0
+	if maxDistance > minDistance {
+		ratio = (draft.distance - minDistance) / (maxDistance - minDistance)
+	}
 	growDelay := ratio * maxDelay
 	shrinkDelay := (1 - ratio) * maxDelay
 	shrinkStart := shrinkBase + shrinkDelay
 
-	return GoldenPath{
-		D:              draft.d,
-		Order:          order,
-		Distance:       fmt.Sprintf("%.2f", draft.distance),
-		GrowDelay:      fmt.Sprintf("%.3fs", growDelay),
-		ShrinkDelay:    fmt.Sprintf("%.3fs", shrinkDelay),
-		GrowStartPct:   pct(growDelay, loopDuration),
-		GrowFadePct:    pct(growDelay+0.12, loopDuration),
-		GrowEndPct:     pct(growEnd, loopDuration),
+	growDuration := growEnd - growDelay
+	shrinkDuration := shrinkEnd - shrinkStart
+
+	pts := draft.points
+	numEdges := len(pts) - 1
+	lengths := make([]float64, numEdges)
+	totalLength := 0.0
+	for i := 0; i < numEdges; i++ {
+		l := distance(pts[i], pts[i+1])
+		lengths[i] = l
+		totalLength += l
+	}
+
+	segments := make([]GoldenGuideSegment, numEdges)
+
+	const overlapSec = 0.03 // 30ms overlap
+
+	currentGrow := growDelay
+	for i := 0; i < numEdges; i++ {
+		p0, p1 := pts[i], pts[i+1]
+		l := lengths[i]
+		ratioL := l / totalLength
+
+		dx, dy := p1.x-p0.x, p1.y-p0.y
+		angle := math.Atan2(dy, dx) * 180 / math.Pi
+
+		segGrowEnd := currentGrow + growDuration*ratioL
+
+		segGrowStartReal := currentGrow
+		if i > 0 {
+			// Pull back the start time by overlapSec to create a slight overlap
+			segGrowStartReal = currentGrow - overlapSec
+		}
+
+		sumAfter := 0.0
+		for j := i + 1; j < numEdges; j++ {
+			sumAfter += lengths[j]
+		}
+
+		segShrinkStart := shrinkStart + shrinkDuration*(sumAfter/totalLength)
+		segShrinkEnd := segShrinkStart + shrinkDuration*ratioL
+
+		segShrinkStartReal := segShrinkStart
+		if i < numEdges-1 {
+			// For shrink, overlap means starting earlier for the NEXT segment in shrink order.
+			// Edge 3 shrinks first, Edge 2 next. Edge 2 should start 30ms before Edge 3 finishes.
+			// Wait, the order of shrink is i from numEdges-1 down to 0.
+			// So segShrinkStart for edge i should be pulled back.
+			segShrinkStartReal = segShrinkStart - overlapSec
+		}
+
+		segments[i] = GoldenGuideSegment{
+			TranslateX: fmt.Sprintf("%.2f", p0.x),
+			TranslateY: fmt.Sprintf("%.2f", p0.y),
+			Rotation:   fmt.Sprintf("%.2f", angle),
+			Length:     fmt.Sprintf("%.2f", l),
+			Order:      baseSegOrder + i,
+
+			GrowStartPct:   pct(segGrowStartReal, loopDuration),
+			GrowEndPct:     pct(segGrowEnd, loopDuration),
+			ShrinkStartPct: pct(segShrinkStartReal, loopDuration),
+			ShrinkEndPct:   pct(segShrinkEnd, loopDuration),
+		}
+
+		currentGrow = segGrowEnd
+	}
+
+	return GoldenGuide{
+		Order: guideOrder,
+		Kind:  draft.kind,
+
+		GrowStartPct: pct(growDelay, loopDuration),
+		GrowFadePct:  pct(growDelay+0.12, loopDuration),
+		GrowEndPct:   pct(growEnd, loopDuration),
+
 		ShrinkStartPct: pct(shrinkStart, loopDuration),
 		ShrinkEndPct:   pct(shrinkEnd, loopDuration),
-		HidePct:        pct(hideAt, loopDuration),
+
+		HidePct: pct(hideAt, loopDuration),
+
+		Segments: segments,
 	}
 }
 
@@ -645,6 +735,26 @@ func (r Renderer) render(outputPath, pageTemplate string, data any) error {
 	}
 
 	tmpl := template.New(filepath.Base(files[0])).Funcs(template.FuncMap{
+		"dict": func(values ...interface{}) (map[string]interface{}, error) {
+			if len(values)%2 != 0 {
+				return nil, fmt.Errorf("invalid dict call")
+			}
+			dict := make(map[string]interface{}, len(values)/2)
+			for i := 0; i < len(values); i += 2 {
+				key, ok := values[i].(string)
+				if !ok {
+					return nil, fmt.Errorf("dict keys must be strings")
+				}
+				dict[key] = values[i+1]
+			}
+			return dict, nil
+		},
+		"morphableText": func(text, key, classPrefix string) template.HTML {
+			return morphable.GenerateHTML(text, key, classPrefix, true)
+		},
+		"morphableTitle": func(text, key, classPrefix string) template.HTML {
+			return morphable.GenerateHTML(text, key, classPrefix, false)
+		},
 		"formatNum": func(n int) string {
 			s := fmt.Sprintf("%d", n)
 			var parts []string
@@ -667,7 +777,7 @@ func (r Renderer) render(outputPath, pageTemplate string, data any) error {
 		},
 		"tagSlug": seo.TagSlug,
 	})
-	tmpl, err = tmpl.ParseFiles(files...)
+	tmpl, err = tmpl.ParseFS(embedded.FS, files...)
 	if err != nil {
 		return fmt.Errorf("解析模板: %w", err)
 	}
@@ -690,17 +800,13 @@ func (r Renderer) render(outputPath, pageTemplate string, data any) error {
 }
 
 func (r Renderer) templateFiles(pageTemplate string) ([]string, error) {
+	// r.TemplatesDir should be "templates"
+	// To use ParseFS, we should use forward slashes.
+	dir := "templates"
 	files := []string{
-		filepath.Join(r.TemplatesDir, "layouts", "base.html"),
+		dir + "/layouts/base.html",
+		dir + "/partials/*.html",
+		dir + "/pages/" + pageTemplate,
 	}
-
-	partials, err := filepath.Glob(filepath.Join(r.TemplatesDir, "partials", "*.html"))
-	if err != nil {
-		return nil, fmt.Errorf("查找 partial 模板: %w", err)
-	}
-	sort.Strings(partials)
-	files = append(files, partials...)
-	files = append(files, filepath.Join(r.TemplatesDir, "pages", pageTemplate))
-
 	return files, nil
 }

@@ -7,72 +7,74 @@ import (
 	"testing"
 )
 
-func TestBuildJSON(t *testing.T) {
-	tempDir := t.TempDir()
-	outputPath := filepath.Join(tempDir, "graph.json")
-
+func TestBuildJSON_EmptyID(t *testing.T) {
 	nodes := []InputNode{
-		{ID: "node1", Title: "Node 1", URL: "/node1"},
-		{ID: "node2", Title: "Node 2", URL: "/node2"},
+		{ID: "", Title: "Empty"},
 	}
+	err := BuildJSON(nodes, nil, "dummy.json")
+	if err == nil {
+		t.Errorf("Expected error for empty ID, got nil")
+	}
+}
 
+func TestBuildJSON_DuplicateID(t *testing.T) {
+	nodes := []InputNode{
+		{ID: "A", Title: "A1"},
+		{ID: "A", Title: "A2"},
+	}
+	err := BuildJSON(nodes, nil, "dummy.json")
+	if err == nil {
+		t.Errorf("Expected error for duplicate ID, got nil")
+	}
+}
+
+func TestBuildJSON_EdgeCases(t *testing.T) {
+	nodes := []InputNode{
+		{ID: "A"},
+		{ID: "B"},
+		{ID: "C"},
+	}
 	links := []InputLink{
-		{Source: "node1", Target: "node2", Exists: true},
-		{Source: "node1", Target: "node2", Exists: true},  // Duplicate
-		{Source: "node2", Target: "node2", Exists: true},  // Self-link
-		{Source: "node1", Target: "node3", Exists: false}, // Target doesn't exist
+		{Source: "A", Target: "A", Exists: true}, // Self edge
+		{Source: "A", Target: "B", Exists: true}, // A->B
+		{Source: "A", Target: "B", Exists: true}, // A->B duplicate
+		{Source: "B", Target: "A", Exists: true}, // B->A duplicate reverse
+		{Source: "A", Target: "C", Exists: true}, // A->C
 	}
-
-	err := BuildJSON(nodes, links, outputPath)
+	
+	tmpDir := t.TempDir()
+	out := filepath.Join(tmpDir, "graph.json")
+	err := BuildJSON(nodes, links, out)
 	if err != nil {
 		t.Fatalf("BuildJSON failed: %v", err)
 	}
-
-	content, err := os.ReadFile(outputPath)
+	
+	b, err := os.ReadFile(out)
 	if err != nil {
 		t.Fatalf("Failed to read output: %v", err)
 	}
-
+	
 	var data Data
-	if err := json.Unmarshal(content, &data); err != nil {
-		t.Fatalf("Failed to parse JSON: %v", err)
+	if err := json.Unmarshal(b, &data); err != nil {
+		t.Fatalf("Failed to unmarshal output: %v", err)
 	}
-
+	
 	if len(data.Links) != 2 {
-		t.Fatalf("Expected 2 links after deduplication, got %d", len(data.Links))
+		t.Fatalf("Expected 2 links, got %d", len(data.Links))
 	}
-	if data.Links[0].Source != "node1" || data.Links[0].Target != "node2" {
-		t.Fatalf("Unexpected first link: %+v", data.Links[0])
-	}
-	if data.Links[1].Source != "node1" || data.Links[1].Target != "node3" {
-		t.Fatalf("Unexpected second link: %+v", data.Links[1])
-	}
-
-	if len(data.Nodes) != 3 {
-		t.Fatalf("Expected 3 nodes (2 exists, 1 missing), got %d", len(data.Nodes))
-	}
-
-	degreeMap := make(map[string]int)
-	existsMap := make(map[string]bool)
+	
+	degree := make(map[string]int)
 	for _, n := range data.Nodes {
-		degreeMap[n.ID] = n.Degree
-		existsMap[n.ID] = n.Exists
+		degree[n.ID] = n.Degree
 	}
-
-	if degreeMap["node1"] != 2 {
-		t.Errorf("Expected node1 degree 2, got %d", degreeMap["node1"])
+	
+	if degree["A"] != 2 {
+		t.Errorf("Expected A degree 2, got %d", degree["A"])
 	}
-	if degreeMap["node2"] != 1 {
-		t.Errorf("Expected node2 degree 1, got %d", degreeMap["node2"])
+	if degree["B"] != 1 {
+		t.Errorf("Expected B degree 1, got %d", degree["B"])
 	}
-	if degreeMap["node3"] != 1 {
-		t.Errorf("Expected node3 degree 1, got %d", degreeMap["node3"])
-	}
-
-	if !existsMap["node1"] || !existsMap["node2"] {
-		t.Errorf("node1 and node2 should exist")
-	}
-	if existsMap["node3"] {
-		t.Errorf("node3 should not exist")
+	if degree["C"] != 1 {
+		t.Errorf("Expected C degree 1, got %d", degree["C"])
 	}
 }

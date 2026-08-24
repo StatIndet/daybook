@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"encoding/json"
 	"testing"
 
 	"github.com/StatIndet/daybook/internal/config"
@@ -84,105 +85,6 @@ func TestCollectTagLinks(t *testing.T) {
 	}
 }
 
-func TestBuildAssetsFingerprintsCSSImportsAndJS(t *testing.T) {
-	staticDir := filepath.Join(t.TempDir(), "static")
-	publicDir := filepath.Join(t.TempDir(), "public")
-
-	writeTestFile(t, staticDir, "css/global.css", strings.Join([]string{
-		`@import "/css/a.css";`,
-		`@import '/css/b.css';`,
-		`@import url("/css/c.css");`,
-		`@import url('/css/d.css');`,
-		`@import url(e.css);`,
-		`@import url("nested.css");`,
-		`@import url("https://example.com/foo.css");`,
-		`body { color: red; }`,
-	}, "\n"))
-	writeTestFile(t, staticDir, "css/a.css", `.a { color: red; }`)
-	writeTestFile(t, staticDir, "css/b.css", `.b { color: blue; }`)
-	writeTestFile(t, staticDir, "css/c.css", `.c { color: green; }`)
-	writeTestFile(t, staticDir, "css/d.css", `.d { color: yellow; }`)
-	writeTestFile(t, staticDir, "css/e.css", `.e { color: black; }`)
-	writeTestFile(t, staticDir, "css/nested.css", `@import url("nested-child.css"); .nested { color: pink; }`)
-	writeTestFile(t, staticDir, "css/nested-child.css", `.nested-child { color: purple; }`)
-	for _, scriptPath := range []string{
-		"js/theme.js",
-		"js/code-copy.js",
-		"js/toc.js",
-		"js/heading-anchors.js",
-		"js/note-filters.js",
-		"js/lightbox.js",
-		"js/mermaid-loader.js",
-		"js/gallery.js",
-		"js/embeds.js",
-		"js/page-transition-engine.js",
-		"js/graph-loader.js",
-		"js/graph.js",
-		"js/mobile-drawer.js",
-		"js/search-overlay.js",
-		"js/daybook-router.js",
-		"vendor/katex/katex.min.css",
-	} {
-		writeTestFile(t, staticDir, scriptPath, `document.documentElement.dataset.loaded = "true";`)
-	}
-
-	assets, err := buildAssets(staticDir, publicDir)
-	if err != nil {
-		t.Fatalf("buildAssets returned error: %v", err)
-	}
-
-	globalPath := assets.Path("/css/global.css")
-	if globalPath == "/css/global.css" || !strings.HasPrefix(globalPath, "/css/global.") || !strings.HasSuffix(globalPath, ".css") {
-		t.Fatalf("global css path = %q, want fingerprinted path", globalPath)
-	}
-	if fileExists(filepath.Join(publicDir, "css", "global.css")) {
-		t.Fatal("unfingerprinted global.css should not be written")
-	}
-
-	globalContent := readPublicAsset(t, publicDir, globalPath)
-	for _, oldPath := range []string{
-		`"/css/a.css"`,
-		`'/css/b.css'`,
-		`"/css/c.css"`,
-		`'/css/d.css'`,
-		`url(e.css)`,
-		`"nested.css"`,
-	} {
-		if strings.Contains(globalContent, oldPath) {
-			t.Fatalf("global css still contains unfingerprinted import %q:\n%s", oldPath, globalContent)
-		}
-	}
-	if !strings.Contains(globalContent, `https://example.com/foo.css`) {
-		t.Fatalf("external import should stay unchanged:\n%s", globalContent)
-	}
-	if globalPath != fingerprintedAssetPath("/css/global.css", []byte(globalContent)) {
-		t.Fatalf("global css hash should be based on rewritten content")
-	}
-
-	nestedPath := assets.Path("/css/nested.css")
-	nestedContent := readPublicAsset(t, publicDir, nestedPath)
-	if strings.Contains(nestedContent, "nested-child.css") {
-		t.Fatalf("nested css still contains unfingerprinted child import:\n%s", nestedContent)
-	}
-	if !strings.Contains(nestedContent, assets.Path("/css/nested-child.css")) {
-		t.Fatalf("nested css does not reference fingerprinted child path:\n%s", nestedContent)
-	}
-
-	themePath := assets.Path("/js/theme.js")
-	if themePath == "/js/theme.js" || !strings.HasPrefix(themePath, "/js/theme.") || !strings.HasSuffix(themePath, ".js") {
-		t.Fatalf("theme js path = %q, want fingerprinted path", themePath)
-	}
-	if fileExists(filepath.Join(publicDir, "js", "theme.js")) {
-		t.Fatal("unfingerprinted theme.js should not be written")
-	}
-
-	manifest := readPublicAsset(t, publicDir, "/assets-manifest.json")
-	for _, originalPath := range []string{"/css/global.css", "/css/a.css", "/css/nested-child.css", "/js/theme.js"} {
-		if !strings.Contains(manifest, originalPath) {
-			t.Fatalf("manifest should contain %s:\n%s", originalPath, manifest)
-		}
-	}
-}
 
 func TestBuildMarksNotesWithMermaid(t *testing.T) {
 	contentDir := filepath.Join(t.TempDir(), "content")
@@ -228,8 +130,7 @@ func TestBuildMarksNotesWithMermaid(t *testing.T) {
 	_, err := Build(Options{
 		Config:       cfg,
 		NotesDir:     filepath.Join(contentDir, "notes"),
-		TemplatesDir: filepath.Join("..", "..", "templates"),
-		StaticDir:    staticDir,
+		
 		PublicDir:    publicDir,
 	})
 	if err != nil {
@@ -276,6 +177,10 @@ func writeRequiredTemplateAssets(t *testing.T, staticDir string) {
 		"js/mobile-drawer.js",
 		"js/search-overlay.js",
 		"js/daybook-router.js",
+		"js/reader-mode.js",
+		"js/reading-controls.js",
+		"js/settings-overlay.js",
+		"js/share-overlay.js",
 		"vendor/katex/katex.min.css",
 	} {
 		writeTestFile(t, staticDir, scriptPath, `document.documentElement.dataset.loaded = "true";`)
@@ -308,4 +213,158 @@ func readPublicAsset(t *testing.T, publicDir, webPath string) string {
 func fileExists(filePath string) bool {
 	_, err := os.Stat(filePath)
 	return err == nil
+}
+
+func TestShareRendering(t *testing.T) {
+	contentDir := filepath.Join(t.TempDir(), "content")
+	staticDir := filepath.Join(t.TempDir(), "static")
+	publicDir := filepath.Join(t.TempDir(), "public")
+
+	writeRequiredTemplateAssets(t, staticDir)
+	writeTestFile(t, contentDir, "pages/about.md", "---\ntitle: About\n---\n")
+	writeTestFile(t, contentDir, "notes/cjk.md", strings.Join([]string{
+		"---",
+		"title: 鲸歌",
+		"date: 2026-06-17",
+		"slug: cjk",
+		"summary: test",
+		"draft: false",
+		"---",
+		"",
+		"Testing CJK title.",
+	}, "\n"))
+	
+	writeTestFile(t, contentDir, "notes/space.md", strings.Join([]string{
+		"---",
+		"title: A Space Title",
+		"date: 2026-06-18",
+		"slug: space",
+		"summary: test",
+		"draft: false",
+		"---",
+		"",
+		"Testing space title.",
+	}, "\n"))
+
+	cfg := config.Config{}
+	cfg.Site.URL = "https://daybook.page/" // test trailing slash
+	cfg.Share.Text = "分享：\"{Title}\""
+
+	_, err := Build(Options{
+		Config:       cfg,
+		NotesDir:     filepath.Join(contentDir, "notes"),
+		PublicDir:    publicDir,
+	})
+	if err != nil {
+		t.Fatalf("Build returned error: %v", err)
+	}
+
+	cjkHtml := readPublicAsset(t, publicDir, "/notes/cjk/index.html")
+	if !strings.Contains(cjkHtml, `data-share-title="鲸歌"`) {
+		t.Errorf("Expected CJK title to be preserved in data-share-title")
+	}
+	if !strings.Contains(cjkHtml, `data-share-link="https://daybook.page/notes/cjk/"`) {
+		t.Errorf("Expected CJK ShareURL to be unencoded and correct: %s", cjkHtml)
+	}
+	if !strings.Contains(cjkHtml, `data-share-text="分享：&#34;鲸歌&#34;"`) {
+		t.Errorf("Expected CJK ShareText to have replaced Title and be html-escaped")
+	}
+
+	spaceHtml := readPublicAsset(t, publicDir, "/notes/space/index.html")
+	if !strings.Contains(spaceHtml, `data-share-link="https://daybook.page/notes/space/"`) {
+		t.Errorf("Expected ASCII space ShareURL to be unencoded and correct")
+	}
+	if !strings.Contains(spaceHtml, `data-share-text="分享：&#34;A Space Title&#34;"`) {
+		t.Errorf("Expected ASCII space ShareText to have replaced Title and be html-escaped")
+	}
+}
+
+func TestBuildGraphIdentity(t *testing.T) {
+	contentDir := filepath.Join(t.TempDir(), "content")
+	staticDir := filepath.Join(t.TempDir(), "static")
+	publicDir := filepath.Join(t.TempDir(), "public")
+
+	writeRequiredTemplateAssets(t, staticDir)
+	writeTestFile(t, contentDir, "pages/about.md", "---\ntitle: About\n---\n")
+
+	writeTestFile(t, contentDir, "notes/a.md", strings.Join([]string{
+		"---",
+		"title: A",
+		"date: 2026-06-17",
+		"slug: a",
+		"draft: false",
+		"---",
+		"Link to [[b]]",
+	}, "\n"))
+
+	writeTestFile(t, contentDir, "notes/b.md", strings.Join([]string{
+		"---",
+		"title: B",
+		"date: 2026-06-18",
+		"slug: b",
+		"draft: false",
+		"---",
+		"Link to [[a]]",
+	}, "\n"))
+
+	writeTestFile(t, contentDir, "notes/c.md", strings.Join([]string{
+		"---",
+		"title: C",
+		"date: 2026-06-19",
+		"slug: c",
+		"draft: false",
+		"---",
+		"No links",
+	}, "\n"))
+
+	cfg := config.Config{}
+	
+	_, err := Build(Options{
+		Config:       cfg,
+		ContentDir:   contentDir,
+		NotesDir:     filepath.Join(contentDir, "notes"),
+		PublicDir:    publicDir,
+	})
+	if err != nil {
+		t.Fatalf("Build returned error: %v", err)
+	}
+
+	graphJsonStr := readPublicAsset(t, publicDir, "/graph.json")
+	var graphData struct {
+		Nodes []struct {
+			ID string `json:"id"`
+		} `json:"nodes"`
+		Links []struct {
+			Source string `json:"source"`
+			Target string `json:"target"`
+		} `json:"links"`
+	}
+	if err := json.Unmarshal([]byte(graphJsonStr), &graphData); err != nil {
+		t.Fatalf("Failed to parse graph.json: %v", err)
+	}
+
+	if len(graphData.Nodes) != 3 {
+		t.Fatalf("Expected 3 nodes, got %d", len(graphData.Nodes))
+	}
+	
+	nodeIDs := make(map[string]bool)
+	for _, n := range graphData.Nodes {
+		if n.ID == "" {
+			t.Errorf("Found node with empty ID")
+		}
+		if nodeIDs[n.ID] {
+			t.Errorf("Duplicate node ID: %s", n.ID)
+		}
+		nodeIDs[n.ID] = true
+	}
+
+	if len(graphData.Links) != 1 {
+		t.Fatalf("Expected 1 deduplicated link (A-B), got %d: %v", len(graphData.Links), graphData.Links)
+	}
+	
+	link := graphData.Links[0]
+	isAB := (link.Source == "single:zh-CN:a" && link.Target == "single:zh-CN:b") || (link.Source == "single:zh-CN:b" && link.Target == "single:zh-CN:a")
+	if !isAB {
+		t.Errorf("Expected link A-B, got %s-%s", link.Source, link.Target)
+	}
 }

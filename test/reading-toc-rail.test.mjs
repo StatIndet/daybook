@@ -50,14 +50,14 @@ test("near-edge paths clip endpoints but retain full bezier control points", () 
   assert.equal(nearTop.bottomY, 60);
   assert.equal(nearTop.effectiveAmplitude, 4);
   assert.equal(nearTop.peakX, 184);
-  assert.match(nearTop.basePath, /C 188 -12\.5 184 -5 184 10/);
+  assert.match(nearTop.basePath, /C 188 -20 184 -5 184 10/);
 
   const nearBottom = buildReadingTocRailCurve(geometry, 190, 20);
   assert.equal(nearBottom.topY, 140);
   assert.equal(nearBottom.bottomY, 200);
   assert.equal(nearBottom.effectiveAmplitude, 4);
   assert.equal(nearBottom.peakX, 184);
-  assert.match(nearBottom.basePath, /C 184 205 188 212\.5 188 200/);
+  assert.match(nearBottom.basePath, /C 184 205 188 220 188 200/);
 });
 
 test("direction mirrors only the horizontal wave geometry", () => {

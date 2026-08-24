@@ -15,7 +15,7 @@ func TestProcessWikilinks(t *testing.T) {
 				"自动关机脚本": "自动关机脚本",
 			},
 		},
-	}, nil, "", "attachments")
+	}, nil, "", "attachments", "shortest")
 
 	result := Process("[[安装 Debian SSH Server]]\n[[安装 Debian SSH Server#自动关机脚本|关机脚本]]\n[[不存在]]", index, "", 1)
 
@@ -52,7 +52,7 @@ func TestProcessImages(t *testing.T) {
 </p>
 
 <script>alert(1)</script>`
-	result := Process(input, NewIndex(nil, nil, "", "attachments"), "", 1)
+	result := Process(input, NewIndex(nil, nil, "", "attachments", "shortest"), "", 1)
 	html := RestoreHTML("<p>DAYBOOK_HTML_IMAGE_0</p>", result.HTML)
 
 	if !strings.Contains(result.Text, `![添加新连接](/notes/assets/add-new-link.png)`) {
@@ -122,7 +122,7 @@ func TestResolveAttachment(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			idx := NewIndex(nil, attachments, "/", tc.attachmentFolderPath)
+			idx := NewIndex(nil, attachments, "/", tc.attachmentFolderPath, "shortest")
 			att, ok, _ := idx.ResolveAttachment(tc.target, tc.sourcePath)
 			if !ok {
 				t.Fatalf("Failed to resolve %q", tc.target)
@@ -135,7 +135,7 @@ func TestResolveAttachment(t *testing.T) {
 	
 	// Test ambiguity
 	t.Run("duplicate basename", func(t *testing.T) {
-		idx := NewIndex(nil, attachments, "/", "./")
+		idx := NewIndex(nil, attachments, "/", "./", "shortest")
 		_, ok, _ := idx.ResolveAttachment("image.png", "other/article.md") // no context match, fallback to basename
 		if ok {
 			t.Errorf("Expected failure due to ambiguous basename, got success")

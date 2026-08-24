@@ -1,0 +1,208 @@
+.about-body .page-frame {
+  position: relative;
+  z-index: 1;
+}
+
+.about-page {
+  max-width: min(44rem, 100%);
+  min-height: calc(100vh - 160px);
+  position: relative;
+}
+
+.about-content {
+  max-width: var(--note-body-width);
+  padding-top: clamp(3rem, 9vh, 7rem);
+  position: relative;
+  width: 100%;
+  z-index: 2;
+}
+
+.about-content h1 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-logo);
+  font-size: var(--note-title-size);
+  font-style: italic;
+  font-weight: 650;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.about-summary {
+  color: var(--color-muted);
+  font-family: var(--font-body);
+  font-size: 0.94rem;
+  line-height: 1.75;
+  margin: 1.2rem 0 0;
+  max-width: 42rem;
+}
+
+.about-summary::first-letter {
+  color: var(--color-accent);
+  float: left;
+  font-family: var(--font-ui);
+  font-size: 3.4em;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 0.92;
+  margin-top: 4px;
+  padding: 4px 10px 0 0;
+}
+
+.about-markdown {
+  margin-top: 2.2rem;
+}
+
+.about-meta {
+  color: var(--color-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-family: var(--font-meta);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(0.95rem, 1.3vw, 1.12rem);
+  gap: 0.6em;
+  line-height: 1;
+  margin: 2.5rem 0 1.5rem;
+}
+
+.about-meta-group {
+  display: inline-flex;
+  gap: 0.45rem;
+}
+
+.about-time-group {
+  text-align: right;
+  line-height: 1.4;
+}
+
+.golden-spiral {
+  /*
+   * Golden background timeline (all durations are φ multiples):
+   *
+   * 0.000s  guide paths start growing from the pole outward
+   * 1.618s  spiral curve starts growing from the pole           (delay = φ)
+   * 8.090s  guide paths are fully drawn                         (duration = 5φ)
+   * 14.708s spiral curve is fully drawn; hold starts            (duration = 5φ²)
+   * 16.326s hold ends; spiral starts shrinking                  (hold = φ)
+   * 24.416s spiral fully shrunk; guides start shrinking         (shrink = 5φ)
+   * 29.416s guide paths fully shrunk                            (shrink = 5)
+   * 29.536s all strokes hidden
+   * 30.154s loop restarts                                       (pause = 1/φ)
+   *
+   * φ relationships:
+   *   curveGrow / guideGrow   = 5φ² / 5φ = φ
+   *   curveGrow / curveShrink = 5φ² / 5φ = φ
+   *   guideGrow / guideShrink = 5φ / 5    = φ
+   */
+  --phi: 1.61803398875;
+  --golden-curve-delay: 1.618s;
+  --golden-guide-grow-duration: 8.09s;
+  --golden-curve-grow-duration: 13.09s;
+  --golden-hold-duration: 1.618s;
+  --golden-curve-shrink-duration: 8.09s;
+  --golden-guide-shrink-window: 5.0s;
+  --golden-hidden-duration: 0.618s;
+  --golden-loop-duration: 30.154s;
+  contain: strict;
+  inset: 0;
+  opacity: 0.9;
+  pointer-events: none;
+  position: fixed;
+  user-select: none;
+  z-index: 0;
+}
+
+.golden-spiral svg {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+@keyframes golden-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.golden-spiral-stage {
+  animation: golden-spin var(--golden-loop-duration) linear infinite;
+  transform-box: view-box;
+  will-change: transform;
+}
+
+.golden-rect,
+.golden-diagonal,
+.golden-curve {
+  animation-duration: var(--golden-loop-duration);
+  animation-fill-mode: both;
+  animation-iteration-count: infinite;
+  animation-timing-function: var(--ease-page);
+  fill: none;
+  opacity: 0;
+  stroke-linecap: round;
+}
+
+.golden-rect {
+  stroke-width: 1.0;
+  stroke: var(--color-golden-rect);
+}
+
+.golden-diagonal {
+  stroke-width: 0.809;
+  stroke: var(--color-golden-diagonal);
+}
+
+.golden-curve {
+  stroke-width: 1.618;
+  animation-name: golden-curve-life;
+  animation-timing-function: linear;
+  stroke: var(--color-golden-curve);
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  stroke-linejoin: round;
+}
+
+@media (max-width: 960px) {
+  .about-content {
+    padding-top: clamp(2rem, 8vh, 4rem);
+  }
+}
+
+@media (max-width: 960px) {
+  .golden-spiral {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .golden-spiral-stage,
+  .golden-rect,
+  .golden-diagonal,
+  .golden-curve {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+  
+  .golden-rect,
+  .golden-diagonal {
+    transform: scaleX(1) !important;
+  }
+
+  .golden-spiral-stage {
+    transform: none !important;
+  }
+
+  .golden-spin-motion {
+    display: none;
+  }
+
+  
+
+  .golden-curve {
+  stroke-width: 1.618;
+    stroke-dasharray: 1 !important;
+    stroke-dashoffset: 0 !important;
+  }
+}

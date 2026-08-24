@@ -1,0 +1,34 @@
+{{define "content"}}
+<section class="about-page" aria-label="{{T .Lang "about.title"}}">
+  {{template "golden_spiral" .}}
+
+  <div class="about-content">
+    <h1>
+      {{.Title}}
+      {{if .HasTranslation}}
+      <span class="note-bilingual-wrapper">
+        {{template "bilingual_toggle" .}}
+      </span>
+      {{end}}
+    </h1>
+    {{with .Summary}}<p class="about-summary note-summary">{{.}}</p>{{end}}
+    <div class="markdown about-markdown post-content">
+      {{.HTML}}
+    </div>
+    <div class="about-meta">
+      <div class="about-time-group">
+        <time datetime="{{.Date}}">{{.Date}}</time>
+        {{if .Updated}}
+        <br><span class="about-updated">updated <time datetime="{{.Updated}}">{{.Updated}}</time></span>
+        {{end}}
+      </div>
+      {{if .Config.Stats.Enabled}}
+      <span class="about-meta-group">
+        <span data-page-views data-path="/about/">--</span>
+        <span data-page-views-label data-path="/about/">views</span>
+      </span>
+      {{end}}
+    </div>
+  </div>
+</section>
+{{end}}
