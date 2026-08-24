@@ -4,7 +4,7 @@ set -e
 echo "=> Building frontend assets..."
 npm ci
 npm run build:js
-npm run build:vendor-fonts
+npm run build:vendor
 
 # Determine installation path
 if [ -n "$GOBIN" ]; then
