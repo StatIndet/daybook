@@ -1,5 +1,8 @@
 {
   "name": "daybook",
+  "engines": {
+    "node": ">=24"
+  },
   "private": true,
   "type": "module",
   "scripts": {

@@ -98,8 +98,8 @@ function buildReadingTocRailCurve(geometry, markerY, amplitude, halfHeight = geo
   const baselineX = normalized.lineInset;
   const safeMarkerY = clamp(finiteOr(markerY, 0), 0, height);
   const safeHalfHeight = Math.max(1, finiteOr(halfHeight, normalized.bulgeHalfHeight));
-  const topY = safeMarkerY - safeHalfHeight;
-  const bottomY = safeMarkerY + safeHalfHeight;
+  const topY = Math.max(0, safeMarkerY - safeHalfHeight);
+  const bottomY = Math.min(height, safeMarkerY + safeHalfHeight);
   const edgeFactor = clamp(
     Math.min(safeMarkerY / safeHalfHeight, (height - safeMarkerY) / safeHalfHeight),
     0,
