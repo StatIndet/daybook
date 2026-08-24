@@ -245,7 +245,7 @@ func Build(options Options) (BuildResult, error) {
 
 			if group.IsListed() {
 				graphNodes = append(graphNodes, graph.InputNode{
-					ID:          group.I18nKey,
+					ID:          group.Key,
 					Title:       note.Title,
 					URL:         joinURL("/", langPrefix, "notes", note.Slug),
 					Tags:        tagNodes,
@@ -258,17 +258,17 @@ func Build(options Options) (BuildResult, error) {
 					if !link.Exists {
 						targetID = link.Target
 					}
-					// We need to resolve target slug to i18n_key if possible
+					// We need to resolve target slug to unique Key if possible
 					resolvedID := targetID
 					targetIsListed := true
 					for _, searchGroup := range groups {
 						if targetNote, ok := searchGroup.Versions["zh-CN"]; ok && targetNote.Slug == targetID {
-							resolvedID = searchGroup.I18nKey
+							resolvedID = searchGroup.Key
 							targetIsListed = searchGroup.IsListed()
 							break
 						}
 						if targetNote, ok := searchGroup.Versions["en"]; ok && targetNote.Slug == targetID {
-							resolvedID = searchGroup.I18nKey
+							resolvedID = searchGroup.Key
 							targetIsListed = searchGroup.IsListed()
 							break
 						}
@@ -276,7 +276,7 @@ func Build(options Options) (BuildResult, error) {
 
 					if targetIsListed {
 						graphLinks = append(graphLinks, graph.InputLink{
-							Source: group.I18nKey,
+							Source: group.Key,
 							Target: resolvedID,
 							Exists: link.Exists,
 						})

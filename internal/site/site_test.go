@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"encoding/json"
 	"testing"
 
 	"github.com/StatIndet/daybook/internal/config"
@@ -275,5 +276,95 @@ func TestShareRendering(t *testing.T) {
 	}
 	if !strings.Contains(spaceHtml, `data-share-text="分享：&#34;A Space Title&#34;"`) {
 		t.Errorf("Expected ASCII space ShareText to have replaced Title and be html-escaped")
+	}
+}
+
+func TestBuildGraphIdentity(t *testing.T) {
+	contentDir := filepath.Join(t.TempDir(), "content")
+	staticDir := filepath.Join(t.TempDir(), "static")
+	publicDir := filepath.Join(t.TempDir(), "public")
+
+	writeRequiredTemplateAssets(t, staticDir)
+	writeTestFile(t, contentDir, "pages/about.md", "---\ntitle: About\n---\n")
+
+	writeTestFile(t, contentDir, "notes/a.md", strings.Join([]string{
+		"---",
+		"title: A",
+		"date: 2026-06-17",
+		"slug: a",
+		"draft: false",
+		"---",
+		"Link to [[b]]",
+	}, "\n"))
+
+	writeTestFile(t, contentDir, "notes/b.md", strings.Join([]string{
+		"---",
+		"title: B",
+		"date: 2026-06-18",
+		"slug: b",
+		"draft: false",
+		"---",
+		"Link to [[a]]",
+	}, "\n"))
+
+	writeTestFile(t, contentDir, "notes/c.md", strings.Join([]string{
+		"---",
+		"title: C",
+		"date: 2026-06-19",
+		"slug: c",
+		"draft: false",
+		"---",
+		"No links",
+	}, "\n"))
+
+	cfg := config.Config{}
+	
+	_, err := Build(Options{
+		Config:       cfg,
+		ContentDir:   contentDir,
+		NotesDir:     filepath.Join(contentDir, "notes"),
+		PublicDir:    publicDir,
+	})
+	if err != nil {
+		t.Fatalf("Build returned error: %v", err)
+	}
+
+	graphJsonStr := readPublicAsset(t, publicDir, "/graph.json")
+	var graphData struct {
+		Nodes []struct {
+			ID string `json:"id"`
+		} `json:"nodes"`
+		Links []struct {
+			Source string `json:"source"`
+			Target string `json:"target"`
+		} `json:"links"`
+	}
+	if err := json.Unmarshal([]byte(graphJsonStr), &graphData); err != nil {
+		t.Fatalf("Failed to parse graph.json: %v", err)
+	}
+
+	if len(graphData.Nodes) != 3 {
+		t.Fatalf("Expected 3 nodes, got %d", len(graphData.Nodes))
+	}
+	
+	nodeIDs := make(map[string]bool)
+	for _, n := range graphData.Nodes {
+		if n.ID == "" {
+			t.Errorf("Found node with empty ID")
+		}
+		if nodeIDs[n.ID] {
+			t.Errorf("Duplicate node ID: %s", n.ID)
+		}
+		nodeIDs[n.ID] = true
+	}
+
+	if len(graphData.Links) != 1 {
+		t.Fatalf("Expected 1 deduplicated link (A-B), got %d: %v", len(graphData.Links), graphData.Links)
+	}
+	
+	link := graphData.Links[0]
+	isAB := (link.Source == "single:zh-CN:a" && link.Target == "single:zh-CN:b") || (link.Source == "single:zh-CN:b" && link.Target == "single:zh-CN:a")
+	if !isAB {
+		t.Errorf("Expected link A-B, got %s-%s", link.Source, link.Target)
 	}
 }

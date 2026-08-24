@@ -3,6 +3,8 @@ package graph
 import (
 	"encoding/json"
 	"fmt"
+	"math"
+	"strings"
 	"os"
 )
 
@@ -35,10 +37,10 @@ type Link struct {
 }
 
 type GraphMeta struct {
-	NodeCount    int     `json:"nodeCount"`
-	LinkCount    int     `json:"linkCount"`
-	MaxDegree    int     `json:"maxDegree"`
-	DefaultScale float64 `json:"defaultScale"`
+	NodeCount      int     `json:"nodeCount"`
+	LinkCount      int     `json:"linkCount"`
+	MaxDegree      int     `json:"maxDegree"`
+	LayoutDiameter float64 `json:"layoutDiameter"`
 }
 
 type Data struct {
@@ -62,42 +64,29 @@ type InputLink struct {
 	Exists bool
 }
 
-func computeDefaultGraphScale(nodeCount int, maxDegree int) float64 {
+func computeLayoutDiameter(nodeCount int, linkCount int, maxDegree int) float64 {
 	if nodeCount <= 0 {
 		return 1.0
 	}
-
-	var scale float64
-
-	switch {
-	case nodeCount <= 10:
-		scale = 1.75
-	case nodeCount <= 20:
-		if maxDegree >= 3 {
-			scale = 1.60
-		} else {
-			scale = 1.45
-		}
-	case nodeCount <= 40:
-		if maxDegree >= 4 {
-			scale = 1.40
-		} else {
-			scale = 1.25
-		}
-	case nodeCount <= 80:
-		scale = 1.10
-	default:
-		scale = 1.00
+	
+	diameter := math.Sqrt(float64(nodeCount))
+	
+	// Adjust slightly for density
+	avgDegree := 0.0
+	if nodeCount > 0 {
+		avgDegree = float64(linkCount*2) / float64(nodeCount)
 	}
-
-	if scale < 0.9 {
-		scale = 0.9
+	
+	if avgDegree > 2.0 {
+		diameter *= 1.1 // Give a bit more space for dense graphs
 	}
-	if scale > 1.8 {
-		scale = 1.8
+	
+	// Add some safety clamping
+	if diameter < 2.5 {
+		diameter = 2.5 // Minimum logical extent for very small graphs
 	}
-
-	return scale
+	
+	return diameter
 }
 
 func BuildJSON(nodes []InputNode, links []InputLink, outputPath string) error {
@@ -105,40 +94,52 @@ func BuildJSON(nodes []InputNode, links []InputLink, outputPath string) error {
 	linkSet := make(map[string]bool)
 	var finalLinks []Link
 
+	// 1. Canonicalize undirected edges and deduplicate
 	for _, link := range links {
 		if link.Source == link.Target {
-			continue
+			continue // ignore self-link
+		}
+		
+		a := link.Source
+		b := link.Target
+		
+		if a > b {
+			a, b = b, a
 		}
 
-		key := link.Source + "|" + link.Target
+		key := a + "|" + b
 		if linkSet[key] {
-			continue
+			continue // duplicate undirected edge
 		}
 		linkSet[key] = true
 
 		finalLinks = append(finalLinks, Link{
 			Source: link.Source,
-			Target: link.Target,
+			Target: link.Target, // Keep original directedness for source/target fields, but effectively it's one edge
 			Type:   "wikilink",
 		})
+	}
 
+	// 2. Calculate degree strictly from finalLinks
+	for _, link := range finalLinks {
 		degreeMap[link.Source]++
 		degreeMap[link.Target]++
 	}
 
 	existsMap := make(map[string]bool)
-	for _, node := range nodes {
-		existsMap[node.ID] = true
-	}
-
-	for _, link := range links {
-		if !link.Exists {
-			existsMap[link.Target] = false
-		}
-	}
-
+	seenIDs := make(map[string]bool)
+	
 	var finalNodes []Node
 	for _, node := range nodes {
+		if strings.TrimSpace(node.ID) == "" {
+			return fmt.Errorf("graph node has empty id: %q", node.Title)
+		}
+		if seenIDs[node.ID] {
+			return fmt.Errorf("duplicate graph node id: %q", node.ID)
+		}
+		seenIDs[node.ID] = true
+		existsMap[node.ID] = true
+		
 		finalNodes = append(finalNodes, Node{
 			ID:          node.ID,
 			Title:       node.Title,
@@ -149,6 +150,16 @@ func BuildJSON(nodes []InputNode, links []InputLink, outputPath string) error {
 			Degree:      degreeMap[node.ID],
 			Exists:      true,
 		})
+	}
+
+	// 3. Process missing nodes
+	for _, link := range links {
+		if !link.Exists {
+			// Initialize as false if not explicitly added by nodes
+			if _, ok := existsMap[link.Target]; !ok {
+				existsMap[link.Target] = false
+			}
+		}
 	}
 
 	// Add non-existent nodes that are targets of links
@@ -173,13 +184,13 @@ func BuildJSON(nodes []InputNode, links []InputLink, outputPath string) error {
 		}
 	}
 
-	scale := computeDefaultGraphScale(len(finalNodes), maxDegree)
+	diameter := computeLayoutDiameter(len(finalNodes), len(finalLinks), maxDegree)
 
 	meta := GraphMeta{
-		NodeCount:    len(finalNodes),
-		LinkCount:    len(finalLinks),
-		MaxDegree:    maxDegree,
-		DefaultScale: scale,
+		NodeCount:      len(finalNodes),
+		LinkCount:      len(finalLinks),
+		MaxDegree:      maxDegree,
+		LayoutDiameter: diameter,
 	}
 
 	data := Data{

@@ -93,6 +93,24 @@
     const baseR = 5;
     return baseR + Math.sqrt(degree) * 1.5;
   }
+  function getDefaultGraphTransform(width, height) {
+    const d3 = window.d3;
+    let logicalDiameter = 10;
+    if (graphMeta && graphMeta.layoutDiameter) {
+      logicalDiameter = graphMeta.layoutDiameter;
+    }
+    const logicalPixels = logicalDiameter * 120;
+    const GRAPH_VIEW_PADDING = 0.15;
+    const paddingMultiplier = 1 - GRAPH_VIEW_PADDING;
+    const availableSize = Math.min(width, height) * paddingMultiplier;
+    let fitScale = availableSize / logicalPixels;
+    if (fitScale > 1.8) fitScale = 1.8;
+    if (fitScale < 0.1) fitScale = 0.1;
+    return {
+      transform: d3.zoomIdentity.translate(width / 2, height / 2).scale(fitScale).translate(-width / 2, -height / 2),
+      scale: fitScale
+    };
+  }
   function render(initialAlpha = 1) {
     let currentPositions = /* @__PURE__ */ new Map();
     let currentTransform = null;
@@ -224,16 +242,8 @@
     if (currentTransform) {
       svg.call(zoomBehavior.transform, currentTransform);
     } else {
-      let initialScale = 1;
-      if (graphMeta && graphMeta.defaultScale) {
-        initialScale = graphMeta.defaultScale;
-      }
-      const isMobile = window.matchMedia("(max-width: 768px)").matches;
-      initialScale = isMobile ? Math.min(initialScale, 1.15) : initialScale;
-      svg.call(
-        zoomBehavior.transform,
-        window.d3.zoomIdentity.translate(width / 2, height / 2).scale(initialScale).translate(-width / 2, -height / 2)
-      );
+      const defaultFit = getDefaultGraphTransform(width, height);
+      svg.call(zoomBehavior.transform, defaultFit.transform);
     }
     simulation = window.d3.forceSimulation(nodes).alpha(initialAlpha).force("link", window.d3.forceLink(links).id((d) => d.id).distance(120)).force("charge", window.d3.forceManyBody().strength(-280)).force("x", window.d3.forceX(width / 2).strength(0.05)).force("y", window.d3.forceY(height / 2).strength(0.05)).force("collide", window.d3.forceCollide().radius((d) => d.radius + 6));
     const link = g.append("g").selectAll("line").data(links).join("line").attr("class", "graph-link");
@@ -298,10 +308,20 @@
   }
   function updateLabelVisibility(scale) {
     if (!window.__graphNodes) return;
+    const w = container?.clientWidth || 800;
+    const h = container?.clientHeight || 600;
+    const defaultFit = getDefaultGraphTransform(w, h);
+    const fitScale = defaultFit.scale;
+    const relativeScale = scale / fitScale;
+    const avgDegree = graphMeta && graphMeta.linkCount && graphMeta.nodeCount ? graphMeta.linkCount * 2 / graphMeta.nodeCount : 2;
+    const importantThreshold = Math.max(3, avgDegree * 1.5);
     window.__graphNodes.selectAll(".graph-label").style("opacity", function(d) {
       if (this.classList.contains("is-match") || this.classList.contains("is-highlight")) return 1;
-      if (scale > 1.5) return 1;
-      return d.degree > 3 ? 1 : 0;
+      if (relativeScale >= 1.3) return 1;
+      if (relativeScale >= 0.7) {
+        return d.degree >= importantThreshold ? 1 : 0;
+      }
+      return 0;
     });
   }
   function drag(simulation2) {
@@ -342,16 +362,10 @@
         } else if (svg && zoomBehavior && container) {
           const w = container.clientWidth || 800;
           const h = container.clientHeight || 600;
-          let resetScale = 1;
-          if (graphMeta && graphMeta.defaultScale) {
-            resetScale = graphMeta.defaultScale;
-          }
-          const isMobile = window.matchMedia("(max-width: 768px)").matches;
-          resetScale = isMobile ? Math.min(resetScale, 1.15) : resetScale;
-          const d3 = window.d3;
+          const defaultFit = getDefaultGraphTransform(w, h);
           svg.transition().duration(750).call(
             zoomBehavior.transform,
-            window.d3.zoomIdentity.translate(w / 2, h / 2).scale(resetScale).translate(-w / 2, -h / 2)
+            defaultFit.transform
           );
         }
       };

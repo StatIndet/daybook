@@ -5,9 +5,9 @@ import "testing"
 func TestGroupNotes(t *testing.T) {
 	notes := []Note{
 		{Slug: "foo", Lang: "zh-CN", I18nKey: "my-group"},
-		{Slug: "en/foo", Lang: "en", I18nKey: "my-group"},
+		{Slug: "foo-en", Lang: "en", I18nKey: "my-group"},
 		{Slug: "bar", Lang: "zh-CN"}, // no i18n_key
-		{Slug: "bar", Lang: "en"},    // no i18n_key
+		{Slug: "baz", Lang: "en"},    // no i18n_key
 	}
 	
 	groups, err := GroupNotes(notes)
@@ -19,14 +19,53 @@ func TestGroupNotes(t *testing.T) {
 		t.Fatalf("Expected 3 groups, got %d", len(groups))
 	}
 	
-	// my-group
-	var myGroup *ArticleGroup
+	groupsMap := make(map[string]*ArticleGroup)
 	for _, g := range groups {
-		if g.I18nKey == "my-group" {
-			myGroup = g
-		}
+		groupsMap[g.Key] = g
 	}
-	if myGroup == nil || len(myGroup.Versions) != 2 {
-		t.Fatalf("my-group not found or versions != 2")
+
+	// Bilingual article
+	myGroup := groupsMap["my-group"]
+	if myGroup == nil {
+		t.Fatalf("my-group not found")
+	}
+	if len(myGroup.Versions) != 2 {
+		t.Fatalf("my-group should have 2 versions")
+	}
+	if myGroup.Key != "my-group" {
+		t.Fatalf("my-group key should be my-group")
+	}
+	if myGroup.I18nKey != "my-group" {
+		t.Fatalf("my-group i18n_key should be my-group")
+	}
+
+	// Single language zh-CN
+	barKey := "single:zh-CN:bar"
+	barGroup := groupsMap[barKey]
+	if barGroup == nil {
+		t.Fatalf("bar group not found")
+	}
+	if barGroup.Key != barKey {
+		t.Errorf("Expected Key %s, got %s", barKey, barGroup.Key)
+	}
+	if barGroup.I18nKey != "" {
+		t.Errorf("Expected I18nKey empty, got %s", barGroup.I18nKey)
+	}
+
+	// Single language en
+	bazKey := "single:en:baz"
+	bazGroup := groupsMap[bazKey]
+	if bazGroup == nil {
+		t.Fatalf("baz group not found")
+	}
+	if bazGroup.Key != bazKey {
+		t.Errorf("Expected Key %s, got %s", bazKey, bazGroup.Key)
+	}
+	if bazGroup.I18nKey != "" {
+		t.Errorf("Expected I18nKey empty, got %s", bazGroup.I18nKey)
+	}
+	
+	if barGroup.Key == bazGroup.Key {
+		t.Errorf("Two different single-language notes should have different keys")
 	}
 }
