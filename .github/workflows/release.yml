@@ -34,7 +34,7 @@ jobs:
           npm run typecheck
           npm run test:reading-rail
           npm run build:js
-          npm run build:vendor-fonts
+          npm run build:vendor
 
       - name: Build Binaries
         env:
