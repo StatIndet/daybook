@@ -1,1 +1,70 @@
-var r=!1;function s(){let e=document.body.dataset.readerMode==="immersive";o(!e)}function o(e){e?document.body.dataset.readerMode="immersive":delete document.body.dataset.readerMode,n(),document.dispatchEvent(new CustomEvent("daybook:reader-mode-change",{detail:{enabled:e}}))}function i(){document.body.dataset.readerMode==="immersive"&&delete document.body.dataset.readerMode}function n(){let e=document.body.dataset.readerMode==="immersive";document.querySelectorAll("[data-reader-toggle]").forEach(t=>{t.setAttribute("aria-pressed",e.toString())}),document.querySelectorAll("[data-reader-exit]").forEach(t=>{e?t.removeAttribute("hidden"):t.setAttribute("hidden","true")})}function c(e){e.key==="Escape"&&document.body.dataset.readerMode==="immersive"&&(e.preventDefault(),o(!1))}function u(){r||(r=!0,document.addEventListener("click",e=>{let d=e.target;if(d.closest("[data-reader-toggle]")){e.preventDefault(),s();return}if(d.closest("[data-reader-exit]")){e.preventDefault(),o(!1);return}}),document.addEventListener("keydown",c),document.addEventListener("daybook:before-swap",i),document.addEventListener("daybook:page-load",n))}function l(){u(),n()}export{l as initReaderMode};
+// assets/ts/reader-mode.ts
+var isBound = false;
+function toggleReaderMode() {
+  const isImmersive = document.body.dataset.readerMode === "immersive";
+  setReaderMode(!isImmersive);
+}
+function setReaderMode(enabled) {
+  if (enabled) {
+    document.body.dataset.readerMode = "immersive";
+  } else {
+    delete document.body.dataset.readerMode;
+  }
+  syncReaderControls();
+  document.dispatchEvent(new CustomEvent("daybook:reader-mode-change", { detail: { enabled } }));
+}
+function clearReaderMode() {
+  if (document.body.dataset.readerMode === "immersive") {
+    delete document.body.dataset.readerMode;
+  }
+}
+function syncReaderControls() {
+  const isImmersive = document.body.dataset.readerMode === "immersive";
+  const toggleBtns = document.querySelectorAll("[data-reader-toggle]");
+  toggleBtns.forEach((btn) => {
+    btn.setAttribute("aria-pressed", isImmersive.toString());
+  });
+  const exitBtns = document.querySelectorAll("[data-reader-exit]");
+  exitBtns.forEach((btn) => {
+    if (isImmersive) {
+      btn.removeAttribute("hidden");
+    } else {
+      btn.setAttribute("hidden", "true");
+    }
+  });
+}
+function handleKeyDown(e) {
+  if (e.key === "Escape" && document.body.dataset.readerMode === "immersive") {
+    e.preventDefault();
+    setReaderMode(false);
+  }
+}
+function bindEvents() {
+  if (isBound) return;
+  isBound = true;
+  document.addEventListener("click", (e) => {
+    const target = e.target;
+    const toggleBtn = target.closest("[data-reader-toggle]");
+    if (toggleBtn) {
+      e.preventDefault();
+      toggleReaderMode();
+      return;
+    }
+    const exitBtn = target.closest("[data-reader-exit]");
+    if (exitBtn) {
+      e.preventDefault();
+      setReaderMode(false);
+      return;
+    }
+  });
+  document.addEventListener("keydown", handleKeyDown);
+  document.addEventListener("daybook:before-swap", clearReaderMode);
+  document.addEventListener("daybook:page-load", syncReaderControls);
+}
+function initReaderMode() {
+  bindEvents();
+  syncReaderControls();
+}
+export {
+  initReaderMode
+};

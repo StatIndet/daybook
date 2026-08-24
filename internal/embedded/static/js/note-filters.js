@@ -1,1 +1,369 @@
-(function(){var b=!1,m=!1;function h(e){return e.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;")}function L(e,t){if(!t)return h(e);var a=h(e),n=h(t);n=n.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");var r=new RegExp("("+n+")","gi");return a.replace(r,'<mark class="search-highlight">$1</mark>')}function d(e){return(e||"").trim()}function g(e){return d(e).toLowerCase()}function q(){var e=new URLSearchParams(window.location.search),t=d(e.get("q")),a=d(e.get("tag"));return t?{type:"search",value:t}:a?{type:"tag",value:a}:{type:"",value:""}}function E(){return!!document.querySelector(".notes-list")}function p(){return new URL("/notes/",window.location.origin)}function A(e){history.replaceState({daybook:!0},"",e.href),window.daybookSyncPageKey&&window.daybookSyncPageKey(e.href)}function H(e){if(window.daybookNavigateTo){window.daybookNavigateTo(e.href);return}window.location.href=e.href}function N(){var e=document.querySelector("[data-notes-search]");e&&window.setTimeout(function(){e&&e.focus();var t=e?e.value.length:0;e&&e.setSelectionRange(t,t)},0)}function f(e,t,a){var n=document.querySelectorAll("[data-notes-tools]");n.length&&(n.forEach(function(r){r.classList.toggle("has-open-panel",e||t),r.classList.toggle("is-search-open",e),r.classList.toggle("is-tags-open",t),r.querySelectorAll("[data-notes-panel]").forEach(function(s){var o=s,c=o.dataset.notesPanel==="search"&&e||o.dataset.notesPanel==="tags"&&t;o.setAttribute("aria-hidden",c?"false":"true")})}),document.querySelectorAll("[data-notes-tool]").forEach(function(r){var s=r,o=s.dataset.notesTool==="search"&&e||s.dataset.notesTool==="tags"&&t;s.setAttribute("aria-expanded",o?"true":"false")}),e&&a&&N())}function F(e,t,a){var n=document.querySelector("[data-notes-tools]"),r=n&&n.classList.contains("is-search-open"),s=n&&n.classList.contains("is-tags-open");e==="search"&&(r=t),e==="tags"&&(s=t),f(r||!1,s||!1,a)}function R(e){return(e.dataset.tags||"").split(/\n/).map(d).filter(Boolean)}function B(e,t){if(!t.type)return!0;var a=(e.dataset.tagIds||"").split(/\n/).map(d).filter(Boolean);if(t.type==="tag"){var n=g(t.value);return a.some(function(c){return g(c)===n})}var r=R(e),s=g(t.value),o=[e.dataset.searchTitle||"",e.dataset.searchSummary||"",r.join(" ")].join(" ");return g(o).includes(s)}function S(e){var t=document.querySelectorAll("[data-note-card]"),a=0,n=e.type==="search"?e.value:"";t.forEach(function(s){var o=s,c=B(o,e);if(o.hidden=!c,c){a++;var i=o.querySelector(".notes-item-title a");i&&(i.hasAttribute("data-original-html")||i.setAttribute("data-original-html",i.innerHTML),n?i.innerHTML=L(o.dataset.searchTitle||"",n):i.innerHTML=i.getAttribute("data-original-html")||"");var l=o.querySelector(".notes-item-summary");l&&(l.hasAttribute("data-original-html")||l.setAttribute("data-original-html",l.innerHTML),n?l.innerHTML=L(o.dataset.searchSummary||"",n):l.innerHTML=l.getAttribute("data-original-html")||"")}}),document.querySelectorAll(".notes-pinned").forEach(function(s){var o=s,c=Array.from(o.querySelectorAll("[data-note-card]")).some(function(l){var u=l;return!u.hidden});o.hidden=!c;var i=document.querySelector(".notes-divider");i&&(i.hidden=!c)}),document.querySelectorAll(".notes-month").forEach(function(s){var o=s,c=Array.from(o.querySelectorAll("[data-note-card]")).some(function(i){var l=i;return!l.hidden});o.hidden=!c});var r=document.querySelector(".notes-filter-empty");r&&(r.hidden=!e.type||a>0)}function M(e){var t=e.type==="tag"?g(e.value):"";document.querySelectorAll("[data-notes-tag]").forEach(function(a){var n=a,r=n.dataset.notesTag||"",s=t!==""&&g(r)===t;n.classList.toggle("is-active",s),s?n.setAttribute("aria-current","page"):n.removeAttribute("aria-current")})}function I(e){var t=document.getElementById("mobile-tag-return");t&&(t.hidden=e.type!=="tag");var a=document.getElementById("tag-back-container"),n=document.getElementById("tag-back-title");a&&n&&(e.type==="tag"?(a.hidden=!1,n.textContent="#"+e.value):a.hidden=!0)}function x(e){var t=document.querySelector("[data-notes-search]");if(t){var a=e.type==="search"?e.value:"";t.value!==a&&(t.value=a)}}function y(){var e=q();x(e),M(e),I(e),E()&&S(e),e.type==="search"?f(!0,m,b):e.type==="tag"?f(!1,!0,!1):f(!1,!1,!1),b=!1,m=!1}function P(e){var t=p();e&&t.searchParams.set("q",e),A(t),S(e?{type:"search",value:e}:{type:"",value:""}),M({type:"",value:""})}function C(e){var t=d(e.value);E()&&P(t)}function U(e,t){e.classList.contains("is-active")&&(t.preventDefault(),m=!0,H(p()))}document.addEventListener("click",function(e){var t=e.target,a=t.closest("[data-notes-tag]");if(a){U(a,e);return}var n=t.closest("[data-notes-tool]");if(n){var r=n.dataset.notesTool;if(r){var s=document.querySelector("[data-notes-tools]"),o=s&&s.classList.contains("is-"+r+"-open");F(r,!o,r==="search"&&!o)}}}),document.addEventListener("click",function(e){var t=e.target,a=t.closest("#tag-back-btn");if(a){e.preventDefault();var n=p();H(n)}}),document.addEventListener("input",function(e){var t=e.target,a=t.closest("[data-notes-search]");a&&C(a)}),document.addEventListener("keydown",function(e){var t=e.target;e.key!=="Escape"||!t.closest("[data-notes-tools]")||f(!1,!1,!1)});function T(){document.querySelectorAll(".notes-tags-panel:not(.mobile-tags-panel)").forEach(t=>{if(t.hasAttribute("data-scrollbar-initialized"))return;t.setAttribute("data-scrollbar-initialized","true");let a=t.querySelector(".notes-tags-scroll-viewport"),n=t.querySelector(".notes-tags-scrollbar"),r=t.querySelector(".notes-tags-scrollbar-thumb");if(!a||!n||!r)return;let s=null,o=()=>{let u=a.clientHeight,v=a.scrollHeight,$=a.scrollTop;if(v<=u||u===0){n.classList.remove("is-visible");return}let K=30,z=u/v,w=Math.max(K,u*z),k=v-u,D=u-w,V=(k>0?$/k:0)*D;r.style.height=`${w}px`,r.style.transform=`translateY(${V}px)`},c=()=>{let u=a.clientHeight;a.scrollHeight<=u||u===0||(n.classList.add("is-visible"),s!==null&&window.clearTimeout(s),s=window.setTimeout(()=>{n.classList.remove("is-visible")},800))};a.addEventListener("scroll",()=>{o(),c()},{passive:!0});let i=new ResizeObserver(()=>{o()});i.observe(a);let l=a.querySelector(".notes-tag-list");l&&i.observe(l),o()})}document.addEventListener("daybook:page-load",T),document.readyState==="loading"?document.addEventListener("DOMContentLoaded",T):T(),window.daybookSyncNoteFilters=y,document.addEventListener("daybook:page-load",y),y()})();
+"use strict";
+(() => {
+  // assets/ts/note-filters.ts
+  (function() {
+    var pendingSearchFocus = false;
+    var pendingTagsOpen = false;
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+    function highlightMatches(text, keyword) {
+      if (!keyword) return escapeHtml(text);
+      var escapedText = escapeHtml(text);
+      var escapedKeyword = escapeHtml(keyword);
+      escapedKeyword = escapedKeyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      var regex = new RegExp("(" + escapedKeyword + ")", "gi");
+      return escapedText.replace(regex, '<mark class="search-highlight">$1</mark>');
+    }
+    function cleanText(value) {
+      return (value || "").trim();
+    }
+    function lower(value) {
+      return cleanText(value).toLowerCase();
+    }
+    function currentFilter() {
+      var params = new URLSearchParams(window.location.search);
+      var query = cleanText(params.get("q"));
+      var tag = cleanText(params.get("tag"));
+      if (query) {
+        return { type: "search", value: query };
+      }
+      if (tag) {
+        return { type: "tag", value: tag };
+      }
+      return { type: "", value: "" };
+    }
+    function isNotesPage() {
+      return Boolean(document.querySelector(".notes-list"));
+    }
+    function notesURL() {
+      return new URL("/notes/", window.location.origin);
+    }
+    function replaceURL(url) {
+      history.replaceState({ daybook: true }, "", url.href);
+      if (window.daybookSyncPageKey) {
+        window.daybookSyncPageKey(url.href);
+      }
+    }
+    function navigateTo(url) {
+      if (window.daybookNavigateTo) {
+        window.daybookNavigateTo(url.href);
+        return;
+      }
+      window.location.href = url.href;
+    }
+    function focusSearchInput() {
+      var input = document.querySelector("[data-notes-search]");
+      if (!input) {
+        return;
+      }
+      window.setTimeout(function() {
+        if (input) input.focus();
+        var end = input ? input.value.length : 0;
+        if (input) input.setSelectionRange(end, end);
+      }, 0);
+    }
+    function syncToolsState(searchOpen, tagsOpen, focusSearch) {
+      var toolsList = document.querySelectorAll("[data-notes-tools]");
+      if (!toolsList.length) {
+        return;
+      }
+      toolsList.forEach(function(tools) {
+        tools.classList.toggle("has-open-panel", searchOpen || tagsOpen);
+        tools.classList.toggle("is-search-open", searchOpen);
+        tools.classList.toggle("is-tags-open", tagsOpen);
+        tools.querySelectorAll("[data-notes-panel]").forEach(function(panelEl) {
+          var panel = panelEl;
+          var isActive = panel.dataset.notesPanel === "search" && searchOpen || panel.dataset.notesPanel === "tags" && tagsOpen;
+          panel.setAttribute("aria-hidden", isActive ? "false" : "true");
+        });
+      });
+      document.querySelectorAll("[data-notes-tool]").forEach(function(buttonEl) {
+        var button = buttonEl;
+        var isActive = button.dataset.notesTool === "search" && searchOpen || button.dataset.notesTool === "tags" && tagsOpen;
+        button.setAttribute("aria-expanded", isActive ? "true" : "false");
+      });
+      if (searchOpen && focusSearch) {
+        focusSearchInput();
+      }
+    }
+    function setToolOpen(toolName, isOpen, focusSearch) {
+      var firstTools = document.querySelector("[data-notes-tools]");
+      var searchOpen = firstTools && firstTools.classList.contains("is-search-open");
+      var tagsOpen = firstTools && firstTools.classList.contains("is-tags-open");
+      if (toolName === "search") {
+        searchOpen = isOpen;
+      }
+      if (toolName === "tags") {
+        tagsOpen = isOpen;
+      }
+      syncToolsState(searchOpen || false, tagsOpen || false, focusSearch);
+    }
+    function noteTags(card) {
+      return (card.dataset.tags || "").split(/\n/).map(cleanText).filter(Boolean);
+    }
+    function matchesFilter(card, filter) {
+      if (!filter.type) {
+        return true;
+      }
+      var tags = (card.dataset.tagIds || "").split(/\n/).map(cleanText).filter(Boolean);
+      if (filter.type === "tag") {
+        var activeTag = lower(filter.value);
+        return tags.some(function(tag) {
+          return lower(tag) === activeTag;
+        });
+      }
+      var textTags = noteTags(card);
+      var keyword = lower(filter.value);
+      var text = [
+        card.dataset.searchTitle || "",
+        card.dataset.searchSummary || "",
+        textTags.join(" ")
+      ].join(" ");
+      return lower(text).includes(keyword);
+    }
+    function applyNoteFilters(filter) {
+      var cards = document.querySelectorAll("[data-note-card]");
+      var visibleCount = 0;
+      var keyword = filter.type === "search" ? filter.value : "";
+      cards.forEach(function(cardEl) {
+        var card = cardEl;
+        var isVisible = matchesFilter(card, filter);
+        card.hidden = !isVisible;
+        if (isVisible) {
+          visibleCount++;
+          var titleA = card.querySelector(".notes-item-title a");
+          if (titleA) {
+            if (!titleA.hasAttribute("data-original-html")) {
+              titleA.setAttribute("data-original-html", titleA.innerHTML);
+            }
+            if (keyword) {
+              titleA.innerHTML = highlightMatches(card.dataset.searchTitle || "", keyword);
+            } else {
+              titleA.innerHTML = titleA.getAttribute("data-original-html") || "";
+            }
+          }
+          var summary = card.querySelector(".notes-item-summary");
+          if (summary) {
+            if (!summary.hasAttribute("data-original-html")) {
+              summary.setAttribute("data-original-html", summary.innerHTML);
+            }
+            if (keyword) {
+              summary.innerHTML = highlightMatches(card.dataset.searchSummary || "", keyword);
+            } else {
+              summary.innerHTML = summary.getAttribute("data-original-html") || "";
+            }
+          }
+        }
+      });
+      document.querySelectorAll(".notes-pinned").forEach(function(pinnedEl) {
+        var pinned = pinnedEl;
+        var hasVisibleNote = Array.from(pinned.querySelectorAll("[data-note-card]")).some(function(cardEl) {
+          var card = cardEl;
+          return !card.hidden;
+        });
+        pinned.hidden = !hasVisibleNote;
+        var divider = document.querySelector(".notes-divider");
+        if (divider) {
+          divider.hidden = !hasVisibleNote;
+        }
+      });
+      document.querySelectorAll(".notes-month").forEach(function(monthEl) {
+        var month = monthEl;
+        var hasVisibleNote = Array.from(month.querySelectorAll("[data-note-card]")).some(function(cardEl) {
+          var card = cardEl;
+          return !card.hidden;
+        });
+        month.hidden = !hasVisibleNote;
+      });
+      var empty = document.querySelector(".notes-filter-empty");
+      if (empty) {
+        empty.hidden = !filter.type || visibleCount > 0;
+      }
+    }
+    function updateActiveTags(filter) {
+      var activeTag = filter.type === "tag" ? lower(filter.value) : "";
+      document.querySelectorAll("[data-notes-tag]").forEach(function(linkEl) {
+        var link = linkEl;
+        var linkTag = link.dataset.notesTag || "";
+        var isActive = activeTag !== "" && lower(linkTag) === activeTag;
+        link.classList.toggle("is-active", isActive);
+        if (isActive) {
+          link.setAttribute("aria-current", "page");
+        } else {
+          link.removeAttribute("aria-current");
+        }
+      });
+    }
+    function updateMobileTagReturn(filter) {
+      var returnBtn = document.getElementById("mobile-tag-return");
+      if (returnBtn) {
+        returnBtn.hidden = filter.type !== "tag";
+      }
+      var tagBackContainer = document.getElementById("tag-back-container");
+      var tagBackTitle = document.getElementById("tag-back-title");
+      if (tagBackContainer && tagBackTitle) {
+        if (filter.type === "tag") {
+          tagBackContainer.hidden = false;
+          tagBackTitle.textContent = "#" + filter.value;
+        } else {
+          tagBackContainer.hidden = true;
+        }
+      }
+    }
+    function syncSearchInput(filter) {
+      var input = document.querySelector("[data-notes-search]");
+      if (!input) {
+        return;
+      }
+      var value = filter.type === "search" ? filter.value : "";
+      if (input.value !== value) {
+        input.value = value;
+      }
+    }
+    function syncNoteFilters() {
+      var filter = currentFilter();
+      syncSearchInput(filter);
+      updateActiveTags(filter);
+      updateMobileTagReturn(filter);
+      if (isNotesPage()) {
+        applyNoteFilters(filter);
+      }
+      if (filter.type === "search") {
+        syncToolsState(true, pendingTagsOpen, pendingSearchFocus);
+      } else if (filter.type === "tag") {
+        syncToolsState(false, true, false);
+      } else {
+        syncToolsState(false, false, false);
+      }
+      pendingSearchFocus = false;
+      pendingTagsOpen = false;
+    }
+    function updateNotesSearch(query) {
+      var url = notesURL();
+      if (query) {
+        url.searchParams.set("q", query);
+      }
+      replaceURL(url);
+      applyNoteFilters(query ? { type: "search", value: query } : { type: "", value: "" });
+      updateActiveTags({ type: "", value: "" });
+    }
+    function handleSearchInput(input) {
+      var query = cleanText(input.value);
+      if (isNotesPage()) {
+        updateNotesSearch(query);
+      }
+    }
+    function handleTagClick(link, event) {
+      if (!link.classList.contains("is-active")) {
+        return;
+      }
+      event.preventDefault();
+      pendingTagsOpen = true;
+      navigateTo(notesURL());
+    }
+    document.addEventListener("click", function(event) {
+      var target = event.target;
+      var tagLink = target.closest("[data-notes-tag]");
+      if (tagLink) {
+        handleTagClick(tagLink, event);
+        return;
+      }
+      var toolButton = target.closest("[data-notes-tool]");
+      if (!toolButton) {
+        return;
+      }
+      var toolName = toolButton.dataset.notesTool;
+      if (!toolName) return;
+      var firstTools = document.querySelector("[data-notes-tools]");
+      var isOpen = firstTools && firstTools.classList.contains("is-" + toolName + "-open");
+      setToolOpen(toolName, !isOpen, toolName === "search" && !isOpen);
+    });
+    document.addEventListener("click", function(event) {
+      var target = event.target;
+      var backBtn = target.closest("#tag-back-btn");
+      if (backBtn) {
+        event.preventDefault();
+        var url = notesURL();
+        navigateTo(url);
+      }
+    });
+    document.addEventListener("input", function(event) {
+      var target = event.target;
+      var input = target.closest("[data-notes-search]");
+      if (!input) {
+        return;
+      }
+      handleSearchInput(input);
+    });
+    document.addEventListener("keydown", function(event) {
+      var target = event.target;
+      if (event.key !== "Escape" || !target.closest("[data-notes-tools]")) {
+        return;
+      }
+      syncToolsState(false, false, false);
+    });
+    function syncTagsScrollbar() {
+      const panels = document.querySelectorAll(".notes-tags-panel:not(.mobile-tags-panel)");
+      panels.forEach((panel) => {
+        if (panel.hasAttribute("data-scrollbar-initialized")) return;
+        panel.setAttribute("data-scrollbar-initialized", "true");
+        const viewport = panel.querySelector(".notes-tags-scroll-viewport");
+        const scrollbar = panel.querySelector(".notes-tags-scrollbar");
+        const thumb = panel.querySelector(".notes-tags-scrollbar-thumb");
+        if (!viewport || !scrollbar || !thumb) return;
+        let hideTimer = null;
+        const updateTagsScrollbarGeometry = () => {
+          const clientHeight = viewport.clientHeight;
+          const scrollHeight = viewport.scrollHeight;
+          const scrollTop = viewport.scrollTop;
+          if (scrollHeight <= clientHeight || clientHeight === 0) {
+            scrollbar.classList.remove("is-visible");
+            return;
+          }
+          const minThumb = 30;
+          const ratio = clientHeight / scrollHeight;
+          const thumbHeight = Math.max(minThumb, clientHeight * ratio);
+          const scrollRange = scrollHeight - clientHeight;
+          const thumbRange = clientHeight - thumbHeight;
+          const progress = scrollRange > 0 ? scrollTop / scrollRange : 0;
+          const thumbTop = progress * thumbRange;
+          thumb.style.height = `${thumbHeight}px`;
+          thumb.style.transform = `translateY(${thumbTop}px)`;
+        };
+        const showTagsScrollbarTemporarily = () => {
+          const clientHeight = viewport.clientHeight;
+          const scrollHeight = viewport.scrollHeight;
+          if (scrollHeight <= clientHeight || clientHeight === 0) return;
+          scrollbar.classList.add("is-visible");
+          if (hideTimer !== null) {
+            window.clearTimeout(hideTimer);
+          }
+          hideTimer = window.setTimeout(() => {
+            scrollbar.classList.remove("is-visible");
+          }, 800);
+        };
+        viewport.addEventListener("scroll", () => {
+          updateTagsScrollbarGeometry();
+          showTagsScrollbarTemporarily();
+        }, { passive: true });
+        const observer = new ResizeObserver(() => {
+          updateTagsScrollbarGeometry();
+        });
+        observer.observe(viewport);
+        const tagList = viewport.querySelector(".notes-tag-list");
+        if (tagList) observer.observe(tagList);
+        updateTagsScrollbarGeometry();
+      });
+    }
+    document.addEventListener("daybook:page-load", syncTagsScrollbar);
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", syncTagsScrollbar);
+    } else {
+      syncTagsScrollbar();
+    }
+    window.daybookSyncNoteFilters = syncNoteFilters;
+    document.addEventListener("daybook:page-load", syncNoteFilters);
+    syncNoteFilters();
+  })();
+})();

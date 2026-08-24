@@ -1,8 +1,483 @@
-function P(f){let v=document.createElement("div");v.className="embed-fallback";let o=document.createElement("div");if(o.innerHTML='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>',v.appendChild(o),f.message){let s=document.createElement("span");s.textContent=f.message,v.appendChild(s)}if(f.linkText&&f.linkUrl){let s=document.createElement("a");s.href=f.linkUrl,s.textContent=f.linkText,s.target="_blank",s.rel="noopener noreferrer",v.appendChild(s)}return v}function j(){document.querySelectorAll(".embed-frame iframe").forEach(v=>{let o=v,s=o.parentElement;if(!s||!s.classList.contains("embed-frame")||s.dataset.embedStatus==="loading"||s.dataset.embedStatus==="ready"||s.dataset.embedStatus==="error")return;s.dataset.embedStatus="loading";let S=!1,T=null,k=a=>{if(!S&&(S=!0,T&&window.clearTimeout(T),s.dataset.embedStatus=a,a==="error")){let t="\u5916\u94FE",r=o.src;r.includes("youtube")||r.includes("youtu.be")?t="YouTube":r.includes("bilibili")?t="Bilibili":r.includes("spotify")?t="Spotify":r.includes("codepen")&&(t="CodePen"),o.style.display="none";let i=P({message:`\u65E0\u6CD5\u52A0\u8F7D ${t} \u5D4C\u5165\u5185\u5BB9`,linkText:`\u524D\u5F80 ${t} \u67E5\u770B`,linkUrl:r});s.appendChild(i)}};o.addEventListener("load",()=>k("ready")),o.addEventListener("error",()=>k("error")),T=window.setTimeout(()=>k("error"),15e3)})}function O(){document.querySelectorAll(".markdown img, .gallery img").forEach(v=>{let o=v;if(o.classList.contains("music-cover")||o.closest(".persistent-logo")||o.closest(".side-nav-avatar")||o.dataset.embedStatus==="loading"||o.dataset.embedStatus==="ready"||o.dataset.embedStatus==="error")return;if(o.complete&&o.naturalHeight>0){o.dataset.embedStatus="ready";return}o.dataset.embedStatus="loading";let s=!1,S=window.setTimeout(()=>{s||(s=!0,o.dataset.embedStatus="error")},2e4),T=()=>{s||(s=!0,window.clearTimeout(S),o.dataset.embedStatus="ready")},k=()=>{s||(s=!0,window.clearTimeout(S),o.dataset.embedStatus="error")};o.addEventListener("load",T),o.addEventListener("error",k)})}(function(){var f=new Intl.NumberFormat("en",{notation:"compact",maximumFractionDigits:1});async function v(a){var t="github-repo-"+a;try{var r=sessionStorage.getItem(t);if(r)return JSON.parse(r)}catch{try{sessionStorage.removeItem(t)}catch{}}try{var i=await fetch("https://api.github.com/repos/"+a);if(!i.ok)return console.warn("[GithubCard] Failed to fetch "+a+": "+i.status+" "+i.statusText),null;var n=await i.json(),e={owner:{avatar_url:n.owner&&n.owner.avatar_url},description:n.description,stargazers_count:n.stargazers_count,forks_count:n.forks_count,license:n.license?{spdx_id:n.license.spdx_id}:null};try{sessionStorage.setItem(t,JSON.stringify(e))}catch{}return e}catch(u){return console.error("[GithubCard] Failed to fetch "+a+":",u),null}}function o(a,t){var r=function(n,e){var u=a.querySelector(n);u&&(u.textContent=String(e))};if(!t){r(".gc-repo-description","Failed to load data");return}var i=a.querySelector(".gc-owner-avatar");i&&t.owner&&t.owner.avatar_url&&(i.style.backgroundImage="url("+t.owner.avatar_url+")",i.style.backgroundSize="cover",i.style.backgroundPosition="center"),r(".gc-repo-description",t.description||"No description"),r(".gc-stars-count",f.format(t.stargazers_count||0)),r(".gc-forks-count",f.format(t.forks_count||0)),r(".gc-license-info",t.license&&t.license.spdx_id||"No License")}async function s(a){var t=a.getAttribute("data-repo");if(!t)return;a.dataset.embedStatus="loading";let r=!1,i=window.setTimeout(()=>{r||(r=!0,a.dataset.embedStatus="error",a.innerHTML="",a.appendChild(P({message:"\u52A0\u8F7D GitHub \u4ED3\u5E93\u4FE1\u606F\u8D85\u65F6",linkText:"\u524D\u5F80 GitHub \u67E5\u770B",linkUrl:"https://github.com/"+t})))},1e4);var n=await v(t);if(!r){if(r=!0,window.clearTimeout(i),!n){a.dataset.embedStatus="error",a.innerHTML="",a.appendChild(P({message:"\u65E0\u6CD5\u52A0\u8F7D GitHub \u4ED3\u5E93\u4FE1\u606F",linkText:"\u524D\u5F80 GitHub \u67E5\u770B",linkUrl:"https://github.com/"+t}));return}a.dataset.embedStatus="ready",o(a,n)}}function S(){var a=document.querySelectorAll(".gc-container");a.forEach(function(t){let r=t;r.dataset.embedStatus==="loading"||r.dataset.embedStatus==="ready"||r.dataset.embedStatus==="error"||s(r)})}function T(){var a=document.querySelectorAll(".twitter-tweet");if(a.length===0)return;let t=!1;if(a.forEach(function(i){let n=i;if(n.dataset.embedStatus==="loading"||n.dataset.embedStatus==="ready"||n.dataset.embedStatus==="error")return;n.setAttribute("data-theme","light"),n.dataset.embedStatus="loading",t=!0;let e=document.createElement("div");e.className="tweet-skeleton",e.innerHTML=`
+"use strict";
+(() => {
+  // assets/ts/embed-loading.ts
+  function createFallbackElement(options) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "embed-fallback";
+    const icon = document.createElement("div");
+    icon.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+    wrapper.appendChild(icon);
+    if (options.message) {
+      const msg = document.createElement("span");
+      msg.textContent = options.message;
+      wrapper.appendChild(msg);
+    }
+    if (options.linkText && options.linkUrl) {
+      const link = document.createElement("a");
+      link.href = options.linkUrl;
+      link.textContent = options.linkText;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      wrapper.appendChild(link);
+    }
+    return wrapper;
+  }
+  function setupIframeEmbeds() {
+    const iframes = document.querySelectorAll(".embed-frame iframe");
+    iframes.forEach((iframeEl) => {
+      const iframe = iframeEl;
+      const container = iframe.parentElement;
+      if (!container || !container.classList.contains("embed-frame")) return;
+      if (container.dataset.embedStatus === "loading" || container.dataset.embedStatus === "ready" || container.dataset.embedStatus === "error") {
+        return;
+      }
+      container.dataset.embedStatus = "loading";
+      let isFinished = false;
+      let timer = null;
+      const finalize = (status) => {
+        if (isFinished) return;
+        isFinished = true;
+        if (timer) window.clearTimeout(timer);
+        container.dataset.embedStatus = status;
+        if (status === "error") {
+          let platformName = "\u5916\u94FE";
+          let url = iframe.src;
+          if (url.includes("youtube") || url.includes("youtu.be")) platformName = "YouTube";
+          else if (url.includes("bilibili")) platformName = "Bilibili";
+          else if (url.includes("spotify")) platformName = "Spotify";
+          else if (url.includes("codepen")) platformName = "CodePen";
+          iframe.style.display = "none";
+          const fallback = createFallbackElement({
+            message: `\u65E0\u6CD5\u52A0\u8F7D ${platformName} \u5D4C\u5165\u5185\u5BB9`,
+            linkText: `\u524D\u5F80 ${platformName} \u67E5\u770B`,
+            linkUrl: url
+          });
+          container.appendChild(fallback);
+        }
+      };
+      iframe.addEventListener("load", () => finalize("ready"));
+      iframe.addEventListener("error", () => finalize("error"));
+      timer = window.setTimeout(() => finalize("error"), 15e3);
+    });
+  }
+
+  // assets/ts/image-loader.ts
+  function setupImages() {
+    const contentImages = document.querySelectorAll(".markdown img, .gallery img");
+    contentImages.forEach((imgEl) => {
+      const img = imgEl;
+      if (img.classList.contains("music-cover")) return;
+      if (img.closest(".persistent-logo")) return;
+      if (img.closest(".side-nav-avatar")) return;
+      if (img.dataset.embedStatus === "loading" || img.dataset.embedStatus === "ready" || img.dataset.embedStatus === "error") {
+        return;
+      }
+      if (img.complete && img.naturalHeight > 0) {
+        img.dataset.embedStatus = "ready";
+        return;
+      }
+      img.dataset.embedStatus = "loading";
+      let isFinished = false;
+      const timer = window.setTimeout(() => {
+        if (isFinished) return;
+        isFinished = true;
+        img.dataset.embedStatus = "error";
+      }, 2e4);
+      const onReady = () => {
+        if (isFinished) return;
+        isFinished = true;
+        window.clearTimeout(timer);
+        img.dataset.embedStatus = "ready";
+      };
+      const onError = () => {
+        if (isFinished) return;
+        isFinished = true;
+        window.clearTimeout(timer);
+        img.dataset.embedStatus = "error";
+      };
+      img.addEventListener("load", onReady);
+      img.addEventListener("error", onError);
+    });
+  }
+
+  // assets/ts/embeds.ts
+  (function() {
+    var compactNumberFormat = new Intl.NumberFormat("en", {
+      notation: "compact",
+      maximumFractionDigits: 1
+    });
+    async function fetchRepoData(repo) {
+      var cacheKey = "github-repo-" + repo;
+      try {
+        var cachedData = sessionStorage.getItem(cacheKey);
+        if (cachedData) {
+          return JSON.parse(cachedData);
+        }
+      } catch (e) {
+        try {
+          sessionStorage.removeItem(cacheKey);
+        } catch (err) {
+        }
+      }
+      try {
+        var response = await fetch("https://api.github.com/repos/" + repo);
+        if (!response.ok) {
+          console.warn(
+            "[GithubCard] Failed to fetch " + repo + ": " + response.status + " " + response.statusText
+          );
+          return null;
+        }
+        var raw = await response.json();
+        var data = {
+          owner: { avatar_url: raw.owner && raw.owner.avatar_url },
+          description: raw.description,
+          stargazers_count: raw.stargazers_count,
+          forks_count: raw.forks_count,
+          license: raw.license ? { spdx_id: raw.license.spdx_id } : null
+        };
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify(data));
+        } catch (err) {
+        }
+        return data;
+      } catch (error) {
+        console.error("[GithubCard] Failed to fetch " + repo + ":", error);
+        return null;
+      }
+    }
+    function updateCardUI(card, data) {
+      var setText = function(selector, text) {
+        var el = card.querySelector(selector);
+        if (el) {
+          el.textContent = String(text);
+        }
+      };
+      if (!data) {
+        setText(".gc-repo-description", "Failed to load data");
+        return;
+      }
+      var avatar = card.querySelector(".gc-owner-avatar");
+      if (avatar && data.owner && data.owner.avatar_url) {
+        avatar.style.backgroundImage = "url(" + data.owner.avatar_url + ")";
+        avatar.style.backgroundSize = "cover";
+        avatar.style.backgroundPosition = "center";
+      }
+      setText(".gc-repo-description", data.description || "No description");
+      setText(".gc-stars-count", compactNumberFormat.format(data.stargazers_count || 0));
+      setText(".gc-forks-count", compactNumberFormat.format(data.forks_count || 0));
+      setText(".gc-license-info", data.license && data.license.spdx_id || "No License");
+    }
+    async function loadRepoData(card) {
+      var repo = card.getAttribute("data-repo");
+      if (!repo) {
+        return;
+      }
+      card.dataset.embedStatus = "loading";
+      let isFinished = false;
+      let timer = window.setTimeout(() => {
+        if (isFinished) return;
+        isFinished = true;
+        card.dataset.embedStatus = "error";
+        card.innerHTML = "";
+        card.appendChild(createFallbackElement({
+          message: "\u52A0\u8F7D GitHub \u4ED3\u5E93\u4FE1\u606F\u8D85\u65F6",
+          linkText: "\u524D\u5F80 GitHub \u67E5\u770B",
+          linkUrl: "https://github.com/" + repo
+        }));
+      }, 1e4);
+      var data = await fetchRepoData(repo);
+      if (isFinished) return;
+      isFinished = true;
+      window.clearTimeout(timer);
+      if (!data) {
+        card.dataset.embedStatus = "error";
+        card.innerHTML = "";
+        card.appendChild(createFallbackElement({
+          message: "\u65E0\u6CD5\u52A0\u8F7D GitHub \u4ED3\u5E93\u4FE1\u606F",
+          linkText: "\u524D\u5F80 GitHub \u67E5\u770B",
+          linkUrl: "https://github.com/" + repo
+        }));
+        return;
+      }
+      card.dataset.embedStatus = "ready";
+      updateCardUI(card, data);
+    }
+    function setupGithubCards() {
+      var cards = document.querySelectorAll(".gc-container");
+      cards.forEach(function(card) {
+        const htmlCard = card;
+        if (htmlCard.dataset.embedStatus === "loading" || htmlCard.dataset.embedStatus === "ready" || htmlCard.dataset.embedStatus === "error") return;
+        loadRepoData(htmlCard);
+      });
+    }
+    function setupTweets() {
+      var tweets = document.querySelectorAll(".twitter-tweet");
+      if (tweets.length === 0) {
+        return;
+      }
+      let needsScript = false;
+      tweets.forEach(function(tweetEl) {
+        const tweet = tweetEl;
+        if (tweet.dataset.embedStatus === "loading" || tweet.dataset.embedStatus === "ready" || tweet.dataset.embedStatus === "error") return;
+        tweet.setAttribute("data-theme", "light");
+        tweet.dataset.embedStatus = "loading";
+        needsScript = true;
+        const skeleton = document.createElement("div");
+        skeleton.className = "tweet-skeleton";
+        skeleton.innerHTML = `
         <div class="tweet-skeleton-header">
           <div class="tweet-skeleton-avatar"></div>
           <div class="tweet-skeleton-name"></div>
         </div>
         <div class="tweet-skeleton-body1"></div>
         <div class="tweet-skeleton-body2"></div>
-      `,n.appendChild(e);let u=!1,g=window.setTimeout(()=>{if(u)return;u=!0,n.dataset.embedStatus="error",n.innerHTML="";let y=n.querySelector("a")?.href||"https://x.com/";n.parentElement?.appendChild(P({message:"\u65E0\u6CD5\u52A0\u8F7D\u63A8\u6587",linkText:"\u524D\u5F80 X / Twitter \u67E5\u770B",linkUrl:y})),n.style.display="none"},15e3);window.twttr&&window.twttr.events&&window.twttr.events.bind("rendered",function(y){y.target===n&&(u=!0,window.clearTimeout(g),n.dataset.embedStatus="ready")})}),!!t){if(window.twttr&&window.twttr.widgets)window.twttr.widgets.load();else if(!document.getElementById("twitter-wjs")){var r=document.createElement("script");r.id="twitter-wjs",r.src="https://platform.twitter.com/widgets.js",r.async=!0,document.head.appendChild(r)}}}function k(){var a=document.querySelectorAll(".music-custom-player");if(a.length===0)return;function t(r){if(isNaN(r))return"0:00";var i=Math.floor(r/60),n=Math.floor(r%60);return i+":"+(n<10?"0":"")+n}a.forEach(function(r){let i=r;if(i.dataset.tsbound==="true")return;i.dataset.tsbound="true";var n=i.querySelector(".music-player"),e=i.querySelector("audio"),u=i.querySelector(".music-playbtn"),g=i.querySelector(".music-icon"),y=i.querySelector(".music-time"),w=i.querySelector(".music-canvas");if(!n||!e||!u||!g||!y||!w)return;var l=w.getContext("2d");if(!l)return;var _=!1,L=null,M=!1,p=0,x=0,E=0,A=!1,N=0,z=0;function R(d){g.textContent!==d&&(g.style.transition="transform 200ms cubic-bezier(0.3, 0, 1, 1), color 400ms cubic-bezier(0.2, 0, 0, 1)",g.style.transform="scale(0)",setTimeout(function(){g.textContent=d,g.style.transition="transform 200ms cubic-bezier(0, 0, 0, 1), color 400ms cubic-bezier(0.2, 0, 0, 1)",g.style.transform="scale(1)"},200))}u.addEventListener("click",function(){e.paused?e.play():e.pause()}),e.addEventListener("play",function(){_=!0,n.classList.add("is-playing"),R("pause"),document.dispatchEvent(new CustomEvent("daybook:embed-play",{detail:{audio:e}})),E=performance.now(),L||q(E)}),e.addEventListener("pause",function(){_=!1,n.classList.remove("is-playing"),R("play_arrow")}),e.addEventListener("ended",function(){_=!1,n.classList.remove("is-playing"),R("play_arrow"),A=!0,N=0,z=p,e.currentTime=0,L||(E=performance.now(),q(E))}),e.addEventListener("timeupdate",function(){M||(y.textContent=t(e.currentTime)+" / "+t(e.duration))}),e.addEventListener("loadedmetadata",function(){y.textContent=t(e.currentTime)+" / "+t(e.duration),I(e.duration?e.currentTime/e.duration:0,x)}),e.readyState>=1&&(y.textContent=t(e.currentTime)+" / "+t(e.duration),p=e.duration?e.currentTime/e.duration:0,I(p,x)),w.addEventListener("pointerdown",function(d){M=!0,A=!1,B(d)}),window.addEventListener("pointermove",function(d){M&&B(d)}),window.addEventListener("pointerup",function(d){if(M){M=!1;var c=w.getBoundingClientRect(),b=Math.max(0,Math.min(d.clientX-c.left,c.width))/c.width;e.duration&&(e.currentTime=b*e.duration),L||(E=performance.now(),q(E))}});function B(d){var c=w.getBoundingClientRect(),b=Math.max(0,Math.min(d.clientX-c.left,c.width))/c.width;e.duration&&(y.textContent=t(b*e.duration)+" / "+t(e.duration)),p=b,I(b,x)}function I(d,c){var b=w.getBoundingClientRect(),h=b.width*2,m=b.height*2;if(!(h===0||m===0)){w.width!==h&&(w.width=h),w.height!==m&&(w.height=m),l.clearRect(0,0,h,m);var U=10,C=10,W=5,J=.08,$=c%1200/1200*Math.PI*2,D=h*d;l.beginPath(),l.lineWidth=C,l.lineCap="round",l.lineJoin="round",l.strokeStyle="rgba(255, 255, 255, 1)";var F=C/2,G=Math.max(F,D-(U+C/2));if(G>F){for(var H=F;H<=G;H++){var X=m/2+Math.sin((H-F)*J+$)*W;H===F?l.moveTo(H,X):l.lineTo(H,X)}l.stroke()}var K=Math.min(h-C/2,D+U);l.beginPath(),l.moveTo(K,m/2),l.lineTo(h-C/2,m/2),l.strokeStyle="rgba(255, 255, 255, 0.3)",l.stroke(),l.beginPath(),l.arc(h-C/2,m/2,3,0,Math.PI*2),l.fillStyle="rgba(255, 255, 255, 1)",l.fill()}}function q(d){var c=d-(E||d);if(E=d,_&&(x+=c),A){N+=c;var b=Math.min(1,N/1e3),h=Math.pow(b,3);p=z*(1-h),I(p,x),b>=1?(A=!1,L=null):L=requestAnimationFrame(q);return}var m=e.duration?e.currentTime/e.duration:0;M?p=m:p+=(m-p)*.15,I(p,x),_||Math.abs(p-m)>.001?L=requestAnimationFrame(q):L=null}document.addEventListener("daybook:global-play",()=>{e.paused||e.pause()}),e.addEventListener("error",()=>{console.error("Music audio error for url:",e.src),i.dataset.status="error"})})}window.daybookSyncEmbeds=function(){S(),T(),k(),j(),O()},document.addEventListener("daybook:page-load",function(){window.daybookSyncEmbeds()}),document.addEventListener("daybook:article-content-swapped",function(){window.daybookSyncEmbeds()}),document.addEventListener("daybook:before-swap",function(){})})();
+      `;
+        tweet.appendChild(skeleton);
+        let isFinished = false;
+        const timer = window.setTimeout(() => {
+          if (isFinished) return;
+          isFinished = true;
+          tweet.dataset.embedStatus = "error";
+          tweet.innerHTML = "";
+          const href = tweet.querySelector("a")?.href || "https://x.com/";
+          tweet.parentElement?.appendChild(createFallbackElement({
+            message: "\u65E0\u6CD5\u52A0\u8F7D\u63A8\u6587",
+            linkText: "\u524D\u5F80 X / Twitter \u67E5\u770B",
+            linkUrl: href
+          }));
+          tweet.style.display = "none";
+        }, 15e3);
+        if (window.twttr && window.twttr.events) {
+          window.twttr.events.bind("rendered", function(event) {
+            if (event.target === tweet) {
+              isFinished = true;
+              window.clearTimeout(timer);
+              tweet.dataset.embedStatus = "ready";
+            }
+          });
+        }
+      });
+      if (!needsScript) return;
+      if (window.twttr && window.twttr.widgets) {
+        window.twttr.widgets.load();
+      } else if (!document.getElementById("twitter-wjs")) {
+        var script = document.createElement("script");
+        script.id = "twitter-wjs";
+        script.src = "https://platform.twitter.com/widgets.js";
+        script.async = true;
+        document.head.appendChild(script);
+      }
+    }
+    function setupMusicPlayers() {
+      var players = document.querySelectorAll(".music-custom-player");
+      if (players.length === 0) return;
+      function formatTime(seconds) {
+        if (isNaN(seconds)) return "0:00";
+        var m = Math.floor(seconds / 60);
+        var s = Math.floor(seconds % 60);
+        return m + ":" + (s < 10 ? "0" : "") + s;
+      }
+      players.forEach(function(containerEl) {
+        const container = containerEl;
+        if (container.dataset.tsbound === "true") return;
+        container.dataset.tsbound = "true";
+        var playerWrapper = container.querySelector(".music-player");
+        var audio = container.querySelector("audio");
+        var playBtn = container.querySelector(".music-playbtn");
+        var iconSpan = container.querySelector(".music-icon");
+        var timeDiv = container.querySelector(".music-time");
+        var canvas = container.querySelector(".music-canvas");
+        if (!playerWrapper || !audio || !playBtn || !iconSpan || !timeDiv || !canvas) return;
+        var ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        var isPlaying = false;
+        var reqId = null;
+        var drag = false;
+        var smoothedProgress = 0;
+        var wavePhase = 0;
+        var lastTime = 0;
+        var rewinding = false;
+        var rewindTime = 0;
+        var rewindStart = 0;
+        function swapIcon(name) {
+          if (iconSpan.textContent === name) return;
+          iconSpan.style.transition = "transform 200ms cubic-bezier(0.3, 0, 1, 1), color 400ms cubic-bezier(0.2, 0, 0, 1)";
+          iconSpan.style.transform = "scale(0)";
+          setTimeout(function() {
+            iconSpan.textContent = name;
+            iconSpan.style.transition = "transform 200ms cubic-bezier(0, 0, 0, 1), color 400ms cubic-bezier(0.2, 0, 0, 1)";
+            iconSpan.style.transform = "scale(1)";
+          }, 200);
+        }
+        playBtn.addEventListener("click", function() {
+          if (audio.paused) audio.play();
+          else audio.pause();
+        });
+        audio.addEventListener("play", function() {
+          isPlaying = true;
+          playerWrapper.classList.add("is-playing");
+          swapIcon("pause");
+          document.dispatchEvent(new CustomEvent("daybook:embed-play", {
+            detail: { audio }
+          }));
+          lastTime = performance.now();
+          if (!reqId) loop(lastTime);
+        });
+        audio.addEventListener("pause", function() {
+          isPlaying = false;
+          playerWrapper.classList.remove("is-playing");
+          swapIcon("play_arrow");
+        });
+        audio.addEventListener("ended", function() {
+          isPlaying = false;
+          playerWrapper.classList.remove("is-playing");
+          swapIcon("play_arrow");
+          rewinding = true;
+          rewindTime = 0;
+          rewindStart = smoothedProgress;
+          audio.currentTime = 0;
+          if (!reqId) {
+            lastTime = performance.now();
+            loop(lastTime);
+          }
+        });
+        audio.addEventListener("timeupdate", function() {
+          if (!drag) timeDiv.textContent = formatTime(audio.currentTime) + " / " + formatTime(audio.duration);
+        });
+        audio.addEventListener("loadedmetadata", function() {
+          timeDiv.textContent = formatTime(audio.currentTime) + " / " + formatTime(audio.duration);
+          drawWave(audio.duration ? audio.currentTime / audio.duration : 0, wavePhase);
+        });
+        if (audio.readyState >= 1) {
+          timeDiv.textContent = formatTime(audio.currentTime) + " / " + formatTime(audio.duration);
+          smoothedProgress = audio.duration ? audio.currentTime / audio.duration : 0;
+          drawWave(smoothedProgress, wavePhase);
+        }
+        canvas.addEventListener("pointerdown", function(e) {
+          drag = true;
+          rewinding = false;
+          updateSeek(e);
+        });
+        window.addEventListener("pointermove", function(e) {
+          if (drag) updateSeek(e);
+        });
+        window.addEventListener("pointerup", function(e) {
+          if (drag) {
+            drag = false;
+            var rect = canvas.getBoundingClientRect();
+            var p = Math.max(0, Math.min(e.clientX - rect.left, rect.width)) / rect.width;
+            if (audio.duration) audio.currentTime = p * audio.duration;
+            if (!reqId) {
+              lastTime = performance.now();
+              loop(lastTime);
+            }
+          }
+        });
+        function updateSeek(e) {
+          var rect = canvas.getBoundingClientRect();
+          var p = Math.max(0, Math.min(e.clientX - rect.left, rect.width)) / rect.width;
+          if (audio.duration) timeDiv.textContent = formatTime(p * audio.duration) + " / " + formatTime(audio.duration);
+          smoothedProgress = p;
+          drawWave(p, wavePhase);
+        }
+        function drawWave(progress, time) {
+          var rect = canvas.getBoundingClientRect();
+          var w = rect.width * 2;
+          var h = rect.height * 2;
+          if (w === 0 || h === 0) return;
+          if (canvas.width !== w) canvas.width = w;
+          if (canvas.height !== h) canvas.height = h;
+          ctx.clearRect(0, 0, w, h);
+          var gap = 10;
+          var lineWidth = 10;
+          var waveAmp = 5;
+          var waveFreq = 0.08;
+          var phase = time % 1200 / 1200 * Math.PI * 2;
+          var progressX = w * progress;
+          ctx.beginPath();
+          ctx.lineWidth = lineWidth;
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.strokeStyle = "rgba(255, 255, 255, 1)";
+          var startX = lineWidth / 2;
+          var endX = Math.max(startX, progressX - (gap + lineWidth / 2));
+          if (endX > startX) {
+            for (var x = startX; x <= endX; x++) {
+              var y = h / 2 + Math.sin((x - startX) * waveFreq + phase) * waveAmp;
+              if (x === startX) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+          }
+          var trackStartX = Math.min(w - lineWidth / 2, progressX + gap);
+          ctx.beginPath();
+          ctx.moveTo(trackStartX, h / 2);
+          ctx.lineTo(w - lineWidth / 2, h / 2);
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(w - lineWidth / 2, h / 2, 3, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255, 255, 255, 1)";
+          ctx.fill();
+        }
+        function loop(t) {
+          var dt = t - (lastTime || t);
+          lastTime = t;
+          if (isPlaying) {
+            wavePhase += dt;
+          }
+          if (rewinding) {
+            rewindTime += dt;
+            var p = Math.min(1, rewindTime / 1e3);
+            var ease = Math.pow(p, 3);
+            smoothedProgress = rewindStart * (1 - ease);
+            drawWave(smoothedProgress, wavePhase);
+            if (p >= 1) {
+              rewinding = false;
+              reqId = null;
+            } else {
+              reqId = requestAnimationFrame(loop);
+            }
+            return;
+          }
+          var targetProgress = audio.duration ? audio.currentTime / audio.duration : 0;
+          if (!drag) {
+            smoothedProgress += (targetProgress - smoothedProgress) * 0.15;
+          } else {
+            smoothedProgress = targetProgress;
+          }
+          drawWave(smoothedProgress, wavePhase);
+          if (isPlaying || Math.abs(smoothedProgress - targetProgress) > 1e-3) {
+            reqId = requestAnimationFrame(loop);
+          } else {
+            reqId = null;
+          }
+        }
+        document.addEventListener("daybook:global-play", () => {
+          if (!audio.paused) {
+            audio.pause();
+          }
+        });
+        audio.addEventListener("error", () => {
+          console.error("Music audio error for url:", audio.src);
+          container.dataset.status = "error";
+        });
+      });
+    }
+    window.daybookSyncEmbeds = function() {
+      setupGithubCards();
+      setupTweets();
+      setupMusicPlayers();
+      setupIframeEmbeds();
+      setupImages();
+    };
+    document.addEventListener("daybook:page-load", function() {
+      window.daybookSyncEmbeds();
+    });
+    document.addEventListener("daybook:article-content-swapped", function() {
+      window.daybookSyncEmbeds();
+    });
+    document.addEventListener("daybook:before-swap", function() {
+    });
+  })();
+})();

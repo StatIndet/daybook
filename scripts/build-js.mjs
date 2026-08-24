@@ -9,29 +9,81 @@ const root = path.resolve(__dirname, '..');
 
 const isWatch = process.argv.includes('--watch');
 
-const tsFiles = fs.readdirSync(path.join(root, 'assets', 'ts'))
-  .filter(file => file.endsWith('.ts'))
-  .map(file => path.join(root, 'assets', 'ts', file));
+const classicEntries = [
+  'code-copy',
+  'custom-cursor',
+  'daybook-router',
+  'embeds',
+  'gallery',
+  'graph-loader',
+  'graph',
+  'heading-anchors',
+  'katex-loader',
+  'lightbox',
+  'mermaid-loader',
+  'mobile-drawer',
+  'mobile-toc',
+  'note-bilingual',
+  'note-filters',
+  'page-transition-engine',
+  'search-overlay',
+  'theme',
+  'toc'
+].map(name => path.join(root, 'assets', 'ts', `${name}.ts`));
 
-const buildOptions = {
-  entryPoints: tsFiles,
+const moduleEntries = [
+  'reader-mode',
+  'reading-controls',
+  'settings-overlay',
+  'share-overlay',
+  'waline-loader'
+].map(name => path.join(root, 'assets', 'ts', `${name}.ts`));
+
+const commonOptions = {
   outdir: path.join(root, 'internal', 'embedded', 'static', 'js'),
   bundle: true,
   sourcemap: isWatch ? 'inline' : false,
-  minify: !isWatch,
-  format: 'esm',
+  minify: false, // temporarily disabled to avoid regression
   target: ['es2020'],
   external: ['/vendor/*'],
   logLevel: 'info',
 };
 
+const classicOptions = {
+  ...commonOptions,
+  entryPoints: classicEntries,
+  format: 'iife'
+};
+
+const moduleOptions = {
+  ...commonOptions,
+  entryPoints: moduleEntries,
+  format: 'esm'
+};
+
 async function run() {
   if (isWatch) {
-    const ctx = await esbuild.context(buildOptions);
-    await ctx.watch();
+    const ctxClassic = await esbuild.context(classicOptions);
+    const ctxModule = await esbuild.context(moduleOptions);
+    await ctxClassic.watch();
+    await ctxModule.watch();
     console.log('Watching for TS changes...');
   } else {
-    await esbuild.build(buildOptions);
+    // clear stale JS outputs
+    const jsDir = path.join(root, 'internal', 'embedded', 'static', 'js');
+    if (fs.existsSync(jsDir)) {
+      const files = fs.readdirSync(jsDir);
+      for (const file of files) {
+        if (file.endsWith('.js') || file.endsWith('.js.map')) {
+          fs.unlinkSync(path.join(jsDir, file));
+        }
+      }
+    }
+    
+    await Promise.all([
+      esbuild.build(classicOptions),
+      esbuild.build(moduleOptions)
+    ]);
     console.log('JS Build complete.');
   }
 }

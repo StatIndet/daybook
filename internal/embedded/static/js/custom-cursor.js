@@ -1,1 +1,500 @@
-var x=class{constructor(){this.rafId=null;this.state="hidden";this.width=0;this.height=0;this.cursor={x:window.innerWidth/2,y:window.innerHeight/2};this.dy=new Float64Array(200);this.dx=new Float64Array(200);this.zy=new Float64Array(200);this.zx=new Float64Array(200);this.pscale=new Float64Array(200);this.popacity=new Float64Array(200);this.pradiusOffset=new Float64Array(200);this.pdx=new Float64Array(200);this.pdy=new Float64Array(200);this.vx=new Float64Array(200);this.vy=new Float64Array(200);this.sum=0;this.theDays=["SUNDAY","MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY"];this.theMonths=["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];this.dateInWords=[];this.clockNumbers=["3","4","5","6","7","8","9","10","11","12","1","2"];this.hourHand=["\u2022","\u2022","\u2022"];this.minuteHand=["\u2022","\u2022","\u2022","\u2022"];this.secondHand=["\u2022","\u2022","\u2022","\u2022","\u2022"];this.F=this.clockNumbers.length;this.siz=70;this.eqf=360/this.F;this.eqd=0;this.han=12;this.colors={main:"",text:"",muted:""};this.lastDateString="";this.canvas=document.createElement("canvas"),this.canvas.className="daybook-cursor-clock",this.canvas.setAttribute("aria-hidden","true"),this.ctx=this.canvas.getContext("2d"),document.body.appendChild(this.canvas),this.sum=this.dateInWords.length+this.F+this.hourHand.length+this.minuteHand.length+this.secondHand.length+1;for(let t=0;t<200;t++)this.dy[t]=0,this.dx[t]=0,this.zy[t]=0,this.zx[t]=0,this.pscale[t]=0,this.popacity[t]=0,this.pradiusOffset[t]=-15,this.vx[t]=0,this.vy[t]=0;this.onResizeBound=()=>this.onResize(),this.onResize(),window.addEventListener("resize",this.onResizeBound,{passive:!0}),this.updateDateWords()}onResize(){this.width=window.innerWidth,this.height=window.innerHeight;let t=window.devicePixelRatio||1;this.canvas.width=this.width*t,this.canvas.height=this.height*t,this.canvas.style.width=`${this.width}px`,this.canvas.style.height=`${this.height}px`,this.ctx.scale(t,t)}updateColors(){let t=getComputedStyle(document.body);this.colors.main=t.getPropertyValue("--color-accent").trim()||"blue",this.colors.text=t.getPropertyValue("--color-text").trim()||"black",this.colors.muted=t.getPropertyValue("--color-muted").trim()||"gray"}updateDateWords(){let t=new Date,e=t.getDate(),n=t.getFullYear(),h=` ${this.theDays[t.getDay()]} ${this.theMonths[t.getMonth()]} ${e} ${n} `;h!==this.lastDateString&&(this.lastDateString=h,this.dateInWords=h.split(""),this.eqd=360/this.dateInWords.length,this.sum=this.dateInWords.length+this.F+this.hourHand.length+this.minuteHand.length+this.secondHand.length+1)}updateTarget(t,e){this.cursor.x=t,this.cursor.y=e}start(t,e){if(!(this.state==="entering"||this.state==="active")){if(this.updateTarget(t,e),this.state==="hidden"||this.state==="snapped")for(let n=0;n<this.sum;n++)this.dx[n]=0,this.dy[n]=0,this.pdx[n]=0,this.pdy[n]=0,this.zx[n]=0,this.zy[n]=0,this.pscale[n]=1,this.popacity[n]=0,this.pradiusOffset[n]=0;this.updateColors(),this.updateDateWords(),this.canvas.classList.add("is-visible"),this.state="entering",this.rafId||this.loop()}}stop(){this.state==="hidden"||this.state==="exiting"||this.state==="snapped"||(this.state="exiting")}destroy(){this.state="hidden",this.rafId!==null&&(cancelAnimationFrame(this.rafId),this.rafId=null),this.canvas&&this.canvas.parentNode&&this.canvas.parentNode.removeChild(this.canvas),window.removeEventListener("resize",this.onResizeBound)}snap(){if(!(this.state==="hidden"||this.state==="snapped")){this.state="snapped";for(let t=0;t<this.sum;t++)this.vx[t]=this.dx[t]-this.pdx[t],this.vy[t]=this.dy[t]-this.pdy[t]}}loop(){let t=!0;if(this.state==="entering"){for(let e=0;e<this.sum;e++)this.popacity[e]+=(1-this.popacity[e])*.3;Math.abs(this.dy[this.sum-1]-this.cursor.y)<2?t=!0:t=!1,t&&(this.state="active")}else if(this.state==="exiting"){for(let e=0;e<this.sum;e++)(e===this.sum-1||this.pscale[e+1]<.8)&&(this.pscale[e]+=(0-this.pscale[e])*.08,this.popacity[e]+=(0-this.popacity[e])*.08),this.pscale[e]>.01&&(t=!1);t&&(this.state="hidden",this.canvas.classList.remove("is-visible"))}else if(this.state==="snapped"){for(let e=0;e<this.sum;e++)this.dx[e]+=this.vx[e],this.dy[e]+=this.vy[e],this.vx[e]*=.96,this.vy[e]*=.96,this.popacity[e]-=.01,this.popacity[e]>0?t=!1:this.popacity[e]=0;t&&(this.state="hidden",this.canvas.classList.remove("is-visible"))}else this.state==="active"&&(t=!1);if(this.state==="hidden"){this.rafId=null,this.ctx.clearRect(0,0,this.width,this.height);return}this.state!=="snapped"&&this.updatePositions(),this.draw(),this.rafId=requestAnimationFrame(()=>this.loop())}updatePositions(){for(let e=0;e<this.sum;e++)this.pdx[e]=this.dx[e],this.pdy[e]=this.dy[e];this.zy[0]=this.dy[0]+=(this.cursor.y-this.dy[0])*.4,this.zx[0]=this.dx[0]+=(this.cursor.x-this.dx[0])*.4;for(let e=1;e<this.sum;e++)this.zy[e]=this.dy[e]+=(this.zy[e-1]-this.dy[e])*.4,this.zx[e]=this.dx[e]+=(this.zx[e-1]-this.dx[e])*.4}drawParticle(t,e,n,h,u){this.popacity[t]<=0||(this.ctx.save(),this.ctx.translate(e,n),this.ctx.scale(this.pscale[t],this.pscale[t]),this.ctx.globalAlpha=this.popacity[t],this.ctx.fillStyle=u,h==="\u2022"?(this.ctx.beginPath(),this.ctx.arc(0,0,4,0,Math.PI*2),this.ctx.fill()):this.ctx.fillText(h,0,0),this.ctx.restore())}draw(){this.ctx.clearRect(0,0,this.width,this.height);let t=new Date,e=t.getSeconds(),n=Math.PI*(e-15)/30,h=t.getMinutes(),u=Math.PI*(h-15)/30,g=t.getHours(),P=Math.PI*(g-3)/6+Math.PI*t.getMinutes()/360;this.ctx.font="normal 14px 'Maple Mono CN', 'Maple Mono', monospace",this.ctx.textAlign="center",this.ctx.textBaseline="middle";for(let s=0;s<this.dateInWords.length;s++){let a=this.siz*1.5+this.pradiusOffset[s],d=this.dy[s]+a*Math.sin(-n+s*this.eqd*Math.PI/180),p=this.dx[s]+a*Math.cos(-n+s*this.eqd*Math.PI/180);this.drawParticle(s,p,d,this.dateInWords[s],this.colors.muted)}for(let s=0;s<this.clockNumbers.length;s++){let a=this.dateInWords.length+s,d=this.siz+this.pradiusOffset[a],p=this.dy[a]+d*Math.sin(s*this.eqf*Math.PI/180),m=this.dx[a]+d*Math.cos(s*this.eqf*Math.PI/180);this.drawParticle(a,m,p,this.clockNumbers[s],this.colors.text)}for(let s=0;s<this.hourHand.length;s++){let a=this.dateInWords.length+this.F+s,d=s*this.han+this.pradiusOffset[a],p=this.dy[a]+d*Math.sin(P),m=this.dx[a]+d*Math.cos(P);this.drawParticle(a,m,p,this.hourHand[s],this.colors.text)}for(let s=0;s<this.minuteHand.length;s++){let a=this.dateInWords.length+this.F+this.hourHand.length+s,d=s*this.han+this.pradiusOffset[a],p=this.dy[a]+d*Math.sin(u),m=this.dx[a]+d*Math.cos(u);this.drawParticle(a,m,p,this.minuteHand[s],this.colors.text)}for(let s=0;s<this.secondHand.length;s++){let a=this.dateInWords.length+this.F+this.hourHand.length+this.minuteHand.length+s,d=s*this.han+this.pradiusOffset[a],p=this.dy[a]+d*Math.sin(n),m=this.dx[a]+d*Math.cos(n);this.drawParticle(a,m,p,this.secondHand[s],this.colors.main)}}};var w=!1,o=null,y=null,r=null,c=window.innerWidth/2,l=window.innerHeight/2,M=c,b=l,E=!1,A="default",f=!1,z=performance.now(),C=c,H=l,B=3,I={hover:'a, button, [role="button"], summary, .note-card, .nav-link, .theme-toggle, .mobile-drawer-button, .graph-toolbar button, .copy-button',text:'p, li, blockquote, .post-content, input, textarea, select, [contenteditable="true"], pre, code, .search-input',zoom:'.post-content img:not(.no-lightbox):not([data-no-lightbox="true"]), .gallery-image, .zoom-img'};function U(){M=c,b=l,o&&(o.style.transform=`translate3d(${M}px, ${b}px, 0)`),E=!1,y=null}function L(i=!1){f=!1,r&&(i?r.snap():r.stop())}function D(i){c=i.clientX,l=i.clientY;let t=performance.now(),e=Math.max(t-z,16),n=c-C,h=l-H,u=n*n+h*h;if(f&&r){let g=0;e>0&&(g=Math.sqrt(u)/e),g>B?L(!0):r.updateTarget(c,l)}z=t,C=c,H=l,E||(E=!0,y=requestAnimationFrame(U))}function v(i){A===i||!o||(A=i,o.dataset.cursorState=i,i!=="default"&&i!=="hidden"&&(f=!1,r&&r.stop()))}function F(i){if(!i){v("default");return}if(i.closest(".settings-overlay")){v("hidden");return}if(i.closest(I.zoom)){v("zoom");return}if(i.closest(I.hover)){v("hover");return}if(i.closest(I.text)){v("text");return}v("default")}function k(i){F(i.target)}function R(){o&&o.classList.add("is-active")}function S(){o&&o.classList.remove("is-active")}function N(i){i.relatedTarget===null&&v("hidden")}function T(i){F(i.target)}function W(i){document.documentElement.getAttribute("data-clock-cursor")==="true"&&(f?L(!1):A==="default"&&r&&(f=!0,r.start(M,b)))}function Y(){document.hidden?L(!1):r&&r.updateColors()}function O(){L(!1)}function q(){if(typeof window>"u"||w)return;let i=window.matchMedia("(hover: none), (pointer: coarse)").matches,t=window.matchMedia("(max-width: 768px)").matches;if(!(i||t)&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches&&document.documentElement.getAttribute("data-use-system-cursor")!=="true"){if(!o){o=document.createElement("div"),o.className="daybook-cursor",o.setAttribute("aria-hidden","true"),o.dataset.cursorState="default";let e=document.createElement("div");e.className="daybook-cursor__core",o.appendChild(e);let n=document.createElement("div");n.className="daybook-cursor__viewfinder";for(let h=0;h<4;h++){let u=document.createElement("div");u.className="daybook-cursor__corner",n.appendChild(u)}o.appendChild(n)}document.body.contains(o)||document.body.appendChild(o),document.documentElement.classList.add("has-custom-cursor"),r||(r=new x),c=window.innerWidth/2,l=window.innerHeight/2,M=c,b=l,E=!1,A="default",f=!1,z=performance.now(),C=c,H=l,document.addEventListener("pointermove",D,{passive:!0}),document.addEventListener("mouseover",k,{passive:!0}),document.addEventListener("mousedown",R,{passive:!0}),document.addEventListener("mouseup",S,{passive:!0}),document.addEventListener("mouseleave",N),document.addEventListener("mouseenter",T),document.addEventListener("click",W,{passive:!0}),document.addEventListener("visibilitychange",Y),document.addEventListener("daybook:page-load",O),w=!0}}function $(){w&&(document.removeEventListener("pointermove",D),document.removeEventListener("mouseover",k),document.removeEventListener("mousedown",R),document.removeEventListener("mouseup",S),document.removeEventListener("mouseleave",N),document.removeEventListener("mouseenter",T),document.removeEventListener("click",W),document.removeEventListener("visibilitychange",Y),document.removeEventListener("daybook:page-load",O),y!==null&&(cancelAnimationFrame(y),y=null),r&&(r.destroy(),r=null),o&&(o.parentNode&&o.parentNode.removeChild(o),o=null),document.documentElement.classList.remove("has-custom-cursor"),w=!1)}q();document.addEventListener("daybook:settings-change",i=>{i.detail.useSystemCursor?$():q()});
+"use strict";
+(() => {
+  // assets/ts/custom-cursor-clock.ts
+  var IdleClockController = class {
+    constructor() {
+      this.rafId = null;
+      this.state = "hidden";
+      this.width = 0;
+      this.height = 0;
+      this.cursor = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+      // Physics & Animation Arrays
+      this.dy = new Float64Array(200);
+      this.dx = new Float64Array(200);
+      this.zy = new Float64Array(200);
+      this.zx = new Float64Array(200);
+      this.pscale = new Float64Array(200);
+      this.popacity = new Float64Array(200);
+      this.pradiusOffset = new Float64Array(200);
+      this.pdx = new Float64Array(200);
+      this.pdy = new Float64Array(200);
+      this.vx = new Float64Array(200);
+      this.vy = new Float64Array(200);
+      this.sum = 0;
+      this.theDays = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
+      this.theMonths = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+      this.dateInWords = [];
+      this.clockNumbers = ["3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "1", "2"];
+      this.hourHand = ["\u2022", "\u2022", "\u2022"];
+      this.minuteHand = ["\u2022", "\u2022", "\u2022", "\u2022"];
+      this.secondHand = ["\u2022", "\u2022", "\u2022", "\u2022", "\u2022"];
+      this.F = this.clockNumbers.length;
+      this.siz = 70;
+      // Increased size for new hand geometry
+      this.eqf = 360 / this.F;
+      this.eqd = 0;
+      this.han = 12;
+      // Fixed 12px gap between 8px dots
+      this.colors = {
+        main: "",
+        text: "",
+        muted: ""
+      };
+      this.lastDateString = "";
+      this.canvas = document.createElement("canvas");
+      this.canvas.className = "daybook-cursor-clock";
+      this.canvas.setAttribute("aria-hidden", "true");
+      this.ctx = this.canvas.getContext("2d");
+      document.body.appendChild(this.canvas);
+      this.sum = this.dateInWords.length + this.F + this.hourHand.length + this.minuteHand.length + this.secondHand.length + 1;
+      for (let i = 0; i < 200; i++) {
+        this.dy[i] = 0;
+        this.dx[i] = 0;
+        this.zy[i] = 0;
+        this.zx[i] = 0;
+        this.pscale[i] = 0;
+        this.popacity[i] = 0;
+        this.pradiusOffset[i] = -15;
+        this.vx[i] = 0;
+        this.vy[i] = 0;
+      }
+      this.onResizeBound = () => this.onResize();
+      this.onResize();
+      window.addEventListener("resize", this.onResizeBound, { passive: true });
+      this.updateDateWords();
+    }
+    onResize() {
+      this.width = window.innerWidth;
+      this.height = window.innerHeight;
+      const dpr = window.devicePixelRatio || 1;
+      this.canvas.width = this.width * dpr;
+      this.canvas.height = this.height * dpr;
+      this.canvas.style.width = `${this.width}px`;
+      this.canvas.style.height = `${this.height}px`;
+      this.ctx.scale(dpr, dpr);
+    }
+    updateColors() {
+      const computed = getComputedStyle(document.body);
+      this.colors.main = computed.getPropertyValue("--color-accent").trim() || "blue";
+      this.colors.text = computed.getPropertyValue("--color-text").trim() || "black";
+      this.colors.muted = computed.getPropertyValue("--color-muted").trim() || "gray";
+    }
+    updateDateWords() {
+      const date = /* @__PURE__ */ new Date();
+      const day = date.getDate();
+      const year = date.getFullYear();
+      const newDateString = ` ${this.theDays[date.getDay()]} ${this.theMonths[date.getMonth()]} ${day} ${year} `;
+      if (newDateString !== this.lastDateString) {
+        this.lastDateString = newDateString;
+        this.dateInWords = newDateString.split("");
+        this.eqd = 360 / this.dateInWords.length;
+        this.sum = this.dateInWords.length + this.F + this.hourHand.length + this.minuteHand.length + this.secondHand.length + 1;
+      }
+    }
+    updateTarget(x, y) {
+      this.cursor.x = x;
+      this.cursor.y = y;
+    }
+    start(x, y) {
+      if (this.state === "entering" || this.state === "active") return;
+      this.updateTarget(x, y);
+      if (this.state === "hidden" || this.state === "snapped") {
+        for (let i = 0; i < this.sum; i++) {
+          this.dx[i] = 0;
+          this.dy[i] = 0;
+          this.pdx[i] = 0;
+          this.pdy[i] = 0;
+          this.zx[i] = 0;
+          this.zy[i] = 0;
+          this.pscale[i] = 1;
+          this.popacity[i] = 0;
+          this.pradiusOffset[i] = 0;
+        }
+      }
+      this.updateColors();
+      this.updateDateWords();
+      this.canvas.classList.add("is-visible");
+      this.state = "entering";
+      if (!this.rafId) {
+        this.loop();
+      }
+    }
+    stop() {
+      if (this.state === "hidden" || this.state === "exiting" || this.state === "snapped") return;
+      this.state = "exiting";
+    }
+    destroy() {
+      this.state = "hidden";
+      if (this.rafId !== null) {
+        cancelAnimationFrame(this.rafId);
+        this.rafId = null;
+      }
+      if (this.canvas && this.canvas.parentNode) {
+        this.canvas.parentNode.removeChild(this.canvas);
+      }
+      window.removeEventListener("resize", this.onResizeBound);
+    }
+    snap() {
+      if (this.state === "hidden" || this.state === "snapped") return;
+      this.state = "snapped";
+      for (let i = 0; i < this.sum; i++) {
+        this.vx[i] = this.dx[i] - this.pdx[i];
+        this.vy[i] = this.dy[i] - this.pdy[i];
+      }
+    }
+    loop() {
+      let allDone = true;
+      if (this.state === "entering") {
+        for (let i = 0; i < this.sum; i++) {
+          this.popacity[i] += (1 - this.popacity[i]) * 0.3;
+        }
+        if (Math.abs(this.dy[this.sum - 1] - this.cursor.y) < 2) {
+          allDone = true;
+        } else {
+          allDone = false;
+        }
+        if (allDone) this.state = "active";
+      } else if (this.state === "exiting") {
+        for (let i = 0; i < this.sum; i++) {
+          if (i === this.sum - 1 || this.pscale[i + 1] < 0.8) {
+            this.pscale[i] += (0 - this.pscale[i]) * 0.08;
+            this.popacity[i] += (0 - this.popacity[i]) * 0.08;
+          }
+          if (this.pscale[i] > 0.01) allDone = false;
+        }
+        if (allDone) {
+          this.state = "hidden";
+          this.canvas.classList.remove("is-visible");
+        }
+      } else if (this.state === "snapped") {
+        for (let i = 0; i < this.sum; i++) {
+          this.dx[i] += this.vx[i];
+          this.dy[i] += this.vy[i];
+          this.vx[i] *= 0.96;
+          this.vy[i] *= 0.96;
+          this.popacity[i] -= 0.01;
+          if (this.popacity[i] > 0) allDone = false;
+          else this.popacity[i] = 0;
+        }
+        if (allDone) {
+          this.state = "hidden";
+          this.canvas.classList.remove("is-visible");
+        }
+      } else if (this.state === "active") {
+        allDone = false;
+      }
+      if (this.state === "hidden") {
+        this.rafId = null;
+        this.ctx.clearRect(0, 0, this.width, this.height);
+        return;
+      }
+      if (this.state !== "snapped") {
+        this.updatePositions();
+      }
+      this.draw();
+      this.rafId = requestAnimationFrame(() => this.loop());
+    }
+    updatePositions() {
+      const del = 0.4;
+      for (let i = 0; i < this.sum; i++) {
+        this.pdx[i] = this.dx[i];
+        this.pdy[i] = this.dy[i];
+      }
+      this.zy[0] = this.dy[0] += (this.cursor.y - this.dy[0]) * del;
+      this.zx[0] = this.dx[0] += (this.cursor.x - this.dx[0]) * del;
+      for (let i = 1; i < this.sum; i++) {
+        this.zy[i] = this.dy[i] += (this.zy[i - 1] - this.dy[i]) * del;
+        this.zx[i] = this.dx[i] += (this.zx[i - 1] - this.dx[i]) * del;
+      }
+    }
+    drawParticle(idx, x, y, text, color) {
+      if (this.popacity[idx] <= 0) return;
+      this.ctx.save();
+      this.ctx.translate(x, y);
+      this.ctx.scale(this.pscale[idx], this.pscale[idx]);
+      this.ctx.globalAlpha = this.popacity[idx];
+      this.ctx.fillStyle = color;
+      if (text === "\u2022") {
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, 4, 0, Math.PI * 2);
+        this.ctx.fill();
+      } else {
+        this.ctx.fillText(text, 0, 0);
+      }
+      this.ctx.restore();
+    }
+    draw() {
+      this.ctx.clearRect(0, 0, this.width, this.height);
+      const time = /* @__PURE__ */ new Date();
+      const secs = time.getSeconds();
+      const sec = Math.PI * (secs - 15) / 30;
+      const mins = time.getMinutes();
+      const min = Math.PI * (mins - 15) / 30;
+      const hrs = time.getHours();
+      const hr = Math.PI * (hrs - 3) / 6 + Math.PI * time.getMinutes() / 360;
+      this.ctx.font = "normal 14px 'Maple Mono CN', 'Maple Mono', monospace";
+      this.ctx.textAlign = "center";
+      this.ctx.textBaseline = "middle";
+      for (let i = 0; i < this.dateInWords.length; i++) {
+        const rad = this.siz * 1.5 + this.pradiusOffset[i];
+        const y = this.dy[i] + rad * Math.sin(-sec + i * this.eqd * Math.PI / 180);
+        const x = this.dx[i] + rad * Math.cos(-sec + i * this.eqd * Math.PI / 180);
+        this.drawParticle(i, x, y, this.dateInWords[i], this.colors.muted);
+      }
+      for (let i = 0; i < this.clockNumbers.length; i++) {
+        const idx = this.dateInWords.length + i;
+        const rad = this.siz + this.pradiusOffset[idx];
+        const y = this.dy[idx] + rad * Math.sin(i * this.eqf * Math.PI / 180);
+        const x = this.dx[idx] + rad * Math.cos(i * this.eqf * Math.PI / 180);
+        this.drawParticle(idx, x, y, this.clockNumbers[i], this.colors.text);
+      }
+      for (let i = 0; i < this.hourHand.length; i++) {
+        const idx = this.dateInWords.length + this.F + i;
+        const rad = i * this.han + this.pradiusOffset[idx];
+        const y = this.dy[idx] + rad * Math.sin(hr);
+        const x = this.dx[idx] + rad * Math.cos(hr);
+        this.drawParticle(idx, x, y, this.hourHand[i], this.colors.text);
+      }
+      for (let i = 0; i < this.minuteHand.length; i++) {
+        const idx = this.dateInWords.length + this.F + this.hourHand.length + i;
+        const rad = i * this.han + this.pradiusOffset[idx];
+        const y = this.dy[idx] + rad * Math.sin(min);
+        const x = this.dx[idx] + rad * Math.cos(min);
+        this.drawParticle(idx, x, y, this.minuteHand[i], this.colors.text);
+      }
+      for (let i = 0; i < this.secondHand.length; i++) {
+        const idx = this.dateInWords.length + this.F + this.hourHand.length + this.minuteHand.length + i;
+        const rad = i * this.han + this.pradiusOffset[idx];
+        const y = this.dy[idx] + rad * Math.sin(sec);
+        const x = this.dx[idx] + rad * Math.cos(sec);
+        this.drawParticle(idx, x, y, this.secondHand[i], this.colors.main);
+      }
+    }
+  };
+
+  // assets/ts/custom-cursor.ts
+  var isInitialized = false;
+  var cursorEl = null;
+  var rafId = null;
+  var clockController = null;
+  var mouseX = window.innerWidth / 2;
+  var mouseY = window.innerHeight / 2;
+  var cursorX = mouseX;
+  var cursorY = mouseY;
+  var isMoving = false;
+  var currentState = "default";
+  var isClockActive = false;
+  var lastMoveTime = performance.now();
+  var lastMoveX = mouseX;
+  var lastMoveY = mouseY;
+  var BREAK_SPEED = 3;
+  var selectors = {
+    hover: 'a, button, [role="button"], summary, .note-card, .nav-link, .theme-toggle, .mobile-drawer-button, .graph-toolbar button, .copy-button',
+    text: 'p, li, blockquote, .post-content, input, textarea, select, [contenteditable="true"], pre, code, .search-input',
+    zoom: '.post-content img:not(.no-lightbox):not([data-no-lightbox="true"]), .gallery-image, .zoom-img'
+  };
+  function updateCursorPosition() {
+    cursorX = mouseX;
+    cursorY = mouseY;
+    if (cursorEl) {
+      cursorEl.style.transform = `translate3d(${cursorX}px, ${cursorY}px, 0)`;
+    }
+    isMoving = false;
+    rafId = null;
+  }
+  function breakIdleClock(snap = false) {
+    isClockActive = false;
+    if (!clockController) return;
+    if (snap) {
+      clockController.snap();
+    } else {
+      clockController.stop();
+    }
+  }
+  function handlePointerMove(e) {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+    const now = performance.now();
+    const dt = Math.max(now - lastMoveTime, 16);
+    const dx = mouseX - lastMoveX;
+    const dy = mouseY - lastMoveY;
+    const distSq = dx * dx + dy * dy;
+    if (isClockActive && clockController) {
+      let speed = 0;
+      if (dt > 0) speed = Math.sqrt(distSq) / dt;
+      if (speed > BREAK_SPEED) {
+        breakIdleClock(true);
+      } else {
+        clockController.updateTarget(mouseX, mouseY);
+      }
+    }
+    lastMoveTime = now;
+    lastMoveX = mouseX;
+    lastMoveY = mouseY;
+    if (!isMoving) {
+      isMoving = true;
+      rafId = requestAnimationFrame(updateCursorPosition);
+    }
+  }
+  function setState(state) {
+    if (currentState === state || !cursorEl) return;
+    currentState = state;
+    cursorEl.dataset.cursorState = state;
+    if (state !== "default" && state !== "hidden") {
+      isClockActive = false;
+      if (clockController) clockController.stop();
+    }
+  }
+  function updateStateFromTarget(target) {
+    if (!target) {
+      setState("default");
+      return;
+    }
+    if (target.closest(".settings-overlay")) {
+      setState("hidden");
+      return;
+    }
+    const zoomMatch = target.closest(selectors.zoom);
+    if (zoomMatch) {
+      setState("zoom");
+      return;
+    }
+    const hoverMatch = target.closest(selectors.hover);
+    if (hoverMatch) {
+      setState("hover");
+      return;
+    }
+    const textMatch = target.closest(selectors.text);
+    if (textMatch) {
+      setState("text");
+      return;
+    }
+    setState("default");
+  }
+  function handleMouseOver(e) {
+    updateStateFromTarget(e.target);
+  }
+  function handleMouseDown() {
+    if (cursorEl) cursorEl.classList.add("is-active");
+  }
+  function handleMouseUp() {
+    if (cursorEl) cursorEl.classList.remove("is-active");
+  }
+  function handleMouseLeave(e) {
+    if (e.relatedTarget === null) {
+      setState("hidden");
+    }
+  }
+  function handleMouseEnter(e) {
+    updateStateFromTarget(e.target);
+  }
+  function handleClick(e) {
+    if (document.documentElement.getAttribute("data-clock-cursor") !== "true") {
+      return;
+    }
+    if (isClockActive) {
+      breakIdleClock(false);
+    } else {
+      if (currentState === "default" && clockController) {
+        isClockActive = true;
+        clockController.start(cursorX, cursorY);
+      }
+    }
+  }
+  function handleVisibilityChange() {
+    if (document.hidden) breakIdleClock(false);
+    else if (clockController) clockController.updateColors();
+  }
+  function handlePageLoad() {
+    breakIdleClock(false);
+  }
+  function setupCustomCursor() {
+    if (typeof window === "undefined" || isInitialized) return;
+    const isTouch = window.matchMedia("(hover: none), (pointer: coarse)").matches;
+    const isMobileSize = window.matchMedia("(max-width: 768px)").matches;
+    if (isTouch || isMobileSize) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (document.documentElement.getAttribute("data-use-system-cursor") === "true") return;
+    if (!cursorEl) {
+      cursorEl = document.createElement("div");
+      cursorEl.className = "daybook-cursor";
+      cursorEl.setAttribute("aria-hidden", "true");
+      cursorEl.dataset.cursorState = "default";
+      const coreEl = document.createElement("div");
+      coreEl.className = "daybook-cursor__core";
+      cursorEl.appendChild(coreEl);
+      const viewfinderEl = document.createElement("div");
+      viewfinderEl.className = "daybook-cursor__viewfinder";
+      for (let i = 0; i < 4; i++) {
+        const corner = document.createElement("div");
+        corner.className = "daybook-cursor__corner";
+        viewfinderEl.appendChild(corner);
+      }
+      cursorEl.appendChild(viewfinderEl);
+    }
+    if (!document.body.contains(cursorEl)) {
+      document.body.appendChild(cursorEl);
+    }
+    document.documentElement.classList.add("has-custom-cursor");
+    if (!clockController) {
+      clockController = new IdleClockController();
+    }
+    mouseX = window.innerWidth / 2;
+    mouseY = window.innerHeight / 2;
+    cursorX = mouseX;
+    cursorY = mouseY;
+    isMoving = false;
+    currentState = "default";
+    isClockActive = false;
+    lastMoveTime = performance.now();
+    lastMoveX = mouseX;
+    lastMoveY = mouseY;
+    document.addEventListener("pointermove", handlePointerMove, { passive: true });
+    document.addEventListener("mouseover", handleMouseOver, { passive: true });
+    document.addEventListener("mousedown", handleMouseDown, { passive: true });
+    document.addEventListener("mouseup", handleMouseUp, { passive: true });
+    document.addEventListener("mouseleave", handleMouseLeave);
+    document.addEventListener("mouseenter", handleMouseEnter);
+    document.addEventListener("click", handleClick, { passive: true });
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener("daybook:page-load", handlePageLoad);
+    isInitialized = true;
+  }
+  function teardownCustomCursor() {
+    if (!isInitialized) return;
+    document.removeEventListener("pointermove", handlePointerMove);
+    document.removeEventListener("mouseover", handleMouseOver);
+    document.removeEventListener("mousedown", handleMouseDown);
+    document.removeEventListener("mouseup", handleMouseUp);
+    document.removeEventListener("mouseleave", handleMouseLeave);
+    document.removeEventListener("mouseenter", handleMouseEnter);
+    document.removeEventListener("click", handleClick);
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
+    document.removeEventListener("daybook:page-load", handlePageLoad);
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+    if (clockController) {
+      clockController.destroy();
+      clockController = null;
+    }
+    if (cursorEl) {
+      if (cursorEl.parentNode) {
+        cursorEl.parentNode.removeChild(cursorEl);
+      }
+      cursorEl = null;
+    }
+    document.documentElement.classList.remove("has-custom-cursor");
+    isInitialized = false;
+  }
+  setupCustomCursor();
+  document.addEventListener("daybook:settings-change", (e) => {
+    const settings = e.detail;
+    if (settings.useSystemCursor) {
+      teardownCustomCursor();
+    } else {
+      setupCustomCursor();
+    }
+  });
+})();
