@@ -64,7 +64,7 @@ jobs:
           sha256sum daybook_*.tar.gz > checksums.txt
 
       - name: Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             daybook_*.tar.gz
