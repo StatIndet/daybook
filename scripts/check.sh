@@ -2,7 +2,7 @@
 set -euo pipefail
 
 echo "==> Phase A: Dependency and Frontend Validation"
-npm ci
+if [ -z "${CI:-}" ]; then npm ci; fi
 npm run typecheck
 npm run test:reading-rail
 npm run build:js
@@ -12,7 +12,15 @@ echo "==> Phase B: Go Validation"
 go test ./...
 
 TEMP_DIR=$(mktemp -d)
-trap 'rm -rf "$TEMP_DIR"; kill $(jobs -p) 2>/dev/null || true' EXIT
+
+cleanup() {
+  if [[ -n "${SERVER_PID:-}" ]] && kill -0 "$SERVER_PID" 2>/dev/null; then
+    kill "$SERVER_PID" 2>/dev/null || true
+    wait "$SERVER_PID" 2>/dev/null || true
+  fi
+  rm -rf "${TEMP_DIR:-}"
+}
+trap cleanup EXIT INT TERM
 
 DAYBOOK_BIN="$TEMP_DIR/daybook-bin"
 echo "==> Building Daybook binary to $DAYBOOK_BIN"
@@ -97,12 +105,38 @@ fi
 echo "==> Starting Daybook dev server"
 "$DAYBOOK_BIN" serve &
 SERVER_PID=$!
-sleep 2
+
+max_attempts=20
+attempt=1
+ready=0
+while [ $attempt -le $max_attempts ]; do
+  sleep 0.2
+  if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+    echo "ERROR: Daybook test server failed to start on port 1313."
+    echo "Make sure port 1313 is available before running ./scripts/check.sh."
+    exit 1
+  fi
+  
+  if curl -s -f http://localhost:1313/ > /dev/null; then
+    ready=1
+    break
+  fi
+  attempt=$((attempt + 1))
+done
+
+sleep 0.2
+if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+  echo "ERROR: Daybook test server exited unexpectedly."
+  exit 1
+fi
+
+if [ $ready -eq 0 ]; then
+  echo "ERROR: Daybook test server did not become ready in time."
+  exit 1
+fi
 
 echo "==> Phase D: Browser Runtime Regression Test"
 cd - > /dev/null
 node scripts/browser-test.mjs
-
-kill $SERVER_PID || true
 
 echo "==> All checks passed successfully!"

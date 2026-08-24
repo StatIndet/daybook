@@ -87,8 +87,8 @@ function setState(state: string) {
   }
 }
 
-function updateStateFromTarget(target: HTMLElement | null) {
-  if (!target) {
+function updateStateFromTarget(target: EventTarget | null) {
+  if (!(target instanceof Element)) {
     setState("default");
     return;
   }
@@ -115,7 +115,7 @@ function updateStateFromTarget(target: HTMLElement | null) {
 }
 
 function handleMouseOver(e: MouseEvent) {
-  updateStateFromTarget(e.target as HTMLElement);
+  updateStateFromTarget(e.target);
 }
 
 function handleMouseDown() {
@@ -133,7 +133,7 @@ function handleMouseLeave(e: MouseEvent) {
 }
 
 function handleMouseEnter(e: MouseEvent) {
-  updateStateFromTarget(e.target as HTMLElement);
+  updateStateFromTarget(e.target);
 }
 
 function handleClick(e: MouseEvent) {

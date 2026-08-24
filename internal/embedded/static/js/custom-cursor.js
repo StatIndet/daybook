@@ -346,7 +346,7 @@
     }
   }
   function updateStateFromTarget(target) {
-    if (!target) {
+    if (!(target instanceof Element)) {
       setState("default");
       return;
     }
