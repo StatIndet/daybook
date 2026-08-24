@@ -183,7 +183,7 @@ interface GraphData {
     // Assuming each logical unit represents roughly 120 pixels of graph space.
     const logicalPixels = logicalDiameter * 120;
     
-    const GRAPH_VIEW_PADDING = 0.15; // 15% padding
+    const GRAPH_VIEW_PADDING = 0.18; // 18% padding to ensure edge labels aren't cut off
     const paddingMultiplier = 1 - GRAPH_VIEW_PADDING;
     const availableSize = Math.min(width, height) * paddingMultiplier;
     
@@ -481,6 +481,11 @@ interface GraphData {
     
     // Expose for search
     (window as any).__graphNodes = nodeGroup;
+    
+    // Sync initial LOD state
+    if (svg && svg.node()) {
+      updateLabelVisibility(window.d3.zoomTransform(svg.node()!).k);
+    }
   }
 
   function updateLabelVisibility(scale: number) {
@@ -498,12 +503,15 @@ interface GraphData {
                       : 2;
     const importantThreshold = Math.max(3, avgDegree * 1.5);
     
+    const LABEL_ALL_MIN_RELATIVE_SCALE = 0.80;
+    const LABEL_IMPORTANT_MIN_RELATIVE_SCALE = 0.55;
+    
     (window as any).__graphNodes.selectAll('.graph-label')
       .style('opacity', function(this: Element, d: GraphNode) {
         if (this.classList.contains('is-match') || this.classList.contains('is-highlight')) return 1;
         
-        if (relativeScale >= 1.3) return 1; // Zoomed in: show all labels
-        if (relativeScale >= 0.7) { // Moderately zoomed out: show important labels only
+        if (relativeScale >= LABEL_ALL_MIN_RELATIVE_SCALE) return 1; // Show all labels
+        if (relativeScale >= LABEL_IMPORTANT_MIN_RELATIVE_SCALE) { // Show important labels only
           return d.degree >= importantThreshold ? 1 : 0;
         }
         

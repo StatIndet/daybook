@@ -100,7 +100,7 @@
       logicalDiameter = graphMeta.layoutDiameter;
     }
     const logicalPixels = logicalDiameter * 120;
-    const GRAPH_VIEW_PADDING = 0.15;
+    const GRAPH_VIEW_PADDING = 0.18;
     const paddingMultiplier = 1 - GRAPH_VIEW_PADDING;
     const availableSize = Math.min(width, height) * paddingMultiplier;
     let fitScale = availableSize / logicalPixels;
@@ -305,6 +305,9 @@
       currentGroup.select(".graph-label").transition().duration(250).ease(window.window.d3.easeCubicOut).attr("dy", d.radius + 12);
     }
     window.__graphNodes = nodeGroup;
+    if (svg && svg.node()) {
+      updateLabelVisibility(window.d3.zoomTransform(svg.node()).k);
+    }
   }
   function updateLabelVisibility(scale) {
     if (!window.__graphNodes) return;
@@ -315,10 +318,12 @@
     const relativeScale = scale / fitScale;
     const avgDegree = graphMeta && graphMeta.linkCount && graphMeta.nodeCount ? graphMeta.linkCount * 2 / graphMeta.nodeCount : 2;
     const importantThreshold = Math.max(3, avgDegree * 1.5);
+    const LABEL_ALL_MIN_RELATIVE_SCALE = 0.8;
+    const LABEL_IMPORTANT_MIN_RELATIVE_SCALE = 0.55;
     window.__graphNodes.selectAll(".graph-label").style("opacity", function(d) {
       if (this.classList.contains("is-match") || this.classList.contains("is-highlight")) return 1;
-      if (relativeScale >= 1.3) return 1;
-      if (relativeScale >= 0.7) {
+      if (relativeScale >= LABEL_ALL_MIN_RELATIVE_SCALE) return 1;
+      if (relativeScale >= LABEL_IMPORTANT_MIN_RELATIVE_SCALE) {
         return d.degree >= importantThreshold ? 1 : 0;
       }
       return 0;
