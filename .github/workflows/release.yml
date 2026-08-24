@@ -69,4 +69,5 @@ jobs:
           files: |
             daybook_*.tar.gz
             checksums.txt
+            scripts/install.sh
           generate_release_notes: true
