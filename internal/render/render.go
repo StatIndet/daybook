@@ -233,20 +233,19 @@ type MonthGroup struct {
 	Notes []NoteLink
 }
 
-type ArchiveNote struct {
-	Index       int
-	Title       string
-	Date        string
-	DateShort   string
-	ReadingTime string
-	Summary     string
-	TagIDs      []string
-	URL         string
-}
-
-type ArchiveYearGroup struct {
-	Year  string
-	Notes []ArchiveNote
+type ArchiveRow struct {
+	Type        string   `json:"type"` // "year" or "note"
+	ID          string   `json:"id"`
+	Year        string   `json:"year,omitempty"`
+	Date        string   `json:"date,omitempty"`
+	DateShort   string   `json:"dateShort,omitempty"`
+	Title       string   `json:"title,omitempty"`
+	ReadingTime string   `json:"readingTime,omitempty"`
+	Summary     string   `json:"summary,omitempty"`
+	URL         string   `json:"url,omitempty"`
+	TagIDs      []string `json:"tagIDs,omitempty"`
+	Index       int      `json:"index,omitempty"`
+    IsLastInYear bool    `json:"isLastInYear,omitempty"`
 }
 
 type ArchiveData struct {
@@ -260,8 +259,7 @@ type ArchiveData struct {
 	Assets       Assets
 	HasMath      bool
 	Total        int
-	YearGroups   []ArchiveYearGroup
-	NextChunkURL string
+	Rows         []ArchiveRow
 	Tags         []TagLink
 	SEO          seo.SEOData
 	Pagination   PaginationData

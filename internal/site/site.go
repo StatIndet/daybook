@@ -37,10 +37,6 @@ type Options struct {
 	PublicDir    string
 }
 
-type ArchiveChunk struct {
-	YearGroups []render.ArchiveYearGroup `json:"groups"`
-	NextChunk  string                    `json:"nextChunk"`
-}
 
 type BuildResult struct {
 	Notes   []content.Note
@@ -599,16 +595,12 @@ func Build(options Options) (BuildResult, error) {
 			Alternates:  archiveAlternates,
 		}
 
-		var firstPageNotes []render.NoteLink
-		if len(noteLinks) > PageSize {
-			firstPageNotes = noteLinks[:PageSize]
+				var bootstrapNotes []render.NoteLink
+		// Create 8 bootstrap notes for hydration to avoid empty page
+		if len(noteLinks) > 8 {
+			bootstrapNotes = noteLinks[:8]
 		} else {
-			firstPageNotes = noteLinks
-		}
-
-		nextChunkURL := ""
-		if len(noteLinks) > PageSize {
-			nextChunkURL = joinURL("/", langPrefix, "archive", "chunks", "2.json")
+			bootstrapNotes = noteLinks
 		}
 
 		archiveData := render.ArchiveData{
@@ -621,8 +613,7 @@ func Build(options Options) (BuildResult, error) {
 			AlternateURL: joinURL("/", altLangPrefix, "archive"),
 			Assets:       assets,
 			Total:        len(noteLinks),
-			YearGroups:   archiveYearGroups(firstPageNotes),
-			NextChunkURL: nextChunkURL,
+			Rows:         buildArchiveRows(bootstrapNotes),
 			Tags:         tagLinks,
 			SEO:          seo.BuildForCollection(archiveSEOArgs),
 		}
@@ -630,40 +621,24 @@ func Build(options Options) (BuildResult, error) {
 			return BuildResult{}, fmt.Errorf("生成归档页: %w", err)
 		}
 
-		// Generate chunks
-		archiveTotalPages := int(math.Ceil(float64(len(noteLinks)) / float64(PageSize)))
-		for p := 2; p <= archiveTotalPages; p++ {
-			startIdx := (p - 1) * PageSize
-			endIdx := startIdx + PageSize
-			if endIdx > len(noteLinks) {
-				endIdx = len(noteLinks)
-			}
-			
-			chunkNotes := noteLinks[startIdx:endIdx]
-			
-			chunkNextURL := ""
-			if p < archiveTotalPages {
-				chunkNextURL = joinURL("/", langPrefix, "archive", "chunks", fmt.Sprintf("%d.json", p+1))
-			}
-			
-			chunk := ArchiveChunk{
-				YearGroups: archiveYearGroups(chunkNotes),
-				NextChunk:  chunkNextURL,
-			}
-			
-			chunkDir := filepath.Join(langPublicDir, "archive", "chunks")
-			if err := os.MkdirAll(chunkDir, 0755); err != nil {
-				return BuildResult{}, err
-			}
-			
-			chunkPath := filepath.Join(chunkDir, fmt.Sprintf("%d.json", p))
-			data, err := json.Marshal(chunk)
-			if err != nil {
-				return BuildResult{}, err
-			}
-			if err := os.WriteFile(chunkPath, data, 0644); err != nil {
-				return BuildResult{}, err
-			}
+		// Write all data to data.json
+		archiveDataJSON := struct {
+			Version int                 `json:"version"`
+			Total   int                 `json:"total"`
+			Rows    []render.ArchiveRow `json:"rows"`
+		}{
+			Version: 1,
+			Total:   len(noteLinks),
+			Rows:    buildArchiveRows(noteLinks),
+		}
+		
+		dataJSONPath := filepath.Join(langPublicDir, "archive", "data.json")
+		dataJSONBytes, err := json.Marshal(archiveDataJSON)
+		if err != nil {
+			return BuildResult{}, err
+		}
+		if err := os.WriteFile(dataJSONPath, dataJSONBytes, 0644); err != nil {
+			return BuildResult{}, err
 		}
 
 		aboutFile := "about.md"
@@ -1051,9 +1026,10 @@ func estimateReadingTime(text string) string {
 	return fmt.Sprintf("%d min", minutes)
 }
 
-func archiveYearGroups(notes []render.NoteLink) []render.ArchiveYearGroup {
-	groups := make([]render.ArchiveYearGroup, 0)
+func buildArchiveRows(notes []render.NoteLink) []render.ArchiveRow {
+	var rows []render.ArchiveRow
 	currentYear := ""
+	lastNoteIdx := -1
 
 	for index, note := range notes {
 		year := note.Date
@@ -1062,14 +1038,21 @@ func archiveYearGroups(notes []render.NoteLink) []render.ArchiveYearGroup {
 		}
 
 		if year != currentYear {
-			groups = append(groups, render.ArchiveYearGroup{
-				Year:  year,
-				Notes: []render.ArchiveNote{},
+			if lastNoteIdx != -1 {
+				rows[lastNoteIdx].IsLastInYear = true
+			}
+			rows = append(rows, render.ArchiveRow{
+				Type: "year",
+				ID:   "year:" + year,
+				Year: year,
 			})
 			currentYear = year
 		}
 
-		groups[len(groups)-1].Notes = append(groups[len(groups)-1].Notes, render.ArchiveNote{
+		rows = append(rows, render.ArchiveRow{
+			Type:        "note",
+			ID:          "note:" + note.URL,
+			Year:        year,
 			Index:       index,
 			Title:       note.Title,
 			Date:        note.Date,
@@ -1079,9 +1062,14 @@ func archiveYearGroups(notes []render.NoteLink) []render.ArchiveYearGroup {
 			TagIDs:      note.TagIDs,
 			URL:         note.URL,
 		})
+		lastNoteIdx = len(rows) - 1
+	}
+	
+	if lastNoteIdx != -1 {
+		rows[lastNoteIdx].IsLastInYear = true
 	}
 
-	return groups
+	return rows
 }
 
 func monthGroups(notes []render.NoteLink) []render.MonthGroup {

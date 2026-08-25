@@ -7,29 +7,38 @@
         <p class="archive-count">{{.Total}} {{T .Lang "archive.posts"}}</p>
       </header>
 
-      {{if .YearGroups}}
-        {{range .YearGroups}}
-          <section class="archive-year" aria-labelledby="archive-year-{{.Year}}">
-            <h2 id="archive-year-{{.Year}}">{{.Year}}</h2>
-
-            <ol class="archive-list">
-              {{range .Notes}}
-                <li class="archive-item" style="--stagger-index: {{.Index}}">
-                  <time datetime="{{.Date}}">{{.DateShort}}</time>
-                  <div class="archive-entry">
-                    <a href="{{.URL}}">{{.Title}}</a>
-                    {{if .ReadingTime}}<span class="archive-reading-time">{{.ReadingTime}}</span>{{end}}
-                    {{if .Summary}}<p>{{.Summary}}</p>{{end}}
+      <div class="archive-virtual-list">
+        <div class="archive-virtual-spacer archive-virtual-spacer-top" aria-hidden="true" style="height: 0;"></div>
+        <div class="archive-virtual-window">
+          {{if .Rows}}
+            {{range .Rows}}
+              {{if eq .Type "year"}}
+                <div class="archive-virtual-row archive-year-row" data-archive-row-id="{{.ID}}" data-archive-row-type="year">
+                  <h2 id="archive-year-{{.Year}}">{{.Year}}</h2>
+                  <div></div>
+                </div>
+              {{else if eq .Type "note"}}
+                <div class="archive-virtual-row archive-item-row {{if .IsLastInYear}}is-last-in-year{{end}}" data-archive-row-id="{{.ID}}" data-archive-row-type="note" style="--stagger-index: {{.Index}}">
+                  <div aria-hidden="true"></div>
+                  <div class="archive-item-track">
+                    <div class="archive-item">
+                      <time datetime="{{.Date}}">{{.DateShort}}</time>
+                      <div class="archive-entry">
+                        <a href="{{.URL}}">{{.Title}}</a>
+                        {{if .ReadingTime}}<span class="archive-reading-time">{{.ReadingTime}}</span>{{end}}
+                        {{if .Summary}}<p>{{.Summary}}</p>{{end}}
+                      </div>
+                    </div>
                   </div>
-                </li>
+                </div>
               {{end}}
-            </ol>
-          </section>
-        {{end}}
-      {{else}}
-        <p class="archive-empty">{{T .Lang "archive.empty"}}</p>
-      {{end}}
-      <div id="archive-sentinel" data-next-chunk="{{.NextChunkURL}}"></div>
+            {{end}}
+          {{else}}
+            <p class="archive-empty">{{T .Lang "archive.empty"}}</p>
+          {{end}}
+        </div>
+        <div class="archive-virtual-spacer archive-virtual-spacer-bottom" aria-hidden="true" style="height: 0;"></div>
+      </div>
     </section>
   </main>
 

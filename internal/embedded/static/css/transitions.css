@@ -592,6 +592,10 @@ html:not(.article-transition) body.page-entering .notes-aside:not(.transition-st
     animation: archive-intro-fade-up 380ms cubic-bezier(0.2, 0.6, 0.2, 1) both;
     animation-delay: calc(var(--stagger-index, var(--i, 0)) * 55ms);
   }
+  .reveal-trigger .archive-item {
+    animation: archive-intro-fade-up 380ms cubic-bezier(0.2, 0.6, 0.2, 1) both;
+    animation-delay: calc((var(--stagger-index, 0) % 15) * 55ms); /* limit max delay */
+  }
 }
 
 body.page-entering .archive-item {

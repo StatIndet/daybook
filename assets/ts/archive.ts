@@ -1,118 +1,33 @@
 (function () {
-    let observer: IntersectionObserver | null = null;
-    let isFetching = false;
+    const OVERSCAN_BEFORE = 800;
+    const OVERSCAN_AFTER = 1200;
 
-    // Use history state to keep track of loaded chunks
-    let loadedChunks: string[] = [];
-    if (history.state && history.state.archiveChunks) {
-        loadedChunks = history.state.archiveChunks;
-    }
+    let dataRows: any[] = [];
+    let measurements = new Map<string, number>();
+    let prefixSums: number[] = [];
+    let totalHeight = 0;
 
-    function initArchiveObserver() {
-        const sentinel = document.getElementById("archive-sentinel");
-        if (!sentinel) return;
+    let isMobile = window.innerWidth <= 640;
+    let defaultYearHeight = isMobile ? 50 : 80;
+    let defaultNoteHeight = isMobile ? 90 : 130;
 
-        if (observer) {
-            observer.disconnect();
-        }
+    let mountedNodes = new Map<string, HTMLElement>();
+    let seenRows = new Set<string>();
 
-        observer = new IntersectionObserver((entries) => {
-            const entry = entries[0];
-            if (entry && entry.isIntersecting && !isFetching) {
-                const nextUrl = sentinel.dataset.nextChunk;
-                if (nextUrl) {
-                    loadChunk(nextUrl, sentinel);
-                }
-            }
-        }, { rootMargin: "600px 0px" });
+    let listEl: HTMLElement | null = null;
+    let windowEl: HTMLElement | null = null;
+    let topSpacer: HTMLElement | null = null;
+    let bottomSpacer: HTMLElement | null = null;
 
-        observer.observe(sentinel);
-    }
+    let framePending = false;
+    let isVirtualMode = false;
+    let dataPromise: Promise<void> | null = null;
 
-    async function loadChunk(url: string, sentinel: HTMLElement, restoreMode = false) {
-        if (isFetching) return;
-        isFetching = true;
+    let revealObserver: IntersectionObserver | null = null;
+    let resizeObserver: ResizeObserver | null = null;
 
-        try {
-            const res = await fetch(url);
-            if (!res.ok) throw new Error("Chunk not found");
-            const data = await res.json();
-            
-            appendChunk(data);
+    let anchorCorrectionPending = false;
 
-            if (!restoreMode) {
-                loadedChunks.push(url);
-                const newState = Object.assign({}, history.state || {}, { archiveChunks: loadedChunks });
-                history.replaceState(newState, "");
-            }
-            
-            if (data.nextChunk) {
-                sentinel.dataset.nextChunk = data.nextChunk;
-            } else {
-                sentinel.dataset.nextChunk = "";
-                if (observer) observer.disconnect();
-            }
-        } catch (err) {
-            console.error("Failed to load archive chunk:", err);
-            if (observer) observer.disconnect();
-        } finally {
-            isFetching = false;
-        }
-    }
-
-    function appendChunk(data: any) {
-        const timeline = document.querySelector(".archive-timeline");
-        const sentinel = document.getElementById("archive-sentinel");
-        if (!timeline || !sentinel) return;
-        
-        let staggerIdx = 0;
-        
-        for (const group of data.groups) {
-            let yearSection = document.getElementById(`archive-year-${group.Year}`);
-            let list: Element | null = null;
-            
-            if (!yearSection) {
-                yearSection = document.createElement("section");
-                yearSection.className = "archive-year";
-                yearSection.id = `archive-year-${group.Year}`;
-                yearSection.setAttribute("aria-labelledby", `archive-year-${group.Year}`);
-                
-                const h2 = document.createElement("h2");
-                h2.textContent = group.Year;
-                yearSection.appendChild(h2);
-                
-                list = document.createElement("ol");
-                list.className = "archive-list";
-                yearSection.appendChild(list);
-                
-                timeline.insertBefore(yearSection, sentinel);
-            } else {
-                list = yearSection.querySelector(".archive-list");
-            }
-            
-            if (!list) continue;
-            
-            for (const note of group.Notes) {
-                const li = document.createElement("li");
-                li.className = "archive-item";
-                li.style.setProperty("--stagger-index", String(staggerIdx++));
-                
-                let readingTimeHtml = note.ReadingTime ? `<span class="archive-reading-time">${note.ReadingTime}</span>` : '';
-                let summaryHtml = note.Summary ? `<p>${escapeHtml(note.Summary)}</p>` : '';
-                
-                li.innerHTML = `
-                  <time datetime="${note.Date}">${note.DateShort}</time>
-                  <div class="archive-entry">
-                    <a href="${note.URL}">${escapeHtml(note.Title)}</a>
-                    ${readingTimeHtml}
-                    ${summaryHtml}
-                  </div>
-                `;
-                list.appendChild(li);
-            }
-        }
-    }
-    
     function escapeHtml(str: string): string {
         return (str || "")
           .replace(/&/g, "&amp;")
@@ -122,54 +37,434 @@
           .replace(/'/g, "&#039;");
     }
 
-    async function restoreState() {
-        const sentinel = document.getElementById("archive-sentinel");
-        if (!sentinel) return;
-
-        if (loadedChunks.length > 0) {
-            // Sequential load to maintain order
-            for (const url of loadedChunks) {
-                await loadChunk(url, sentinel, true);
-            }
-            
-            // Restore scroll
-            if (history.state && history.state.scrollY) {
-                window.scrollTo(0, history.state.scrollY);
-            }
-        }
-        initArchiveObserver();
-    }
-
     function isArchivePage() {
         return Boolean(document.querySelector(".archive-page"));
     }
 
-    function init() {
-        if (!isArchivePage()) {
-            if (observer) {
-                observer.disconnect();
-                observer = null;
-            }
-            return;
-        }
+    function initDOM() {
+        listEl = document.querySelector(".archive-virtual-list");
+        windowEl = document.querySelector(".archive-virtual-window");
+        topSpacer = document.querySelector(".archive-virtual-spacer-top");
+        bottomSpacer = document.querySelector(".archive-virtual-spacer-bottom");
+    }
 
-        if (loadedChunks.length > 0 && document.querySelectorAll(".archive-item").length <= 10) {
-            // It's a fresh page load or back navigation that has state but DOM is reset
-            restoreState();
-        } else {
-            initArchiveObserver();
+    async function loadData() {
+        if (dataRows.length > 0) return;
+        if (dataPromise) return dataPromise;
+        
+        let url = "/archive/data.json";
+        const langStr = document.documentElement.lang;
+        if (langStr && langStr !== "zh-CN") {
+            const pathParts = window.location.pathname.split("/");
+            if (pathParts.length > 1 && pathParts[1] !== "archive") {
+                url = `/${pathParts[1]}/archive/data.json`;
+            }
         }
+        
+        dataPromise = fetch(url)
+            .then(res => {
+                if (!res.ok) throw new Error("Fetch failed");
+                return res.json();
+            })
+            .then(data => {
+                dataRows = data.rows || [];
+            })
+            .catch(err => {
+                console.error("Failed to load archive data:", err);
+            });
+            
+        return dataPromise;
+    }
+
+    function estimateHeight(row: any) {
+        if (measurements.has(row.id)) {
+            return measurements.get(row.id)!;
+        }
+        return row.type === "year" ? defaultYearHeight : defaultNoteHeight;
+    }
+
+    function calculatePrefixSums() {
+        prefixSums = new Array(dataRows.length + 1);
+        prefixSums[0] = 0;
+        let sum = 0;
+        for (let i = 0; i < dataRows.length; i++) {
+            sum += estimateHeight(dataRows[i]);
+            prefixSums[i + 1] = sum;
+        }
+        totalHeight = sum;
+    }
+
+    function getScrollY() {
+        return window.scrollY;
     }
     
-    // Save scroll on leave
-    window.addEventListener("pagehide", () => {
-        if (isArchivePage()) {
-            const newState = Object.assign({}, history.state || {}, { scrollY: window.scrollY });
-            history.replaceState(newState, "");
+    function getListTop() {
+        if (!listEl) return 0;
+        return listEl.getBoundingClientRect().top + getScrollY();
+    }
+
+    function findRowIndex(offset: number): number {
+        let low = 0;
+        let high = dataRows.length;
+        while (low < high) {
+            let mid = Math.floor((low + high) / 2);
+            if (prefixSums[mid]! <= offset && prefixSums[mid + 1]! > offset) {
+                return mid;
+            }
+            if (prefixSums[mid]! > offset) {
+                high = mid;
+            } else {
+                low = mid + 1;
+            }
         }
-    });
+        return Math.min(low, dataRows.length - 1);
+    }
+
+    function createRowElement(row: any): HTMLElement {
+        const div = document.createElement("div");
+        div.className = row.type === "year" ? "archive-virtual-row archive-year-row" : `archive-virtual-row archive-item-row ${row.isLastInYear ? 'is-last-in-year' : ''}`;
+        div.dataset.archiveRowId = row.id;
+        div.dataset.archiveRowType = row.type;
+        
+        if (row.type === "year") {
+            const h2 = document.createElement("h2");
+            h2.id = `archive-year-${row.year}`;
+            h2.textContent = row.year;
+            div.appendChild(h2);
+            const empty = document.createElement("div");
+            div.appendChild(empty);
+        } else {
+            div.style.setProperty("--stagger-index", String(row.index));
+            const empty = document.createElement("div");
+            empty.setAttribute("aria-hidden", "true");
+            div.appendChild(empty);
+            
+            const track = document.createElement("div");
+            track.className = "archive-item-track";
+            
+            const item = document.createElement("div");
+            item.className = "archive-item";
+            
+            const time = document.createElement("time");
+            time.setAttribute("datetime", row.date);
+            time.textContent = row.dateShort;
+            item.appendChild(time);
+            
+            const entry = document.createElement("div");
+            entry.className = "archive-entry";
+            
+            const a = document.createElement("a");
+            a.href = row.url;
+            a.textContent = row.title;
+            entry.appendChild(a);
+            
+            if (row.readingTime) {
+                const rt = document.createElement("span");
+                rt.className = "archive-reading-time";
+                rt.textContent = row.readingTime;
+                entry.appendChild(rt);
+            }
+            
+            if (row.summary) {
+                const p = document.createElement("p");
+                p.textContent = row.summary;
+                entry.appendChild(p);
+            }
+            
+            item.appendChild(entry);
+            track.appendChild(item);
+            div.appendChild(track);
+        }
+        
+        return div;
+    }
+
+    function onScroll() {
+        if (!isVirtualMode) return;
+        if (!framePending) {
+            framePending = true;
+            requestAnimationFrame(() => {
+                updateVirtualWindow();
+                framePending = false;
+            });
+        }
+        
+        // Save history anchor on scroll implicitly if it's stable, or explicitly debounced
+        debouncedSaveAnchor();
+    }
     
-    // Support navigation events
+    let saveTimeout: number;
+    function debouncedSaveAnchor() {
+        clearTimeout(saveTimeout);
+        saveTimeout = window.setTimeout(saveAnchor, 150);
+    }
+
+    function saveAnchor() {
+        if (!isVirtualMode || !listEl || dataRows.length === 0) return;
+        
+        const localTop = getScrollY() - getListTop();
+        if (localTop < 0) return;
+        
+        const idx = findRowIndex(localTop);
+        if (idx >= 0 && idx < dataRows.length) {
+            const row = dataRows[idx];
+            const offsetInRow = localTop - prefixSums[idx]!;
+            
+            const state = Object.assign({}, history.state || {}, {
+                daybookArchive: {
+                    anchorId: row.id,
+                    anchorOffset: offsetInRow,
+                    scrollY: getScrollY()
+                }
+            });
+            history.replaceState(state, "");
+        }
+    }
+
+    function updateVirtualWindow() {
+        if (!listEl || !windowEl || !topSpacer || !bottomSpacer) return;
+
+        const viewportHeight = window.innerHeight;
+        const scrollY = getScrollY();
+        const listTop = getListTop();
+        
+        const localTop = scrollY - listTop;
+        const renderStartY = Math.max(0, localTop - OVERSCAN_BEFORE);
+        const renderEndY = localTop + viewportHeight + OVERSCAN_AFTER;
+        
+        const startIdx = findRowIndex(renderStartY);
+        const endIdx = findRowIndex(renderEndY);
+        
+        const topHeight = prefixSums[startIdx];
+        const bottomHeight = totalHeight - prefixSums[endIdx + 1]!;
+        
+        topSpacer.style.height = `${topHeight}px`;
+        bottomSpacer.style.height = `${bottomHeight}px`;
+        
+        const toKeep = new Set<string>();
+        
+        // Check for focused element
+        let focusedId: string | null = null;
+        if (document.activeElement && windowEl.contains(document.activeElement)) {
+            const rowEl = document.activeElement.closest(".archive-virtual-row") as HTMLElement;
+            if (rowEl && rowEl.dataset.archiveRowId) {
+                focusedId = rowEl.dataset.archiveRowId;
+                toKeep.add(focusedId);
+            }
+        }
+        
+        for (let i = startIdx; i <= endIdx; i++) {
+            if (i < 0 || i >= dataRows.length) continue;
+            toKeep.add(dataRows[i].id);
+        }
+        
+        // Unmount rows not in range
+        for (const [id, el] of mountedNodes.entries()) {
+            if (!toKeep.has(id)) {
+                if (resizeObserver) resizeObserver.unobserve(el);
+                if (revealObserver) revealObserver.unobserve(el);
+                el.remove();
+                mountedNodes.delete(id);
+            }
+        }
+        
+        // Mount new rows and reorder
+        let nextSibling: Node | null = null; // append sequentially
+        for (let i = startIdx; i <= endIdx; i++) {
+            if (i < 0 || i >= dataRows.length) continue;
+            const row = dataRows[i];
+            
+            let el = mountedNodes.get(row.id);
+            if (!el) {
+                el = createRowElement(row);
+                mountedNodes.set(row.id, el);
+                
+                if (resizeObserver) resizeObserver.observe(el);
+                if (revealObserver && row.type === "note") {
+                    if (seenRows.has(row.id)) {
+                        el.classList.add("is-seen");
+                        
+                        
+                    } else {
+                        revealObserver.observe(el);
+                    }
+                }
+            }
+            
+            windowEl.appendChild(el);
+        }
+    }
+
+    function initRevealObserver() {
+        if (revealObserver) revealObserver.disconnect();
+        
+        revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const el = entry.target as HTMLElement;
+                    const id = el.dataset.archiveRowId;
+                    if (id && !seenRows.has(id)) {
+                        seenRows.add(id);
+                        // Trigger animation
+                        el.classList.add("reveal-trigger");
+                        revealObserver?.unobserve(el);
+                    }
+                }
+            });
+        }, { rootMargin: "-40px 0px" });
+    }
+
+    function initResizeObserver() {
+        if (resizeObserver) resizeObserver.disconnect();
+        
+        resizeObserver = new ResizeObserver((entries) => {
+            let changed = false;
+            
+            // We must preserve anchor to prevent jumping
+            let anchorIdx = -1;
+            let anchorOffset = 0;
+            if (isVirtualMode && listEl) {
+                const localTop = getScrollY() - getListTop();
+                anchorIdx = findRowIndex(localTop);
+                if (anchorIdx >= 0) {
+                    anchorOffset = localTop - prefixSums[anchorIdx]!;
+                }
+            }
+            
+            for (const entry of entries) {
+                const el = entry.target as HTMLElement;
+                const id = el.dataset.archiveRowId;
+                if (!id) continue;
+                
+                const currentHeight = entry.borderBoxSize?.[0]?.blockSize || entry.contentRect.height;
+                const prevHeight = measurements.get(id);
+                if (prevHeight !== currentHeight && currentHeight > 0) {
+                    measurements.set(id, currentHeight);
+                    changed = true;
+                }
+            }
+            
+            if (changed) {
+                calculatePrefixSums();
+                if (anchorIdx >= 0 && !anchorCorrectionPending) {
+                    // Correct scroll position to maintain anchor
+                    const newLocalTop = prefixSums[anchorIdx]! + anchorOffset;
+                    const newScrollY = newLocalTop + getListTop();
+                    
+                    const diff = newScrollY - getScrollY();
+                    if (Math.abs(diff) > 1) {
+                        anchorCorrectionPending = true;
+                        window.scrollBy(0, diff);
+                        setTimeout(() => { anchorCorrectionPending = false; }, 0);
+                    }
+                }
+                
+                if (!framePending) {
+                    framePending = true;
+                    requestAnimationFrame(() => {
+                        updateVirtualWindow();
+                        framePending = false;
+                    });
+                }
+            }
+        });
+    }
+    
+    function measureGlobalResize() {
+        const wasMobile = isMobile;
+        isMobile = window.innerWidth <= 640;
+        if (wasMobile !== isMobile) {
+            defaultYearHeight = isMobile ? 50 : 80;
+            defaultNoteHeight = isMobile ? 90 : 130;
+            measurements.clear();
+            calculatePrefixSums();
+            if (!framePending) {
+                framePending = true;
+                requestAnimationFrame(() => {
+                    updateVirtualWindow();
+                    framePending = false;
+                });
+            }
+        }
+    }
+
+    async function bootstrap() {
+        initDOM();
+        if (!listEl || !windowEl) return;
+
+        // Initialize from existing bootstrap HTML
+        const preMounted = windowEl.querySelectorAll(".archive-virtual-row");
+        preMounted.forEach((el) => {
+            const htmlEl = el as HTMLElement;
+            const id = htmlEl.dataset.archiveRowId;
+            if (id) {
+                mountedNodes.set(id, htmlEl);
+                if (htmlEl.dataset.archiveRowType === "note") {
+                    seenRows.add(id);
+                }
+            }
+        });
+
+        await loadData();
+        if (!dataRows || dataRows.length === 0) return;
+
+        calculatePrefixSums();
+
+        initRevealObserver();
+        initResizeObserver();
+        
+        window.addEventListener("resize", measureGlobalResize);
+
+        // Populate measurements with pre-mounted node heights
+        preMounted.forEach((el) => {
+            const htmlEl = el as HTMLElement;
+            const id = htmlEl.dataset.archiveRowId;
+            if (id) {
+                measurements.set(id, htmlEl.getBoundingClientRect().height);
+                resizeObserver?.observe(htmlEl);
+            }
+        });
+        calculatePrefixSums();
+        
+        isVirtualMode = true;
+        
+        // Restore from history if available
+        let restored = false;
+        if (history.state && history.state.daybookArchive) {
+            const state = history.state.daybookArchive;
+            if (state.anchorId) {
+                const idx = dataRows.findIndex(r => r.id === state.anchorId);
+                if (idx >= 0) {
+                    const localTop = prefixSums[idx]! + (state.anchorOffset || 0);
+                    window.scrollTo(0, getListTop() + localTop);
+                    restored = true;
+                }
+            }
+        }
+        
+        updateVirtualWindow();
+        window.addEventListener("scroll", onScroll, { passive: true });
+    }
+
+    function cleanup() {
+        window.removeEventListener("scroll", onScroll);
+        window.removeEventListener("resize", measureGlobalResize);
+        if (resizeObserver) resizeObserver.disconnect();
+        if (revealObserver) revealObserver.disconnect();
+        
+        mountedNodes.clear();
+        isVirtualMode = false;
+        framePending = false;
+    }
+
+    function init() {
+        if (!isArchivePage()) {
+            cleanup();
+            return;
+        }
+        bootstrap();
+    }
+
     document.addEventListener("daybook:page-load", init);
 
     if (document.readyState === "loading") {
