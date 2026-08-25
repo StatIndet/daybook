@@ -48,7 +48,9 @@
     return hitPromise;
   }
   function initSiteStats(root = document) {
-    hitPath(window.location.pathname).then((stats) => {
+    const promise = hitPath(window.location.pathname);
+    if (!promise) return null;
+    promise.then((stats) => {
       if (!stats) return;
       const visitorsEls = root.querySelectorAll("[data-site-visitors]");
       visitorsEls.forEach((el) => {
@@ -90,6 +92,7 @@
       });
       document.dispatchEvent(new CustomEvent("daybook:stats-loaded"));
     });
+    return promise;
   }
   function initSiteUptime(root = document) {
     const uptimeEls = root.querySelectorAll("[data-site-uptime]");
@@ -105,6 +108,117 @@
       const diffDays = Math.floor((now - startTime) / (1e3 * 60 * 60 * 24));
       el.textContent = `${diffDays} \u5929`;
     });
+  }
+
+  // assets/ts/site-presence.ts
+  function normalizePath2(p) {
+    try {
+      const url = new URL(p, window.location.origin);
+      let pathname = decodeURI(url.pathname);
+      pathname = pathname.replace(/\/+/g, "/");
+      if (!pathname.startsWith("/")) pathname = "/" + pathname;
+      if (pathname !== "/" && !pathname.endsWith("/")) {
+        pathname += "/";
+      }
+      return pathname;
+    } catch {
+      return "/";
+    }
+  }
+  var ws = null;
+  var isConnecting = false;
+  var reconnectTimer = null;
+  var reconnectAttempts = 0;
+  var MAX_RECONNECT_ATTEMPTS = 10;
+  var currentPresencePath = "";
+  var isStatsEnabled = true;
+  function updatePresenceDOM(path, pageViewers, siteViewers) {
+    const siteEls = document.querySelectorAll("[data-site-viewers]");
+    siteEls.forEach((el) => {
+      if (!el.classList.contains("anim-done") && el.classList.contains("archive-stat-num")) {
+        el.setAttribute("data-target", siteViewers.toString());
+        document.dispatchEvent(new CustomEvent("daybook:stats-loaded"));
+      } else {
+        el.textContent = siteViewers.toString();
+      }
+    });
+    const pageEls = document.querySelectorAll("[data-page-viewers]");
+    pageEls.forEach((el) => {
+      const pathAttr = el.getAttribute("data-path");
+      if (pathAttr && normalizePath2(pathAttr) === path) {
+        el.textContent = pageViewers.toString();
+      }
+    });
+  }
+  function connectWebSocket() {
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
+    if (reconnectAttempts > MAX_RECONNECT_ATTEMPTS) {
+      return;
+    }
+    isConnecting = true;
+    currentPresencePath = normalizePath2(window.location.pathname);
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.host}/api/presence?path=${encodeURIComponent(currentPresencePath)}`;
+    try {
+      ws = new WebSocket(wsUrl);
+    } catch (e) {
+      isConnecting = false;
+      scheduleReconnect();
+      return;
+    }
+    ws.onopen = () => {
+      isConnecting = false;
+      reconnectAttempts = 0;
+    };
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "presence") {
+          updatePresenceDOM(data.path, data.pageViewers, data.siteViewers);
+        }
+      } catch (e) {
+      }
+    };
+    ws.onclose = () => {
+      ws = null;
+      isConnecting = false;
+      scheduleReconnect();
+    };
+  }
+  function scheduleReconnect() {
+    if (!isStatsEnabled) return;
+    if (reconnectTimer) clearTimeout(reconnectTimer);
+    reconnectAttempts++;
+    const delay = Math.min(1e3 * Math.pow(2, reconnectAttempts), 3e4);
+    reconnectTimer = setTimeout(() => {
+      connectWebSocket();
+    }, delay);
+  }
+  function initSitePresence() {
+    const statsEnabledAttr = document.body.dataset.statsEnabled;
+    isStatsEnabled = statsEnabledAttr === "true";
+    if (!isStatsEnabled) {
+      if (ws) {
+        ws.close();
+        ws = null;
+      }
+      return;
+    }
+    const newPath = normalizePath2(window.location.pathname);
+    if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
+      currentPresencePath = newPath;
+      reconnectAttempts = 0;
+      connectWebSocket();
+    } else if (ws.readyState === WebSocket.OPEN) {
+      if (currentPresencePath !== newPath) {
+        currentPresencePath = newPath;
+        ws.send(JSON.stringify({ type: "navigate", path: currentPresencePath }));
+      }
+    } else {
+      currentPresencePath = newPath;
+    }
   }
 
   // assets/ts/daybook-router.ts
@@ -136,7 +250,12 @@
       const triggerInitialLoad = () => {
         setTimeout(() => {
           emitPageLoad("initial", location.href, location.href);
-          initSiteStats();
+          const hitPromise2 = initSiteStats();
+          if (hitPromise2) {
+            hitPromise2.finally(() => initSitePresence());
+          } else {
+            initSitePresence();
+          }
           initSiteUptime();
         }, 0);
       };
@@ -305,7 +424,12 @@
           void document.body.offsetHeight;
           currentRouterUrl = targetUrl.href;
           emitPageLoad(isTraverse ? "traverse" : "push", oldUrl, targetUrl.href);
-          initSiteStats();
+          const hitPromise2 = initSiteStats();
+          if (hitPromise2) {
+            hitPromise2.finally(() => initSitePresence());
+          } else {
+            initSitePresence();
+          }
           initSiteUptime();
         };
         const engine = window.DaybookTransitionEngine;

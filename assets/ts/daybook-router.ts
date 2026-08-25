@@ -1,4 +1,5 @@
 import { initSiteStats, initSiteUptime } from "./site-stats";
+import { initSitePresence } from "./site-presence";
 
 interface RouterState {
   __daybook: boolean;
@@ -63,7 +64,12 @@ interface DaybookTransitionFinishedDetail {
     const triggerInitialLoad = () => {
       setTimeout(() => {
         emitPageLoad("initial", location.href, location.href);
-        initSiteStats();
+        const hitPromise = initSiteStats();
+        if (hitPromise) {
+          hitPromise.finally(() => initSitePresence());
+        } else {
+          initSitePresence();
+        }
         initSiteUptime();
       }, 0);
     };
@@ -286,7 +292,12 @@ interface DaybookTransitionFinishedDetail {
 
         currentRouterUrl = targetUrl.href;
         emitPageLoad(isTraverse ? "traverse" : "push", oldUrl, targetUrl.href);
-        initSiteStats();
+        const hitPromise = initSiteStats();
+        if (hitPromise) {
+          hitPromise.finally(() => initSitePresence());
+        } else {
+          initSitePresence();
+        }
         initSiteUptime();
       };
 

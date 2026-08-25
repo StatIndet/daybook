@@ -60,8 +60,11 @@ async function hitPath(path: string): Promise<StatsResponse | null> {
   return hitPromise;
 }
 
-export function initSiteStats(root: Document | HTMLElement = document) {
-  hitPath(window.location.pathname).then(stats => {
+export function initSiteStats(root: Document | HTMLElement = document): Promise<StatsResponse | null> | null {
+  const promise = hitPath(window.location.pathname);
+  if (!promise) return null;
+
+  promise.then(stats => {
     if (!stats) return;
 
     // Update DOM
@@ -112,6 +115,8 @@ export function initSiteStats(root: Document | HTMLElement = document) {
     
     document.dispatchEvent(new CustomEvent("daybook:stats-loaded"));
   });
+
+  return promise;
 }
 
 export function initSiteUptime(root: Document | HTMLElement = document) {
