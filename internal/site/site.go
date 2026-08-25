@@ -1304,7 +1304,7 @@ func buildObsidianIndex(notes []content.Note, contentDir string, publicDir strin
 
 			if d.IsDir() {
 				// Ignore hidden folders like .obsidian, .git
-				if shouldSkipVaultDir(relPath, publicDir) {
+				if shouldSkipVaultDir(contentDir, relPath, publicDir) {
 					return filepath.SkipDir
 				}
 				return nil
@@ -1389,26 +1389,33 @@ func normalizeHeading(text string) string {
 
 
 
-func shouldSkipVaultDir(relativePath, publicDir string) bool {
+func shouldSkipVaultDir(contentDir, relativePath, publicDir string) bool {
 	base := filepath.Base(relativePath)
 	if base != "." && strings.HasPrefix(base, ".") {
 		return true
 	}
-	// publicDir is usually relative to contentDir (e.g. "public").
-	// We only skip the exact top-level public output directory.
-	// If relativePath is identical to the cleaned publicDir relative to contentDir...
-	// For simplicity, if relativePath == publicDir or filepath.Base(publicDir):
-	if relativePath == publicDir || relativePath == filepath.Base(publicDir) {
-		return true
+
+	absPath, errPath := filepath.Abs(filepath.Join(contentDir, relativePath))
+	absPublic, errPub := filepath.Abs(publicDir)
+	if errPath == nil && errPub == nil {
+		rel, err := filepath.Rel(absPublic, absPath)
+		if err == nil && (rel == "." || !strings.HasPrefix(rel, ".."+string(filepath.Separator))) && rel != ".." {
+			// Actually just strings.HasPrefix(rel, "..") is enough to check if it's OUTSIDE.
+			// But careful with exact matches, we skip if inside.
+			if rel == "." || !strings.HasPrefix(rel, "..") {
+				return true
+			}
+		}
 	}
+
 	return false
 }
 
 func copyAttachments(contentDir, publicDir string) error {
 	err := copyDirFiltered(contentDir, publicDir, func(relativePath string, entry os.DirEntry) bool {
 		if entry.IsDir() {
-			if shouldSkipVaultDir(relativePath, publicDir) {
-				return true // skip .obsidian, .git
+			if shouldSkipVaultDir(contentDir, relativePath, publicDir) {
+				return true // skip .obsidian, .git, and output publicDir
 			}
 			return false // allow traversing other dirs
 		}

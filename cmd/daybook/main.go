@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/StatIndet/daybook/internal/config"
 	"github.com/StatIndet/daybook/internal/site"
@@ -52,11 +53,20 @@ func run() error {
 		return fmt.Errorf("failed to get current working directory: %w", err)
 	}
 
+	contentDir := cwd
+	notesDir := filepath.Join(cwd, "notes")
+	publicDir := filepath.Join(cwd, "public")
+
+	if stat, err := os.Stat(filepath.Join(cwd, "vault", "notes")); err == nil && stat.IsDir() {
+		contentDir = filepath.Join(cwd, "vault")
+		notesDir = filepath.Join(cwd, "vault", "notes")
+	}
+
 	options := site.Options{
 		Config:     cfg,
-		ContentDir: cwd,
-		NotesDir:   "notes",
-		PublicDir:  "public",
+		ContentDir: contentDir,
+		NotesDir:   notesDir,
+		PublicDir:  publicDir,
 	}
 
 	if command == "build" {
