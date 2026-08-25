@@ -27,6 +27,7 @@ const classicEntries = [
   'note-bilingual',
   'note-filters',
   'page-transition-engine',
+  'search-engine',
   'search-overlay',
   'theme',
   'toc'

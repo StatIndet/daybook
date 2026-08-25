@@ -537,5 +537,30 @@ interface DaybookTransitionFinishedDetail {
   (window as any).daybookNavigate = (url: string) => navigate(url);
   (window as any).daybookNavigateTo = (url: string) => navigate(url);
 
+  (window as any).daybookReplaceURL = (urlStr: string) => {
+    const url = new URL(urlStr, location.origin);
+    const current = history.state;
+    if (isRouterState(current)) {
+      history.replaceState(
+        {
+          ...current,
+          url: url.href
+        },
+        "",
+        url.href
+      );
+    } else {
+      history.replaceState({
+        __daybook: true,
+        index: currentIndex,
+        url: url.href,
+        fromUrl: null,
+        scrollX: window.scrollX,
+        scrollY: window.scrollY
+      } as RouterState, "", url.href);
+    }
+    currentRouterUrl = url.href;
+  };
+
   initRouter();
 })();

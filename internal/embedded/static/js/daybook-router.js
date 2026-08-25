@@ -500,6 +500,30 @@
     }
     window.daybookNavigate = (url) => navigate(url);
     window.daybookNavigateTo = (url) => navigate(url);
+    window.daybookReplaceURL = (urlStr) => {
+      const url = new URL(urlStr, location.origin);
+      const current = history.state;
+      if (isRouterState(current)) {
+        history.replaceState(
+          {
+            ...current,
+            url: url.href
+          },
+          "",
+          url.href
+        );
+      } else {
+        history.replaceState({
+          __daybook: true,
+          index: currentIndex,
+          url: url.href,
+          fromUrl: null,
+          scrollX: window.scrollX,
+          scrollY: window.scrollY
+        }, "", url.href);
+      }
+      currentRouterUrl = url.href;
+    };
     initRouter();
   })();
 })();

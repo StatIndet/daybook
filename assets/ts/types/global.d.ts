@@ -19,6 +19,8 @@ declare global {
     daybookSyncEmbeds: () => void;
     DaybookMermaid: any;
     daybookNavigateTo: (url: string) => void;
+    daybookReplaceURL: (url: string) => void;
+    daybookSearchEngine: any;
     daybookSyncPageKey: (url: string) => void;
     daybookNavigate: (url: string) => void;
     daybookInitSearch: () => void;
