@@ -8,30 +8,52 @@
 }
 
 .archive-header {
-  align-items: baseline;
+  margin-bottom: clamp(2rem, 4vw, 3.5rem);
+}
+
+.archive-stats {
   display: flex;
-  gap: 0.75rem;
-  margin-bottom: clamp(1.9rem, 4vw, 3rem);
+  flex-wrap: wrap;
+  gap: 2rem;
+  align-items: baseline;
+  font-family: var(--font-serif);
 }
 
-.archive-kicker,
-.archive-count {
+.archive-stat-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.archive-stat-num {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.archive-stat-unit {
+  font-size: 0.95rem;
   color: var(--color-muted);
-  font-family: var(--font-ui);
-  font-size: 0.82rem;
-  line-height: 1.6;
-  margin: 0;
+  font-weight: 500;
 }
 
-.archive-kicker {
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.archive-stats-secondary {
+  margin-top: 1.25rem;
+  gap: 1.5rem;
+  font-family: var(--font-meta);
+  font-style: italic;
 }
 
-.archive-count::before {
-  color: var(--color-line);
-  content: "/";
-  margin-right: 0.75rem;
+.archive-stats-secondary .archive-stat-num {
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.archive-stats-secondary .archive-stat-unit {
+  font-size: 1.35rem;
+  letter-spacing: 0.05em;
 }
 
 .archive-year {
@@ -174,12 +196,12 @@
 }
 
 @media (max-width: 640px) {
-  .archive-header {
-    gap: 0.5rem;
+  .archive-stats {
+    gap: 1.5rem;
   }
-
-  .archive-count::before {
-    margin-right: 0.5rem;
+  
+  .archive-stat-num {
+    font-size: 2.1rem;
   }
 
   .archive-year {

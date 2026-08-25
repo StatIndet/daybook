@@ -90,6 +90,27 @@ export function initSiteStats(root: Document | HTMLElement = document) {
         el.textContent = stats.pageViews === 1 ? "view" : "views";
       }
     });
+    
+    // For archive page stats animation
+    const uvAnimEls = root.querySelectorAll("[data-site-visitors-anim]");
+    uvAnimEls.forEach(el => {
+      el.setAttribute("data-target", stats.visitors.toString());
+    });
+    const uvLabelEls = root.querySelectorAll("[data-site-visitors-label]");
+    uvLabelEls.forEach(el => {
+      el.textContent = stats.visitors === 1 ? "visitor" : "visitors";
+    });
+
+    const pvAnimEls = root.querySelectorAll("[data-site-views-anim]");
+    pvAnimEls.forEach(el => {
+      el.setAttribute("data-target", stats.totalViews.toString());
+    });
+    const pvLabelEls = root.querySelectorAll("[data-site-views-label]");
+    pvLabelEls.forEach(el => {
+      el.textContent = stats.totalViews === 1 ? "k view" : "k views";
+    });
+    
+    document.dispatchEvent(new CustomEvent("daybook:stats-loaded"));
   });
 }
 

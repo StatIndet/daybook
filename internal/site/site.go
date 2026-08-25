@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/StatIndet/daybook/internal/config"
@@ -131,9 +132,20 @@ func Build(options Options) (BuildResult, error) {
 
 	markdown.SetMusicMetadataRegistry(musicMetadataMap)
 
+	uptimeDays := 0
+	if startedAt != "" {
+		if t, err := time.Parse("2006-01-02", startedAt); err == nil {
+			uptimeDays = int(time.Since(t).Hours() / 24)
+			if uptimeDays < 0 {
+				uptimeDays = 0
+			}
+		}
+	}
+
 	siteData := render.SiteData{
 		Title:          options.Config.Site.Title,
 		StartedAt:      startedAt,
+		UptimeDays:     uptimeDays,
 		TotalWordCount: totalWordCount,
 	}
 

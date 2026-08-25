@@ -3,8 +3,32 @@
   <main class="archive-page" aria-label="归档">
     <section class="archive-timeline" aria-label="{{T .Lang "nav.archive"}}">
       <header class="archive-header">
-        <p class="archive-kicker">Archive</p>
-        <p class="archive-count">{{.Total}} {{T .Lang "archive.posts"}}</p>
+        <div class="archive-stats">
+          <div class="archive-stat-item">
+            <span class="archive-stat-num" data-target="{{.Site.UptimeDays}}">0</span>
+            <span class="archive-stat-unit">{{T .Lang "archive.days"}}</span>
+          </div>
+          <div class="archive-stat-item">
+            <span class="archive-stat-num" data-target="{{.Total}}">0</span>
+            <span class="archive-stat-unit">{{T .Lang "archive.posts"}}</span>
+          </div>
+          <div class="archive-stat-item">
+            <span class="archive-stat-num" data-target="{{.Site.TotalWordCount}}" data-format="k">0</span>
+            <span class="archive-stat-unit">{{T .Lang "archive.words.k"}}</span>
+          </div>
+        </div>
+        {{if .Config.Stats.Enabled}}
+        <div class="archive-stats archive-stats-secondary">
+          <div class="archive-stat-item archive-stat-small">
+            <span class="archive-stat-num" data-site-visitors-anim>--</span>
+            <span class="archive-stat-unit" data-site-visitors-label>visitors</span>
+          </div>
+          <div class="archive-stat-item archive-stat-small">
+            <span class="archive-stat-num" data-site-views-anim data-format="k">--</span>
+            <span class="archive-stat-unit" data-site-views-label>k views</span>
+          </div>
+        </div>
+        {{end}}
       </header>
 
       <div class="archive-virtual-list">
