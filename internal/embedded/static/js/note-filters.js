@@ -3,7 +3,8 @@
   // assets/ts/note-filters.ts
   (function() {
     var pendingSearchFocus = false;
-    var pendingTagsOpen = false;
+    let searchDataCache = null;
+    let isFetching = false;
     function escapeHtml(str) {
       return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
@@ -24,20 +25,18 @@
     function currentFilter() {
       var params = new URLSearchParams(window.location.search);
       var query = cleanText(params.get("q"));
-      var tag = cleanText(params.get("tag"));
       if (query) {
         return { type: "search", value: query };
-      }
-      if (tag) {
-        return { type: "tag", value: tag };
       }
       return { type: "", value: "" };
     }
     function isNotesPage() {
       return Boolean(document.querySelector(".notes-list"));
     }
-    function notesURL() {
-      return new URL("/notes/", window.location.origin);
+    function getBaseCollectionURL() {
+      var path = window.location.pathname;
+      path = path.replace(/\/page\/\d+\/?$/, "/");
+      return new URL(path, window.location.origin);
     }
     function replaceURL(url) {
       history.replaceState({ daybook: true }, "", url.href);
@@ -54,316 +53,265 @@
     }
     function focusSearchInput() {
       var input = document.querySelector("[data-notes-search]");
-      if (!input) {
-        return;
-      }
+      if (!input) return;
       window.setTimeout(function() {
         if (input) input.focus();
         var end = input ? input.value.length : 0;
         if (input) input.setSelectionRange(end, end);
       }, 0);
     }
-    function syncToolsState(searchOpen, tagsOpen, focusSearch) {
+    function syncToolsState(searchOpen, focusSearch) {
       var toolsList = document.querySelectorAll("[data-notes-tools]");
-      if (!toolsList.length) {
-        return;
-      }
+      if (!toolsList.length) return;
       toolsList.forEach(function(tools) {
-        tools.classList.toggle("has-open-panel", searchOpen || tagsOpen);
+        tools.classList.toggle("has-open-panel", searchOpen);
         tools.classList.toggle("is-search-open", searchOpen);
-        tools.classList.toggle("is-tags-open", tagsOpen);
         tools.querySelectorAll("[data-notes-panel]").forEach(function(panelEl) {
           var panel = panelEl;
-          var isActive = panel.dataset.notesPanel === "search" && searchOpen || panel.dataset.notesPanel === "tags" && tagsOpen;
-          panel.setAttribute("aria-hidden", isActive ? "false" : "true");
+          var isActive = panel.dataset.notesPanel === "search" && searchOpen;
+          if (isActive) {
+            panel.hidden = false;
+            window.setTimeout(function() {
+              panel.classList.add("is-active");
+            }, 10);
+          } else {
+            panel.classList.remove("is-active");
+            window.setTimeout(function() {
+              if (!panel.classList.contains("is-active")) {
+                panel.hidden = true;
+              }
+            }, 200);
+          }
         });
       });
-      document.querySelectorAll("[data-notes-tool]").forEach(function(buttonEl) {
-        var button = buttonEl;
-        var isActive = button.dataset.notesTool === "search" && searchOpen || button.dataset.notesTool === "tags" && tagsOpen;
-        button.setAttribute("aria-expanded", isActive ? "true" : "false");
-      });
-      if (searchOpen && focusSearch) {
+      if (focusSearch) {
         focusSearchInput();
       }
     }
     function setToolOpen(toolName, isOpen, focusSearch) {
-      var firstTools = document.querySelector("[data-notes-tools]");
-      var searchOpen = firstTools && firstTools.classList.contains("is-search-open");
-      var tagsOpen = firstTools && firstTools.classList.contains("is-tags-open");
-      if (toolName === "search") {
-        searchOpen = isOpen;
-      }
-      if (toolName === "tags") {
-        tagsOpen = isOpen;
-      }
-      syncToolsState(searchOpen || false, tagsOpen || false, focusSearch);
+      var filter = currentFilter();
+      var isSearchActive = filter.type === "search";
+      var searchOpen = toolName === "search" ? isOpen : isSearchActive;
+      syncToolsState(searchOpen, focusSearch);
     }
-    function noteTags(card) {
-      return (card.dataset.tags || "").split(/\n/).map(cleanText).filter(Boolean);
-    }
-    function matchesFilter(card, filter) {
-      if (!filter.type) {
-        return true;
+    function normalizeURL() {
+      var params = new URLSearchParams(window.location.search);
+      if (params.has("q") && window.location.pathname.includes("/page/")) {
+        var url = getBaseCollectionURL();
+        url.search = params.toString();
+        replaceURL(url);
       }
-      var tags = (card.dataset.tagIds || "").split(/\n/).map(cleanText).filter(Boolean);
-      if (filter.type === "tag") {
-        var activeTag = lower(filter.value);
-        return tags.some(function(tag) {
-          return lower(tag) === activeTag;
-        });
+      if (params.has("tag") && window.location.pathname.includes("/notes/")) {
+        var tag = params.get("tag");
+        var newPath = window.location.pathname.replace("/notes/", "/tags/" + encodeURIComponent(tag || "") + "/");
+        var url = new URL(newPath, window.location.origin);
+        replaceURL(url);
       }
-      var textTags = noteTags(card);
-      var keyword = lower(filter.value);
-      var text = [
-        card.dataset.searchTitle || "",
-        card.dataset.searchSummary || "",
-        textTags.join(" ")
-      ].join(" ");
-      return lower(text).includes(keyword);
     }
-    function applyNoteFilters(filter) {
-      var cards = document.querySelectorAll("[data-note-card]");
-      var visibleCount = 0;
+    async function loadSearchData() {
+      if (searchDataCache) return searchDataCache;
+      if (isFetching) return new Promise((resolve) => {
+        const interval = setInterval(() => {
+          if (searchDataCache) {
+            clearInterval(interval);
+            resolve(searchDataCache);
+          }
+        }, 50);
+      });
+      isFetching = true;
+      const indexURL = document.body.dataset["searchIndexUrl"] || "/search.json";
+      try {
+        const res = await fetch(indexURL);
+        const data = await res.json();
+        const flattened = [];
+        const currentLang = document.documentElement.lang || "en";
+        for (const item of data) {
+          let ver = item.versions[currentLang];
+          if (!ver) {
+            ver = item.versions["zh-CN"] || item.versions["en"];
+          }
+          if (ver) {
+            flattened.push(ver);
+          }
+        }
+        searchDataCache = flattened;
+        isFetching = false;
+        return searchDataCache;
+      } catch (e) {
+        console.error("Failed to load search index", e);
+        isFetching = false;
+        return [];
+      }
+    }
+    function renderNoteCard(item, keyword) {
+      const titleHtml = highlightMatches(item.title, keyword);
+      const summaryHtml = item.summary ? `<p class="notes-item-summary">${highlightMatches(item.summary, keyword)}</p>` : "";
+      let indicators = "";
+      if (item.pin) indicators += `<span class="notes-item-pin" aria-hidden="true" title="\u5DF2\u56FA\u5B9A" data-article-shared="pin"></span>`;
+      if (item.hasMusic) indicators += `<span class="material-symbol notes-item-music" aria-hidden="true" title="\u5305\u542B\u97F3\u4E50" data-article-shared="music">music_note_2</span>`;
+      if (item.hasTranslation) indicators += `<span class="material-symbol notes-item-bilingual" aria-hidden="true" title="\u53CC\u8BED" data-article-shared="bilingual">translate</span>`;
+      let meta = `<time datetime="${item.date}" data-article-shared="published">${item.date}</time>
+      <span class="reading-time" data-article-shared="reading">${item.readingMinutes} min</span>`;
+      if (item.updated) {
+        meta += ` <span class="updated-time" data-article-shared="updated">&bull; updated <time datetime="${item.updated}">${item.updated}</time></span>`;
+      }
+      const titleLayout = item.titleLayout || titleHtml;
+      return `
+<article class="notes-item" data-note-card>
+  <div class="notes-item-header" data-transition-scope="${item.slug}">
+    <h1 class="notes-item-title">
+      <a href="${item.url}" data-title-transition-key="${item.slug}">
+        ${titleLayout}
+      </a>
+    </h1>
+    <div class="notes-item-indicators">
+      ${indicators}
+    </div>
+    <p class="notes-item-meta">
+      ${meta}
+    </p>
+  </div>
+  ${summaryHtml}
+</article>`;
+    }
+    async function applyNoteFilters(filter) {
       var keyword = filter.type === "search" ? filter.value : "";
-      cards.forEach(function(cardEl) {
-        var card = cardEl;
-        var isVisible = matchesFilter(card, filter);
-        card.hidden = !isVisible;
-        if (isVisible) {
-          visibleCount++;
-          var titleA = card.querySelector(".notes-item-title a");
-          if (titleA) {
-            if (!titleA.hasAttribute("data-original-html")) {
-              titleA.setAttribute("data-original-html", titleA.innerHTML);
-            }
-            if (keyword) {
-              titleA.innerHTML = highlightMatches(card.dataset.searchTitle || "", keyword);
-            } else {
-              titleA.innerHTML = titleA.getAttribute("data-original-html") || "";
-            }
-          }
-          var summary = card.querySelector(".notes-item-summary");
-          if (summary) {
-            if (!summary.hasAttribute("data-original-html")) {
-              summary.setAttribute("data-original-html", summary.innerHTML);
-            }
-            if (keyword) {
-              summary.innerHTML = highlightMatches(card.dataset.searchSummary || "", keyword);
-            } else {
-              summary.innerHTML = summary.getAttribute("data-original-html") || "";
-            }
-          }
+      var staticElements = document.querySelectorAll(".notes-pinned, .notes-divider, .notes-month, .pagination, .notes-empty:not(.notes-filter-empty)");
+      var resultsContainer = document.querySelector(".notes-search-results");
+      var emptyMessage = document.querySelector(".notes-filter-empty");
+      if (!keyword) {
+        staticElements.forEach((el) => el.hidden = false);
+        if (resultsContainer) {
+          resultsContainer.innerHTML = "";
+          resultsContainer.hidden = true;
         }
-      });
-      document.querySelectorAll(".notes-pinned").forEach(function(pinnedEl) {
-        var pinned = pinnedEl;
-        var hasVisibleNote = Array.from(pinned.querySelectorAll("[data-note-card]")).some(function(cardEl) {
-          var card = cardEl;
-          return !card.hidden;
-        });
-        pinned.hidden = !hasVisibleNote;
-        var divider = document.querySelector(".notes-divider");
-        if (divider) {
-          divider.hidden = !hasVisibleNote;
-        }
-      });
-      document.querySelectorAll(".notes-month").forEach(function(monthEl) {
-        var month = monthEl;
-        var hasVisibleNote = Array.from(month.querySelectorAll("[data-note-card]")).some(function(cardEl) {
-          var card = cardEl;
-          return !card.hidden;
-        });
-        month.hidden = !hasVisibleNote;
-      });
-      var empty = document.querySelector(".notes-filter-empty");
-      if (empty) {
-        empty.hidden = !filter.type || visibleCount > 0;
-      }
-    }
-    function updateActiveTags(filter) {
-      var activeTag = filter.type === "tag" ? lower(filter.value) : "";
-      document.querySelectorAll("[data-notes-tag]").forEach(function(linkEl) {
-        var link = linkEl;
-        var linkTag = link.dataset.notesTag || "";
-        var isActive = activeTag !== "" && lower(linkTag) === activeTag;
-        link.classList.toggle("is-active", isActive);
-        if (isActive) {
-          link.setAttribute("aria-current", "page");
-        } else {
-          link.removeAttribute("aria-current");
-        }
-      });
-    }
-    function updateMobileTagReturn(filter) {
-      var returnBtn = document.getElementById("mobile-tag-return");
-      if (returnBtn) {
-        returnBtn.hidden = filter.type !== "tag";
-      }
-      var tagBackContainer = document.getElementById("tag-back-container");
-      var tagBackTitle = document.getElementById("tag-back-title");
-      if (tagBackContainer && tagBackTitle) {
-        if (filter.type === "tag") {
-          tagBackContainer.hidden = false;
-          tagBackTitle.textContent = "#" + filter.value;
-        } else {
-          tagBackContainer.hidden = true;
-        }
-      }
-    }
-    function syncSearchInput(filter) {
-      var input = document.querySelector("[data-notes-search]");
-      if (!input) {
+        if (emptyMessage) emptyMessage.hidden = true;
         return;
       }
-      var value = filter.type === "search" ? filter.value : "";
-      if (input.value !== value) {
-        input.value = value;
+      staticElements.forEach((el) => el.hidden = true);
+      const data = await loadSearchData();
+      const kw = lower(keyword);
+      let path = window.location.pathname;
+      let currentTagSlug = "";
+      if (path.includes("/tags/")) {
+        const parts = path.split("/");
+        const idx = parts.indexOf("tags");
+        if (idx !== -1 && idx + 1 < parts.length) {
+          currentTagSlug = decodeURIComponent(parts[idx + 1] || "");
+        }
       }
-    }
-    function syncNoteFilters() {
-      var filter = currentFilter();
-      syncSearchInput(filter);
-      updateActiveTags(filter);
-      updateMobileTagReturn(filter);
-      if (isNotesPage()) {
-        applyNoteFilters(filter);
+      const results = data.filter((item) => {
+        if (currentTagSlug) {
+          let hasTag = false;
+          for (const tag of item.tags) {
+            if (tag.toLowerCase().replace(/\s+/g, "-") === currentTagSlug.toLowerCase()) {
+              hasTag = true;
+              break;
+            }
+          }
+          if (!hasTag && !item.tagIDs.includes(currentTagSlug)) {
+            return false;
+          }
+        }
+        const text = lower(item.title + " " + item.summary + " " + item.tags.join(" "));
+        return text.includes(kw);
+      });
+      if (resultsContainer) {
+        resultsContainer.hidden = false;
+        resultsContainer.innerHTML = results.map((item) => renderNoteCard(item, keyword)).join("");
       }
-      if (filter.type === "search") {
-        syncToolsState(true, pendingTagsOpen, pendingSearchFocus);
-      } else if (filter.type === "tag") {
-        syncToolsState(false, true, false);
-      } else {
-        syncToolsState(false, false, false);
+      if (emptyMessage) {
+        emptyMessage.hidden = results.length === 0;
       }
-      pendingSearchFocus = false;
-      pendingTagsOpen = false;
     }
     function updateNotesSearch(query) {
-      var url = notesURL();
+      var url = getBaseCollectionURL();
       if (query) {
         url.searchParams.set("q", query);
       }
       replaceURL(url);
       applyNoteFilters(query ? { type: "search", value: query } : { type: "", value: "" });
-      updateActiveTags({ type: "", value: "" });
     }
+    let debounceTimer;
     function handleSearchInput(input) {
-      var query = cleanText(input.value);
-      if (isNotesPage()) {
-        updateNotesSearch(query);
+      clearTimeout(debounceTimer);
+      debounceTimer = window.setTimeout(() => {
+        var query = cleanText(input.value);
+        if (isNotesPage()) {
+          updateNotesSearch(query);
+        }
+      }, 150);
+    }
+    function syncSearchInput(filter) {
+      var input = document.querySelector("[data-notes-search]");
+      if (input) {
+        input.value = filter.type === "search" ? filter.value : "";
       }
     }
-    function handleTagClick(link, event) {
-      if (!link.classList.contains("is-active")) {
-        return;
-      }
-      event.preventDefault();
-      pendingTagsOpen = true;
-      navigateTo(notesURL());
+    function syncNoteFilters() {
+      normalizeURL();
+      var filter = currentFilter();
+      syncSearchInput(filter);
+      applyNoteFilters(filter);
+      var isSearchActive = filter.type === "search";
+      var shouldFocus = pendingSearchFocus;
+      pendingSearchFocus = false;
+      syncToolsState(isSearchActive, shouldFocus);
     }
     document.addEventListener("click", function(event) {
       var target = event.target;
-      var tagLink = target.closest("[data-notes-tag]");
-      if (tagLink) {
-        handleTagClick(tagLink, event);
-        return;
-      }
       var toolButton = target.closest("[data-notes-tool]");
       if (!toolButton) {
         return;
       }
       var toolName = toolButton.dataset.notesTool;
-      if (!toolName) return;
-      var firstTools = document.querySelector("[data-notes-tools]");
-      var isOpen = firstTools && firstTools.classList.contains("is-" + toolName + "-open");
-      setToolOpen(toolName, !isOpen, toolName === "search" && !isOpen);
-    });
-    document.addEventListener("click", function(event) {
-      var target = event.target;
-      var backBtn = target.closest("#tag-back-btn");
-      if (backBtn) {
-        event.preventDefault();
-        var url = notesURL();
-        navigateTo(url);
+      var toolsContainer = toolButton.closest("[data-notes-tools]");
+      if (!toolName || !toolsContainer) return;
+      var isCurrentlyOpen = toolsContainer.classList.contains("is-" + toolName + "-open");
+      var willOpen = !isCurrentlyOpen;
+      if (toolName === "search") {
+        if (willOpen) {
+          pendingSearchFocus = true;
+          setToolOpen(toolName, true, true);
+        } else {
+          updateNotesSearch("");
+        }
       }
     });
     document.addEventListener("input", function(event) {
       var target = event.target;
-      var input = target.closest("[data-notes-search]");
-      if (!input) {
-        return;
+      if (target.matches("[data-notes-search]")) {
+        handleSearchInput(target);
       }
-      handleSearchInput(input);
     });
     document.addEventListener("keydown", function(event) {
-      var target = event.target;
-      if (event.key !== "Escape" || !target.closest("[data-notes-tools]")) {
-        return;
+      if (event.key === "Escape") {
+        var tools = document.querySelector("[data-notes-tools]");
+        if (tools && (tools.classList.contains("is-search-open") || tools.classList.contains("is-tags-open"))) {
+          updateNotesSearch("");
+        }
       }
-      syncToolsState(false, false, false);
     });
-    function syncTagsScrollbar() {
-      const panels = document.querySelectorAll(".notes-tags-panel:not(.mobile-tags-panel)");
-      panels.forEach((panel) => {
-        if (panel.hasAttribute("data-scrollbar-initialized")) return;
-        panel.setAttribute("data-scrollbar-initialized", "true");
-        const viewport = panel.querySelector(".notes-tags-scroll-viewport");
-        const scrollbar = panel.querySelector(".notes-tags-scrollbar");
-        const thumb = panel.querySelector(".notes-tags-scrollbar-thumb");
-        if (!viewport || !scrollbar || !thumb) return;
-        let hideTimer = null;
-        const updateTagsScrollbarGeometry = () => {
-          const clientHeight = viewport.clientHeight;
-          const scrollHeight = viewport.scrollHeight;
-          const scrollTop = viewport.scrollTop;
-          if (scrollHeight <= clientHeight || clientHeight === 0) {
-            scrollbar.classList.remove("is-visible");
-            return;
-          }
-          const minThumb = 30;
-          const ratio = clientHeight / scrollHeight;
-          const thumbHeight = Math.max(minThumb, clientHeight * ratio);
-          const scrollRange = scrollHeight - clientHeight;
-          const thumbRange = clientHeight - thumbHeight;
-          const progress = scrollRange > 0 ? scrollTop / scrollRange : 0;
-          const thumbTop = progress * thumbRange;
-          thumb.style.height = `${thumbHeight}px`;
-          thumb.style.transform = `translateY(${thumbTop}px)`;
-        };
-        const showTagsScrollbarTemporarily = () => {
-          const clientHeight = viewport.clientHeight;
-          const scrollHeight = viewport.scrollHeight;
-          if (scrollHeight <= clientHeight || clientHeight === 0) return;
-          scrollbar.classList.add("is-visible");
-          if (hideTimer !== null) {
-            window.clearTimeout(hideTimer);
-          }
-          hideTimer = window.setTimeout(() => {
-            scrollbar.classList.remove("is-visible");
-          }, 800);
-        };
-        viewport.addEventListener("scroll", () => {
-          updateTagsScrollbarGeometry();
-          showTagsScrollbarTemporarily();
-        }, { passive: true });
-        const observer = new ResizeObserver(() => {
-          updateTagsScrollbarGeometry();
-        });
-        observer.observe(viewport);
-        const tagList = viewport.querySelector(".notes-tag-list");
-        if (tagList) observer.observe(tagList);
-        updateTagsScrollbarGeometry();
-      });
-    }
-    document.addEventListener("daybook:page-load", syncTagsScrollbar);
+    document.addEventListener("daybook:page-load", function() {
+      if (isNotesPage()) {
+        syncNoteFilters();
+      }
+    });
     if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", syncTagsScrollbar);
+      document.addEventListener("DOMContentLoaded", function() {
+        if (isNotesPage()) {
+          syncNoteFilters();
+        }
+      });
     } else {
-      syncTagsScrollbar();
+      if (isNotesPage()) {
+        syncNoteFilters();
+      }
     }
-    window.daybookSyncNoteFilters = syncNoteFilters;
-    document.addEventListener("daybook:page-load", syncNoteFilters);
-    syncNoteFilters();
+    if (document.readyState !== "loading" && isNotesPage()) {
+      setTimeout(loadSearchData, 500);
+    } else if (isNotesPage()) {
+      document.addEventListener("DOMContentLoaded", () => setTimeout(loadSearchData, 500));
+    }
   })();
 })();

@@ -10,6 +10,7 @@ const root = path.resolve(__dirname, '..');
 const isWatch = process.argv.includes('--watch');
 
 const classicEntries = [
+  'archive',
   'code-copy',
   'custom-cursor',
   'daybook-router',

@@ -17,6 +17,8 @@ type SEOData struct {
 	SiteName     string
 	Lang         string
 	Type         string // e.g. website, article, profile
+	PaginationPrev string
+	PaginationNext string
 	Image        string
 	AuthorName   string
 	AuthorURL    string

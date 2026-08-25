@@ -394,3 +394,40 @@ hr.notes-divider {
 
 .notes-brand-cn { view-transition-name: site-name-cn; }
 .notes-brand-en { view-transition-name: site-name-en; }
+
+/* Pagination */
+.pagination {
+  margin-top: 3rem;
+  margin-bottom: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px dashed var(--color-line);
+}
+.pagination-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  color: var(--color-muted);
+}
+.pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  text-decoration: none;
+  color: var(--color-muted);
+  transition: color var(--transition-fast, 0.2s);
+  cursor: pointer;
+}
+.pagination-btn:hover:not(.is-disabled) {
+  color: var(--color-accent);
+}
+.pagination-btn.is-disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+.pagination-info {
+  flex-grow: 1;
+  text-align: center;
+  letter-spacing: 0.05em;
+}

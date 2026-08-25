@@ -1,0 +1,40 @@
+--- internal/render/render.go
++++ internal/render/render.go
+@@ -192,6 +192,20 @@
+ 	Tags         []TagLink
+ }
+ 
++type PaginationItem struct {
++	PageNumber int
++	URL        string
++	IsCurrent  bool
++	IsEllipsis bool
++}
++
++type PaginationData struct {
++	CurrentPage int
++	TotalPages  int
++	PrevURL     string
++	NextURL     string
++	Items       []PaginationItem
++}
++
+ type NotesData struct {
+ 	Site         SiteData
+ 	Config       config.Config
+@@ -206,6 +220,7 @@
+ 	MonthGroups  []MonthGroup
+ 	Tags         []TagLink
+ 	SEO          seo.SEOData
++	Pagination   PaginationData
+ }
+ 
+ type MonthGroup struct {
+@@ -312,6 +327,7 @@
+ 	Notes        []NoteLink
+ 	Tags         []TagLink
+ 	SEO          seo.SEOData
++	Pagination   PaginationData
+ }
+ 
+ func New(templatesDir string) Renderer {

@@ -14,7 +14,7 @@
 
             <ol class="archive-list">
               {{range .Notes}}
-                <li class="archive-item" style="--i: {{.Index}}">
+                <li class="archive-item" style="--stagger-index: {{.Index}}">
                   <time datetime="{{.Date}}">{{.DateShort}}</time>
                   <div class="archive-entry">
                     <a href="{{.URL}}">{{.Title}}</a>
@@ -29,6 +29,7 @@
       {{else}}
         <p class="archive-empty">{{T .Lang "archive.empty"}}</p>
       {{end}}
+      <div id="archive-sentinel" data-next-chunk="{{.NextChunkURL}}"></div>
     </section>
   </main>
 

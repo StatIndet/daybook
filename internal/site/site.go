@@ -3,6 +3,7 @@ package site
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"html/template"
 	"io"
 	"net/http"
@@ -34,6 +35,11 @@ type Options struct {
 	ContentDir   string
 	NotesDir     string
 	PublicDir    string
+}
+
+type ArchiveChunk struct {
+	YearGroups []render.ArchiveYearGroup `json:"groups"`
+	NextChunk  string                    `json:"nextChunk"`
 }
 
 type BuildResult struct {
@@ -135,11 +141,6 @@ func Build(options Options) (BuildResult, error) {
 		TotalWordCount: totalWordCount,
 	}
 
-	searchJSONPath := filepath.Join(options.PublicDir, "search.json")
-	if err := search.BuildIndex(groups, estimateReadingTime, searchJSONPath); err != nil {
-		return BuildResult{}, fmt.Errorf("生成 search.json: %w", err)
-	}
-
 	obsidianIndex, err := buildObsidianIndex(allNotes, options.ContentDir, options.PublicDir, "/")
 	if err != nil {
 		return BuildResult{}, err
@@ -148,6 +149,11 @@ func Build(options Options) (BuildResult, error) {
 	tagRegistry, err := content.NewTagRegistry(allNotes)
 	if err != nil {
 		return BuildResult{}, fmt.Errorf("构建标签字典: %w", err)
+	}
+
+	searchJSONPath := filepath.Join(options.PublicDir, "search.json")
+	if err := search.BuildIndex(groups, estimateReadingTime, tagRegistry, searchJSONPath); err != nil {
+		return BuildResult{}, fmt.Errorf("生成 search.json: %w", err)
 	}
 
 	renderer := render.New("templates")
@@ -486,35 +492,101 @@ func Build(options Options) (BuildResult, error) {
 		sort.SliceStable(pinnedNotes, func(i, j int) bool { return sortByUpdated(i, j, pinnedNotes) })
 		sort.SliceStable(regularNotes, func(i, j int) bool { return sortByUpdated(i, j, regularNotes) })
 
-		notesIndexPath := filepath.Join(langPublicDir, "notes", "index.html")
-		notesAlternates := []seo.Alternate{{Lang: "zh-CN", URL: "/notes/"}, {Lang: "en", URL: "/en/notes/"}}
-		notesSEOArgs := seo.BuilderArgs{
-			Config:      options.Config,
-			Lang:        lang,
-			Title:       i18n.T(lang, "nav.notes"),
-			Description: i18n.T(lang, "seo.notes.description"),
-			PageURL:     joinURL("/", langPrefix, "notes"),
-			Alternates:  notesAlternates,
+		baseNotesPath := joinURL("/", langPrefix, "notes")
+		
+		totalPages := int(math.Ceil(float64(len(regularNotes)) / float64(PageSize)))
+		if totalPages == 0 {
+			totalPages = 1
+		}
+		
+		for p := 1; p <= totalPages; p++ {
+			var pagePath string
+			var pageURL string
+			if p == 1 {
+				pagePath = filepath.Join(langPublicDir, "notes", "index.html")
+				pageURL = baseNotesPath
+			} else {
+				pagePath = filepath.Join(langPublicDir, "notes", "page", fmt.Sprintf("%d", p), "index.html")
+				pageURL = joinURL(baseNotesPath, "page", fmt.Sprintf("%d", p))
+			}
+			
+			if err := os.MkdirAll(filepath.Dir(pagePath), 0755); err != nil {
+				return BuildResult{}, err
+			}
+			
+			startIdx := (p - 1) * PageSize
+			endIdx := startIdx + PageSize
+			if endIdx > len(regularNotes) {
+				endIdx = len(regularNotes)
+			}
+			
+			pageNotes := regularNotes
+			if startIdx < len(regularNotes) {
+				pageNotes = regularNotes[startIdx:endIdx]
+			} else {
+				pageNotes = nil
+			}
+
+			pagePinned := pinnedNotes
+			if p > 1 {
+				pagePinned = nil
+			}
+
+			notesAlternates := []seo.Alternate{{Lang: "zh-CN", URL: "/notes/"}, {Lang: "en", URL: "/en/notes/"}}
+			if p > 1 {
+				pageStr := fmt.Sprintf("page/%d/", p)
+				notesAlternates = []seo.Alternate{{Lang: "zh-CN", URL: "/notes/" + pageStr}, {Lang: "en", URL: "/en/notes/" + pageStr}}
+			}
+
+			notesSEOArgs := seo.BuilderArgs{
+				Config:      options.Config,
+				Lang:        lang,
+				Title:       i18n.T(lang, "nav.notes"),
+				Description: i18n.T(lang, "seo.notes.description"),
+				PageURL:     pageURL,
+				Alternates:  notesAlternates,
+			}
+			seoData := seo.BuildForCollection(notesSEOArgs)
+			
+			paginationData := generatePaginationData(len(regularNotes), p, joinURL(langPrefix, "notes"))
+			seoData.PaginationPrev = paginationData.PrevURL
+			seoData.PaginationNext = paginationData.NextURL
+			
+			altURL := joinURL("/", altLangPrefix, "notes")
+			if p > 1 {
+				altURL = joinURL("/", altLangPrefix, "notes", "page", fmt.Sprintf("%d", p))
+			}
+			
+			notesData := render.NotesData{
+				Site:         siteData,
+				Config:       options.Config,
+				PageTitle:    i18n.T(lang, "nav.notes"),
+				PageKind:     "notes",
+				BodyClass:    "notes-list-body page-body",
+				Lang:         lang,
+				AlternateURL: altURL,
+				Assets:       assets,
+				Notes:        pageNotes,
+				PinnedNotes:  pagePinned,
+				MonthGroups:  monthGroups(pageNotes),
+				Tags:         tagLinks,
+				SEO:          seoData,
+				Pagination:   paginationData,
+			}
+			
+			if err := renderer.RenderNotes(pagePath, notesData); err != nil {
+				return BuildResult{}, fmt.Errorf("生成文章页: %w", err)
+			}
+			allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: pageURL})
+		}
+		
+		// Create alias redirect for page 1
+		page1AliasPath := filepath.Join(langPublicDir, "notes", "page", "1", "index.html")
+		if err := os.MkdirAll(filepath.Dir(page1AliasPath), 0755); err == nil {
+			aliasHTML := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="robots" content="noindex"><link rel="canonical" href="%s"><meta http-equiv="refresh" content="0; url=%s"></head><body></body></html>`, baseNotesPath, baseNotesPath)
+			os.WriteFile(page1AliasPath, []byte(aliasHTML), 0644)
 		}
 
-		notesData := render.NotesData{
-			Site:         siteData,
-			Config:       options.Config,
-			PageTitle:    i18n.T(lang, "nav.notes"),
-			PageKind:     "notes",
-			BodyClass:    "notes-list-body page-body",
-			Lang:         lang,
-			AlternateURL: joinURL("/", altLangPrefix, "notes"),
-			Assets:       assets,
-			Notes:        noteLinks,
-			PinnedNotes:  pinnedNotes,
-			MonthGroups:  monthGroups(regularNotes),
-			Tags:         tagLinks,
-			SEO:          seo.BuildForCollection(notesSEOArgs),
-		}
-		if err := renderer.RenderNotes(notesIndexPath, notesData); err != nil {
-			return BuildResult{}, fmt.Errorf("生成文章页: %w", err)
-		}
 
 		archivePath := filepath.Join(langPublicDir, "archive", "index.html")
 		archiveAlternates := []seo.Alternate{{Lang: "zh-CN", URL: "/archive/"}, {Lang: "en", URL: "/en/archive/"}}
@@ -527,6 +599,18 @@ func Build(options Options) (BuildResult, error) {
 			Alternates:  archiveAlternates,
 		}
 
+		var firstPageNotes []render.NoteLink
+		if len(noteLinks) > PageSize {
+			firstPageNotes = noteLinks[:PageSize]
+		} else {
+			firstPageNotes = noteLinks
+		}
+
+		nextChunkURL := ""
+		if len(noteLinks) > PageSize {
+			nextChunkURL = joinURL("/", langPrefix, "archive", "chunks", "2.json")
+		}
+
 		archiveData := render.ArchiveData{
 			Site:         siteData,
 			Config:       options.Config,
@@ -537,12 +621,49 @@ func Build(options Options) (BuildResult, error) {
 			AlternateURL: joinURL("/", altLangPrefix, "archive"),
 			Assets:       assets,
 			Total:        len(noteLinks),
-			YearGroups:   archiveYearGroups(noteLinks),
+			YearGroups:   archiveYearGroups(firstPageNotes),
+			NextChunkURL: nextChunkURL,
 			Tags:         tagLinks,
 			SEO:          seo.BuildForCollection(archiveSEOArgs),
 		}
 		if err := renderer.RenderArchive(archivePath, archiveData); err != nil {
 			return BuildResult{}, fmt.Errorf("生成归档页: %w", err)
+		}
+
+		// Generate chunks
+		archiveTotalPages := int(math.Ceil(float64(len(noteLinks)) / float64(PageSize)))
+		for p := 2; p <= archiveTotalPages; p++ {
+			startIdx := (p - 1) * PageSize
+			endIdx := startIdx + PageSize
+			if endIdx > len(noteLinks) {
+				endIdx = len(noteLinks)
+			}
+			
+			chunkNotes := noteLinks[startIdx:endIdx]
+			
+			chunkNextURL := ""
+			if p < archiveTotalPages {
+				chunkNextURL = joinURL("/", langPrefix, "archive", "chunks", fmt.Sprintf("%d.json", p+1))
+			}
+			
+			chunk := ArchiveChunk{
+				YearGroups: archiveYearGroups(chunkNotes),
+				NextChunk:  chunkNextURL,
+			}
+			
+			chunkDir := filepath.Join(langPublicDir, "archive", "chunks")
+			if err := os.MkdirAll(chunkDir, 0755); err != nil {
+				return BuildResult{}, err
+			}
+			
+			chunkPath := filepath.Join(chunkDir, fmt.Sprintf("%d.json", p))
+			data, err := json.Marshal(chunk)
+			if err != nil {
+				return BuildResult{}, err
+			}
+			if err := os.WriteFile(chunkPath, data, 0644); err != nil {
+				return BuildResult{}, err
+			}
 		}
 
 		aboutFile := "about.md"
@@ -675,7 +796,6 @@ func Build(options Options) (BuildResult, error) {
 		for _, tagLink := range tagLinks {
 			var tagNotes []render.NoteLink
 
-			// filter notes
 			for _, n := range noteLinks {
 				for _, displayTag := range n.Tags {
 					if displayTag == tagLink.Name {
@@ -684,76 +804,138 @@ func Build(options Options) (BuildResult, error) {
 					}
 				}
 			}
-			tagAlternates := []seo.Alternate{{Lang: lang, URL: tagLink.URL}}
 
-			hasAlt := false
-			for _, grp := range groups {
-				var altNote *content.Note
-				if lang == "zh-CN" {
-					if n, ok := grp.Versions["en"]; ok {
-						altNote = n
-					}
-				} else if lang == "en" {
-					if n, ok := grp.Versions["zh-CN"]; ok {
-						altNote = n
-					}
+			baseTagPath := joinURL("/", langPrefix, "tags", seo.TagSlug(tagLink.Name))
+			totalPages := int(math.Ceil(float64(len(tagNotes)) / float64(PageSize)))
+			if totalPages == 0 {
+				totalPages = 1
+			}
+
+			for p := 1; p <= totalPages; p++ {
+				var pagePath string
+				var pageURL string
+				if p == 1 {
+					pagePath = filepath.Join(langPublicDir, "tags", seo.TagSlug(tagLink.Name), "index.html")
+					pageURL = baseTagPath
+				} else {
+					pagePath = filepath.Join(langPublicDir, "tags", seo.TagSlug(tagLink.Name), "page", fmt.Sprintf("%d", p), "index.html")
+					pageURL = joinURL(baseTagPath, "page", fmt.Sprintf("%d", p))
 				}
-				if altNote != nil {
-					for _, t := range altNote.Tags {
-						if t == tagLink.Name {
-							hasAlt = true
-							break
+				
+				if err := os.MkdirAll(filepath.Dir(pagePath), 0755); err != nil {
+					return BuildResult{}, err
+				}
+
+				startIdx := (p - 1) * PageSize
+				endIdx := startIdx + PageSize
+				if endIdx > len(tagNotes) {
+					endIdx = len(tagNotes)
+				}
+
+				pageNotes := tagNotes
+				if startIdx < len(tagNotes) {
+					pageNotes = tagNotes[startIdx:endIdx]
+				} else {
+					pageNotes = nil
+				}
+
+				tagAlternates := []seo.Alternate{{Lang: lang, URL: baseTagPath}}
+				if p > 1 {
+					tagAlternates = []seo.Alternate{{Lang: lang, URL: joinURL(baseTagPath, "page", fmt.Sprintf("%d", p))}}
+				}
+
+				hasAlt := false
+				for _, grp := range groups {
+					var altNote *content.Note
+					if lang == "zh-CN" {
+						if n, ok := grp.Versions["en"]; ok {
+							altNote = n
+						}
+					} else if lang == "en" {
+						if n, ok := grp.Versions["zh-CN"]; ok {
+							altNote = n
 						}
 					}
+					if altNote != nil {
+						for _, t := range altNote.Tags {
+							if t == tagLink.Name {
+								hasAlt = true
+								break
+							}
+						}
+					}
+					if hasAlt {
+						break
+					}
 				}
+
 				if hasAlt {
-					break
+					altURL := joinURL("/", altLangPrefix, "tags", seo.TagSlug(tagLink.Name))
+					if p > 1 {
+						altURL = joinURL(altURL, "page", fmt.Sprintf("%d", p))
+					}
+					tagAlternates = append(tagAlternates, seo.Alternate{Lang: altLangPrefix, URL: altURL})
 				}
-			}
 
-			if hasAlt {
-				tagAlternates = append(tagAlternates, seo.Alternate{Lang: altLangPrefix, URL: joinURL("/", altLangPrefix, "tags", seo.TagSlug(tagLink.Name))})
-			}
-			tagSEOArgs := seo.BuilderArgs{
-				Config:      options.Config,
-				Lang:        lang,
-				Title:       "#" + tagLink.Name,
-				Description: fmt.Sprintf(i18n.T(lang, "seo.tag.description"), tagLink.Name),
-				PageURL:     tagLink.URL,
-				Alternates:  tagAlternates,
-			}
+				tagSEOArgs := seo.BuilderArgs{
+					Config:      options.Config,
+					Lang:        lang,
+					Title:       "#" + tagLink.Name,
+					Description: fmt.Sprintf(i18n.T(lang, "seo.tag.description"), tagLink.Name),
+					PageURL:     pageURL,
+					Alternates:  tagAlternates,
+				}
+				
+				seoData := seo.BuildForTag(tagSEOArgs)
+				paginationData := generatePaginationData(len(tagNotes), p, joinURL(langPrefix, "tags", seo.TagSlug(tagLink.Name)))
+				seoData.PaginationPrev = paginationData.PrevURL
+				seoData.PaginationNext = paginationData.NextURL
+				
+				altURL := joinURL("/", altLangPrefix, "tags", seo.TagSlug(tagLink.Name))
+				if p > 1 {
+					altURL = joinURL(altURL, "page", fmt.Sprintf("%d", p))
+				}
 
-			tagData := render.TagData{
-				Site:         siteData,
-				Config:       options.Config,
-				PageTitle:    "#" + tagLink.Name,
-				PageKind:     "tag",
-				BodyClass:    "tag-body page-body",
-				Lang:         lang,
-				AlternateURL: joinURL("/", altLangPrefix, "tags", seo.TagSlug(tagLink.Name)),
-				Assets:       assets,
-				Notes:        tagNotes,
-				Tags:         tagLinks,
-				SEO:          seo.BuildForTag(tagSEOArgs),
-			}
+				tagData := render.TagData{
+					Site:         siteData,
+					Config:       options.Config,
+					PageTitle:    "#" + tagLink.Name,
+					PageKind:     "tag",
+					BodyClass:    "tag-body page-body",
+					Lang:         lang,
+					AlternateURL: altURL,
+					Assets:       assets,
+					Notes:        pageNotes,
+					Tags:         tagLinks,
+					SEO:          seoData,
+					Pagination:   paginationData,
+				}
 
-			tagOut := filepath.Join(langPublicDir, "tags", seo.TagSlug(tagLink.Name), "index.html")
-			if err := renderer.RenderTag(tagOut, tagData); err != nil {
-				return BuildResult{}, fmt.Errorf("生成标签页: %w", err)
+				if err := renderer.RenderTag(pagePath, tagData); err != nil {
+					return BuildResult{}, fmt.Errorf("生成标签页: %w", err)
+				}
+				
+				// Add to sitemap
+				allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: pageURL})
+			}
+			
+			// Create alias redirect for page 1
+			page1AliasPath := filepath.Join(langPublicDir, "tags", seo.TagSlug(tagLink.Name), "page", "1", "index.html")
+			if err := os.MkdirAll(filepath.Dir(page1AliasPath), 0755); err == nil {
+				aliasHTML := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="robots" content="noindex"><link rel="canonical" href="%s"><meta http-equiv="refresh" content="0; url=%s"></head><body></body></html>`, baseTagPath, baseTagPath)
+				os.WriteFile(page1AliasPath, []byte(aliasHTML), 0644)
 			}
 		}
 
 		allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: joinURL("/", langPrefix)})
-		allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: joinURL("/", langPrefix, "notes")})
+		
 		allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: joinURL("/", langPrefix, "archive")})
 		aboutLastMod := aboutPage.Updated
 		if aboutLastMod == "" {
 			aboutLastMod = aboutPage.Date
 		}
 		allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: joinURL("/", langPrefix, "about"), LastMod: aboutLastMod})
-		for _, tagLink := range tagLinks {
-			allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: tagLink.URL})
-		}
+
 		for _, link := range noteLinks {
 			lastMod := link.Updated
 			if lastMod == "" {

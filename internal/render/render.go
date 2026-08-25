@@ -183,6 +183,7 @@ type IndexData struct {
 	Notes        []NoteLink
 	Tags         []TagLink
 	SEO          seo.SEOData
+	Pagination   PaginationData
 }
 
 type TagLink struct {
@@ -190,6 +191,22 @@ type TagLink struct {
 	URL          string
 	Index        int
 	ReverseIndex int
+}
+
+
+type PaginationItem struct {
+	PageNumber int
+	URL        string
+	IsCurrent  bool
+	IsEllipsis bool
+}
+
+type PaginationData struct {
+	CurrentPage int
+	TotalPages  int
+	PrevURL     string
+	NextURL     string
+	Items       []PaginationItem
 }
 
 type NotesData struct {
@@ -207,6 +224,7 @@ type NotesData struct {
 	MonthGroups  []MonthGroup
 	Tags         []TagLink
 	SEO          seo.SEOData
+	Pagination   PaginationData
 }
 
 type MonthGroup struct {
@@ -243,8 +261,10 @@ type ArchiveData struct {
 	HasMath      bool
 	Total        int
 	YearGroups   []ArchiveYearGroup
+	NextChunkURL string
 	Tags         []TagLink
 	SEO          seo.SEOData
+	Pagination   PaginationData
 }
 
 type NoteData struct {
@@ -260,6 +280,7 @@ type NoteData struct {
 	Note         NotePage
 	Tags         []TagLink
 	SEO          seo.SEOData
+	Pagination   PaginationData
 }
 
 type AboutData struct {
@@ -297,6 +318,7 @@ type GraphData struct {
 	HasMath      bool
 	Tags         []TagLink
 	SEO          seo.SEOData
+	Pagination   PaginationData
 }
 
 type TagData struct {
@@ -312,6 +334,7 @@ type TagData struct {
 	Notes        []NoteLink
 	Tags         []TagLink
 	SEO          seo.SEOData
+	Pagination   PaginationData
 }
 
 func New(templatesDir string) Renderer {

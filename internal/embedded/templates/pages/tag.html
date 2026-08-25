@@ -19,6 +19,9 @@
     {{else}}
       <p class="notes-empty">{{T .Lang "archive.empty"}}</p>
     {{end}}
+    {{template "pagination" .}}
+    <div class="notes-search-results notes-month-list" hidden></div>
+    <p class="notes-empty notes-filter-empty" hidden>{{T .Lang "search.empty"}}</p>
   </section>
 
   {{template "notes_aside" .}}

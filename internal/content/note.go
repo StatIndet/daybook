@@ -71,7 +71,13 @@ func LoadNotes(dir string) ([]*ArticleGroup, []string, error) {
 			return fmt.Errorf("计算相对路径 %s: %w", path, err)
 		}
 		rel = filepath.ToSlash(rel)
+		
 		slug := strings.TrimSuffix(rel, filepath.Ext(rel))
+
+		if strings.HasPrefix(slug, "page/") || slug == "page" {
+			return fmt.Errorf("\"page\" is reserved for Daybook pagination. Conflict: %s", path)
+		}
+
 
 		note, err := ParseFile(path, slug)
 		if err != nil {
