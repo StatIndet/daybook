@@ -595,12 +595,12 @@ func Build(options Options) (BuildResult, error) {
 			Alternates:  archiveAlternates,
 		}
 
-				var bootstrapNotes []render.NoteLink
-		// Create 8 bootstrap notes for hydration to avoid empty page
-		if len(noteLinks) > 8 {
-			bootstrapNotes = noteLinks[:8]
+		allArchiveRows := buildArchiveRows(noteLinks)
+		var bootstrapRows []render.ArchiveRow
+		if len(allArchiveRows) > 8 {
+			bootstrapRows = allArchiveRows[:8]
 		} else {
-			bootstrapNotes = noteLinks
+			bootstrapRows = allArchiveRows
 		}
 
 		archiveData := render.ArchiveData{
@@ -613,7 +613,7 @@ func Build(options Options) (BuildResult, error) {
 			AlternateURL: joinURL("/", altLangPrefix, "archive"),
 			Assets:       assets,
 			Total:        len(noteLinks),
-			Rows:         buildArchiveRows(bootstrapNotes),
+			Rows:         bootstrapRows,
 			Tags:         tagLinks,
 			SEO:          seo.BuildForCollection(archiveSEOArgs),
 		}
@@ -629,7 +629,7 @@ func Build(options Options) (BuildResult, error) {
 		}{
 			Version: 1,
 			Total:   len(noteLinks),
-			Rows:    buildArchiveRows(noteLinks),
+			Rows:    allArchiveRows,
 		}
 		
 		dataJSONPath := filepath.Join(langPublicDir, "archive", "data.json")
@@ -1030,6 +1030,7 @@ func buildArchiveRows(notes []render.NoteLink) []render.ArchiveRow {
 	var rows []render.ArchiveRow
 	currentYear := ""
 	lastNoteIdx := -1
+	isFirstYear := true
 
 	for index, note := range notes {
 		year := note.Date
@@ -1042,10 +1043,12 @@ func buildArchiveRows(notes []render.NoteLink) []render.ArchiveRow {
 				rows[lastNoteIdx].IsLastInYear = true
 			}
 			rows = append(rows, render.ArchiveRow{
-				Type: "year",
-				ID:   "year:" + year,
-				Year: year,
+				Type:        "year",
+				ID:          "year:" + year,
+				Year:        year,
+				IsFirstYear: isFirstYear,
 			})
+			isFirstYear = false
 			currentYear = year
 		}
 

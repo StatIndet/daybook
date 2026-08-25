@@ -220,12 +220,10 @@
   position: relative;
 }
 .archive-year-row {
-  margin-top: clamp(2.8rem, 6vw, 4.5rem);
+  padding-top: clamp(2.8rem, 6vw, 4.5rem);
 }
-/* No margin on the very first year row */
-.archive-virtual-list > .archive-virtual-window > .archive-year-row:first-child,
-.archive-virtual-list > .archive-year-row:first-child {
-  margin-top: 0;
+.archive-year-row.is-first-year {
+  padding-top: 0;
 }
 .archive-year-row h2 {
   color: var(--color-text);
@@ -246,6 +244,7 @@
   padding: 0 0 1.9rem var(--archive-list-pad);
   grid-column: 2;
   position: relative;
+  height: 100%;
 }
 /* For mobile spacing override */
 @media (max-width: 640px) {
@@ -254,16 +253,23 @@
   }
 }
 
-.archive-item-row.is-last-in-year .archive-item-track {
-  padding-bottom: 0;
-}
-
 /* Adjust .archive-item which is now inside .archive-item-track */
 .archive-item-track .archive-item {
   display: grid;
   gap: clamp(0.9rem, 3vw, 1.35rem);
   grid-template-columns: 4.2rem minmax(0, 1fr);
   position: relative;
+  opacity: 1;
+  transform: none;
+}
+
+.archive-item-row.is-pending-reveal .archive-item {
+  opacity: 0;
+}
+.archive-item-row.is-seen .archive-item {
+  opacity: 1 !important;
+  animation: none !important;
+  transform: none !important;
 }
 
 /* Mobile overrides for flattened rows */
@@ -274,13 +280,4 @@
   .archive-year-row h2 {
     margin-bottom: 1.4rem;
   }
-}
-
-.archive-item-row:not(.reveal-trigger):not(.is-seen) .archive-item {
-  opacity: 0;
-}
-.archive-item-row.is-seen .archive-item {
-  opacity: 1 !important;
-  animation: none !important;
-  transform: none !important;
 }

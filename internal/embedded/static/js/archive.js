@@ -4,6 +4,7 @@
   (function() {
     const OVERSCAN_BEFORE = 800;
     const OVERSCAN_AFTER = 1200;
+    const MAX_STAGGER_DELAY = 15;
     let dataRows = [];
     let measurements = /* @__PURE__ */ new Map();
     let prefixSums = [];
@@ -23,12 +24,8 @@
     let revealObserver = null;
     let resizeObserver = null;
     let anchorCorrectionPending = false;
-    function escapeHtml(str) {
-      return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-    }
-    function isArchivePage() {
-      return Boolean(document.querySelector(".archive-page"));
-    }
+    let revealGroupIndex = 0;
+    let revealGroupResetTimeout;
     function initDOM() {
       listEl = document.querySelector(".archive-virtual-list");
       windowEl = document.querySelector(".archive-virtual-window");
@@ -80,6 +77,7 @@
       return listEl.getBoundingClientRect().top + getScrollY();
     }
     function findRowIndex(offset) {
+      if (dataRows.length === 0) return 0;
       let low = 0;
       let high = dataRows.length;
       while (low < high) {
@@ -97,7 +95,10 @@
     }
     function createRowElement(row) {
       const div = document.createElement("div");
-      div.className = row.type === "year" ? "archive-virtual-row archive-year-row" : `archive-virtual-row archive-item-row ${row.isLastInYear ? "is-last-in-year" : ""}`;
+      div.className = row.type === "year" ? "archive-virtual-row archive-year-row" : "archive-virtual-row archive-item-row";
+      if (row.type === "year" && row.isFirstYear) {
+        div.classList.add("is-first-year");
+      }
       div.dataset.archiveRowId = row.id;
       div.dataset.archiveRowType = row.type;
       if (row.type === "year") {
@@ -108,7 +109,6 @@
         const empty = document.createElement("div");
         div.appendChild(empty);
       } else {
-        div.style.setProperty("--stagger-index", String(row.index));
         const empty = document.createElement("div");
         empty.setAttribute("aria-hidden", "true");
         div.appendChild(empty);
@@ -170,8 +170,7 @@
         const state = Object.assign({}, history.state || {}, {
           daybookArchive: {
             anchorId: row.id,
-            anchorOffset: offsetInRow,
-            scrollY: getScrollY()
+            anchorOffset: offsetInRow
           }
         });
         history.replaceState(state, "");
@@ -212,40 +211,81 @@
           mountedNodes.delete(id);
         }
       }
-      let nextSibling = null;
-      for (let i = startIdx; i <= endIdx; i++) {
-        if (i < 0 || i >= dataRows.length) continue;
-        const row = dataRows[i];
-        let el = mountedNodes.get(row.id);
+      const frag = document.createDocumentFragment();
+      let previousNode = null;
+      const requiredIds = [];
+      if (focusedId && !toKeep.has(focusedId)) {
+      }
+      for (let i = 0; i < dataRows.length; i++) {
+        if (toKeep.has(dataRows[i].id)) {
+          requiredIds.push(dataRows[i].id);
+        }
+      }
+      let currentDomNode = windowEl.firstElementChild;
+      for (let i = 0; i < requiredIds.length; i++) {
+        const id = requiredIds[i];
+        const row = dataRows.find((r) => r.id === id);
+        if (!row) continue;
+        let el = mountedNodes.get(id);
+        let isNew = false;
         if (!el) {
           el = createRowElement(row);
-          mountedNodes.set(row.id, el);
-          if (resizeObserver) resizeObserver.observe(el);
-          if (revealObserver && row.type === "note") {
-            if (seenRows.has(row.id)) {
+          mountedNodes.set(id, el);
+          isNew = true;
+          if (row.type === "note") {
+            if (seenRows.has(id)) {
+              el.classList.add("is-seen");
+            } else if (document.documentElement.dataset.reducedMotion === "true") {
+              seenRows.add(id);
               el.classList.add("is-seen");
             } else {
-              revealObserver.observe(el);
+              el.classList.add("is-pending-reveal");
+              if (revealObserver) revealObserver.observe(el);
             }
           }
         }
-        windowEl.appendChild(el);
+        if (currentDomNode === el) {
+          currentDomNode = currentDomNode.nextElementSibling;
+        } else {
+          windowEl.insertBefore(el, currentDomNode);
+        }
+        if (isNew && resizeObserver) {
+          resizeObserver.observe(el);
+        }
+      }
+      while (currentDomNode) {
+        const next = currentDomNode.nextElementSibling;
+        if (currentDomNode.classList.contains("archive-virtual-row")) {
+          currentDomNode.remove();
+        }
+        currentDomNode = next;
       }
     }
     function initRevealObserver() {
       if (revealObserver) revealObserver.disconnect();
       revealObserver = new IntersectionObserver((entries) => {
+        let anyRevealed = false;
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             const el = entry.target;
             const id = el.dataset.archiveRowId;
             if (id && !seenRows.has(id)) {
               seenRows.add(id);
+              el.classList.remove("is-pending-reveal");
               el.classList.add("reveal-trigger");
+              el.style.setProperty("--stagger-index", String(revealGroupIndex % MAX_STAGGER_DELAY));
+              revealGroupIndex++;
+              anyRevealed = true;
               revealObserver?.unobserve(el);
             }
           }
         });
+        if (anyRevealed) {
+          clearTimeout(revealGroupResetTimeout);
+          revealGroupResetTimeout = window.setTimeout(() => {
+            revealGroupIndex = 0;
+          }, 300);
+        }
       }, { rootMargin: "-40px 0px" });
     }
     function initResizeObserver() {
@@ -267,9 +307,11 @@
           if (!id) continue;
           const currentHeight = entry.borderBoxSize?.[0]?.blockSize || entry.contentRect.height;
           const prevHeight = measurements.get(id);
-          if (prevHeight !== currentHeight && currentHeight > 0) {
-            measurements.set(id, currentHeight);
-            changed = true;
+          if (prevHeight === void 0 || Math.abs(prevHeight - currentHeight) > 0.5) {
+            if (currentHeight > 0) {
+              measurements.set(id, currentHeight);
+              changed = true;
+            }
           }
         }
         if (changed) {
@@ -281,9 +323,9 @@
             if (Math.abs(diff) > 1) {
               anchorCorrectionPending = true;
               window.scrollBy(0, diff);
-              setTimeout(() => {
+              requestAnimationFrame(() => {
                 anchorCorrectionPending = false;
-              }, 0);
+              });
             }
           }
           if (!framePending) {
@@ -316,6 +358,14 @@
     async function bootstrap() {
       initDOM();
       if (!listEl || !windowEl) return;
+      let isReload = false;
+      const navEntries = performance.getEntriesByType("navigation");
+      if (navEntries.length > 0) {
+        const navTiming = navEntries[0];
+        if (navTiming.type === "reload" || navTiming.type === "navigate") {
+          isReload = true;
+        }
+      }
       const preMounted = windowEl.querySelectorAll(".archive-virtual-row");
       preMounted.forEach((el) => {
         const htmlEl = el;
@@ -343,15 +393,22 @@
       });
       calculatePrefixSums();
       isVirtualMode = true;
-      let restored = false;
-      if (history.state && history.state.daybookArchive) {
+      if (isReload) {
+        if (history.state && history.state.daybookArchive) {
+          const newState = Object.assign({}, history.state);
+          delete newState.daybookArchive;
+          history.replaceState(newState, "");
+        }
+        window.scrollTo(0, 0);
+      } else if (history.state && history.state.daybookArchive) {
         const state = history.state.daybookArchive;
         if (state.anchorId) {
           const idx = dataRows.findIndex((r) => r.id === state.anchorId);
           if (idx >= 0) {
-            const localTop = prefixSums[idx] + (state.anchorOffset || 0);
-            window.scrollTo(0, getListTop() + localTop);
-            restored = true;
+            const estimatedLocalTop = prefixSums[idx] + (state.anchorOffset || 0);
+            topSpacer.style.height = `${estimatedLocalTop}px`;
+            bottomSpacer.style.height = `${totalHeight - estimatedLocalTop}px`;
+            window.scrollTo(0, getListTop() + estimatedLocalTop);
           }
         }
       }
@@ -374,11 +431,24 @@
       }
       bootstrap();
     }
-    document.addEventListener("daybook:page-load", init);
+    function isArchivePage() {
+      return Boolean(document.querySelector(".archive-page"));
+    }
+    let isInitialized = false;
+    function safeInit() {
+      if (!isInitialized) {
+        isInitialized = true;
+        init();
+        document.addEventListener("daybook:page-load", () => {
+          cleanup();
+          init();
+        });
+      }
+    }
     if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", init);
+      document.addEventListener("DOMContentLoaded", safeInit);
     } else {
-      init();
+      safeInit();
     }
   })();
 })();

@@ -246,6 +246,7 @@ type ArchiveRow struct {
 	TagIDs      []string `json:"tagIDs,omitempty"`
 	Index       int      `json:"index,omitempty"`
     IsLastInYear bool    `json:"isLastInYear,omitempty"`
+	IsFirstYear  bool    `json:"isFirstYear,omitempty"`
 }
 
 type ArchiveData struct {

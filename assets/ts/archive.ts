@@ -1,6 +1,7 @@
 (function () {
     const OVERSCAN_BEFORE = 800;
     const OVERSCAN_AFTER = 1200;
+    const MAX_STAGGER_DELAY = 15; // wrap at 15 items
 
     let dataRows: any[] = [];
     let measurements = new Map<string, number>();
@@ -13,7 +14,7 @@
 
     let mountedNodes = new Map<string, HTMLElement>();
     let seenRows = new Set<string>();
-
+    
     let listEl: HTMLElement | null = null;
     let windowEl: HTMLElement | null = null;
     let topSpacer: HTMLElement | null = null;
@@ -27,19 +28,10 @@
     let resizeObserver: ResizeObserver | null = null;
 
     let anchorCorrectionPending = false;
-
-    function escapeHtml(str: string): string {
-        return (str || "")
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#039;");
-    }
-
-    function isArchivePage() {
-        return Boolean(document.querySelector(".archive-page"));
-    }
+    
+    // Stagger grouping
+    let revealGroupIndex = 0;
+    let revealGroupResetTimeout: number;
 
     function initDOM() {
         listEl = document.querySelector(".archive-virtual-list");
@@ -104,6 +96,7 @@
     }
 
     function findRowIndex(offset: number): number {
+        if (dataRows.length === 0) return 0;
         let low = 0;
         let high = dataRows.length;
         while (low < high) {
@@ -122,7 +115,10 @@
 
     function createRowElement(row: any): HTMLElement {
         const div = document.createElement("div");
-        div.className = row.type === "year" ? "archive-virtual-row archive-year-row" : `archive-virtual-row archive-item-row ${row.isLastInYear ? 'is-last-in-year' : ''}`;
+        div.className = row.type === "year" ? "archive-virtual-row archive-year-row" : "archive-virtual-row archive-item-row";
+        if (row.type === "year" && row.isFirstYear) {
+            div.classList.add("is-first-year");
+        }
         div.dataset.archiveRowId = row.id;
         div.dataset.archiveRowType = row.type;
         
@@ -134,7 +130,6 @@
             const empty = document.createElement("div");
             div.appendChild(empty);
         } else {
-            div.style.setProperty("--stagger-index", String(row.index));
             const empty = document.createElement("div");
             empty.setAttribute("aria-hidden", "true");
             div.appendChild(empty);
@@ -188,8 +183,6 @@
                 framePending = false;
             });
         }
-        
-        // Save history anchor on scroll implicitly if it's stable, or explicitly debounced
         debouncedSaveAnchor();
     }
     
@@ -213,8 +206,7 @@
             const state = Object.assign({}, history.state || {}, {
                 daybookArchive: {
                     anchorId: row.id,
-                    anchorOffset: offsetInRow,
-                    scrollY: getScrollY()
+                    anchorOffset: offsetInRow
                 }
             });
             history.replaceState(state, "");
@@ -235,7 +227,7 @@
         const startIdx = findRowIndex(renderStartY);
         const endIdx = findRowIndex(renderEndY);
         
-        const topHeight = prefixSums[startIdx];
+        const topHeight = prefixSums[startIdx]!;
         const bottomHeight = totalHeight - prefixSums[endIdx + 1]!;
         
         topSpacer.style.height = `${topHeight}px`;
@@ -243,7 +235,7 @@
         
         const toKeep = new Set<string>();
         
-        // Check for focused element
+        // Pin focused element
         let focusedId: string | null = null;
         if (document.activeElement && windowEl.contains(document.activeElement)) {
             const rowEl = document.activeElement.closest(".archive-virtual-row") as HTMLElement;
@@ -258,7 +250,7 @@
             toKeep.add(dataRows[i].id);
         }
         
-        // Unmount rows not in range
+        // 1. Unmount nodes not in range
         for (const [id, el] of mountedNodes.entries()) {
             if (!toKeep.has(id)) {
                 if (resizeObserver) resizeObserver.unobserve(el);
@@ -268,30 +260,78 @@
             }
         }
         
-        // Mount new rows and reorder
-        let nextSibling: Node | null = null; // append sequentially
-        for (let i = startIdx; i <= endIdx; i++) {
-            if (i < 0 || i >= dataRows.length) continue;
-            const row = dataRows[i];
+        // 2. Keyed Reconciliation
+        // We append elements in order, using nextSibling to insert cleanly
+        const frag = document.createDocumentFragment();
+        
+        let previousNode: Node | null = null; // We'll trace the list of required elements
+        // Wait, simpler approach: we know what order they must be in.
+        // We can just iterate the required IDs, and insert them before the next available sibling.
+        // If an element is already in the right place, we do nothing.
+        
+        // Create an array of required IDs in correct order
+        const requiredIds: string[] = [];
+        if (focusedId && !toKeep.has(focusedId)) {
+            // It should be part of toKeep if focused. Wait, we added it to toKeep above.
+            // But where does it belong in the sequence if it's outside startIdx..endIdx?
+            // To be safe, we just let it be anywhere. Actually, if we just iterate from 0 to dataRows.length and pick the ones in toKeep...
+        }
+        
+        for (let i = 0; i < dataRows.length; i++) {
+            if (toKeep.has(dataRows[i].id)) {
+                requiredIds.push(dataRows[i].id);
+            }
+        }
+        
+        let currentDomNode = windowEl.firstElementChild;
+        
+        for (let i = 0; i < requiredIds.length; i++) {
+            const id = requiredIds[i]!;
+            const row = dataRows.find(r => r.id === id);
+            if (!row) continue;
             
-            let el = mountedNodes.get(row.id);
+            let el = mountedNodes.get(id);
+            let isNew = false;
+            
             if (!el) {
                 el = createRowElement(row);
-                mountedNodes.set(row.id, el);
+                mountedNodes.set(id, el);
+                isNew = true;
                 
-                if (resizeObserver) resizeObserver.observe(el);
-                if (revealObserver && row.type === "note") {
-                    if (seenRows.has(row.id)) {
+                if (row.type === "note") {
+                    if (seenRows.has(id)) {
                         el.classList.add("is-seen");
-                        
-                        
+                    } else if (document.documentElement.dataset.reducedMotion === "true") {
+                        seenRows.add(id);
+                        el.classList.add("is-seen");
                     } else {
-                        revealObserver.observe(el);
+                        el.classList.add("is-pending-reveal");
+                        if (revealObserver) revealObserver.observe(el);
                     }
                 }
             }
             
-            windowEl.appendChild(el);
+            if (currentDomNode === el) {
+                // Already in the right place
+                currentDomNode = currentDomNode.nextElementSibling;
+            } else {
+                // Needs insertion
+                windowEl.insertBefore(el, currentDomNode);
+                // currentDomNode remains the same, because we inserted BEFORE it
+            }
+            
+            if (isNew && resizeObserver) {
+                resizeObserver.observe(el);
+            }
+        }
+        
+        // Remove any remaining DOM nodes that somehow aren't in requiredIds (though they should have been removed above)
+        while (currentDomNode) {
+            const next = currentDomNode.nextElementSibling;
+            if (currentDomNode.classList.contains("archive-virtual-row")) {
+                currentDomNode.remove(); // Cleanup stray elements just in case
+            }
+            currentDomNode = next;
         }
     }
 
@@ -299,18 +339,30 @@
         if (revealObserver) revealObserver.disconnect();
         
         revealObserver = new IntersectionObserver((entries) => {
+            let anyRevealed = false;
+            
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     const el = entry.target as HTMLElement;
                     const id = el.dataset.archiveRowId;
                     if (id && !seenRows.has(id)) {
                         seenRows.add(id);
-                        // Trigger animation
+                        el.classList.remove("is-pending-reveal");
                         el.classList.add("reveal-trigger");
+                        el.style.setProperty("--stagger-index", String(revealGroupIndex % MAX_STAGGER_DELAY));
+                        revealGroupIndex++;
+                        anyRevealed = true;
                         revealObserver?.unobserve(el);
                     }
                 }
             });
+            
+            if (anyRevealed) {
+                clearTimeout(revealGroupResetTimeout);
+                revealGroupResetTimeout = window.setTimeout(() => {
+                    revealGroupIndex = 0;
+                }, 300);
+            }
         }, { rootMargin: "-40px 0px" });
     }
 
@@ -320,7 +372,6 @@
         resizeObserver = new ResizeObserver((entries) => {
             let changed = false;
             
-            // We must preserve anchor to prevent jumping
             let anchorIdx = -1;
             let anchorOffset = 0;
             if (isVirtualMode && listEl) {
@@ -338,24 +389,29 @@
                 
                 const currentHeight = entry.borderBoxSize?.[0]?.blockSize || entry.contentRect.height;
                 const prevHeight = measurements.get(id);
-                if (prevHeight !== currentHeight && currentHeight > 0) {
-                    measurements.set(id, currentHeight);
-                    changed = true;
+                // 0.5 epsilon for subpixel noise
+                if (prevHeight === undefined || Math.abs(prevHeight - currentHeight) > 0.5) {
+                    if (currentHeight > 0) {
+                        measurements.set(id, currentHeight);
+                        changed = true;
+                    }
                 }
             }
             
             if (changed) {
                 calculatePrefixSums();
                 if (anchorIdx >= 0 && !anchorCorrectionPending) {
-                    // Correct scroll position to maintain anchor
                     const newLocalTop = prefixSums[anchorIdx]! + anchorOffset;
                     const newScrollY = newLocalTop + getListTop();
-                    
                     const diff = newScrollY - getScrollY();
+                    
                     if (Math.abs(diff) > 1) {
                         anchorCorrectionPending = true;
                         window.scrollBy(0, diff);
-                        setTimeout(() => { anchorCorrectionPending = false; }, 0);
+                        // Only clear after frame
+                        requestAnimationFrame(() => {
+                            anchorCorrectionPending = false;
+                        });
                     }
                 }
                 
@@ -391,8 +447,18 @@
     async function bootstrap() {
         initDOM();
         if (!listEl || !windowEl) return;
+        
+        // 1. Detect if this is a hard reload
+        let isReload = false;
+        const navEntries = performance.getEntriesByType("navigation");
+        if (navEntries.length > 0) {
+            const navTiming = navEntries[0] as PerformanceNavigationTiming;
+            if (navTiming.type === "reload" || navTiming.type === "navigate") {
+                isReload = true;
+            }
+        }
 
-        // Initialize from existing bootstrap HTML
+        // 2. Identify bootstrap elements
         const preMounted = windowEl.querySelectorAll(".archive-virtual-row");
         preMounted.forEach((el) => {
             const htmlEl = el as HTMLElement;
@@ -405,17 +471,18 @@
             }
         });
 
+        // 3. Load Data
         await loadData();
         if (!dataRows || dataRows.length === 0) return;
-
+        
         calculatePrefixSums();
 
+        // 4. Initialize observers
         initRevealObserver();
         initResizeObserver();
-        
         window.addEventListener("resize", measureGlobalResize);
 
-        // Populate measurements with pre-mounted node heights
+        // 5. Measure pre-mounted
         preMounted.forEach((el) => {
             const htmlEl = el as HTMLElement;
             const id = htmlEl.dataset.archiveRowId;
@@ -428,20 +495,31 @@
         
         isVirtualMode = true;
         
-        // Restore from history if available
-        let restored = false;
-        if (history.state && history.state.daybookArchive) {
+        // 6. Handle history restoration
+        if (isReload) {
+            // Clean up old history state if present
+            if (history.state && history.state.daybookArchive) {
+                const newState = Object.assign({}, history.state);
+                delete newState.daybookArchive;
+                history.replaceState(newState, "");
+            }
+            window.scrollTo(0, 0);
+        } else if (history.state && history.state.daybookArchive) {
             const state = history.state.daybookArchive;
             if (state.anchorId) {
                 const idx = dataRows.findIndex(r => r.id === state.anchorId);
                 if (idx >= 0) {
-                    const localTop = prefixSums[idx]! + (state.anchorOffset || 0);
-                    window.scrollTo(0, getListTop() + localTop);
-                    restored = true;
+                    const estimatedLocalTop = prefixSums[idx]! + (state.anchorOffset || 0);
+                    // Temporarily set spacers so browser knows scrollHeight
+                    topSpacer!.style.height = `${estimatedLocalTop}px`;
+                    bottomSpacer!.style.height = `${totalHeight - estimatedLocalTop}px`;
+                    
+                    window.scrollTo(0, getListTop() + estimatedLocalTop);
                 }
             }
         }
         
+        // 7. Initial window update and scroll listener
         updateVirtualWindow();
         window.addEventListener("scroll", onScroll, { passive: true });
     }
@@ -465,11 +543,27 @@
         bootstrap();
     }
 
-    document.addEventListener("daybook:page-load", init);
+    function isArchivePage() {
+        return Boolean(document.querySelector(".archive-page"));
+    }
+
+    // Protect against double execution if both trigger
+    let isInitialized = false;
+    function safeInit() {
+        if (!isInitialized) {
+            isInitialized = true;
+            init();
+            // Allow re-init on SPA navigation
+            document.addEventListener("daybook:page-load", () => {
+                cleanup();
+                init();
+            });
+        }
+    }
 
     if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", init);
+        document.addEventListener("DOMContentLoaded", safeInit);
     } else {
-        init();
+        safeInit();
     }
 })();

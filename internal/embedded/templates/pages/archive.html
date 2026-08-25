@@ -13,12 +13,12 @@
           {{if .Rows}}
             {{range .Rows}}
               {{if eq .Type "year"}}
-                <div class="archive-virtual-row archive-year-row" data-archive-row-id="{{.ID}}" data-archive-row-type="year">
+                <div class="archive-virtual-row archive-year-row {{if .IsFirstYear}}is-first-year{{end}}" data-archive-row-id="{{.ID}}" data-archive-row-type="year">
                   <h2 id="archive-year-{{.Year}}">{{.Year}}</h2>
                   <div></div>
                 </div>
               {{else if eq .Type "note"}}
-                <div class="archive-virtual-row archive-item-row {{if .IsLastInYear}}is-last-in-year{{end}}" data-archive-row-id="{{.ID}}" data-archive-row-type="note" style="--stagger-index: {{.Index}}">
+                <div class="archive-virtual-row archive-item-row" data-archive-row-id="{{.ID}}" data-archive-row-type="note" style="--stagger-index: {{.Index}}">
                   <div aria-hidden="true"></div>
                   <div class="archive-item-track">
                     <div class="archive-item">
