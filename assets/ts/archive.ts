@@ -1,9 +1,11 @@
 (function () {
     const OVERSCAN_BEFORE = 800;
     const OVERSCAN_AFTER = 1200;
-    const MAX_STAGGER_DELAY = 15; // wrap at 15 items
+    const MAX_INTRO_STAGGER_INDEX = 10;
+    const MAX_SCROLL_STAGGER_INDEX = 6;
 
     let dataRows: any[] = [];
+    let rowById = new Map<string, any>();
     let measurements = new Map<string, number>();
     let prefixSums: number[] = [];
     let totalHeight = 0;
@@ -29,9 +31,12 @@
 
     let anchorCorrectionPending = false;
     
-    // Stagger grouping
-    let revealGroupIndex = 0;
-    let revealGroupResetTimeout: number;
+    let scrollGroupIndex = 0;
+    let scrollGroupResetTimeout: number;
+
+    function isArchivePage() {
+        return Boolean(document.querySelector(".archive-page"));
+    }
 
     function initDOM() {
         listEl = document.querySelector(".archive-virtual-list");
@@ -60,6 +65,9 @@
             })
             .then(data => {
                 dataRows = data.rows || [];
+                for (let i = 0; i < dataRows.length; i++) {
+                    rowById.set(dataRows[i].id, dataRows[i]);
+                }
             })
             .catch(err => {
                 console.error("Failed to load archive data:", err);
@@ -174,6 +182,30 @@
         return div;
     }
 
+    function triggerReveal(el: HTMLElement, staggerIndex: number, mode: 'intro' | 'scroll') {
+        const id = el.dataset.archiveRowId;
+        if (!id) return;
+        
+        seenRows.add(id);
+        el.classList.remove("is-pending-reveal");
+        
+        if (document.documentElement.dataset.reducedMotion === "true") {
+            el.classList.add("is-seen");
+            return;
+        }
+
+        const animClass = mode === 'intro' ? "is-intro-revealing" : "reveal-trigger";
+        el.classList.add(animClass);
+        el.style.setProperty("--stagger-index", String(staggerIndex));
+        
+        el.addEventListener("animationend", function handler(e) {
+            if (e.target !== el && !(e.target as HTMLElement).classList.contains("archive-item")) return;
+            el.classList.remove(animClass);
+            el.classList.add("is-seen");
+            el.removeEventListener("animationend", handler);
+        }, { once: true });
+    }
+
     function onScroll() {
         if (!isVirtualMode) return;
         if (!framePending) {
@@ -235,7 +267,6 @@
         
         const toKeep = new Set<string>();
         
-        // Pin focused element
         let focusedId: string | null = null;
         if (document.activeElement && windowEl.contains(document.activeElement)) {
             const rowEl = document.activeElement.closest(".archive-virtual-row") as HTMLElement;
@@ -245,12 +276,13 @@
             }
         }
         
+        const requiredIds: string[] = [];
         for (let i = startIdx; i <= endIdx; i++) {
             if (i < 0 || i >= dataRows.length) continue;
             toKeep.add(dataRows[i].id);
+            requiredIds.push(dataRows[i].id);
         }
         
-        // 1. Unmount nodes not in range
         for (const [id, el] of mountedNodes.entries()) {
             if (!toKeep.has(id)) {
                 if (resizeObserver) resizeObserver.unobserve(el);
@@ -260,34 +292,11 @@
             }
         }
         
-        // 2. Keyed Reconciliation
-        // We append elements in order, using nextSibling to insert cleanly
-        const frag = document.createDocumentFragment();
-        
-        let previousNode: Node | null = null; // We'll trace the list of required elements
-        // Wait, simpler approach: we know what order they must be in.
-        // We can just iterate the required IDs, and insert them before the next available sibling.
-        // If an element is already in the right place, we do nothing.
-        
-        // Create an array of required IDs in correct order
-        const requiredIds: string[] = [];
-        if (focusedId && !toKeep.has(focusedId)) {
-            // It should be part of toKeep if focused. Wait, we added it to toKeep above.
-            // But where does it belong in the sequence if it's outside startIdx..endIdx?
-            // To be safe, we just let it be anywhere. Actually, if we just iterate from 0 to dataRows.length and pick the ones in toKeep...
-        }
-        
-        for (let i = 0; i < dataRows.length; i++) {
-            if (toKeep.has(dataRows[i].id)) {
-                requiredIds.push(dataRows[i].id);
-            }
-        }
-        
         let currentDomNode = windowEl.firstElementChild;
         
         for (let i = 0; i < requiredIds.length; i++) {
             const id = requiredIds[i]!;
-            const row = dataRows.find(r => r.id === id);
+            const row = rowById.get(id);
             if (!row) continue;
             
             let el = mountedNodes.get(id);
@@ -301,9 +310,6 @@
                 if (row.type === "note") {
                     if (seenRows.has(id)) {
                         el.classList.add("is-seen");
-                    } else if (document.documentElement.dataset.reducedMotion === "true") {
-                        seenRows.add(id);
-                        el.classList.add("is-seen");
                     } else {
                         el.classList.add("is-pending-reveal");
                         if (revealObserver) revealObserver.observe(el);
@@ -312,12 +318,9 @@
             }
             
             if (currentDomNode === el) {
-                // Already in the right place
                 currentDomNode = currentDomNode.nextElementSibling;
             } else {
-                // Needs insertion
                 windowEl.insertBefore(el, currentDomNode);
-                // currentDomNode remains the same, because we inserted BEFORE it
             }
             
             if (isNew && resizeObserver) {
@@ -325,11 +328,10 @@
             }
         }
         
-        // Remove any remaining DOM nodes that somehow aren't in requiredIds (though they should have been removed above)
         while (currentDomNode) {
             const next = currentDomNode.nextElementSibling;
             if (currentDomNode.classList.contains("archive-virtual-row")) {
-                currentDomNode.remove(); // Cleanup stray elements just in case
+                currentDomNode.remove();
             }
             currentDomNode = next;
         }
@@ -346,21 +348,20 @@
                     const el = entry.target as HTMLElement;
                     const id = el.dataset.archiveRowId;
                     if (id && !seenRows.has(id)) {
-                        seenRows.add(id);
-                        el.classList.remove("is-pending-reveal");
-                        el.classList.add("reveal-trigger");
-                        el.style.setProperty("--stagger-index", String(revealGroupIndex % MAX_STAGGER_DELAY));
-                        revealGroupIndex++;
+                        const stagger = Math.min(scrollGroupIndex, MAX_SCROLL_STAGGER_INDEX);
+                        scrollGroupIndex++;
                         anyRevealed = true;
+                        
+                        triggerReveal(el, stagger, 'scroll');
                         revealObserver?.unobserve(el);
                     }
                 }
             });
             
             if (anyRevealed) {
-                clearTimeout(revealGroupResetTimeout);
-                revealGroupResetTimeout = window.setTimeout(() => {
-                    revealGroupIndex = 0;
+                clearTimeout(scrollGroupResetTimeout);
+                scrollGroupResetTimeout = window.setTimeout(() => {
+                    scrollGroupIndex = 0;
                 }, 300);
             }
         }, { rootMargin: "-40px 0px" });
@@ -389,7 +390,6 @@
                 
                 const currentHeight = entry.borderBoxSize?.[0]?.blockSize || entry.contentRect.height;
                 const prevHeight = measurements.get(id);
-                // 0.5 epsilon for subpixel noise
                 if (prevHeight === undefined || Math.abs(prevHeight - currentHeight) > 0.5) {
                     if (currentHeight > 0) {
                         measurements.set(id, currentHeight);
@@ -408,7 +408,6 @@
                     if (Math.abs(diff) > 1) {
                         anchorCorrectionPending = true;
                         window.scrollBy(0, diff);
-                        // Only clear after frame
                         requestAnimationFrame(() => {
                             anchorCorrectionPending = false;
                         });
@@ -448,41 +447,35 @@
         initDOM();
         if (!listEl || !windowEl) return;
         
-        // 1. Detect if this is a hard reload
-        let isReload = false;
         const navEntries = performance.getEntriesByType("navigation");
+        let isReload = false;
         if (navEntries.length > 0) {
             const navTiming = navEntries[0] as PerformanceNavigationTiming;
-            if (navTiming.type === "reload" || navTiming.type === "navigate") {
+            if (navTiming.type === "reload") {
                 isReload = true;
             }
         }
 
-        // 2. Identify bootstrap elements
+        // We mount bootstrap SSR DOM to keep them visually present if data fetch fails.
+        // We do NOT add them to seenRows automatically!
         const preMounted = windowEl.querySelectorAll(".archive-virtual-row");
         preMounted.forEach((el) => {
             const htmlEl = el as HTMLElement;
             const id = htmlEl.dataset.archiveRowId;
             if (id) {
                 mountedNodes.set(id, htmlEl);
-                if (htmlEl.dataset.archiveRowType === "note") {
-                    seenRows.add(id);
-                }
             }
         });
 
-        // 3. Load Data
         await loadData();
         if (!dataRows || dataRows.length === 0) return;
         
         calculatePrefixSums();
 
-        // 4. Initialize observers
         initRevealObserver();
         initResizeObserver();
         window.addEventListener("resize", measureGlobalResize);
 
-        // 5. Measure pre-mounted
         preMounted.forEach((el) => {
             const htmlEl = el as HTMLElement;
             const id = htmlEl.dataset.archiveRowId;
@@ -495,9 +488,8 @@
         
         isVirtualMode = true;
         
-        // 6. Handle history restoration
+        let willRestore = false;
         if (isReload) {
-            // Clean up old history state if present
             if (history.state && history.state.daybookArchive) {
                 const newState = Object.assign({}, history.state);
                 delete newState.daybookArchive;
@@ -510,18 +502,40 @@
                 const idx = dataRows.findIndex(r => r.id === state.anchorId);
                 if (idx >= 0) {
                     const estimatedLocalTop = prefixSums[idx]! + (state.anchorOffset || 0);
-                    // Temporarily set spacers so browser knows scrollHeight
                     topSpacer!.style.height = `${estimatedLocalTop}px`;
                     bottomSpacer!.style.height = `${totalHeight - estimatedLocalTop}px`;
                     
                     window.scrollTo(0, getListTop() + estimatedLocalTop);
+                    willRestore = true;
                 }
             }
         }
         
-        // 7. Initial window update and scroll listener
         updateVirtualWindow();
         window.addEventListener("scroll", onScroll, { passive: true });
+
+        // Run Initial Stagger based on strictly visible elements
+        if (!willRestore || isReload || !history.state?.daybookArchive) {
+            requestAnimationFrame(() => {
+                if (!windowEl) return;
+                let introIndex = 0;
+                
+                const vh = window.innerHeight;
+                mountedNodes.forEach((el, id) => {
+                    const row = rowById.get(id);
+                    if (!row || row.type !== "note") return;
+                    
+                    const rect = el.getBoundingClientRect();
+                    // Actually visible in viewport
+                    if (rect.bottom > 0 && rect.top < vh) {
+                        const stagger = Math.min(introIndex, MAX_INTRO_STAGGER_INDEX);
+                        triggerReveal(el, stagger, 'intro');
+                        introIndex++;
+                        if (revealObserver) revealObserver.unobserve(el);
+                    }
+                });
+            });
+        }
     }
 
     function cleanup() {
@@ -543,17 +557,11 @@
         bootstrap();
     }
 
-    function isArchivePage() {
-        return Boolean(document.querySelector(".archive-page"));
-    }
-
-    // Protect against double execution if both trigger
     let isInitialized = false;
     function safeInit() {
         if (!isInitialized) {
             isInitialized = true;
             init();
-            // Allow re-init on SPA navigation
             document.addEventListener("daybook:page-load", () => {
                 cleanup();
                 init();

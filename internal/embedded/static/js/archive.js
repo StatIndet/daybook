@@ -4,8 +4,10 @@
   (function() {
     const OVERSCAN_BEFORE = 800;
     const OVERSCAN_AFTER = 1200;
-    const MAX_STAGGER_DELAY = 15;
+    const MAX_INTRO_STAGGER_INDEX = 10;
+    const MAX_SCROLL_STAGGER_INDEX = 6;
     let dataRows = [];
+    let rowById = /* @__PURE__ */ new Map();
     let measurements = /* @__PURE__ */ new Map();
     let prefixSums = [];
     let totalHeight = 0;
@@ -24,8 +26,11 @@
     let revealObserver = null;
     let resizeObserver = null;
     let anchorCorrectionPending = false;
-    let revealGroupIndex = 0;
-    let revealGroupResetTimeout;
+    let scrollGroupIndex = 0;
+    let scrollGroupResetTimeout;
+    function isArchivePage() {
+      return Boolean(document.querySelector(".archive-page"));
+    }
     function initDOM() {
       listEl = document.querySelector(".archive-virtual-list");
       windowEl = document.querySelector(".archive-virtual-window");
@@ -48,6 +53,9 @@
         return res.json();
       }).then((data) => {
         dataRows = data.rows || [];
+        for (let i = 0; i < dataRows.length; i++) {
+          rowById.set(dataRows[i].id, dataRows[i]);
+        }
       }).catch((err) => {
         console.error("Failed to load archive data:", err);
       });
@@ -143,6 +151,25 @@
       }
       return div;
     }
+    function triggerReveal(el, staggerIndex, mode) {
+      const id = el.dataset.archiveRowId;
+      if (!id) return;
+      seenRows.add(id);
+      el.classList.remove("is-pending-reveal");
+      if (document.documentElement.dataset.reducedMotion === "true") {
+        el.classList.add("is-seen");
+        return;
+      }
+      const animClass = mode === "intro" ? "is-intro-revealing" : "reveal-trigger";
+      el.classList.add(animClass);
+      el.style.setProperty("--stagger-index", String(staggerIndex));
+      el.addEventListener("animationend", function handler(e) {
+        if (e.target !== el && !e.target.classList.contains("archive-item")) return;
+        el.classList.remove(animClass);
+        el.classList.add("is-seen");
+        el.removeEventListener("animationend", handler);
+      }, { once: true });
+    }
     function onScroll() {
       if (!isVirtualMode) return;
       if (!framePending) {
@@ -199,9 +226,11 @@
           toKeep.add(focusedId);
         }
       }
+      const requiredIds = [];
       for (let i = startIdx; i <= endIdx; i++) {
         if (i < 0 || i >= dataRows.length) continue;
         toKeep.add(dataRows[i].id);
+        requiredIds.push(dataRows[i].id);
       }
       for (const [id, el] of mountedNodes.entries()) {
         if (!toKeep.has(id)) {
@@ -211,20 +240,10 @@
           mountedNodes.delete(id);
         }
       }
-      const frag = document.createDocumentFragment();
-      let previousNode = null;
-      const requiredIds = [];
-      if (focusedId && !toKeep.has(focusedId)) {
-      }
-      for (let i = 0; i < dataRows.length; i++) {
-        if (toKeep.has(dataRows[i].id)) {
-          requiredIds.push(dataRows[i].id);
-        }
-      }
       let currentDomNode = windowEl.firstElementChild;
       for (let i = 0; i < requiredIds.length; i++) {
         const id = requiredIds[i];
-        const row = dataRows.find((r) => r.id === id);
+        const row = rowById.get(id);
         if (!row) continue;
         let el = mountedNodes.get(id);
         let isNew = false;
@@ -234,9 +253,6 @@
           isNew = true;
           if (row.type === "note") {
             if (seenRows.has(id)) {
-              el.classList.add("is-seen");
-            } else if (document.documentElement.dataset.reducedMotion === "true") {
-              seenRows.add(id);
               el.classList.add("is-seen");
             } else {
               el.classList.add("is-pending-reveal");
@@ -270,20 +286,18 @@
             const el = entry.target;
             const id = el.dataset.archiveRowId;
             if (id && !seenRows.has(id)) {
-              seenRows.add(id);
-              el.classList.remove("is-pending-reveal");
-              el.classList.add("reveal-trigger");
-              el.style.setProperty("--stagger-index", String(revealGroupIndex % MAX_STAGGER_DELAY));
-              revealGroupIndex++;
+              const stagger = Math.min(scrollGroupIndex, MAX_SCROLL_STAGGER_INDEX);
+              scrollGroupIndex++;
               anyRevealed = true;
+              triggerReveal(el, stagger, "scroll");
               revealObserver?.unobserve(el);
             }
           }
         });
         if (anyRevealed) {
-          clearTimeout(revealGroupResetTimeout);
-          revealGroupResetTimeout = window.setTimeout(() => {
-            revealGroupIndex = 0;
+          clearTimeout(scrollGroupResetTimeout);
+          scrollGroupResetTimeout = window.setTimeout(() => {
+            scrollGroupIndex = 0;
           }, 300);
         }
       }, { rootMargin: "-40px 0px" });
@@ -358,11 +372,11 @@
     async function bootstrap() {
       initDOM();
       if (!listEl || !windowEl) return;
-      let isReload = false;
       const navEntries = performance.getEntriesByType("navigation");
+      let isReload = false;
       if (navEntries.length > 0) {
         const navTiming = navEntries[0];
-        if (navTiming.type === "reload" || navTiming.type === "navigate") {
+        if (navTiming.type === "reload") {
           isReload = true;
         }
       }
@@ -372,9 +386,6 @@
         const id = htmlEl.dataset.archiveRowId;
         if (id) {
           mountedNodes.set(id, htmlEl);
-          if (htmlEl.dataset.archiveRowType === "note") {
-            seenRows.add(id);
-          }
         }
       });
       await loadData();
@@ -393,6 +404,7 @@
       });
       calculatePrefixSums();
       isVirtualMode = true;
+      let willRestore = false;
       if (isReload) {
         if (history.state && history.state.daybookArchive) {
           const newState = Object.assign({}, history.state);
@@ -409,11 +421,30 @@
             topSpacer.style.height = `${estimatedLocalTop}px`;
             bottomSpacer.style.height = `${totalHeight - estimatedLocalTop}px`;
             window.scrollTo(0, getListTop() + estimatedLocalTop);
+            willRestore = true;
           }
         }
       }
       updateVirtualWindow();
       window.addEventListener("scroll", onScroll, { passive: true });
+      if (!willRestore || isReload || !history.state?.daybookArchive) {
+        requestAnimationFrame(() => {
+          if (!windowEl) return;
+          let introIndex = 0;
+          const vh = window.innerHeight;
+          mountedNodes.forEach((el, id) => {
+            const row = rowById.get(id);
+            if (!row || row.type !== "note") return;
+            const rect = el.getBoundingClientRect();
+            if (rect.bottom > 0 && rect.top < vh) {
+              const stagger = Math.min(introIndex, MAX_INTRO_STAGGER_INDEX);
+              triggerReveal(el, stagger, "intro");
+              introIndex++;
+              if (revealObserver) revealObserver.unobserve(el);
+            }
+          });
+        });
+      }
     }
     function cleanup() {
       window.removeEventListener("scroll", onScroll);
@@ -430,9 +461,6 @@
         return;
       }
       bootstrap();
-    }
-    function isArchivePage() {
-      return Boolean(document.querySelector(".archive-page"));
     }
     let isInitialized = false;
     function safeInit() {

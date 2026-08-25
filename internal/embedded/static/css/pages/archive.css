@@ -210,13 +210,35 @@
 
 /* Virtual List Flattened Styles */
 .archive-virtual-list {
+  --archive-year-column: 5.2rem;
+  --archive-column-gap: clamp(1.6rem, 4vw, 2.4rem);
+  --archive-axis-x: calc(var(--archive-year-column) + var(--archive-column-gap));
   position: relative;
   min-width: 0;
 }
+
+@media (max-width: 640px) {
+  .archive-virtual-list {
+    --archive-axis-x: 0px;
+  }
+}
+
+.archive-virtual-list::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  left: var(--archive-axis-x);
+  background: var(--color-line);
+  pointer-events: none;
+  z-index: 0;
+}
+
 .archive-virtual-row {
   display: grid;
-  gap: clamp(1.6rem, 4vw, 2.4rem);
-  grid-template-columns: 5.2rem minmax(0, 1fr);
+  gap: var(--archive-column-gap);
+  grid-template-columns: var(--archive-year-column) minmax(0, 1fr);
   position: relative;
 }
 .archive-year-row {
@@ -240,7 +262,7 @@
 .archive-item-track {
   --archive-dot-size: 9px;
   --archive-list-pad: 1.45rem;
-  border-left: 1px solid var(--color-line);
+  border-left: none; /* removed per instructions */
   padding: 0 0 1.9rem var(--archive-list-pad);
   grid-column: 2;
   position: relative;
@@ -279,5 +301,6 @@
   }
   .archive-year-row h2 {
     margin-bottom: 1.4rem;
+    padding-left: var(--archive-list-pad, 1.2rem);
   }
 }
