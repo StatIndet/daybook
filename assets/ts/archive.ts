@@ -1,577 +1,628 @@
-(function () {
-    const OVERSCAN_BEFORE = 800;
-    const OVERSCAN_AFTER = 1200;
-    const MAX_INTRO_STAGGER_INDEX = 10;
-    const MAX_SCROLL_STAGGER_INDEX = 6;
-
-    let dataRows: any[] = [];
-    let rowById = new Map<string, any>();
-    let measurements = new Map<string, number>();
-    let prefixSums: number[] = [];
-    let totalHeight = 0;
-
-    let isMobile = window.innerWidth <= 640;
-    let defaultYearHeight = isMobile ? 50 : 80;
-    let defaultNoteHeight = isMobile ? 90 : 130;
-
-    let mountedNodes = new Map<string, HTMLElement>();
-    let seenRows = new Set<string>();
-    
-    let listEl: HTMLElement | null = null;
-    let windowEl: HTMLElement | null = null;
-    let topSpacer: HTMLElement | null = null;
-    let bottomSpacer: HTMLElement | null = null;
-
-    let framePending = false;
-    let isVirtualMode = false;
-    let dataPromise: Promise<void> | null = null;
-
-    let revealObserver: IntersectionObserver | null = null;
-    let resizeObserver: ResizeObserver | null = null;
-
-    let anchorCorrectionPending = false;
-    
-    let scrollGroupIndex = 0;
-    let scrollGroupResetTimeout: number;
-
-    function isArchivePage() {
-        return Boolean(document.querySelector(".archive-page"));
+(() => {
+    // ==========================================
+    // 1. Dataset Cache (Cross-visit)
+    // ==========================================
+    interface ArchiveRow {
+        type: "year" | "note";
+        id: string;
+        year?: string;
+        date?: string;
+        dateShort?: string;
+        title?: string;
+        readingTime?: string;
+        summary?: string;
+        url?: string;
+        isFirstYear?: boolean;
     }
 
-    function initDOM() {
-        listEl = document.querySelector(".archive-virtual-list");
-        windowEl = document.querySelector(".archive-virtual-window");
-        topSpacer = document.querySelector(".archive-virtual-spacer-top");
-        bottomSpacer = document.querySelector(".archive-virtual-spacer-bottom");
+    interface ArchiveDataset {
+        rows: ArchiveRow[];
+        rowById: Map<string, ArchiveRow>;
+        rowIndexById: Map<string, number>;
     }
 
-    async function loadData() {
-        if (dataRows.length > 0) return;
-        if (dataPromise) return dataPromise;
-        
-        let url = "/archive/data.json";
+    const dataCache = new Map<string, Promise<ArchiveDataset>>();
+
+    function resolveArchiveDataURL(): string {
         const langStr = document.documentElement.lang;
         if (langStr && langStr !== "zh-CN") {
             const pathParts = window.location.pathname.split("/");
             if (pathParts.length > 1 && pathParts[1] !== "archive") {
-                url = `/${pathParts[1]}/archive/data.json`;
+                return `/${pathParts[1]}/archive/data.json`;
             }
         }
-        
-        dataPromise = fetch(url)
-            .then(res => {
-                if (!res.ok) throw new Error("Fetch failed");
-                return res.json();
-            })
-            .then(data => {
-                dataRows = data.rows || [];
-                for (let i = 0; i < dataRows.length; i++) {
-                    rowById.set(dataRows[i].id, dataRows[i]);
-                }
-            })
-            .catch(err => {
-                console.error("Failed to load archive data:", err);
+        return "/archive/data.json";
+    }
+
+    function loadArchiveDataset(url: string): Promise<ArchiveDataset> {
+        if (dataCache.has(url)) {
+            return dataCache.get(url)!;
+        }
+        const promise = fetch(url).then(res => {
+            if (!res.ok) throw new Error("Fetch failed");
+            return res.json();
+        }).then(data => {
+            const rows = data.rows || [];
+            const rowById = new Map<string, ArchiveRow>();
+            const rowIndexById = new Map<string, number>();
+            rows.forEach((r: ArchiveRow, idx: number) => {
+                rowById.set(r.id, r);
+                rowIndexById.set(r.id, idx);
             });
-            
-        return dataPromise;
+            return { rows, rowById, rowIndexById };
+        }).catch(err => {
+            console.error("Failed to load archive data:", err);
+            return { rows: [], rowById: new Map(), rowIndexById: new Map() };
+        });
+        dataCache.set(url, promise);
+        return promise;
     }
 
-    function estimateHeight(row: any) {
-        if (measurements.has(row.id)) {
-            return measurements.get(row.id)!;
+    // ==========================================
+    // 2. Archive Visit Session
+    // ==========================================
+    const sessionSeenRows = new Set<string>();
+    const sessionMeasurements = new Map<string, number>();
+
+    // ==========================================
+    // 3. Archive Page Instance
+    // ==========================================
+    function createArchiveInstance(navType: "initial" | "push" | "traverse") {
+        let destroyed = false;
+        let revealEnabled = false;
+        let framePending = false;
+        let frameId: number | null = null;
+        let scrollGroupResetTimeout: number | null = null;
+        let saveTimeout: number | null = null;
+        
+        let scrollGroupIndex = 0;
+        let anchorCorrectionPending = false;
+        
+        const MAX_INTRO_STAGGER_INDEX = 15;
+        const MAX_SCROLL_STAGGER_INDEX = 10;
+        
+        const OVERSCAN_BEFORE = 800;
+        const OVERSCAN_AFTER = 1200;
+        
+        let isMobile = window.innerWidth <= 640;
+        let defaultYearHeight = isMobile ? 50 : 80;
+        let defaultNoteHeight = isMobile ? 90 : 130;
+        
+        let dataset: ArchiveDataset | null = null;
+        let prefixSums: number[] = [];
+        let totalHeight = 0;
+        
+        const mountedNodes = new Map<string, HTMLElement>();
+        
+        let resizeObserver: ResizeObserver | null = null;
+        let revealObserver: IntersectionObserver | null = null;
+
+        const listEl = document.querySelector(".archive-virtual-list") as HTMLElement;
+        const windowEl = document.querySelector(".archive-virtual-window") as HTMLElement;
+        const topSpacer = document.querySelector(".archive-virtual-spacer-top") as HTMLElement;
+        const bottomSpacer = document.querySelector(".archive-virtual-spacer-bottom") as HTMLElement;
+
+        function getScrollY() { return window.scrollY; }
+        
+        function getListTop() {
+            if (!listEl) return 0;
+            return listEl.getBoundingClientRect().top + getScrollY();
         }
-        return row.type === "year" ? defaultYearHeight : defaultNoteHeight;
-    }
 
-    function calculatePrefixSums() {
-        prefixSums = new Array(dataRows.length + 1);
-        prefixSums[0] = 0;
-        let sum = 0;
-        for (let i = 0; i < dataRows.length; i++) {
-            sum += estimateHeight(dataRows[i]);
-            prefixSums[i + 1] = sum;
-        }
-        totalHeight = sum;
-    }
-
-    function getScrollY() {
-        return window.scrollY;
-    }
-    
-    function getListTop() {
-        if (!listEl) return 0;
-        return listEl.getBoundingClientRect().top + getScrollY();
-    }
-
-    function findRowIndex(offset: number): number {
-        if (dataRows.length === 0) return 0;
-        let low = 0;
-        let high = dataRows.length;
-        while (low < high) {
-            let mid = Math.floor((low + high) / 2);
-            if (prefixSums[mid]! <= offset && prefixSums[mid + 1]! > offset) {
-                return mid;
+        function estimateHeight(row: ArchiveRow) {
+            if (sessionMeasurements.has(row.id)) {
+                return sessionMeasurements.get(row.id)!;
             }
-            if (prefixSums[mid]! > offset) {
-                high = mid;
+            return row.type === "year" ? defaultYearHeight : defaultNoteHeight;
+        }
+
+        function calculatePrefixSums() {
+            if (!dataset) return;
+            const rows = dataset.rows;
+            prefixSums = new Array(rows.length + 1);
+            prefixSums[0] = 0;
+            let sum = 0;
+            for (let i = 0; i < rows.length; i++) {
+                sum += estimateHeight(rows[i]!);
+                prefixSums[i + 1] = sum;
+            }
+            totalHeight = sum;
+        }
+
+        function findRowIndex(offset: number): number {
+            if (!dataset || dataset.rows.length === 0) return 0;
+            let low = 0;
+            let high = dataset.rows.length;
+            while (low < high) {
+                let mid = Math.floor((low + high) / 2);
+                if (prefixSums[mid]! <= offset && prefixSums[mid + 1]! > offset) {
+                    return mid;
+                }
+                if (prefixSums[mid]! > offset) {
+                    high = mid;
+                } else {
+                    low = mid + 1;
+                }
+            }
+            return Math.min(low, dataset.rows.length - 1);
+        }
+
+        function createRowElement(row: ArchiveRow): HTMLElement {
+            const div = document.createElement("div");
+            div.className = row.type === "year" ? "archive-virtual-row archive-year-row" : "archive-virtual-row archive-item-row";
+            if (row.isFirstYear) div.classList.add("is-first-year");
+            div.dataset.archiveRowId = row.id;
+            div.dataset.archiveRowType = row.type;
+            
+            if (row.type === "year") {
+                const h2 = document.createElement("h2");
+                h2.id = `archive-year-${row.year}`;
+                h2.textContent = row.year || "";
+                div.appendChild(h2);
+                const empty = document.createElement("div");
+                div.appendChild(empty);
             } else {
-                low = mid + 1;
-            }
-        }
-        return Math.min(low, dataRows.length - 1);
-    }
-
-    function createRowElement(row: any): HTMLElement {
-        const div = document.createElement("div");
-        div.className = row.type === "year" ? "archive-virtual-row archive-year-row" : "archive-virtual-row archive-item-row";
-        if (row.type === "year" && row.isFirstYear) {
-            div.classList.add("is-first-year");
-        }
-        div.dataset.archiveRowId = row.id;
-        div.dataset.archiveRowType = row.type;
-        
-        if (row.type === "year") {
-            const h2 = document.createElement("h2");
-            h2.id = `archive-year-${row.year}`;
-            h2.textContent = row.year;
-            div.appendChild(h2);
-            const empty = document.createElement("div");
-            div.appendChild(empty);
-        } else {
-            const empty = document.createElement("div");
-            empty.setAttribute("aria-hidden", "true");
-            div.appendChild(empty);
-            
-            const track = document.createElement("div");
-            track.className = "archive-item-track";
-            
-            const item = document.createElement("div");
-            item.className = "archive-item";
-            
-            const time = document.createElement("time");
-            time.setAttribute("datetime", row.date);
-            time.textContent = row.dateShort;
-            item.appendChild(time);
-            
-            const entry = document.createElement("div");
-            entry.className = "archive-entry";
-            
-            const a = document.createElement("a");
-            a.href = row.url;
-            a.textContent = row.title;
-            entry.appendChild(a);
-            
-            if (row.readingTime) {
-                const rt = document.createElement("span");
-                rt.className = "archive-reading-time";
-                rt.textContent = row.readingTime;
-                entry.appendChild(rt);
-            }
-            
-            if (row.summary) {
-                const p = document.createElement("p");
-                p.textContent = row.summary;
-                entry.appendChild(p);
-            }
-            
-            item.appendChild(entry);
-            track.appendChild(item);
-            div.appendChild(track);
-        }
-        
-        return div;
-    }
-
-    function triggerReveal(el: HTMLElement, staggerIndex: number, mode: 'intro' | 'scroll') {
-        const id = el.dataset.archiveRowId;
-        if (!id) return;
-        
-        seenRows.add(id);
-        el.classList.remove("is-pending-reveal");
-        
-        if (document.documentElement.dataset.reducedMotion === "true") {
-            el.classList.add("is-seen");
-            return;
-        }
-
-        const animClass = mode === 'intro' ? "is-intro-revealing" : "reveal-trigger";
-        el.classList.add(animClass);
-        el.style.setProperty("--stagger-index", String(staggerIndex));
-        
-        el.addEventListener("animationend", function handler(e) {
-            if (e.target !== el && !(e.target as HTMLElement).classList.contains("archive-item")) return;
-            el.classList.remove(animClass);
-            el.classList.add("is-seen");
-            el.removeEventListener("animationend", handler);
-        }, { once: true });
-    }
-
-    function onScroll() {
-        if (!isVirtualMode) return;
-        if (!framePending) {
-            framePending = true;
-            requestAnimationFrame(() => {
-                updateVirtualWindow();
-                framePending = false;
-            });
-        }
-        debouncedSaveAnchor();
-    }
-    
-    let saveTimeout: number;
-    function debouncedSaveAnchor() {
-        clearTimeout(saveTimeout);
-        saveTimeout = window.setTimeout(saveAnchor, 150);
-    }
-
-    function saveAnchor() {
-        if (!isVirtualMode || !listEl || dataRows.length === 0) return;
-        
-        const localTop = getScrollY() - getListTop();
-        if (localTop < 0) return;
-        
-        const idx = findRowIndex(localTop);
-        if (idx >= 0 && idx < dataRows.length) {
-            const row = dataRows[idx];
-            const offsetInRow = localTop - prefixSums[idx]!;
-            
-            const state = Object.assign({}, history.state || {}, {
-                daybookArchive: {
-                    anchorId: row.id,
-                    anchorOffset: offsetInRow
-                }
-            });
-            history.replaceState(state, "");
-        }
-    }
-
-    function updateVirtualWindow() {
-        if (!listEl || !windowEl || !topSpacer || !bottomSpacer) return;
-
-        const viewportHeight = window.innerHeight;
-        const scrollY = getScrollY();
-        const listTop = getListTop();
-        
-        const localTop = scrollY - listTop;
-        const renderStartY = Math.max(0, localTop - OVERSCAN_BEFORE);
-        const renderEndY = localTop + viewportHeight + OVERSCAN_AFTER;
-        
-        const startIdx = findRowIndex(renderStartY);
-        const endIdx = findRowIndex(renderEndY);
-        
-        const topHeight = prefixSums[startIdx]!;
-        const bottomHeight = totalHeight - prefixSums[endIdx + 1]!;
-        
-        topSpacer.style.height = `${topHeight}px`;
-        bottomSpacer.style.height = `${bottomHeight}px`;
-        
-        const toKeep = new Set<string>();
-        
-        let focusedId: string | null = null;
-        if (document.activeElement && windowEl.contains(document.activeElement)) {
-            const rowEl = document.activeElement.closest(".archive-virtual-row") as HTMLElement;
-            if (rowEl && rowEl.dataset.archiveRowId) {
-                focusedId = rowEl.dataset.archiveRowId;
-                toKeep.add(focusedId);
-            }
-        }
-        
-        const requiredIds: string[] = [];
-        for (let i = startIdx; i <= endIdx; i++) {
-            if (i < 0 || i >= dataRows.length) continue;
-            toKeep.add(dataRows[i].id);
-            requiredIds.push(dataRows[i].id);
-        }
-        
-        for (const [id, el] of mountedNodes.entries()) {
-            if (!toKeep.has(id)) {
-                if (resizeObserver) resizeObserver.unobserve(el);
-                if (revealObserver) revealObserver.unobserve(el);
-                el.remove();
-                mountedNodes.delete(id);
-            }
-        }
-        
-        let currentDomNode = windowEl.firstElementChild;
-        
-        for (let i = 0; i < requiredIds.length; i++) {
-            const id = requiredIds[i]!;
-            const row = rowById.get(id);
-            if (!row) continue;
-            
-            let el = mountedNodes.get(id);
-            let isNew = false;
-            
-            if (!el) {
-                el = createRowElement(row);
-                mountedNodes.set(id, el);
-                isNew = true;
+                const empty = document.createElement("div");
+                empty.setAttribute("aria-hidden", "true");
+                div.appendChild(empty);
                 
-                if (row.type === "note") {
-                    if (seenRows.has(id)) {
-                        el.classList.add("is-seen");
-                    } else {
-                        el.classList.add("is-pending-reveal");
-                        if (revealObserver) revealObserver.observe(el);
+                const track = document.createElement("div");
+                track.className = "archive-item-track";
+                
+                const item = document.createElement("div");
+                item.className = "archive-item";
+                
+                const time = document.createElement("time");
+                if (row.date) time.setAttribute("datetime", row.date);
+                time.textContent = row.dateShort || "";
+                item.appendChild(time);
+                
+                const entry = document.createElement("div");
+                entry.className = "archive-entry";
+                
+                const a = document.createElement("a");
+                if (row.url) a.href = row.url;
+                a.textContent = row.title || "";
+                entry.appendChild(a);
+                
+                if (row.readingTime) {
+                    const rt = document.createElement("span");
+                    rt.className = "archive-reading-time";
+                    rt.textContent = row.readingTime;
+                    entry.appendChild(rt);
+                }
+                
+                if (row.summary) {
+                    const p = document.createElement("p");
+                    p.textContent = row.summary;
+                    entry.appendChild(p);
+                }
+                
+                item.appendChild(entry);
+                track.appendChild(item);
+                div.appendChild(track);
+            }
+            return div;
+        }
+
+        function syncRevealState(el: HTMLElement, row: ArchiveRow) {
+            if (row.type !== "note") return;
+            
+            if (
+                el.classList.contains("is-intro-revealing") ||
+                el.classList.contains("reveal-trigger") ||
+                el.classList.contains("is-seen")
+            ) {
+                return;
+            }
+
+            if (sessionSeenRows.has(row.id)) {
+                el.classList.add("is-seen");
+                el.classList.remove("is-pending-reveal");
+                revealObserver?.unobserve(el);
+                return;
+            }
+
+            el.classList.add("is-pending-reveal");
+            el.classList.remove("is-seen");
+
+            if (revealEnabled) {
+                revealObserver?.observe(el);
+            }
+        }
+
+        function triggerReveal(el: HTMLElement, staggerIndex: number, mode: 'intro' | 'scroll') {
+            const id = el.dataset.archiveRowId;
+            if (!id) return;
+            
+            if (el.classList.contains("is-intro-revealing") || el.classList.contains("reveal-trigger") || el.classList.contains("is-seen")) {
+                return;
+            }
+
+            sessionSeenRows.add(id);
+            el.classList.remove("is-pending-reveal");
+            revealObserver?.unobserve(el);
+            
+            if (document.documentElement.dataset.reducedMotion === "true") {
+                el.classList.add("is-seen");
+                return;
+            }
+
+            const animClass = mode === 'intro' ? "is-intro-revealing" : "reveal-trigger";
+            el.classList.add(animClass);
+            el.style.setProperty("--stagger-index", String(staggerIndex));
+            
+            el.addEventListener("animationend", function handler(e) {
+                if (destroyed) return;
+                if (e.target !== el && !(e.target as HTMLElement).classList.contains("archive-item")) return;
+                el.classList.remove(animClass);
+                el.classList.add("is-seen");
+                el.removeEventListener("animationend", handler);
+            }, { once: true });
+        }
+
+        function updateVirtualWindow() {
+            if (destroyed || !listEl || !windowEl || !topSpacer || !bottomSpacer || !dataset) return;
+
+            const viewportHeight = window.innerHeight;
+            const scrollY = getScrollY();
+            const listTop = getListTop();
+            
+            const localTop = scrollY - listTop;
+            const renderStartY = Math.max(0, localTop - OVERSCAN_BEFORE);
+            const renderEndY = localTop + viewportHeight + OVERSCAN_AFTER;
+            
+            const startIdx = findRowIndex(renderStartY);
+            const endIdx = findRowIndex(renderEndY);
+            
+            const topHeight = prefixSums[startIdx]!;
+            const bottomHeight = totalHeight - prefixSums[endIdx + 1]!;
+            
+            topSpacer.style.height = `${topHeight}px`;
+            bottomSpacer.style.height = `${bottomHeight}px`;
+            
+            const toKeep = new Set<string>();
+            const requiredIds: string[] = [];
+            for (let i = startIdx; i <= endIdx; i++) {
+                if (i < 0 || i >= dataset.rows.length) continue;
+                toKeep.add(dataset.rows[i]!.id);
+                requiredIds.push(dataset.rows[i]!.id);
+            }
+            
+            for (const [id, el] of mountedNodes.entries()) {
+                if (!toKeep.has(id)) {
+                    if (resizeObserver) resizeObserver.unobserve(el);
+                    if (revealObserver) revealObserver.unobserve(el);
+                    el.remove();
+                    mountedNodes.delete(id);
+                }
+            }
+            
+            let currentDomNode = windowEl.firstElementChild;
+            
+            for (let i = 0; i < requiredIds.length; i++) {
+                const id = requiredIds[i]!;
+                const row = dataset.rowById.get(id);
+                if (!row) continue;
+                
+                let el = mountedNodes.get(id);
+                let isNew = false;
+                
+                if (!el) {
+                    el = createRowElement(row);
+                    mountedNodes.set(id, el);
+                    isNew = true;
+                }
+                
+                if (currentDomNode === el) {
+                    currentDomNode = currentDomNode.nextElementSibling;
+                } else {
+                    windowEl.insertBefore(el, currentDomNode);
+                }
+
+                syncRevealState(el, row);
+                
+                if (isNew && resizeObserver) {
+                    resizeObserver.observe(el);
+                }
+            }
+            
+            while (currentDomNode) {
+                const next = currentDomNode.nextElementSibling;
+                if (currentDomNode.classList.contains("archive-virtual-row")) {
+                    currentDomNode.remove();
+                }
+                currentDomNode = next;
+            }
+        }
+
+        function initRevealObserver() {
+            revealObserver = new IntersectionObserver((entries) => {
+                let anyRevealed = false;
+                
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const el = entry.target as HTMLElement;
+                        const id = el.dataset.archiveRowId;
+                        if (id && !sessionSeenRows.has(id)) {
+                            const stagger = Math.min(scrollGroupIndex, MAX_SCROLL_STAGGER_INDEX);
+                            scrollGroupIndex++;
+                            anyRevealed = true;
+                            triggerReveal(el, stagger, 'scroll');
+                        }
+                    }
+                });
+                
+                if (anyRevealed) {
+                    if (scrollGroupResetTimeout !== null) clearTimeout(scrollGroupResetTimeout);
+                    scrollGroupResetTimeout = window.setTimeout(() => {
+                        scrollGroupIndex = 0;
+                    }, 300);
+                }
+            }, { rootMargin: "-40px 0px" });
+        }
+
+        function initResizeObserver() {
+            resizeObserver = new ResizeObserver((entries) => {
+                let changed = false;
+                let anchorIdx = -1;
+                let anchorOffset = 0;
+
+                if (dataset && listEl) {
+                    const localTop = getScrollY() - getListTop();
+                    anchorIdx = findRowIndex(localTop);
+                    if (anchorIdx >= 0) {
+                        anchorOffset = localTop - prefixSums[anchorIdx]!;
                     }
                 }
-            }
-            
-            if (currentDomNode === el) {
-                currentDomNode = currentDomNode.nextElementSibling;
-            } else {
-                windowEl.insertBefore(el, currentDomNode);
-            }
-            
-            if (isNew && resizeObserver) {
-                resizeObserver.observe(el);
-            }
-        }
-        
-        while (currentDomNode) {
-            const next = currentDomNode.nextElementSibling;
-            if (currentDomNode.classList.contains("archive-virtual-row")) {
-                currentDomNode.remove();
-            }
-            currentDomNode = next;
-        }
-    }
-
-    function initRevealObserver() {
-        if (revealObserver) revealObserver.disconnect();
-        
-        revealObserver = new IntersectionObserver((entries) => {
-            let anyRevealed = false;
-            
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
+                
+                for (const entry of entries) {
                     const el = entry.target as HTMLElement;
                     const id = el.dataset.archiveRowId;
-                    if (id && !seenRows.has(id)) {
-                        const stagger = Math.min(scrollGroupIndex, MAX_SCROLL_STAGGER_INDEX);
-                        scrollGroupIndex++;
-                        anyRevealed = true;
-                        
-                        triggerReveal(el, stagger, 'scroll');
-                        revealObserver?.unobserve(el);
-                    }
-                }
-            });
-            
-            if (anyRevealed) {
-                clearTimeout(scrollGroupResetTimeout);
-                scrollGroupResetTimeout = window.setTimeout(() => {
-                    scrollGroupIndex = 0;
-                }, 300);
-            }
-        }, { rootMargin: "-40px 0px" });
-    }
-
-    function initResizeObserver() {
-        if (resizeObserver) resizeObserver.disconnect();
-        
-        resizeObserver = new ResizeObserver((entries) => {
-            let changed = false;
-            
-            let anchorIdx = -1;
-            let anchorOffset = 0;
-            if (isVirtualMode && listEl) {
-                const localTop = getScrollY() - getListTop();
-                anchorIdx = findRowIndex(localTop);
-                if (anchorIdx >= 0) {
-                    anchorOffset = localTop - prefixSums[anchorIdx]!;
-                }
-            }
-            
-            for (const entry of entries) {
-                const el = entry.target as HTMLElement;
-                const id = el.dataset.archiveRowId;
-                if (!id) continue;
-                
-                const currentHeight = entry.borderBoxSize?.[0]?.blockSize || entry.contentRect.height;
-                const prevHeight = measurements.get(id);
-                if (prevHeight === undefined || Math.abs(prevHeight - currentHeight) > 0.5) {
-                    if (currentHeight > 0) {
-                        measurements.set(id, currentHeight);
-                        changed = true;
-                    }
-                }
-            }
-            
-            if (changed) {
-                calculatePrefixSums();
-                if (anchorIdx >= 0 && !anchorCorrectionPending) {
-                    const newLocalTop = prefixSums[anchorIdx]! + anchorOffset;
-                    const newScrollY = newLocalTop + getListTop();
-                    const diff = newScrollY - getScrollY();
+                    if (!id) continue;
                     
-                    if (Math.abs(diff) > 1) {
-                        anchorCorrectionPending = true;
-                        window.scrollBy(0, diff);
-                        requestAnimationFrame(() => {
-                            anchorCorrectionPending = false;
+                    const currentHeight = entry.borderBoxSize?.[0]?.blockSize || entry.contentRect.height;
+                    const prevHeight = sessionMeasurements.get(id);
+                    if (prevHeight === undefined || Math.abs(prevHeight - currentHeight) > 0.5) {
+                        if (currentHeight > 0) {
+                            sessionMeasurements.set(id, currentHeight);
+                            changed = true;
+                        }
+                    }
+                }
+                
+                if (changed) {
+                    calculatePrefixSums();
+                    if (anchorIdx >= 0 && !anchorCorrectionPending) {
+                        const newLocalTop = prefixSums[anchorIdx]! + anchorOffset;
+                        const newScrollY = newLocalTop + getListTop();
+                        const diff = newScrollY - getScrollY();
+                        
+                        if (Math.abs(diff) > 1) {
+                            anchorCorrectionPending = true;
+                            window.scrollBy(0, diff);
+                            requestAnimationFrame(() => {
+                                anchorCorrectionPending = false;
+                            });
+                        }
+                    }
+                    
+                    if (!framePending) {
+                        framePending = true;
+                        frameId = requestAnimationFrame(() => {
+                            if (destroyed) return;
+                            updateVirtualWindow();
+                            framePending = false;
                         });
                     }
                 }
-                
+            });
+        }
+        
+        function measureGlobalResize() {
+            const wasMobile = window.innerWidth <= 640;
+            if (wasMobile !== isMobile) {
+                isMobile = wasMobile;
+                defaultYearHeight = isMobile ? 50 : 80;
+                defaultNoteHeight = isMobile ? 90 : 130;
+                sessionMeasurements.clear();
+                calculatePrefixSums();
                 if (!framePending) {
                     framePending = true;
-                    requestAnimationFrame(() => {
+                    frameId = requestAnimationFrame(() => {
+                        if (destroyed) return;
                         updateVirtualWindow();
                         framePending = false;
                     });
                 }
             }
-        });
-    }
-    
-    function measureGlobalResize() {
-        const wasMobile = isMobile;
-        isMobile = window.innerWidth <= 640;
-        if (wasMobile !== isMobile) {
-            defaultYearHeight = isMobile ? 50 : 80;
-            defaultNoteHeight = isMobile ? 90 : 130;
-            measurements.clear();
-            calculatePrefixSums();
+        }
+
+        function onScroll() {
             if (!framePending) {
                 framePending = true;
-                requestAnimationFrame(() => {
+                frameId = requestAnimationFrame(() => {
+                    if (destroyed) return;
                     updateVirtualWindow();
                     framePending = false;
                 });
             }
-        }
-    }
-
-    async function bootstrap() {
-        initDOM();
-        if (!listEl || !windowEl) return;
-        
-        const navEntries = performance.getEntriesByType("navigation");
-        let isReload = false;
-        if (navEntries.length > 0) {
-            const navTiming = navEntries[0] as PerformanceNavigationTiming;
-            if (navTiming.type === "reload") {
-                isReload = true;
-            }
+            debouncedSaveAnchor();
         }
 
-        // We mount bootstrap SSR DOM to keep them visually present if data fetch fails.
-        // We do NOT add them to seenRows automatically!
-        const preMounted = windowEl.querySelectorAll(".archive-virtual-row");
-        preMounted.forEach((el) => {
-            const htmlEl = el as HTMLElement;
-            const id = htmlEl.dataset.archiveRowId;
-            if (id) {
-                mountedNodes.set(id, htmlEl);
-            }
-        });
-
-        await loadData();
-        if (!dataRows || dataRows.length === 0) return;
-        
-        calculatePrefixSums();
-
-        initRevealObserver();
-        initResizeObserver();
-        window.addEventListener("resize", measureGlobalResize);
-
-        preMounted.forEach((el) => {
-            const htmlEl = el as HTMLElement;
-            const id = htmlEl.dataset.archiveRowId;
-            if (id) {
-                measurements.set(id, htmlEl.getBoundingClientRect().height);
-                resizeObserver?.observe(htmlEl);
-            }
-        });
-        calculatePrefixSums();
-        
-        isVirtualMode = true;
-        
-        let willRestore = false;
-        if (isReload) {
-            if (history.state && history.state.daybookArchive) {
-                const newState = Object.assign({}, history.state);
-                delete newState.daybookArchive;
-                history.replaceState(newState, "");
-            }
-            window.scrollTo(0, 0);
-        } else if (history.state && history.state.daybookArchive) {
-            const state = history.state.daybookArchive;
-            if (state.anchorId) {
-                const idx = dataRows.findIndex(r => r.id === state.anchorId);
-                if (idx >= 0) {
-                    const estimatedLocalTop = prefixSums[idx]! + (state.anchorOffset || 0);
-                    topSpacer!.style.height = `${estimatedLocalTop}px`;
-                    bottomSpacer!.style.height = `${totalHeight - estimatedLocalTop}px`;
-                    
-                    window.scrollTo(0, getListTop() + estimatedLocalTop);
-                    willRestore = true;
+        function saveAnchor() {
+            if (destroyed || !dataset || !listEl) return;
+            const localTop = getScrollY() - getListTop();
+            const idx = findRowIndex(localTop);
+            if (idx >= 0 && idx < dataset.rows.length) {
+                const row = dataset.rows[idx]!;
+                const offset = localTop - prefixSums[idx]!;
+                
+                const currentState = history.state || {};
+                const newArchiveState = { anchorId: row.id, anchorOffset: offset };
+                
+                if (!currentState.daybookArchive || currentState.daybookArchive.anchorId !== row.id || Math.abs(currentState.daybookArchive.anchorOffset - offset) > 10) {
+                    history.replaceState({ ...currentState, daybookArchive: newArchiveState }, "");
                 }
             }
         }
         
-        updateVirtualWindow();
-        window.addEventListener("scroll", onScroll, { passive: true });
-
-        // Run Initial Stagger based on strictly visible elements
-        if (!willRestore || isReload || !history.state?.daybookArchive) {
-            requestAnimationFrame(() => {
-                if (!windowEl) return;
-                let introIndex = 0;
-                
-                const vh = window.innerHeight;
-                mountedNodes.forEach((el, id) => {
-                    const row = rowById.get(id);
-                    if (!row || row.type !== "note") return;
-                    
-                    const rect = el.getBoundingClientRect();
-                    // Actually visible in viewport
-                    if (rect.bottom > 0 && rect.top < vh) {
-                        const stagger = Math.min(introIndex, MAX_INTRO_STAGGER_INDEX);
-                        triggerReveal(el, stagger, 'intro');
-                        introIndex++;
-                        if (revealObserver) revealObserver.unobserve(el);
-                    }
-                });
-            });
+        function debouncedSaveAnchor() {
+            if (saveTimeout !== null) clearTimeout(saveTimeout);
+            saveTimeout = window.setTimeout(saveAnchor, 200);
         }
+
+        function syncAllMountedRevealStates() {
+            if (!dataset || destroyed) return;
+            for (const [id, el] of mountedNodes.entries()) {
+                const row = dataset.rowById.get(id);
+                if (row) syncRevealState(el, row);
+            }
+        }
+
+        function runInitialIntro() {
+            if (!dataset || destroyed || !windowEl) return;
+            let introIndex = 0;
+            const vh = window.innerHeight;
+            
+            const rows = Array.from(windowEl.children);
+            for (const el of rows) {
+                const htmlEl = el as HTMLElement;
+                const id = htmlEl.dataset.archiveRowId;
+                if (!id) continue;
+                
+                const row = dataset.rowById.get(id);
+                if (!row || row.type !== "note") continue;
+                if (sessionSeenRows.has(id)) continue;
+                
+                const rect = htmlEl.getBoundingClientRect();
+                if (rect.bottom > 0 && rect.top < vh) {
+                    const stagger = Math.min(introIndex, MAX_INTRO_STAGGER_INDEX);
+                    triggerReveal(htmlEl, stagger, 'intro');
+                    introIndex++;
+                }
+            }
+        }
+
+        async function init() {
+            if (!listEl || !windowEl) return;
+
+            if (navType === "initial" || navType === "push") {
+                sessionSeenRows.clear();
+            }
+
+            let isReload = false;
+            let isNavigate = false;
+            if (navType === "initial") {
+                const navEntries = performance.getEntriesByType("navigation");
+                if (navEntries.length > 0) {
+                    const navTiming = navEntries[0] as PerformanceNavigationTiming;
+                    if (navTiming.type === "reload") isReload = true;
+                    if (navTiming.type === "navigate") isNavigate = true;
+                }
+            }
+
+            const preMounted = windowEl.querySelectorAll(".archive-virtual-row");
+            preMounted.forEach((el) => {
+                const htmlEl = el as HTMLElement;
+                const id = htmlEl.dataset.archiveRowId;
+                if (id) mountedNodes.set(id, htmlEl);
+            });
+
+            const dataUrl = resolveArchiveDataURL();
+            dataset = await loadArchiveDataset(dataUrl);
+            
+            if (destroyed) return;
+            if (!dataset || dataset.rows.length === 0) return;
+
+            calculatePrefixSums();
+            initRevealObserver();
+            initResizeObserver();
+            window.addEventListener("resize", measureGlobalResize);
+            window.addEventListener("scroll", onScroll, { passive: true });
+
+            preMounted.forEach((el) => {
+                const htmlEl = el as HTMLElement;
+                const id = htmlEl.dataset.archiveRowId;
+                if (id) {
+                    sessionMeasurements.set(id, htmlEl.getBoundingClientRect().height);
+                    resizeObserver?.observe(htmlEl);
+                }
+            });
+            calculatePrefixSums();
+
+            let willRestore = false;
+            if (isReload || (navType === "initial" && isNavigate)) {
+                if (history.state && history.state.daybookArchive) {
+                    const newState = Object.assign({}, history.state);
+                    delete newState.daybookArchive;
+                    history.replaceState(newState, "");
+                }
+                window.scrollTo(0, 0);
+            } else if (navType === "traverse" && history.state && history.state.daybookArchive) {
+                const state = history.state.daybookArchive;
+                if (state.anchorId) {
+                    const idx = dataset.rowIndexById.get(state.anchorId);
+                    if (idx !== undefined) {
+                        const estimatedLocalTop = prefixSums[idx]! + (state.anchorOffset || 0);
+                        topSpacer!.style.height = `${estimatedLocalTop}px`;
+                        bottomSpacer!.style.height = `${totalHeight - estimatedLocalTop}px`;
+                        window.scrollTo(0, getListTop() + estimatedLocalTop);
+                        willRestore = true;
+                    }
+                }
+            }
+
+            updateVirtualWindow();
+
+            if (willRestore) {
+                revealEnabled = true;
+                syncAllMountedRevealStates();
+            } else {
+                frameId = requestAnimationFrame(() => {
+                    if (destroyed) return;
+                    runInitialIntro();
+                    revealEnabled = true;
+                    syncAllMountedRevealStates();
+                });
+            }
+        }
+
+        function destroy() {
+            destroyed = true;
+            window.removeEventListener("scroll", onScroll);
+            window.removeEventListener("resize", measureGlobalResize);
+            if (resizeObserver) resizeObserver.disconnect();
+            if (revealObserver) revealObserver.disconnect();
+            if (frameId !== null) cancelAnimationFrame(frameId);
+            if (scrollGroupResetTimeout !== null) clearTimeout(scrollGroupResetTimeout);
+            if (saveTimeout !== null) clearTimeout(saveTimeout);
+            
+            mountedNodes.clear();
+        }
+
+        return { init, destroy };
     }
 
-    function cleanup() {
-        window.removeEventListener("scroll", onScroll);
-        window.removeEventListener("resize", measureGlobalResize);
-        if (resizeObserver) resizeObserver.disconnect();
-        if (revealObserver) revealObserver.disconnect();
-        
-        mountedNodes.clear();
-        isVirtualMode = false;
-        framePending = false;
-    }
+    // ==========================================
+    // 4. Global Controller
+    // ==========================================
+    let activeArchiveInstance: ReturnType<typeof createArchiveInstance> | null = null;
 
-    function init() {
-        if (!isArchivePage()) {
-            cleanup();
+    document.addEventListener("daybook:page-load", (e: Event) => {
+        if (activeArchiveInstance) {
+            activeArchiveInstance.destroy();
+            activeArchiveInstance = null;
+        }
+
+        if (!document.querySelector(".archive-page")) {
             return;
         }
-        bootstrap();
-    }
 
-    let isInitialized = false;
-    function safeInit() {
-        if (!isInitialized) {
-            isInitialized = true;
-            init();
-            document.addEventListener("daybook:page-load", () => {
-                cleanup();
-                init();
-            });
-        }
-    }
+        const detail = (e as CustomEvent).detail || {};
+        const navigationType = detail.navigationType || "initial";
 
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", safeInit);
-    } else {
-        safeInit();
-    }
+        activeArchiveInstance = createArchiveInstance(navigationType as any);
+        activeArchiveInstance.init();
+    });
 })();
