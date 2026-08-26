@@ -103,7 +103,7 @@ func BuildForHome(args BuilderArgs) SEOData {
 			Publisher: &Organization{
 				Type: "Organization",
 				ID:   absURL(args.Config, "/") + "#organization",
-				Name: args.Config.Site.Title,
+				Name: siteName,
 				URL:  absURL(args.Config, "/"),
 			},
 		},

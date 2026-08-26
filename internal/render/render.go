@@ -20,7 +20,6 @@ type Renderer struct {
 }
 
 type SiteData struct {
-	Title          string
 	StartedAt      string
 	UptimeDays     int
 	TotalWordCount int

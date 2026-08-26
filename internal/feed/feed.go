@@ -33,14 +33,14 @@ type item struct {
 	PubDate     string `xml:"pubDate,omitempty"`
 }
 
-func Write(path string, cfg config.Config, notes []render.NoteLink) error {
+func Write(path, lang string, cfg config.Config, notes []render.NoteLink) error {
 	baseURL := strings.TrimRight(cfg.Site.URL, "/")
 	document := rss{
 		Version: "2.0",
 		Channel: channel{
-			Title:       cfg.Site.Title,
+			Title:       cfg.GetSiteName(lang),
 			Link:        baseURL + "/",
-			Description: cfg.Site.Title,
+			Description: cfg.GetHomeDescription(lang),
 			Items:       make([]item, 0, len(notes)),
 		},
 	}

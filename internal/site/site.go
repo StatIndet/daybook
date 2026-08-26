@@ -143,7 +143,6 @@ func Build(options Options) (BuildResult, error) {
 	}
 
 	siteData := render.SiteData{
-		Title:          options.Config.Site.Title,
 		StartedAt:      startedAt,
 		UptimeDays:     uptimeDays,
 		TotalWordCount: totalWordCount,
@@ -776,7 +775,7 @@ func Build(options Options) (BuildResult, error) {
 			return BuildResult{}, fmt.Errorf("生成图谱页: %w", err)
 		}
 
-		if err := feed.Write(filepath.Join(langPublicDir, "rss.xml"), options.Config, noteLinks); err != nil {
+		if err := feed.Write(filepath.Join(langPublicDir, "rss.xml"), lang, options.Config, noteLinks); err != nil {
 			return BuildResult{}, err
 		}
 

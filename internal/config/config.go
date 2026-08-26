@@ -64,7 +64,6 @@ func (p ProfileConfig) GetSlogan(lang string) string {
 }
 
 type SEOConfig struct {
-	SiteName        map[string]string `yaml:"siteName"`
 	HomeTitle       map[string]string `yaml:"homeTitle"`
 	HomeDescription map[string]string `yaml:"homeDescription"`
 }
@@ -93,11 +92,11 @@ type ShareConfig struct {
 }
 
 type SiteConfig struct {
-	Title     string `yaml:"title"`
-	URL       string `yaml:"url"`
-	StartedAt string `yaml:"startedAt"`
-	Favicon   string `yaml:"favicon"`
-	Copyright string `yaml:"copyright"`
+	Name      map[string]string `yaml:"name"`
+	URL       string            `yaml:"url"`
+	StartedAt string            `yaml:"startedAt"`
+	Favicon   string            `yaml:"favicon"`
+	Copyright string            `yaml:"copyright"`
 }
 
 type Config struct {
@@ -110,11 +109,8 @@ type Config struct {
 }
 
 func (c Config) GetSiteName(lang string) string {
-	if val := getMultilingualString(c.SEO.SiteName, lang); val != "" {
+	if val := getMultilingualString(c.Site.Name, lang); val != "" {
 		return val
-	}
-	if c.Site.Title != "" {
-		return c.Site.Title
 	}
 	return "Daybook"
 }
@@ -204,9 +200,6 @@ func Load() (Config, error) {
 
 	// Defaults and Fallbacks
   cfg.Profile.ParsedSocial = parseSocialLinks(cfg.Profile.Social)
-	if strings.TrimSpace(cfg.Site.Title) == "" {
-		cfg.Site.Title = "Daybook"
-	}
 	if strings.TrimSpace(cfg.Site.StartedAt) == "" {
 		cfg.Site.StartedAt = "2026-06-08"
 	}

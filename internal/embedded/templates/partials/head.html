@@ -81,7 +81,7 @@
   {{if .HasMath}}
   <link rel="stylesheet" href="{{.Assets.Path "/vendor/katex/katex.min.css"}}">
   {{end}}
-  <link rel="alternate" type="application/rss+xml" title="{{.Site.Title}} RSS" href="/rss.xml">
+  <link rel="alternate" type="application/rss+xml" title="{{.SEO.SiteName}} RSS" {{if or (eq .SEO.Lang "zh-CN") (eq .SEO.Lang "zh")}}href="/rss.xml"{{else}}href="/{{.SEO.Lang}}/rss.xml"{{end}}>
   {{if .Config.Site.Favicon}}
   <link rel="icon" href="/{{.Config.Site.Favicon}}">
   <link rel="apple-touch-icon" href="/{{.Config.Site.Favicon}}">
