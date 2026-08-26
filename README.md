@@ -51,7 +51,7 @@ By default, the executable is installed to `%LOCALAPPDATA%\Programs\Daybook\bin\
 | Operating System | Architectures | Status |
 |---|---|---|
 | Linux | amd64, arm64 | Native tested |
-| macOS | amd64, arm64 | Native tested |
+| macOS | amd64, arm64 | Build-supported / experimental |
 | Windows | amd64, arm64 | Native tested |
 | FreeBSD | amd64 | Build-supported / experimental |
 | OpenBSD | amd64, arm64 | Build-supported / experimental |
