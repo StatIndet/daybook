@@ -36,7 +36,7 @@ type ProfileConfig struct {
 }
 
 func (p ProfileConfig) HasSignatureFont() bool {
-	return false
+	return p.Author.Name == "史帙"
 }
 
 func (p ProfileConfig) GetLogoText() string {
