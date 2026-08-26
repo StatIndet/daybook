@@ -291,14 +291,75 @@ func TestToHTMLWithNoLanguageCodeFallback(t *testing.T) {
 	}
 }
 
-func TestToHTMLDoesNotRenderUnsafeHTML(t *testing.T) {
-	document, err := ToHTMLWithHeadings("<script>alert(1)</script>\n")
-	if err != nil {
-		t.Fatalf("ToHTMLWithHeadings returned error: %v", err)
+func TestRawHTMLPolicy(t *testing.T) {
+	tests := []struct {
+		name           string
+		input          string
+		mustContain    []string
+		mustNotContain []string
+	}{
+		{
+			name:        "Case 1: Normal table",
+			input:       "<table>\n<tr>\n<td>Hello</td>\n</tr>\n</table>\n",
+			mustContain: []string{"<table>", "<tr>", "<td>Hello</td>", "</tr>", "</table>"},
+		},
+		{
+			name:        "Case 2: Table + remote image",
+			input:       "<table>\n<tr>\n<td>\n<img src=\"https://static.daybook.page/picture/test.png\" alt=\"test\">\n</td>\n</tr>\n</table>\n",
+			mustContain: []string{"<img src=\"https://static.daybook.page/picture/test.png\" alt=\"test\">"},
+		},
+		{
+			name:           "Case 5: Top level script",
+			input:          "<script>alert(1)</script>\n",
+			mustNotContain: []string{"<script>", "alert(1)"},
+		},
+		{
+			name:           "Case 6: Script inside table",
+			input:          "<table>\n<tr>\n<td>\n<script>alert(1)</script>\n</td>\n</tr>\n</table>\n",
+			mustContain:    []string{"<table>", "<td>"},
+			mustNotContain: []string{"<script>", "alert(1)"},
+		},
+		{
+			name:           "Case 7: Dangerous event attribute",
+			input:          "<table>\n<tr>\n<td>\n<img src=\"x\" onerror=\"alert(1)\">\n</td>\n</tr>\n</table>\n",
+			mustContain:    []string{"<img src=\"x\">"},
+			mustNotContain: []string{"onerror", "alert(1)"},
+		},
+		{
+			name:           "Case 8: Javascript URL",
+			input:          "<a href=\"javascript:alert(1)\">test</a>\n",
+			mustContain:    []string{"test"}, // inner text should be preserved
+			mustNotContain: []string{"javascript:", "alert(1)"},
+		},
+		{
+			name:        "Case 9: Normal link works",
+			input:       "<a href=\"https://example.com\">Example</a>\n",
+			mustContain: []string{"<a href=\"https://example.com\" rel=\"nofollow\">Example</a>"},
+		},
+		{
+			name:        "Case 10: Other safe HTML",
+			input:       "<details>\n  <summary>Hello</summary>\n  World\n</details>\n",
+			mustContain: []string{"<details>", "<summary>Hello</summary>"},
+		},
 	}
 
-	if strings.Contains(document.HTML, "<script>") {
-		t.Fatalf("HTML rendered unsafe script tag: %s", document.HTML)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			document, err := ToHTMLWithHeadings(tt.input)
+			if err != nil {
+				t.Fatalf("ToHTMLWithHeadings returned error: %v", err)
+			}
+			for _, part := range tt.mustContain {
+				if !strings.Contains(document.HTML, part) {
+					t.Errorf("HTML missing %q:\n%s", part, document.HTML)
+				}
+			}
+			for _, part := range tt.mustNotContain {
+				if strings.Contains(document.HTML, part) {
+					t.Errorf("HTML should not contain %q:\n%s", part, document.HTML)
+				}
+			}
+		})
 	}
 }
 
@@ -326,9 +387,9 @@ func TestToHTMLWithMath(t *testing.T) {
 
 func TestHeadingID(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
-		wantIDs  []string
+		name    string
+		input   string
+		wantIDs []string
 	}{
 		{
 			name:    "English",
@@ -373,16 +434,16 @@ func TestHeadingID(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			
+
 			if len(doc.Headings) != len(tt.wantIDs) {
 				t.Fatalf("got %d headings, want %d", len(doc.Headings), len(tt.wantIDs))
 			}
-			
+
 			for i, h := range doc.Headings {
 				if h.ID != tt.wantIDs[i] {
 					t.Errorf("heading %d ID: got %q, want %q", i, h.ID, tt.wantIDs[i])
 				}
-				
+
 				// verify HTML id attribute
 				expectedAttr := fmt.Sprintf(`id="%s"`, h.ID)
 				if !strings.Contains(doc.HTML, expectedAttr) {

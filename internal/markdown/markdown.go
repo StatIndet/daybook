@@ -7,11 +7,14 @@ import (
 	"strings"
 
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
 	highlighting "github.com/yuin/goldmark-highlighting/v2"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer"
+	"github.com/yuin/goldmark/renderer/html"
 	gmtext "github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
 )
@@ -46,7 +49,60 @@ type markdownRenderer struct {
 	markdown goldmark.Markdown
 }
 
+type sanitizeHTMLRenderer struct {
+	policy *bluemonday.Policy
+}
+
+func (r *sanitizeHTMLRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
+	reg.Register(ast.KindHTMLBlock, r.renderHTMLBlock)
+	reg.Register(ast.KindRawHTML, r.renderRawHTML)
+}
+
+func (r *sanitizeHTMLRenderer) renderHTMLBlock(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+	if !entering {
+		return ast.WalkContinue, nil
+	}
+	var buf bytes.Buffer
+	for i := 0; i < node.Lines().Len(); i++ {
+		line := node.Lines().At(i)
+		buf.Write(line.Value(source))
+	}
+	sanitized := r.policy.SanitizeBytes(buf.Bytes())
+	w.Write(sanitized)
+	return ast.WalkContinue, nil
+}
+
+func (r *sanitizeHTMLRenderer) renderRawHTML(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+	if !entering {
+		return ast.WalkContinue, nil
+	}
+	n := node.(*ast.RawHTML)
+	var buf bytes.Buffer
+	for i := 0; i < n.Segments.Len(); i++ {
+		segment := n.Segments.At(i)
+		buf.Write(segment.Value(source))
+	}
+	sanitized := r.policy.SanitizeBytes(buf.Bytes())
+	w.Write(sanitized)
+	return ast.WalkContinue, nil
+}
+
+type sanitizerExtension struct {
+	policy *bluemonday.Policy
+}
+
+func (e *sanitizerExtension) Extend(m goldmark.Markdown) {
+	m.Renderer().AddOptions(renderer.WithNodeRenderers(
+		util.Prioritized(&sanitizeHTMLRenderer{policy: e.policy}, 0),
+	))
+}
+
 func newRenderer() markdownRenderer {
+	p := bluemonday.UGCPolicy()
+	p.AllowElements("details", "summary", "kbd", "figure", "figcaption", "picture", "source", "mark")
+	p.AllowAttrs("class", "id", "width", "height", "align", "colspan", "rowspan", "loading").Globally()
+	p.AllowDataURIImages()
+
 	return markdownRenderer{
 		markdown: goldmark.New(
 			goldmark.WithExtensions(
@@ -64,8 +120,10 @@ func newRenderer() markdownRenderer {
 					),
 					highlighting.WithWrapperRenderer(renderCodeBlockWrapper),
 				),
+				&sanitizerExtension{policy: p},
 			),
 			goldmark.WithParserOptions(parser.WithAutoHeadingID()),
+			goldmark.WithRendererOptions(html.WithUnsafe()),
 		),
 	}
 }
@@ -78,7 +136,7 @@ func (renderer markdownRenderer) render(input string, includeHeadings bool, dept
 
 	source := []byte(processed)
 	root := renderer.markdown.Parser().Parse(gmtext.NewReader(source))
-	
+
 	processedHeadings := processHeadings(root, source)
 	var headings []Heading
 	if includeHeadings {
@@ -130,7 +188,7 @@ func processHeadings(root ast.Node, source []byte) []Heading {
 
 		baseID := generateHeadingID(text, heading.Level)
 		id := baseID
-		
+
 		count := usedIDs[id]
 		if count > 0 {
 			for {
@@ -170,7 +228,7 @@ func generateHeadingID(text string, level int) string {
 		if r < 32 || r == 127 {
 			continue
 		}
-		
+
 		if r == ' ' || r == '\t' || r == '\n' || r == '\r' || r == '\u00A0' || r == '\u3000' {
 			if !lastIsSpace {
 				b.WriteRune('-')
@@ -181,17 +239,17 @@ func generateHeadingID(text string, level int) string {
 			lastIsSpace = false
 		}
 	}
-	
+
 	res := strings.Trim(b.String(), "-")
 	if res == "" {
 		res = "section"
 	}
-	
+
 	prefix := ""
 	for i := 1; i < level; i++ {
 		prefix += "#"
 	}
-	
+
 	return prefix + res
 }
 

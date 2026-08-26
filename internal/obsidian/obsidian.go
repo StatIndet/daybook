@@ -137,8 +137,8 @@ func processWithContext(input string, index Index, sourcePath string, bodyStartL
 		return fmt.Sprintf("DAYBOOK_PROTECTED_%d", i)
 	})
 
-	result.Text = replaceImageHTML(result.Text, true, result.HTML)
-	result.Text = replaceImageHTML(result.Text, false, result.HTML)
+	result.Text = replaceImageHTML(&result, true, index, sourcePath)
+	result.Text = replaceImageHTML(&result, false, index, sourcePath)
 	
 	maskedInputStr := getMaskedInput(input)
 	lastSearchIndex := 0
@@ -164,6 +164,9 @@ func processWithContext(input string, index Index, sourcePath string, bodyStartL
 		
 		if att, ok, candidates := index.ResolveAttachment(targetUrl, sourcePath); ok {
 			result.Attachments = append(result.Attachments, att)
+			if len(parts) == 4 {
+				return "![" + parts[1] + "](" + escapeMarkdownURL(att.PublicURL) + parts[3] + ")"
+			}
 		} else if len(candidates) > 0 {
 			line, col, snippet := getLineColSnippet(input, matchStart, bodyStartLine)
 			result.Diagnostics = append(result.Diagnostics, Diagnostic{
@@ -536,13 +539,13 @@ func escapeMarkdownURL(text string) string {
 }
 
 
-func replaceImageHTML(text string, centered bool, replacements map[string]string) string {
+func replaceImageHTML(result *Result, centered bool, index Index, sourcePath string) string {
 	pattern := imageHTMLPattern
 	if centered {
 		pattern = centerImageHTMLPattern
 	}
 
-	return pattern.ReplaceAllStringFunc(text, func(match string) string {
+	return pattern.ReplaceAllStringFunc(result.Text, func(match string) string {
 		parts := pattern.FindStringSubmatch(match)
 		if len(parts) == 0 {
 			return match
@@ -550,13 +553,25 @@ func replaceImageHTML(text string, centered bool, replacements map[string]string
 
 		attrText := parts[len(parts)-1]
 		attrs := parseAttrs(attrText)
-		src := rewriteAssetPath(attrs["src"])
+		src := attrs["src"]
 		if src == "" {
 			return match
 		}
 
-		token := fmt.Sprintf("DAYBOOK_HTML_IMAGE_%d", len(replacements))
-		replacements[token] = buildImageHTML(src, attrs, centered)
+		targetUrl := src
+		if idx := strings.IndexAny(targetUrl, "?#"); idx >= 0 {
+			targetUrl = targetUrl[:idx]
+		}
+
+		if att, ok, _ := index.ResolveAttachment(targetUrl, sourcePath); ok {
+			result.Attachments = append(result.Attachments, att)
+			src = att.PublicURL
+		} else {
+			src = rewriteAssetPath(src)
+		}
+
+		token := fmt.Sprintf("DAYBOOK_HTML_IMAGE_%d", len(result.HTML))
+		result.HTML[token] = buildImageHTML(src, attrs, centered)
 		return token
 	})
 }
