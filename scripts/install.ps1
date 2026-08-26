@@ -47,7 +47,7 @@ $ApiUrl = "https://api.github.com/repos/$Repo/releases/latest"
 try {
     $Release = Invoke-RestMethod -Uri $ApiUrl -ErrorAction Stop
 } catch {
-    Abort "Failed to query latest release."
+    Abort "Failed to query latest release. Error: $_"
 }
 
 $LatestTag = $Release.tag_name
@@ -72,16 +72,16 @@ try {
 
     Write-Log "Downloading $AssetName..."
     try {
-        Invoke-WebRequest -Uri $AssetUrl -OutFile $ZipPath -ErrorAction Stop
+        Invoke-WebRequest -UseBasicParsing -Uri $AssetUrl -OutFile $ZipPath -ErrorAction Stop
     } catch {
-        Abort "Failed to download archive."
+        Abort "Failed to download archive. Error: $_"
     }
 
     Write-Log "Downloading checksums.txt..."
     try {
-        Invoke-WebRequest -Uri $ChecksumsUrl -OutFile $ChecksumsPath -ErrorAction Stop
+        Invoke-WebRequest -UseBasicParsing -Uri $ChecksumsUrl -OutFile $ChecksumsPath -ErrorAction Stop
     } catch {
-        Abort "Failed to download checksums.txt."
+        Abort "Failed to download checksums.txt. Error: $_"
     }
 
     # 5. Verify checksum
