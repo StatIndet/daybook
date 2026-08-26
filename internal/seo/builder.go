@@ -75,6 +75,7 @@ func absURL(cfg config.Config, path string) string {
 }
 
 func BuildForHome(args BuilderArgs) SEOData {
+	siteName := args.Config.GetSiteName(args.Lang)
 	for i := range args.Alternates {
 		args.Alternates[i].URL = absURL(args.Config, args.Alternates[i].URL)
 	}
@@ -113,7 +114,7 @@ func BuildForHome(args BuilderArgs) SEOData {
 		Description:  desc,
 		CanonicalURL: url,
 		PageURL:      url,
-		SiteName:     args.Config.Site.Title,
+		SiteName:     siteName,
 		Lang:         args.Lang,
 		Type:         "website",
 		Alternates:   args.Alternates,
@@ -122,6 +123,7 @@ func BuildForHome(args BuilderArgs) SEOData {
 }
 
 func BuildForNote(args BuilderArgs) SEOData {
+	siteName := args.Config.GetSiteName(args.Lang)
 	for i := range args.Alternates {
 		args.Alternates[i].URL = absURL(args.Config, args.Alternates[i].URL)
 	}
@@ -168,11 +170,11 @@ func BuildForNote(args BuilderArgs) SEOData {
 	}
 
 	return SEOData{
-		Title:        args.Title + " | " + args.Config.Site.Title,
+		Title:        args.Title + " | " + siteName,
 		Description:  desc,
 		CanonicalURL: url,
 		PageURL:      url,
-		SiteName:     args.Config.Site.Title,
+		SiteName:     siteName,
 		Lang:         args.Lang,
 		Type:         "article",
 		Published:    args.Published,
@@ -184,6 +186,7 @@ func BuildForNote(args BuilderArgs) SEOData {
 }
 
 func BuildForAbout(args BuilderArgs) SEOData {
+	siteName := args.Config.GetSiteName(args.Lang)
 	for i := range args.Alternates {
 		args.Alternates[i].URL = absURL(args.Config, args.Alternates[i].URL)
 	}
@@ -216,11 +219,11 @@ func BuildForAbout(args BuilderArgs) SEOData {
 	}
 
 	return SEOData{
-		Title:        args.Title + " | " + args.Config.Site.Title,
+		Title:        args.Title + " | " + siteName,
 		Description:  desc,
 		CanonicalURL: url,
 		PageURL:      url,
-		SiteName:     args.Config.Site.Title,
+		SiteName:     siteName,
 		Lang:         args.Lang,
 		Type:         "profile",
 		Alternates:   args.Alternates,
@@ -229,6 +232,7 @@ func BuildForAbout(args BuilderArgs) SEOData {
 }
 
 func BuildForCollection(args BuilderArgs) SEOData {
+	siteName := args.Config.GetSiteName(args.Lang)
 	for i := range args.Alternates {
 		args.Alternates[i].URL = absURL(args.Config, args.Alternates[i].URL)
 	}
@@ -247,11 +251,11 @@ func BuildForCollection(args BuilderArgs) SEOData {
 	}
 
 	return SEOData{
-		Title:        args.Title + " | " + args.Config.Site.Title,
+		Title:        args.Title + " | " + siteName,
 		Description:  desc,
 		CanonicalURL: url,
 		PageURL:      url,
-		SiteName:     args.Config.Site.Title,
+		SiteName:     siteName,
 		Lang:         args.Lang,
 		Type:         "website",
 		Alternates:   args.Alternates,
@@ -260,6 +264,7 @@ func BuildForCollection(args BuilderArgs) SEOData {
 }
 
 func BuildForGraph(args BuilderArgs) SEOData {
+	siteName := args.Config.GetSiteName(args.Lang)
 	for i := range args.Alternates {
 		args.Alternates[i].URL = absURL(args.Config, args.Alternates[i].URL)
 	}
@@ -278,11 +283,11 @@ func BuildForGraph(args BuilderArgs) SEOData {
 	}
 
 	return SEOData{
-		Title:        args.Title + " | " + args.Config.Site.Title,
+		Title:        args.Title + " | " + siteName,
 		Description:  desc,
 		CanonicalURL: url,
 		PageURL:      url,
-		SiteName:     args.Config.Site.Title,
+		SiteName:     siteName,
 		Lang:         args.Lang,
 		Type:         "website",
 		Alternates:   args.Alternates,
@@ -291,6 +296,7 @@ func BuildForGraph(args BuilderArgs) SEOData {
 }
 
 func BuildForTag(args BuilderArgs) SEOData {
+	siteName := args.Config.GetSiteName(args.Lang)
 	for i := range args.Alternates {
 		args.Alternates[i].URL = absURL(args.Config, args.Alternates[i].URL)
 	}
@@ -323,11 +329,11 @@ func BuildForTag(args BuilderArgs) SEOData {
 	}
 
 	return SEOData{
-		Title:        args.Title + " | " + args.Config.Site.Title,
+		Title:        args.Title + " | " + siteName,
 		Description:  desc,
 		CanonicalURL: url,
 		PageURL:      url,
-		SiteName:     args.Config.Site.Title,
+		SiteName:     siteName,
 		Lang:         args.Lang,
 		Type:         "website",
 		Alternates:   args.Alternates,

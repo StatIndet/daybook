@@ -64,6 +64,7 @@ func (p ProfileConfig) GetSlogan(lang string) string {
 }
 
 type SEOConfig struct {
+	SiteName        map[string]string `yaml:"siteName"`
 	HomeTitle       map[string]string `yaml:"homeTitle"`
 	HomeDescription map[string]string `yaml:"homeDescription"`
 }
@@ -106,6 +107,16 @@ type Config struct {
 	Comment CommentConfig `yaml:"comment"`
 	Stats   StatsConfig   `yaml:"stats"`
 	Share   ShareConfig   `yaml:"share"`
+}
+
+func (c Config) GetSiteName(lang string) string {
+	if val := getMultilingualString(c.SEO.SiteName, lang); val != "" {
+		return val
+	}
+	if c.Site.Title != "" {
+		return c.Site.Title
+	}
+	return "Daybook"
 }
 
 func (c Config) GetHomeTitle(lang string) string {

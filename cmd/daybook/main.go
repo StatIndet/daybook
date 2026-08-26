@@ -53,13 +53,17 @@ func run() error {
 		return fmt.Errorf("failed to get current working directory: %w", err)
 	}
 
-	contentDir := cwd
-	notesDir := filepath.Join(cwd, "notes")
+	contentDir := filepath.Join(cwd, "vault")
+	notesDir := filepath.Join(cwd, "vault", "notes")
 	publicDir := filepath.Join(cwd, "public")
 
-	if stat, err := os.Stat(filepath.Join(cwd, "vault", "notes")); err == nil && stat.IsDir() {
-		contentDir = filepath.Join(cwd, "vault")
-		notesDir = filepath.Join(cwd, "vault", "notes")
+	if command == "build" {
+		if stat, err := os.Stat(contentDir); err != nil || !stat.IsDir() {
+			return fmt.Errorf("daybook: vault directory not found: ./vault")
+		}
+		if stat, err := os.Stat(notesDir); err != nil || !stat.IsDir() {
+			return fmt.Errorf("daybook: notes directory not found: ./vault/notes")
+		}
 	}
 
 	options := site.Options{

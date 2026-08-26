@@ -28,8 +28,8 @@ go build -o "$DAYBOOK_BIN" ./cmd/daybook
 
 echo "==> Phase C: Standalone Smoke Test"
 VAULT_DIR="$TEMP_DIR/vault"
-mkdir -p "$VAULT_DIR/notes"
-mkdir -p "$VAULT_DIR/pages"
+mkdir -p "$VAULT_DIR/vault/notes"
+mkdir -p "$VAULT_DIR/vault/pages"
 
 cat << 'YAML' > "$VAULT_DIR/daybook.yaml"
 site:
@@ -37,13 +37,13 @@ site:
   url: https://example.com
 YAML
 
-cat << 'ABOUT' > "$VAULT_DIR/pages/about.md"
+cat << 'ABOUT' > "$VAULT_DIR/vault/pages/about.md"
 ---
 title: "About"
 ---
 ABOUT
 
-cat << 'MD' > "$VAULT_DIR/notes/smoke-test.md"
+cat << 'MD' > "$VAULT_DIR/vault/notes/smoke-test.md"
 ---
 title: "Smoke Test Note"
 date: "2026-08-24"
