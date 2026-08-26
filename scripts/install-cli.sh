@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/sh
+set -eu
 
 echo "=> Building frontend assets..."
 npm ci
@@ -20,9 +20,13 @@ echo "=> Install successful."
 echo "=> Executable is located at: $INSTALL_BIN/daybook"
 
 # Check if INSTALL_BIN is in PATH
-if [[ ":$PATH:" != *":$INSTALL_BIN:"* ]]; then
+case ":$PATH:" in
+  *":$INSTALL_BIN:"*)
+    ;;
+  *)
     echo ""
     echo "Warning: $INSTALL_BIN is not in your PATH."
-    echo "You may need to add it to your shell configuration (e.g., ~/.bashrc, ~/.zshrc):"
+    echo "You may need to add it to your shell configuration (e.g., ~/.profile, ~/.zshrc):"
     echo "  export PATH=\"\$PATH:$INSTALL_BIN\""
-fi
+    ;;
+esac
