@@ -43,31 +43,54 @@ jobs:
           VERSION=${GITHUB_REF_NAME}
           LDFLAGS="-s -w -X 'main.Version=daybook ${VERSION}'"
           
-          mkdir -p release/linux_amd64 release/linux_arm64 release/darwin_amd64 release/darwin_arm64
-          cp LICENSE release/linux_amd64/
-          cp LICENSE release/linux_arm64/
-          cp LICENSE release/darwin_amd64/
-          cp LICENSE release/darwin_arm64/
+          build_target() {
+            local os=$1
+            local arch=$2
+            local ext=$3
+            local outdir="release/${os}_${arch}"
+            mkdir -p "$outdir"
+            cp LICENSE "$outdir/"
+            
+            local bin_name="daybook"
+            if [ "$os" = "windows" ]; then
+              bin_name="daybook.exe"
+            fi
+            
+            GOOS=$os GOARCH=$arch go build -ldflags "${LDFLAGS}" -o "$outdir/$bin_name" ./cmd/daybook
+            
+            cd "$outdir"
+            if [ "$ext" = "zip" ]; then
+              zip -q "../../daybook_${VERSION}_${os}_${arch}.zip" "$bin_name" LICENSE
+            else
+              tar -czf "../../daybook_${VERSION}_${os}_${arch}.tar.gz" "$bin_name" LICENSE
+            fi
+            cd ../..
+          }
 
-          GOOS=linux GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o release/linux_amd64/daybook ./cmd/daybook
-          GOOS=linux GOARCH=arm64 go build -ldflags "${LDFLAGS}" -o release/linux_arm64/daybook ./cmd/daybook
-          GOOS=darwin GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o release/darwin_amd64/daybook ./cmd/daybook
-          GOOS=darwin GOARCH=arm64 go build -ldflags "${LDFLAGS}" -o release/darwin_arm64/daybook ./cmd/daybook
-
-          cd release/linux_amd64 && tar -czf ../../daybook_${VERSION}_linux_amd64.tar.gz daybook LICENSE && cd ../..
-          cd release/linux_arm64 && tar -czf ../../daybook_${VERSION}_linux_arm64.tar.gz daybook LICENSE && cd ../..
-          cd release/darwin_amd64 && tar -czf ../../daybook_${VERSION}_darwin_amd64.tar.gz daybook LICENSE && cd ../..
-          cd release/darwin_arm64 && tar -czf ../../daybook_${VERSION}_darwin_arm64.tar.gz daybook LICENSE && cd ../..
+          # Matrix targets
+          build_target linux amd64 tar.gz
+          build_target linux arm64 tar.gz
+          build_target darwin amd64 tar.gz
+          build_target darwin arm64 tar.gz
+          build_target windows amd64 zip
+          build_target windows arm64 zip
+          build_target freebsd amd64 tar.gz
+          build_target openbsd amd64 tar.gz
+          build_target openbsd arm64 tar.gz
+          build_target netbsd amd64 tar.gz
+          build_target dragonfly amd64 tar.gz
 
       - name: Generate Checksums
         run: |
-          sha256sum daybook_*.tar.gz > checksums.txt
+          sha256sum daybook_*.tar.gz daybook_*.zip > checksums.txt
 
       - name: Release
         uses: softprops/action-gh-release@v3
         with:
           files: |
             daybook_*.tar.gz
+            daybook_*.zip
             checksums.txt
             scripts/install.sh
+            scripts/install.ps1
           generate_release_notes: true

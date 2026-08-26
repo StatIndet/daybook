@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  check:
+  check-unix:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -31,6 +31,25 @@ jobs:
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
+        
+      - name: Check POSIX syntax
+        run: shellcheck -s sh scripts/install.sh
 
       - name: Run checks
         run: ./scripts/check.sh
+
+  check-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Build and Smoke Test
+        run: |
+          go build -o daybook.exe ./cmd/daybook
+          .\daybook.exe --version

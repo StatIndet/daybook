@@ -25,11 +25,39 @@ my-vault/
 ## Installation
 
 ### Prebuilt Binaries (Recommended)
-The easiest way to install Daybook is using our release installer. This script will automatically detect your OS and architecture, download the latest prebuilt CLI, verify its checksum, and install it to `~/.local/bin`.
 
-```bash
-curl -fsSL https://github.com/StatIndet/daybook/releases/latest/download/install.sh | bash
+The easiest way to install Daybook is using our release installer. This script will automatically detect your OS and architecture, download the latest prebuilt CLI, verify its checksum, and install it without requiring Go or Node.js.
+
+#### Linux / macOS / BSD
+
+```sh
+curl -fsSL https://install.daybook.page | sh
 ```
+
+By default, the executable is installed to `~/.local/bin/daybook`. You do not need root/sudo privileges. Ensure `~/.local/bin` is in your `$PATH`.
+
+#### Windows
+
+Open PowerShell and run:
+
+```powershell
+irm https://install.daybook.page/windows | iex
+```
+
+By default, the executable is installed to `%LOCALAPPDATA%\Programs\Daybook\bin\daybook.exe`. The installer will automatically add this directory to your User PATH. No administrator privileges or WSL are required.
+
+### Platform Support
+
+| Operating System | Architectures | Status |
+|---|---|---|
+| Linux | amd64, arm64 | Native tested |
+| macOS | amd64, arm64 | Native tested |
+| Windows | amd64, arm64 | Native tested |
+| FreeBSD | amd64 | Build-supported / experimental |
+| OpenBSD | amd64, arm64 | Build-supported / experimental |
+| NetBSD | amd64 | Build-supported / experimental |
+| DragonFly BSD | amd64 | Build-supported / experimental |
+
 Alternatively, you can manually download the binaries from [GitHub Releases](https://github.com/StatIndet/daybook/releases).
 
 ### Build from Source

@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/sh
+set -eu
 
 # GitHub repository
 REPO="StatIndet/daybook"
@@ -10,7 +10,7 @@ DAYBOOK_INSTALL_DIR="${DAYBOOK_INSTALL_DIR:-${HOME}/.local/bin}"
 
 # Helpers
 abort() {
-  echo "ERROR: $*" >&2
+  echo "ERROR: $1" >&2
   exit 1
 }
 
@@ -25,8 +25,20 @@ case "$OS" in
   Darwin)
     OS_NAME="darwin"
     ;;
+  FreeBSD)
+    OS_NAME="freebsd"
+    ;;
+  OpenBSD)
+    OS_NAME="openbsd"
+    ;;
+  NetBSD)
+    OS_NAME="netbsd"
+    ;;
+  DragonFly)
+    OS_NAME="dragonfly"
+    ;;
   *)
-    abort "Unsupported platform: $OS/$ARCH"
+    abort "Unsupported operating system: $OS. Detected platform: $OS/$ARCH"
     ;;
 esac
 
@@ -38,7 +50,7 @@ case "$ARCH" in
     ARCH_NAME="arm64"
     ;;
   *)
-    abort "Unsupported platform: $OS/$ARCH"
+    abort "Unsupported architecture: $ARCH. Detected platform: $OS/$ARCH"
     ;;
 esac
 
@@ -50,18 +62,25 @@ if command -v curl >/dev/null 2>&1; then
   DOWNLOAD_CMD="curl -fsSL"
 elif command -v wget >/dev/null 2>&1; then
   DOWNLOAD_CMD="wget -qO-"
+elif command -v fetch >/dev/null 2>&1; then
+  DOWNLOAD_CMD="fetch -q -o -"
 else
-  abort "Neither curl nor wget is available. Please install one of them to download Daybook."
+  abort "Neither curl, wget, nor fetch is available. Please install one of them to download Daybook."
 fi
 
-if command -v sha256sum >/dev/null 2>&1; then
-  SHASUM_CMD="sha256sum"
-elif command -v shasum >/dev/null 2>&1; then
-  SHASUM_CMD="shasum -a 256"
-else
-  abort "Neither sha256sum nor shasum is available. Please install one of them for checksum verification."
-fi
+compute_sha256() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  elif command -v sha256 >/dev/null 2>&1; then
+    sha256 -q "$1"
+  else
+    abort "Neither sha256sum, shasum, nor sha256 is available. Please install one of them for checksum verification."
+  fi
+}
 
+# verify tar exists
 if ! command -v tar >/dev/null 2>&1; then
   abort "tar is not available."
 fi
@@ -70,7 +89,7 @@ fi
 echo "=> Fetching latest release info..."
 API_URL="https://api.github.com/repos/${REPO}/releases/latest"
 # Extract tag_name using standard text tools
-LATEST_TAG=$($DOWNLOAD_CMD "$API_URL" | grep '"tag_name":' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')
+LATEST_TAG=$($DOWNLOAD_CMD "$API_URL" | grep '"tag_name":' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/') || true
 
 if [ -z "$LATEST_TAG" ]; then
   abort "Failed to determine the latest release tag from GitHub API."
@@ -84,6 +103,7 @@ ASSET_URL="${DOWNLOAD_URL_BASE}/download/${LATEST_TAG}/${ASSET_NAME}"
 CHECKSUMS_URL="${DOWNLOAD_URL_BASE}/download/${LATEST_TAG}/checksums.txt"
 
 # 5. Create temp dir and download
+# Some environments (e.g. OpenBSD) might not have mktemp -d or behave differently, but generally mktemp -d is available.
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
 
@@ -102,7 +122,7 @@ if ! grep -q "$ASSET_NAME" checksums.txt; then
 fi
 
 EXPECTED_HASH=$(grep "$ASSET_NAME" checksums.txt | awk '{print $1}')
-ACTUAL_HASH=$($SHASUM_CMD "$ASSET_NAME" | awk '{print $1}')
+ACTUAL_HASH=$(compute_sha256 "$ASSET_NAME")
 
 if [ "$EXPECTED_HASH" != "$ACTUAL_HASH" ]; then
   abort "Checksum verification failed! Expected: $EXPECTED_HASH, Actual: $ACTUAL_HASH"
@@ -133,11 +153,16 @@ echo "Daybook $LATEST_TAG installed successfully."
 echo "Installed to: $DAYBOOK_INSTALL_DIR/daybook"
 
 # 10. PATH Check
-if [[ ":$PATH:" != *":$DAYBOOK_INSTALL_DIR:"* ]]; then
-  echo ""
-  echo "Daybook was installed successfully, but $DAYBOOK_INSTALL_DIR is not in your PATH."
-  echo "Add it to your shell PATH before using \`daybook\`:"
-  echo ""
-  echo "  export PATH=\"\$PATH:$DAYBOOK_INSTALL_DIR\""
-  echo ""
-fi
+case ":$PATH:" in
+  *":$DAYBOOK_INSTALL_DIR:"*)
+    ;;
+  *)
+    echo ""
+    echo "Daybook was installed successfully, but $DAYBOOK_INSTALL_DIR is not in your PATH."
+    echo "Add it to your shell PATH before using \`daybook\`:"
+    echo ""
+    echo "  export PATH=\"\$PATH:$DAYBOOK_INSTALL_DIR\""
+    echo ""
+    ;;
+esac
+
