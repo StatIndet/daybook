@@ -49,7 +49,58 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
-      - name: Build and Smoke Test
+      - name: Build Native Binary
         run: |
           go build -o daybook.exe ./cmd/daybook
           .\daybook.exe --version
+
+      - name: Verify cross-build capability (arm64)
+        run: |
+          $env:GOOS = "windows"
+          $env:GOARCH = "arm64"
+          go build -o daybook_arm64.exe ./cmd/daybook
+        shell: powershell
+
+      - name: Test Architecture Mapping (WOW64)
+        shell: powershell
+        run: |
+          $ScriptCode = Get-Content -Raw -Path scripts\install.ps1
+          $FunctionOnly = ($ScriptCode -split "# 1. Detect OS & Architecture")[0]
+          
+          # Simulate WOW64 (x86 PowerShell on x64 Windows)
+          $env:PROCESSOR_ARCHITECTURE = "x86"
+          $env:PROCESSOR_ARCHITEW6432 = "AMD64"
+          
+          $ArchResult = Invoke-Command -ScriptBlock ([scriptblock]::Create($FunctionOnly + "`nGet-DaybookArchitecture"))
+          if ($ArchResult -ne "amd64") {
+              throw "WOW64 Simulation failed. Expected amd64, got $ArchResult"
+          }
+          
+          # Simulate ARM64
+          $env:PROCESSOR_ARCHITECTURE = "ARM64"
+          Remove-Item Env:\PROCESSOR_ARCHITEW6432 -ErrorAction SilentlyContinue
+          
+          $ArchResult2 = Invoke-Command -ScriptBlock ([scriptblock]::Create($FunctionOnly + "`nGet-DaybookArchitecture"))
+          if ($ArchResult2 -ne "arm64") {
+              throw "ARM64 Simulation failed. Expected arm64, got $ArchResult2"
+          }
+
+      - name: Test Installer (PowerShell 5.1)
+        shell: powershell
+        run: |
+          $env:DAYBOOK_INSTALL_DIR = "$env:RUNNER_TEMP\daybook-test-ps5"
+          & .\scripts\install.ps1
+          
+          if (-not (Test-Path "$env:DAYBOOK_INSTALL_DIR\daybook.exe")) {
+              throw "Executable not found in install dir"
+          }
+
+      - name: Test Installer (PowerShell 7)
+        shell: pwsh
+        run: |
+          $env:DAYBOOK_INSTALL_DIR = "$env:RUNNER_TEMP\daybook-test-pwsh"
+          & .\scripts\install.ps1
+          
+          if (-not (Test-Path "$env:DAYBOOK_INSTALL_DIR\daybook.exe")) {
+              throw "Executable not found in install dir"
+          }

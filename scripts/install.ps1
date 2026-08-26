@@ -1,5 +1,8 @@
 $ErrorActionPreference = "Stop"
 
+# Enforce TLS 1.2 for GitHub API compatibility in older PowerShell (e.g. 5.1)
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
 # Helpers
 function Write-Log {
     param([string]$Message)
@@ -8,21 +11,28 @@ function Write-Log {
 
 function Abort {
     param([string]$Message)
-    Write-Error $Message
-    exit 1
+    throw $Message
+}
+
+function Get-DaybookArchitecture {
+    $Arch = $env:PROCESSOR_ARCHITEW6432
+    if (-not $Arch) {
+        $Arch = $env:PROCESSOR_ARCHITECTURE
+    }
+    
+    if (-not $Arch) {
+        throw "Unable to determine Windows architecture.`r`nPROCESSOR_ARCHITECTURE=$env:PROCESSOR_ARCHITECTURE`r`nPROCESSOR_ARCHITEW6432=$env:PROCESSOR_ARCHITEW6432"
+    }
+
+    switch ($Arch.ToUpperInvariant()) {
+        "AMD64" { return "amd64" }
+        "ARM64" { return "arm64" }
+        default { throw "Unsupported Windows architecture: $Arch" }
+    }
 }
 
 # 1. Detect OS & Architecture
-$Arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
-$ArchName = ""
-if ($Arch -eq [System.Runtime.InteropServices.Architecture]::X64) {
-    $ArchName = "amd64"
-} elseif ($Arch -eq [System.Runtime.InteropServices.Architecture]::Arm64) {
-    $ArchName = "arm64"
-} else {
-    Abort "Unsupported architecture: $Arch"
-}
-
+$ArchName = Get-DaybookArchitecture
 $Platform = "windows_$ArchName"
 Write-Log "Detected platform: $Platform"
 
