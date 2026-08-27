@@ -2,6 +2,24 @@
 
 Daybook is a minimalist static blog generator for Go and HTML beginners, featuring native Obsidian Markdown compatibility, zero-framework TypeScript interactions, and a clean, reading-focused design.
 
+
+
+## Desktop
+
+|                           Homepage                           |                            Notes                             |                         Reading Mode                         |                          Footnotes                           |
+| :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
+| ![Daybook homepage](https://raw.githubusercontent.com/StatIndet/picture/main/daybook/%E9%A6%96%E9%A1%B5.png) | ![Daybook notes page](https://raw.githubusercontent.com/StatIndet/picture/main/daybook/%E7%AC%94%E8%AE%B0.png) | ![Daybook reading mode](https://raw.githubusercontent.com/StatIndet/picture/main/daybook/%E9%98%85%E8%AF%BB%E6%A8%A1%E5%BC%8F.png) | ![Daybook footnotes](https://raw.githubusercontent.com/StatIndet/picture/main/daybook/%E6%B3%A8%E9%87%8A.png) |
+|                         Attachments                          |                       Knowledge Graph                        |                     Archive & Statistics                     |                            About                             |
+| ![Daybook attachments](https://raw.githubusercontent.com/StatIndet/picture/main/daybook/%E9%99%84%E4%BB%B6.png) | ![Daybook knowledge graph](https://raw.githubusercontent.com/StatIndet/picture/main/daybook/%E5%85%B3%E7%B3%BB%E5%9B%BE%E8%B0%B1.png) | ![Daybook archive and statistics](https://raw.githubusercontent.com/StatIndet/picture/main/daybook/%E5%BD%92%E6%A1%A3%E7%95%8C%E9%9D%A2%E4%B8%8E%E7%BB%9F%E8%AE%A1.png) | ![Daybook about page](https://raw.githubusercontent.com/StatIndet/picture/main/daybook/about%E7%95%8C%E9%9D%A2.png) |
+
+## Mobile
+
+|                        Mobile Layout                         |                        Mobile Drawer                         |                       Reading Progress                       |
+| :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
+| ![Daybook mobile layout](https://raw.githubusercontent.com/StatIndet/picture/main/daybook/%E7%A7%BB%E5%8A%A8%E7%AB%AF%E5%B8%83%E5%B1%80.png) | ![Daybook mobile drawer](https://raw.githubusercontent.com/StatIndet/picture/main/daybook/%E7%A7%BB%E5%8A%A8%E7%AB%AF%E6%8A%BD%E5%B1%89.png) | ![Daybook reading progress bar](https://raw.githubusercontent.com/StatIndet/picture/main/daybook/%E9%A1%B6%E9%83%A8%E8%BF%9B%E5%BA%A6%E6%9D%A1.png) |
+
+
+
 ## Architecture
 
 This repository (`StatIndet/daybook`) contains the Daybook CLI source code. It includes:
