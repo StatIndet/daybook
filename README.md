@@ -104,6 +104,10 @@ go build -o daybook-cli ./cmd/daybook
 
 > **Note**: Do not modify generated files in `internal/embedded/static/js/` or `internal/embedded/static/vendor/` directly. Always modify the source TypeScript or update the npm package and run the corresponding build scripts.
 
+## Acknowledge
+
+[Retypeset](https://github.com/radishzzz/astro-theme-retypeset)
+
 ## License
 
 This project is open-sourced under the [MIT License](LICENSE).
