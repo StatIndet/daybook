@@ -32,10 +32,13 @@ type IndexItem struct {
 	Versions map[string]IndexVersion `json:"versions"`
 }
 
-func BuildIndex(groups []*content.ArticleGroup, estimateReadingTime func(string) string, tagRegistry *content.TagRegistry, outputPath string) error {
+func BuildIndex(groups []*content.ArticleGroup, estimateReadingTime func(string) string, tagRegistry *content.TagRegistry, outputPath string, onProgress func(current, total int)) error {
 	var items []IndexItem
 
-	for _, group := range groups {
+	for i, group := range groups {
+		if onProgress != nil {
+			onProgress(i+1, len(groups))
+		}
 		versions := make(map[string]IndexVersion)
 		hasTranslation := len(group.Versions) > 1
 

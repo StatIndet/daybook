@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/StatIndet/daybook/internal/config"
 	"github.com/StatIndet/daybook/internal/site"
@@ -71,7 +72,7 @@ func run() error {
 		ContentDir: contentDir,
 		NotesDir:   notesDir,
 		PublicDir:  publicDir,
-		OnProgress: func(current, total int) {
+		OnProgress: func(taskName string, current, total int) {
 			width := 40
 			percent := float64(current) / float64(total)
 			filled := int(float64(width) * percent)
@@ -88,7 +89,13 @@ func run() error {
 				}
 			}
 			
-			fmt.Printf("\r构建中 [%s] %d/%d", bar, current, total)
+			// Pad task name for alignment (assume max 12 chars for Chinese task names)
+			taskStr := taskName
+			if len(taskName) < 18 {
+				taskStr = taskName + strings.Repeat(" ", 18-len(taskName))
+			}
+			
+			fmt.Printf("\r%s [%s] %d/%d", taskStr, bar, current, total)
 			if current == total {
 				fmt.Println()
 			}

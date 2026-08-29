@@ -36,7 +36,7 @@ type Options struct {
 	ContentDir   string
 	NotesDir     string
 	PublicDir    string
-	OnProgress   func(current, total int)
+	OnProgress   func(taskName string, current, total int)
 }
 
 
@@ -120,13 +120,22 @@ func Build(options Options) (BuildResult, error) {
 	}
 
 	musicMetadataMap := make(map[string]media.MusicMetadata)
-	for u := range musicUrls {
-		meta, err := media.FetchMusicMetadata(u, options.PublicDir)
-		if err != nil {
-			fmt.Printf("[music] warning: failed to fetch metadata for %s: %v\n", u, err)
-			continue
+	if len(musicUrls) > 0 {
+		musicUrlsList := make([]string, 0, len(musicUrls))
+		for u := range musicUrls {
+			musicUrlsList = append(musicUrlsList, u)
 		}
-		musicMetadataMap[u] = meta
+		for i, u := range musicUrlsList {
+			if options.OnProgress != nil {
+				options.OnProgress("抓取音乐元数据", i+1, len(musicUrlsList))
+			}
+			meta, err := media.FetchMusicMetadata(u, options.PublicDir)
+			if err != nil {
+				fmt.Printf("[music] warning: failed to fetch metadata for %s: %v\n", u, err)
+				continue
+			}
+			musicMetadataMap[u] = meta
+		}
 	}
 
 
@@ -149,7 +158,11 @@ func Build(options Options) (BuildResult, error) {
 		TotalWordCount: totalWordCount,
 	}
 
-	obsidianIndex, err := buildObsidianIndex(allNotes, options.ContentDir, options.PublicDir, "/")
+	obsidianIndex, err := buildObsidianIndex(allNotes, options.ContentDir, options.PublicDir, "/", func(current, total int) {
+		if options.OnProgress != nil {
+			options.OnProgress("构建双向链接索引", current, total)
+		}
+	})
 	if err != nil {
 		return BuildResult{}, err
 	}
@@ -160,7 +173,11 @@ func Build(options Options) (BuildResult, error) {
 	}
 
 	searchJSONPath := filepath.Join(options.PublicDir, "search.json")
-	if err := search.BuildIndex(groups, estimateReadingTime, tagRegistry, searchJSONPath); err != nil {
+	if err := search.BuildIndex(groups, estimateReadingTime, tagRegistry, searchJSONPath, func(current, total int) {
+		if options.OnProgress != nil {
+			options.OnProgress("构建全局搜索索引", current, total)
+		}
+	}); err != nil {
 		return BuildResult{}, fmt.Errorf("生成 search.json: %w", err)
 	}
 
@@ -199,7 +216,7 @@ func Build(options Options) (BuildResult, error) {
 		for _, group := range groups {
 			processedItems++
 			if options.OnProgress != nil {
-				options.OnProgress(processedItems, totalItems)
+				options.OnProgress("生成静态页面", processedItems, totalItems)
 			}
 
 			note, isFallback := group.SelectVersion(lang)
@@ -1257,9 +1274,12 @@ func renderHeadings(headings []markdown.Heading) []render.Heading {
 	return result
 }
 
-func buildObsidianIndex(notes []content.Note, contentDir string, publicDir string, publicPath string) (obsidian.Index, error) {
+func buildObsidianIndex(notes []content.Note, contentDir string, publicDir string, publicPath string, onProgress func(current, total int)) (obsidian.Index, error) {
 	targets := make([]obsidian.Target, 0, len(notes))
-	for _, note := range notes {
+	for i, note := range notes {
+		if onProgress != nil {
+			onProgress(i+1, len(notes))
+		}
 		document, err := markdown.ToHTMLWithHeadings(note.Body)
 		if err != nil {
 			return obsidian.Index{}, fmt.Errorf("收集笔记标题 %s: %w", note.SourcePath, err)
