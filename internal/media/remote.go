@@ -1,7 +1,7 @@
 package media
 
 import (
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -61,7 +61,7 @@ func FetchMusicMetadata(urlStr string, publicDir string) (MusicMetadata, error) 
 	meta.Artist = flacMeta.Artist
 
 	if len(flacMeta.CoverData) > 0 {
-		hash := md5.Sum([]byte(urlStr))
+		hash := sha256.Sum256([]byte(urlStr))
 		hashStr := hex.EncodeToString(hash[:])[:12]
 		
 		ext := ".jpg"
