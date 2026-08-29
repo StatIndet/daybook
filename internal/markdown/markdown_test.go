@@ -334,7 +334,7 @@ func TestRawHTMLPolicy(t *testing.T) {
 		{
 			name:        "Case 9: Normal link works",
 			input:       "<a href=\"https://example.com\">Example</a>\n",
-			mustContain: []string{"<a href=\"https://example.com\" rel=\"nofollow\">Example</a>"},
+			mustContain: []string{"<a href=\"https://example.com\">Example</a>"},
 		},
 		{
 			name:        "Case 10: Other safe HTML",

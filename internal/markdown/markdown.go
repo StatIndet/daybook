@@ -100,7 +100,10 @@ func (e *sanitizerExtension) Extend(m goldmark.Markdown) {
 func newRenderer() markdownRenderer {
 	p := bluemonday.UGCPolicy()
 	p.AllowElements("details", "summary", "kbd", "figure", "figcaption", "picture", "source", "mark")
-	p.AllowAttrs("class", "id", "width", "height", "align", "colspan", "rowspan", "loading").Globally()
+	p.AllowAttrs("class", "id", "width", "height", "align", "colspan", "rowspan", "loading", "style").Globally()
+	p.AllowAttrs("target").OnElements("a")
+	p.AllowAttrs("rel").OnElements("a")
+	p.RequireNoFollowOnLinks(false)
 	p.AllowDataURIImages()
 
 	return markdownRenderer{
