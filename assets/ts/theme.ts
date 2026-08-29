@@ -270,6 +270,33 @@
 
   let isTransitioning = false;
 
+  // 兜底：后台标签页中 View Transition 的 finished 可能永不 resolve，
+  // 导致 isTransitioning 锁死、后续点击被静默丢弃
+  function releaseTransitionLock(attributeName: string) {
+    clearThemeTransition(attributeName);
+    isTransitioning = false;
+  }
+
+  function guardedTransition(attributeName: string, updateCallback: () => void) {
+    isTransitioning = true;
+    try {
+      const transition = document.startViewTransition!(updateCallback);
+      transition.finished.then(function() {
+        releaseTransitionLock(attributeName);
+      }, function() {
+        releaseTransitionLock(attributeName);
+      });
+      // 2 秒超时兜底
+      setTimeout(function() {
+        releaseTransitionLock(attributeName);
+      }, 2000);
+    } catch (e) {
+      // startViewTransition 同步抛错时也要释放锁
+      updateCallback();
+      releaseTransitionLock(attributeName);
+    }
+  }
+
   document.addEventListener("click", function (event: MouseEvent) {
     if (isTransitioning) return;
 
@@ -299,18 +326,11 @@
         setTimeout(function() {
           root.style.setProperty("view-transition-name", "theme-toggle-transition");
           root.dataset['themeChanging'] = "true";
-          const transition = document.startViewTransition!(function() {
+          guardedTransition("themeChanging", function() {
             root.dataset['theme'] = nextResolved;
             syncThemeButtons();
           });
-          transition.finished.then(function() {
-            clearThemeTransition("themeChanging");
-            isTransitioning = false;
-          }, function() {
-            clearThemeTransition("themeChanging");
-            isTransitioning = false;
-          });
-        }, 350); 
+        }, 350);
       }
       return;
     }
@@ -324,26 +344,21 @@
       const nextResolved = nextMode === "system" ? getSystemPreferredTheme() : nextMode;
       const currentResolved = root.dataset['theme'];
 
+      // 立即更新按钮状态和模式，不等待 View Transition 捕获帧
+      // 用户点击后立刻看到图标变化，背景色通过过渡动画渐变
+      root.dataset['themeMode'] = nextMode;
+      storeThemeMode(nextMode);
+      syncThemeButtons();
+
       if (nextResolved === currentResolved || !shouldAnimateTheme()) {
-        applyThemeMode(nextMode, true);
+        root.dataset['theme'] = nextResolved;
         return;
       }
 
-      isTransitioning = true;
-      // Start view transition immediately for desktop, active state gives physical feedback
       root.style.setProperty("view-transition-name", "theme-toggle-transition");
       root.dataset['themeChanging'] = "true";
-
-      const themeTransition = document.startViewTransition!(function () {
-        applyThemeMode(nextMode, true);
-      });
-
-      themeTransition.finished.then(function () {
-        clearThemeTransition("themeChanging");
-        isTransitioning = false;
-      }, function () {
-        clearThemeTransition("themeChanging");
-        isTransitioning = false;
+      guardedTransition("themeChanging", function () {
+        root.dataset['theme'] = nextResolved;
       });
 
       return;
@@ -367,17 +382,8 @@
       setTimeout(function () {
         root.style.setProperty("view-transition-name", "palette-toggle-transition");
         root.dataset['paletteChanging'] = nextPalette === "warm" ? "to-warm" : "from-warm";
-
-        const paletteTransition = document.startViewTransition!(function () {
+        guardedTransition("paletteChanging", function () {
           applyPalette(nextPalette, true);
-        });
-
-        paletteTransition.finished.then(function () {
-          clearThemeTransition("paletteChanging");
-          isTransitioning = false;
-        }, function () {
-          clearThemeTransition("paletteChanging");
-          isTransitioning = false;
         });
       }, 350);
     }

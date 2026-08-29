@@ -233,6 +233,27 @@
     document.addEventListener("pointerup", removePressedState);
     document.addEventListener("pointercancel", removePressedState);
     let isTransitioning = false;
+    function releaseTransitionLock(attributeName) {
+      clearThemeTransition(attributeName);
+      isTransitioning = false;
+    }
+    function guardedTransition(attributeName, updateCallback) {
+      isTransitioning = true;
+      try {
+        const transition = document.startViewTransition(updateCallback);
+        transition.finished.then(function() {
+          releaseTransitionLock(attributeName);
+        }, function() {
+          releaseTransitionLock(attributeName);
+        });
+        setTimeout(function() {
+          releaseTransitionLock(attributeName);
+        }, 2e3);
+      } catch (e) {
+        updateCallback();
+        releaseTransitionLock(attributeName);
+      }
+    }
     document.addEventListener("click", function(event) {
       if (isTransitioning) return;
       const target = event.target;
@@ -254,16 +275,9 @@
           setTimeout(function() {
             root.style.setProperty("view-transition-name", "theme-toggle-transition");
             root.dataset["themeChanging"] = "true";
-            const transition = document.startViewTransition(function() {
+            guardedTransition("themeChanging", function() {
               root.dataset["theme"] = nextResolved;
               syncThemeButtons();
-            });
-            transition.finished.then(function() {
-              clearThemeTransition("themeChanging");
-              isTransitioning = false;
-            }, function() {
-              clearThemeTransition("themeChanging");
-              isTransitioning = false;
             });
           }, 350);
         }
@@ -275,22 +289,17 @@
         const nextMode = currentMode === "system" ? "light" : currentMode === "light" ? "dark" : "system";
         const nextResolved = nextMode === "system" ? getSystemPreferredTheme() : nextMode;
         const currentResolved = root.dataset["theme"];
+        root.dataset["themeMode"] = nextMode;
+        storeThemeMode(nextMode);
+        syncThemeButtons();
         if (nextResolved === currentResolved || !shouldAnimateTheme()) {
-          applyThemeMode(nextMode, true);
+          root.dataset["theme"] = nextResolved;
           return;
         }
-        isTransitioning = true;
         root.style.setProperty("view-transition-name", "theme-toggle-transition");
         root.dataset["themeChanging"] = "true";
-        const themeTransition = document.startViewTransition(function() {
-          applyThemeMode(nextMode, true);
-        });
-        themeTransition.finished.then(function() {
-          clearThemeTransition("themeChanging");
-          isTransitioning = false;
-        }, function() {
-          clearThemeTransition("themeChanging");
-          isTransitioning = false;
+        guardedTransition("themeChanging", function() {
+          root.dataset["theme"] = nextResolved;
         });
         return;
       }
@@ -309,15 +318,8 @@
         setTimeout(function() {
           root.style.setProperty("view-transition-name", "palette-toggle-transition");
           root.dataset["paletteChanging"] = nextPalette === "warm" ? "to-warm" : "from-warm";
-          const paletteTransition = document.startViewTransition(function() {
+          guardedTransition("paletteChanging", function() {
             applyPalette(nextPalette, true);
-          });
-          paletteTransition.finished.then(function() {
-            clearThemeTransition("paletteChanging");
-            isTransitioning = false;
-          }, function() {
-            clearThemeTransition("paletteChanging");
-            isTransitioning = false;
           });
         }, 350);
       }
