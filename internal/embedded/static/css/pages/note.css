@@ -125,7 +125,10 @@
 .article-meta-rows {
   margin: 1.2rem 0 0;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 0.6rem;
   color: var(--color-muted);
   font-family: var(--font-meta);
@@ -186,6 +189,90 @@
   line-height: 0.92;
   margin-top: 4px;
   padding: 4px 10px 0 0;
+}
+
+/* Article pages use the existing site-info column as the desktop reading rail. */
+@media (min-width: 1281px) {
+  /* 整栏上移，让作者块与左侧常驻 logo（--persistent-logo-top）同高；
+     min-height 同步补偿，保持底部链接区相对视口底的位置不变 */
+  .notes-aside.note-page-aside {
+    --note-aside-lift: calc(clamp(56px, 7vw, 88px) - var(--persistent-logo-top));
+
+    margin-top: calc(-1 * var(--note-aside-lift));
+    min-height: calc(100vh - 176px + var(--note-aside-lift));
+    top: var(--persistent-logo-top);
+  }
+
+  .note-page-aside .notes-aside-identity {
+    align-self: flex-end;
+    max-width: 100%;
+    text-align: right;
+  }
+
+  .note-page-aside .notes-brand-name {
+    justify-content: flex-end;
+  }
+
+  .note-page-aside .notes-brand-cn {
+    font-size: clamp(1.05rem, 1.4vw, 1.35rem);
+  }
+
+  .note-page-aside .notes-brand-en {
+    font-size: clamp(0.95rem, 1.2vw, 1.15rem);
+  }
+
+  .note-page-aside .notes-brand-slogan {
+    font-size: 0.72rem;
+    margin-top: 0.45rem;
+    text-wrap: balance;
+  }
+
+  .note-page-aside .note-aside-toc {
+    margin-top: clamp(2.5rem, 7vh, 4rem);
+    min-width: 0;
+  }
+
+  .note-page-aside .note-toc {
+    font-size: 0.86rem;
+  }
+
+  .note-page-aside .note-toc-wrapper {
+    bottom: auto;
+    pointer-events: auto;
+    position: static;
+    right: auto;
+    top: auto;
+    width: 100%;
+  }
+
+  .note-page-aside .note-sticky-column,
+  .note-page-aside .note-toc-stage,
+  .note-page-aside .note-toc {
+    width: 100%;
+  }
+
+  .note-page-aside .note-sticky-column {
+    position: static;
+  }
+
+  .note-page-aside .note-toc {
+    margin-bottom: 0;
+    max-width: none;
+  }
+
+  .note-page-aside .note-toc-panel {
+    max-height: min(calc(100vh - 260px), 32rem);
+  }
+
+  /* 阅读控件沉到右栏底部、贴着工具行上方；auto 外边距吸收中部留白，
+     控件存在时工具行改用固定间距（不存在时保持原有 margin-top:auto 沉底） */
+  .note-page-aside .note-aside-reading-controls {
+    margin-top: auto;
+  }
+
+  .note-page-aside .note-aside-reading-controls ~ .notes-aside-controls {
+    margin-top: clamp(1.5rem, 3vh, 2.25rem);
+  }
 }
 
 @media (min-width: 116rem) {
@@ -354,13 +441,7 @@ html[data-reduced-motion="true"] .note-toc-stage .note-toc {
 }
 
 .note-tags {
-  margin-top: clamp(3rem, 5vw, 4.5rem);
-}
-
-.note-tags-divider {
-  border: 0;
-  border-top: 1px dashed var(--color-line);
-  margin: 0 0 1.5rem;
+  margin-top: clamp(0.75rem, 1.5vw, 1.25rem);
 }
 
 .note-tags-list {
