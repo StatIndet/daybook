@@ -386,9 +386,13 @@
     }
   }
   function handleMouseEnter(e) {
+    if (!(e.target instanceof Element)) return;
     updateStateFromTarget(e.target);
   }
-  function handleClick(e) {
+  function isArticleDetailPage() {
+    return document.body?.dataset.pageKind === "note";
+  }
+  function toggleClockEffect() {
     if (document.documentElement.getAttribute("data-clock-cursor") !== "true") {
       return;
     }
@@ -400,6 +404,14 @@
         clockController.start(cursorX, cursorY);
       }
     }
+  }
+  function handleClick() {
+    if (isArticleDetailPage()) return;
+    toggleClockEffect();
+  }
+  function handleDoubleClick() {
+    if (!isArticleDetailPage()) return;
+    toggleClockEffect();
   }
   function handleVisibilityChange() {
     if (document.hidden) breakIdleClock(false);
@@ -456,6 +468,7 @@
     document.addEventListener("mouseleave", handleMouseLeave);
     document.addEventListener("mouseenter", handleMouseEnter);
     document.addEventListener("click", handleClick, { passive: true });
+    document.addEventListener("dblclick", handleDoubleClick, { passive: true });
     document.addEventListener("visibilitychange", handleVisibilityChange);
     document.addEventListener("daybook:page-load", handlePageLoad);
     isInitialized = true;
@@ -469,6 +482,7 @@
     document.removeEventListener("mouseleave", handleMouseLeave);
     document.removeEventListener("mouseenter", handleMouseEnter);
     document.removeEventListener("click", handleClick);
+    document.removeEventListener("dblclick", handleDoubleClick);
     document.removeEventListener("visibilitychange", handleVisibilityChange);
     document.removeEventListener("daybook:page-load", handlePageLoad);
     if (rafId !== null) {
