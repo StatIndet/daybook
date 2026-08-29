@@ -36,19 +36,19 @@ func TestCollectTagLinks(t *testing.T) {
 		{
 			I18nKey: "1",
 			Versions: map[string]*content.Note{
-				"zh-CN": {Tags: []string{"ssh", "debian", "ssh"}},
+				"zh_CN": {Tags: []string{"ssh", "debian", "ssh"}},
 			},
 		},
 		{
 			I18nKey: "2",
 			Versions: map[string]*content.Note{
-				"zh-CN": {Tags: []string{"Debian", "虚拟机"}},
+				"zh_CN": {Tags: []string{"Debian", "虚拟机"}},
 			},
 		},
 		{
 			I18nKey: "3",
 			Versions: map[string]*content.Note{
-				"zh-CN": {Tags: []string{"Go"}},
+				"zh_CN": {Tags: []string{"Go"}},
 			},
 		},
 	}
@@ -60,7 +60,7 @@ func TestCollectTagLinks(t *testing.T) {
 		}
 	}
 	registry, _ := content.NewTagRegistry(allNotes)
-	tags := collectTagLinksForLang(groups, "zh-CN", registry)
+	tags := collectTagLinksForLang(groups, "zh_CN", registry)
 	wantNames := []string{"debian", "Go", "ssh", "虚拟机"}
 
 	if len(tags) != len(wantNames) {
@@ -363,7 +363,7 @@ func TestBuildGraphIdentity(t *testing.T) {
 	}
 	
 	link := graphData.Links[0]
-	isAB := (link.Source == "single:zh-CN:a" && link.Target == "single:zh-CN:b") || (link.Source == "single:zh-CN:b" && link.Target == "single:zh-CN:a")
+	isAB := (link.Source == "single:zh_CN:a" && link.Target == "single:zh_CN:b") || (link.Source == "single:zh_CN:b" && link.Target == "single:zh_CN:a")
 	if !isAB {
 		t.Errorf("Expected link A-B, got %s-%s", link.Source, link.Target)
 	}

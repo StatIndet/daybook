@@ -132,8 +132,8 @@ func BuildForNote(args BuilderArgs) SEOData {
 	desc := CleanDescription(args.Description)
 
 	homePath := "/"
-	if args.Lang == "en" {
-		homePath = "/en/"
+	if args.Lang == "en_US" {
+		homePath = "/en_US/"
 	}
 	notesPath := homePath + "notes/"
 
@@ -305,8 +305,8 @@ func BuildForTag(args BuilderArgs) SEOData {
 	desc := CleanDescription(args.Description)
 
 	homePath := "/"
-	if args.Lang == "en" {
-		homePath = "/en/"
+	if args.Lang == "en_US" {
+		homePath = "/en_US/"
 	}
 
 	graph := []any{

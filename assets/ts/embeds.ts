@@ -2,7 +2,7 @@ import { createFallbackElement, setupIframeEmbeds } from "./embed-loading.js";
 import { setupImages } from "./image-loader.js";
 
 (function () {
-  var compactNumberFormat = new Intl.NumberFormat("en", {
+  var compactNumberFormat = new Intl.NumberFormat("en_US", {
     notation: "compact",
     maximumFractionDigits: 1,
   });

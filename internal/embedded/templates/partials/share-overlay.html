@@ -1,15 +1,15 @@
 {{define "share_overlay"}}
 <div id="share-overlay" class="settings-overlay share-overlay" role="dialog" aria-modal="true" aria-labelledby="share-title" aria-hidden="true" inert>
-  <div class="settings-backdrop share-backdrop" data-share-close aria-label="{{T .Lang "action.close_share"}}" data-i18n-aria-en="{{T "en" "action.close_share"}}" data-i18n-aria-zh="{{T "zh-CN" "action.close_share"}}"></div>
+  <div class="settings-backdrop share-backdrop" data-share-close aria-label="{{T .Lang "action.close_share"}}" data-i18n-aria-en="{{T "en_US" "action.close_share"}}" data-i18n-aria-zh="{{T "zh_CN" "action.close_share"}}"></div>
   <div class="settings-paper share-paper">
-    <button class="settings-close-btn share-close-btn" type="button" data-share-close aria-label="{{T .Lang "action.close_share"}}" data-i18n-aria-en="{{T "en" "action.close_share"}}" data-i18n-aria-zh="{{T "zh-CN" "action.close_share"}}">
+    <button class="settings-close-btn share-close-btn" type="button" data-share-close aria-label="{{T .Lang "action.close_share"}}" data-i18n-aria-en="{{T "en_US" "action.close_share"}}" data-i18n-aria-zh="{{T "zh_CN" "action.close_share"}}">
       <span class="material-symbol" aria-hidden="true">close</span>
     </button>
     
-    <h2 id="share-title" class="settings-title share-title" data-i18n-en="{{T "en" "action.share"}}" data-i18n-zh="{{T "zh-CN" "action.share"}}">{{T .Lang "action.share"}}</h2>
+    <h2 id="share-title" class="settings-title share-title" data-i18n-en="{{T "en_US" "action.share"}}" data-i18n-zh="{{T "zh_CN" "action.share"}}">{{T .Lang "action.share"}}</h2>
     
     <div class="settings-content share-content">
-      <textarea id="share-textarea" class="share-textarea" aria-label="{{T .Lang "action.share"}}" data-i18n-aria-en="{{T "en" "action.share"}}" data-i18n-aria-zh="{{T "zh-CN" "action.share"}}"></textarea>
+      <textarea id="share-textarea" class="share-textarea" aria-label="{{T .Lang "action.share"}}" data-i18n-aria-en="{{T "en_US" "action.share"}}" data-i18n-aria-zh="{{T "zh_CN" "action.share"}}"></textarea>
       
       <div class="share-actions">
         <button type="button" class="share-action-btn share-x-btn" data-share-x aria-label="X">
@@ -20,9 +20,9 @@
           <img src="/icons/social/telegram.svg" alt="" width="24" height="24">
           <span class="share-btn-text">Telegram</span>
         </button>
-        <button type="button" class="share-action-btn share-copy-btn" data-share-copy aria-label="{{T .Lang "action.copy"}}" data-i18n-aria-en="{{T "en" "action.copy"}}" data-i18n-aria-zh="{{T "zh-CN" "action.copy"}}">
+        <button type="button" class="share-action-btn share-copy-btn" data-share-copy aria-label="{{T .Lang "action.copy"}}" data-i18n-aria-en="{{T "en_US" "action.copy"}}" data-i18n-aria-zh="{{T "zh_CN" "action.copy"}}">
           <span class="material-symbol" aria-hidden="true">content_copy</span>
-          <span class="share-copy-text" data-text-copy-en="{{T "en" "action.copy"}}" data-text-copied-en="{{T "en" "action.copied"}}" data-text-copy-zh="{{T "zh-CN" "action.copy"}}" data-text-copied-zh="{{T "zh-CN" "action.copied"}}" data-i18n-en="{{T "en" "action.copy"}}" data-i18n-zh="{{T "zh-CN" "action.copy"}}">{{T .Lang "action.copy"}}</span>
+          <span class="share-copy-text" data-text-copy-en="{{T "en_US" "action.copy"}}" data-text-copied-en="{{T "en_US" "action.copied"}}" data-text-copy-zh="{{T "zh_CN" "action.copy"}}" data-text-copied-zh="{{T "zh_CN" "action.copied"}}" data-i18n-en="{{T "en_US" "action.copy"}}" data-i18n-zh="{{T "zh_CN" "action.copy"}}">{{T .Lang "action.copy"}}</span>
         </button>
       </div>
     </div>

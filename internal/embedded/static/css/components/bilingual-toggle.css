@@ -34,8 +34,8 @@
 }
 
 /* Base Active State for Top-Left large char */
-.bilingual-toggle-btn[data-current-lang="zh-CN"] .bilingual-zh,
-.bilingual-toggle-btn[data-current-lang="en"] .bilingual-en {
+.bilingual-toggle-btn[data-current-lang="zh_CN"] .bilingual-zh,
+.bilingual-toggle-btn[data-current-lang="en_US"] .bilingual-en {
   top: 0;
   left: 0;
   font-size: 14px;
@@ -43,8 +43,8 @@
 }
 
 /* Base Inactive State for Bottom-Right small char */
-.bilingual-toggle-btn[data-current-lang="zh-CN"] .bilingual-en,
-.bilingual-toggle-btn[data-current-lang="en"] .bilingual-zh {
+.bilingual-toggle-btn[data-current-lang="zh_CN"] .bilingual-en,
+.bilingual-toggle-btn[data-current-lang="en_US"] .bilingual-zh {
   top: 14px;
   left: 11px;
   font-size: 10px;

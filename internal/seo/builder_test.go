@@ -12,14 +12,14 @@ func TestSEOBuilder(t *testing.T) {
 		Site: config.SiteConfig{
 			Name: map[string]string{
 				"zh": "中文站名",
-				"en": "English Site",
+				"en_US": "English Site",
 			},
 		},
 	}
 
 	argsZH := seo.BuilderArgs{
 		Config: cfg,
-		Lang:   "zh-CN",
+		Lang:   "zh_CN",
 		Title:  "中文首页完整标题",
 	}
 
@@ -33,7 +33,7 @@ func TestSEOBuilder(t *testing.T) {
 
 	argsEN := seo.BuilderArgs{
 		Config: cfg,
-		Lang:   "en",
+		Lang:   "en_US",
 		Title:  "English Full Home Title",
 	}
 	data = seo.BuildForHome(argsEN)
@@ -46,7 +46,7 @@ func TestSEOBuilder(t *testing.T) {
 
 	noteArgsZH := seo.BuilderArgs{
 		Config: cfg,
-		Lang:   "zh-CN",
+		Lang:   "zh_CN",
 		Title:  "测试文章",
 	}
 	data = seo.BuildForNote(noteArgsZH)
@@ -59,7 +59,7 @@ func TestSEOBuilder(t *testing.T) {
 
 	noteArgsEN := seo.BuilderArgs{
 		Config: cfg,
-		Lang:   "en",
+		Lang:   "en_US",
 		Title:  "Test Note",
 	}
 	data = seo.BuildForNote(noteArgsEN)

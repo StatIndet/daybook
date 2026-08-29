@@ -571,7 +571,7 @@ class NoteTocController {
     this.rail.setGeometry(geometry);
 
     const language = (this.postContent.lang || document.documentElement.lang).toLowerCase();
-    const english = language.startsWith("en");
+    const english = language.startsWith("en_US");
     if (!this.railHeadingsReady) {
       const railHeadings: ReadingTocRailHeading[] = this.headings.map((heading) => ({
         id: heading.id,

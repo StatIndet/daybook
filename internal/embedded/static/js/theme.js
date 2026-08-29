@@ -5,7 +5,7 @@
     const root = document.documentElement;
     const isEn = window.location.pathname.startsWith("/en");
     const translations = {
-      "zh-CN": {
+      "zh_CN": {
         "theme.light": "\u6D45\u8272",
         "theme.dark": "\u6DF1\u8272",
         "theme.system": "\u8DDF\u968F\u7CFB\u7EDF",
@@ -14,7 +14,7 @@
         "palette.cool": "\u51B7\u8272",
         "palette.warm": "\u6696\u8272"
       },
-      "en": {
+      "en_US": {
         "theme.light": "Light",
         "theme.dark": "Dark",
         "theme.system": "System",
@@ -25,7 +25,7 @@
       }
     };
     function T(key) {
-      const lang = isEn ? "en" : "zh-CN";
+      const lang = isEn ? "en_US" : "zh_CN";
       return translations[lang][key] || key;
     }
     function savedThemeMode() {

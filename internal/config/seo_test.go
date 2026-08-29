@@ -11,21 +11,21 @@ func TestGetSiteName(t *testing.T) {
 		Site: config.SiteConfig{
 			Name: map[string]string{
 				"zh": "中文站名",
-				"en": "English Site",
+				"en_US": "English Site",
 			},
 		},
 	}
 
-	if name := cfg.GetSiteName("zh-CN"); name != "中文站名" {
+	if name := cfg.GetSiteName("zh_CN"); name != "中文站名" {
 		t.Errorf("expected '中文站名', got '%s'", name)
 	}
 
-	if name := cfg.GetSiteName("en"); name != "English Site" {
+	if name := cfg.GetSiteName("en_US"); name != "English Site" {
 		t.Errorf("expected 'English Site', got '%s'", name)
 	}
 
 	cfgEmpty := config.Config{}
-	if name := cfgEmpty.GetSiteName("zh-CN"); name != "Daybook" {
+	if name := cfgEmpty.GetSiteName("zh_CN"); name != "Daybook" {
 		t.Errorf("expected 'Daybook', got '%s'", name)
 	}
 }

@@ -5,17 +5,17 @@
     {{if .Pagination.PrevURL}}
       <a href="{{.Pagination.PrevURL}}" class="pagination-btn pagination-prev" aria-label="Previous page">
         <span class="material-symbol" aria-hidden="true">arrow_back</span>
-        <span>{{if eq .Lang "en"}}Prev{{else}}上一页{{end}}</span>
+        <span>{{if eq .Lang "en_US"}}Prev{{else}}上一页{{end}}</span>
       </a>
     {{else}}
       <span class="pagination-btn pagination-prev is-disabled" aria-label="Previous page">
         <span class="material-symbol" aria-hidden="true">arrow_back</span>
-        <span>{{if eq .Lang "en"}}Prev{{else}}上一页{{end}}</span>
+        <span>{{if eq .Lang "en_US"}}Prev{{else}}上一页{{end}}</span>
       </span>
     {{end}}
 
     <div class="pagination-info">
-      {{if eq .Lang "en"}}
+      {{if eq .Lang "en_US"}}
         Page {{.Pagination.CurrentPage}} of {{.Pagination.TotalPages}}
       {{else}}
         第 {{.Pagination.CurrentPage}} 页，共 {{.Pagination.TotalPages}} 页
@@ -24,12 +24,12 @@
 
     {{if .Pagination.NextURL}}
       <a href="{{.Pagination.NextURL}}" class="pagination-btn pagination-next" aria-label="Next page">
-        <span>{{if eq .Lang "en"}}Next{{else}}下一页{{end}}</span>
+        <span>{{if eq .Lang "en_US"}}Next{{else}}下一页{{end}}</span>
         <span class="material-symbol" aria-hidden="true">arrow_forward</span>
       </a>
     {{else}}
       <span class="pagination-btn pagination-next is-disabled" aria-label="Next page">
-        <span>{{if eq .Lang "en"}}Next{{else}}下一页{{end}}</span>
+        <span>{{if eq .Lang "en_US"}}Next{{else}}下一页{{end}}</span>
         <span class="material-symbol" aria-hidden="true">arrow_forward</span>
       </span>
     {{end}}

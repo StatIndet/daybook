@@ -128,7 +128,7 @@ func (c Config) GetSocialLinks(lang string) []SocialLink {
 	copy(links, c.Profile.ParsedSocial)
 	
 	rssURL := "/rss.xml"
-	if lang != "zh-CN" && lang != "zh" {
+	if lang != "zh_CN" && lang != "zh" {
 		rssURL = "/" + lang + "/rss.xml"
 	}
 	
@@ -217,7 +217,7 @@ func Load() (Config, error) {
 				cfg.Comment.Waline.PageSize = 10
 			}
 			if cfg.Comment.Waline.Lang == "" {
-				cfg.Comment.Waline.Lang = "zh-CN"
+				cfg.Comment.Waline.Lang = "zh_CN"
 			}
 			if cfg.Comment.Waline.CommentSorting == "" {
 				cfg.Comment.Waline.CommentSorting = "latest"

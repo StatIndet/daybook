@@ -90,7 +90,7 @@ export function initSettingsOverlay() {
 
   const syncLanguage = (lang: string) => {
     // Normalize language string
-    const isEn = lang.toLowerCase().startsWith('en');
+    const isEn = lang.toLowerCase().startsWith('en_US');
     const textAttr = isEn ? 'data-i18n-en' : 'data-i18n-zh';
     const ariaAttr = isEn ? 'data-i18n-aria-en' : 'data-i18n-aria-zh';
 

@@ -158,7 +158,7 @@ func Parse(sourcePath, text string, slug string) (Note, error) {
 	note.CanonicalPath = "/notes/" + note.Slug + "/"
 
 	if note.Lang == "" {
-		note.Lang = "zh-CN"
+		note.Lang = "zh_CN"
 	}
 
 	note.WordCount = countWords(note.Body)
@@ -204,8 +204,8 @@ func validate(note Note) error {
 	if note.Date == "" {
 		return fmt.Errorf("缺少必填字段 date")
 	}
-	if note.Lang != "zh-CN" && note.Lang != "en" {
-		return fmt.Errorf("lang 必须是 zh-CN 或 en，当前为 %s", note.Lang)
+	if note.Lang != "zh_CN" && note.Lang != "en_US" {
+		return fmt.Errorf("lang 必须是 zh_CN 或 en_US，当前为 %s", note.Lang)
 	}
 
 	return nil

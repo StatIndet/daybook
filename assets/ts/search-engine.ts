@@ -19,11 +19,11 @@
             })
             .then(data => {
                 const flattened: any[] = [];
-                const currentLang = document.documentElement.lang || "en";
+                const currentLang = document.documentElement.lang || "en_US";
                 for (const item of data) {
                     let ver = item.versions[currentLang];
                     if (!ver) {
-                        ver = item.versions["zh-CN"] || item.versions["en"];
+                        ver = item.versions["zh_CN"] || item.versions["en_US"];
                     }
                     if (ver) {
                         flattened.push(ver);

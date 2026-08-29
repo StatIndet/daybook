@@ -11,8 +11,8 @@
   <link rel="canonical" href="{{.SEO.CanonicalURL}}">
   
     {{range .SEO.Alternates}}
-  {{if eq .Lang "zh-CN"}}
-  <link rel="alternate" hreflang="zh-CN" href="{{.URL}}">
+  {{if eq .Lang "zh_CN"}}
+  <link rel="alternate" hreflang="zh_CN" href="{{.URL}}">
   <link rel="alternate" hreflang="x-default" href="{{.URL}}">
   {{else}}
   <link rel="alternate" hreflang="{{.Lang}}" href="{{.URL}}">
@@ -25,7 +25,7 @@
   <meta property="og:url" content="{{.SEO.CanonicalURL}}">
   {{if .SEO.Image}}<meta property="og:image" content="{{.SEO.Image}}">{{end}}
   <meta property="og:site_name" content="{{.SEO.SiteName}}">
-  <meta property="og:locale" content="{{if eq .Lang "en"}}en_US{{else}}zh_CN{{end}}">
+  <meta property="og:locale" content="{{if eq .Lang "en_US"}}en_US{{else}}zh_CN{{end}}">
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="{{.SEO.Title}}">
@@ -81,7 +81,7 @@
   {{if .HasMath}}
   <link rel="stylesheet" href="{{.Assets.Path "/vendor/katex/katex.min.css"}}">
   {{end}}
-  <link rel="alternate" type="application/rss+xml" title="{{.SEO.SiteName}} RSS" {{if or (eq .SEO.Lang "zh-CN") (eq .SEO.Lang "zh")}}href="/rss.xml"{{else}}href="/{{.SEO.Lang}}/rss.xml"{{end}}>
+  <link rel="alternate" type="application/rss+xml" title="{{.SEO.SiteName}} RSS" {{if or (eq .SEO.Lang "zh_CN") (eq .SEO.Lang "zh")}}href="/rss.xml"{{else}}href="/{{.SEO.Lang}}/rss.xml"{{end}}>
   {{if .Config.Site.Favicon}}
   <link rel="icon" href="/{{.Config.Site.Favicon}}">
   <link rel="apple-touch-icon" href="/{{.Config.Site.Favicon}}">

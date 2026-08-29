@@ -124,7 +124,7 @@
         const results = await engine.searchNotes(query, ctx.tagSlug);
         
         if (results.length === 0) {
-          const emptyText = document.documentElement.lang === "en" ? "No results found" : "没有找到匹配的文章。";
+          const emptyText = document.documentElement.lang === "en_US" ? "No results found" : "没有找到匹配的文章。";
           desktopContainer.innerHTML = '<div class="notes-month"><div class="notes-month-list"><p class="notes-empty">' + emptyText + '</p></div></div>';
         } else {
           desktopContainer.innerHTML = '<div class="notes-month"><div class="notes-month-list">' + results.map((item: any) => renderNoteCard(item, query)).join("") + '</div></div>';

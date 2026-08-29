@@ -1,7 +1,7 @@
 package i18n
 
 var dictionary = map[string]map[string]string{
-	"zh-CN": {
+	"zh_CN": {
 		"nav.home":            "首页",
 		"nav.notes":           "笔记",
 		"nav.archive":         "归档",
@@ -63,7 +63,7 @@ var dictionary = map[string]map[string]string{
 		"action.copy":         "复制",
 		"action.copied":       "已复制",
 	},
-	"en": {
+	"en_US": {
 		"nav.home":            "Home",
 		"nav.notes":           "Notes",
 		"nav.archive":         "Archive",
@@ -133,8 +133,8 @@ func T(lang, key string) string {
 			return val
 		}
 	}
-	// Fallback to zh-CN
-	if dict, ok := dictionary["zh-CN"]; ok {
+	// Fallback to zh_CN
+	if dict, ok := dictionary["zh_CN"]; ok {
 		if val, ok := dict[key]; ok {
 			return val
 		}

@@ -24,12 +24,12 @@ func (g *ArticleGroup) SelectVersion(lang string) (*Note, bool) {
 		return note, false
 	}
 	// Fallback logic
-	// Prefer zh-CN if it exists
-	if note, ok := g.Versions["zh-CN"]; ok {
+	// Prefer zh_CN if it exists
+	if note, ok := g.Versions["zh_CN"]; ok {
 		return note, true
 	}
 	// Prefer en if it exists
-	if note, ok := g.Versions["en"]; ok {
+	if note, ok := g.Versions["en_US"]; ok {
 		return note, true
 	}
 	// Pick whatever is first
@@ -40,7 +40,7 @@ func (g *ArticleGroup) SelectVersion(lang string) (*Note, bool) {
 }
 
 func (g *ArticleGroup) IsListed() bool {
-	note, _ := g.SelectVersion("zh-CN")
+	note, _ := g.SelectVersion("zh_CN")
 	if note != nil && note.Listed != nil {
 		return *note.Listed
 	}
@@ -82,9 +82,9 @@ func GroupNotes(notes []Note) ([]*ArticleGroup, error) {
 	}
 
 	sort.SliceStable(groups, func(i, j int) bool {
-		// Use zh-CN date to sort, or fallback
-		noteI, _ := groups[i].SelectVersion("zh-CN")
-		noteJ, _ := groups[j].SelectVersion("zh-CN")
+		// Use zh_CN date to sort, or fallback
+		noteI, _ := groups[i].SelectVersion("zh_CN")
+		noteJ, _ := groups[j].SelectVersion("zh_CN")
 
 		if noteI == nil || noteJ == nil {
 			return false

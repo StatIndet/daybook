@@ -23,7 +23,7 @@ func TestWriteRSS(t *testing.T) {
 		},
 	}
 
-	err := Write(path, "zh-CN", config.Config{
+	err := Write(path, "zh_CN", config.Config{
 		Site: config.SiteConfig{
 			Name: map[string]string{"zh": "Daybook"},
 			URL:  "https://example.com",

@@ -1,6 +1,6 @@
 {{define "base"}}
 <!doctype html>
-<html lang="{{if .Lang}}{{.Lang}}{{else}}zh-CN{{end}}">
+<html lang="{{if .Lang}}{{.Lang}}{{else}}zh_CN{{end}}">
 {{template "head" .}}
 <body class="{{.BodyClass}}" data-page-kind="{{.PageKind}}" data-search-index-url="/search.json" data-stats-enabled="{{if .Config.Stats.Enabled}}true{{else}}false{{end}}">
   <div class="reader-progress-bar" aria-hidden="true"></div>

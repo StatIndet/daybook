@@ -5,7 +5,7 @@
     const dataCache = /* @__PURE__ */ new Map();
     function resolveArchiveDataURL() {
       const langStr = document.documentElement.lang;
-      if (langStr && langStr !== "zh-CN") {
+      if (langStr && langStr !== "zh_CN") {
         const pathParts = window.location.pathname.split("/");
         if (pathParts.length > 1 && pathParts[1] !== "archive") {
           return `/${pathParts[1]}/archive/data.json`;

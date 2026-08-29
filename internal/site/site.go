@@ -92,18 +92,18 @@ func Build(options Options) (BuildResult, error) {
 
 	totalWordCount := 0
 	for _, group := range groups {
-		if note, _ := group.SelectVersion("zh-CN"); note != nil && !note.Draft {
+		if note, _ := group.SelectVersion("zh_CN"); note != nil && !note.Draft {
 			totalWordCount += note.WordCount
-		} else if note, _ := group.SelectVersion("en"); note != nil && !note.Draft {
+		} else if note, _ := group.SelectVersion("en_US"); note != nil && !note.Draft {
 			totalWordCount += note.WordCount
 		}
 	}
 
 	startedAt := options.Config.Site.StartedAt
 	if startedAt == "" && len(groups) > 0 {
-		if note, _ := groups[len(groups)-1].SelectVersion("zh-CN"); note != nil {
+		if note, _ := groups[len(groups)-1].SelectVersion("zh_CN"); note != nil {
 			startedAt = note.Date
-		} else if note, _ := groups[len(groups)-1].SelectVersion("en"); note != nil {
+		} else if note, _ := groups[len(groups)-1].SelectVersion("en_US"); note != nil {
 			startedAt = note.Date
 		}
 	}
@@ -169,12 +169,12 @@ func Build(options Options) (BuildResult, error) {
 
 	var allDiagnostics []obsidian.Diagnostic
 
-	langs := []string{"zh-CN", "en"}
+	langs := []string{"zh_CN", "en_US"}
 	for _, lang := range langs {
 		langPrefix := ""
-		altLangPrefix := "en"
-		if lang == "en" {
-			langPrefix = "en"
+		altLangPrefix := "en_US"
+		if lang == "en_US" {
+			langPrefix = "en_US"
 			altLangPrefix = ""
 		}
 
@@ -275,12 +275,12 @@ func Build(options Options) (BuildResult, error) {
 					resolvedID := targetID
 					targetIsListed := true
 					for _, searchGroup := range groups {
-						if targetNote, ok := searchGroup.Versions["zh-CN"]; ok && targetNote.Slug == targetID {
+						if targetNote, ok := searchGroup.Versions["zh_CN"]; ok && targetNote.Slug == targetID {
 							resolvedID = searchGroup.Key
 							targetIsListed = searchGroup.IsListed()
 							break
 						}
-						if targetNote, ok := searchGroup.Versions["en"]; ok && targetNote.Slug == targetID {
+						if targetNote, ok := searchGroup.Versions["en_US"]; ok && targetNote.Slug == targetID {
 							resolvedID = searchGroup.Key
 							targetIsListed = searchGroup.IsListed()
 							break
@@ -334,9 +334,9 @@ func Build(options Options) (BuildResult, error) {
 				tocEnabled = *note.Toc
 			}
 
-			altLang := "en"
-			if lang == "en" {
-				altLang = "zh-CN"
+			altLang := "en_US"
+			if lang == "en_US" {
+				altLang = "zh_CN"
 			}
 			altNote, _ := group.SelectVersion(altLang)
 			altURL := joinURL("/", altLangPrefix, "notes", altNote.Slug)
@@ -349,7 +349,7 @@ func Build(options Options) (BuildResult, error) {
 						continue
 					}
 					altPrefix := ""
-					if altL == "en" {
+					if altL == "en_US" {
 						altPrefix = "/en"
 					}
 					noteAlternates = append(noteAlternates, seo.Alternate{
@@ -445,7 +445,7 @@ func Build(options Options) (BuildResult, error) {
 		}
 
 		indexPath := filepath.Join(langPublicDir, "index.html")
-		homeAlternates := []seo.Alternate{{Lang: "zh-CN", URL: "/"}, {Lang: "en", URL: "/en/"}}
+		homeAlternates := []seo.Alternate{{Lang: "zh_CN", URL: "/"}, {Lang: "en_US", URL: "/en_US/"}}
 		homeSEOArgs := seo.BuilderArgs{
 			Config:      options.Config,
 			Lang:        lang,
@@ -539,10 +539,10 @@ func Build(options Options) (BuildResult, error) {
 				pagePinned = nil
 			}
 
-			notesAlternates := []seo.Alternate{{Lang: "zh-CN", URL: "/notes/"}, {Lang: "en", URL: "/en/notes/"}}
+			notesAlternates := []seo.Alternate{{Lang: "zh_CN", URL: "/notes/"}, {Lang: "en_US", URL: "/en_US/notes/"}}
 			if p > 1 {
 				pageStr := fmt.Sprintf("page/%d/", p)
-				notesAlternates = []seo.Alternate{{Lang: "zh-CN", URL: "/notes/" + pageStr}, {Lang: "en", URL: "/en/notes/" + pageStr}}
+				notesAlternates = []seo.Alternate{{Lang: "zh_CN", URL: "/notes/" + pageStr}, {Lang: "en_US", URL: "/en_US/notes/" + pageStr}}
 			}
 
 			notesSEOArgs := seo.BuilderArgs{
@@ -596,7 +596,7 @@ func Build(options Options) (BuildResult, error) {
 
 
 		archivePath := filepath.Join(langPublicDir, "archive", "index.html")
-		archiveAlternates := []seo.Alternate{{Lang: "zh-CN", URL: "/archive/"}, {Lang: "en", URL: "/en/archive/"}}
+		archiveAlternates := []seo.Alternate{{Lang: "zh_CN", URL: "/archive/"}, {Lang: "en_US", URL: "/en_US/archive/"}}
 		archiveSEOArgs := seo.BuilderArgs{
 			Config:      options.Config,
 			Lang:        lang,
@@ -653,7 +653,7 @@ func Build(options Options) (BuildResult, error) {
 		}
 
 		aboutFile := "about.md"
-		if lang == "en" {
+		if lang == "en_US" {
 			enPath := filepath.Join(filepath.Dir(options.NotesDir), "pages", "about-en.md")
 			if _, err := os.Stat(enPath); err == nil {
 				aboutFile = "about-en.md"
@@ -703,7 +703,7 @@ func Build(options Options) (BuildResult, error) {
 
 		var aboutAlternates []seo.Alternate
 		if aboutHasTranslation {
-			aboutAlternates = []seo.Alternate{{Lang: "zh-CN", URL: "/about/"}, {Lang: "en", URL: "/en/about/"}}
+			aboutAlternates = []seo.Alternate{{Lang: "zh_CN", URL: "/about/"}, {Lang: "en_US", URL: "/en_US/about/"}}
 		} else {
 			aboutAlternates = []seo.Alternate{{Lang: lang, URL: joinURL("/", langPrefix, "about")}}
 		}
@@ -749,7 +749,7 @@ func Build(options Options) (BuildResult, error) {
 		}
 
 		graphPath := filepath.Join(langPublicDir, "graph", "index.html")
-		graphAlternates := []seo.Alternate{{Lang: "zh-CN", URL: "/graph/"}, {Lang: "en", URL: "/en/graph/"}}
+		graphAlternates := []seo.Alternate{{Lang: "zh_CN", URL: "/graph/"}, {Lang: "en_US", URL: "/en_US/graph/"}}
 		graphSEOArgs := seo.BuilderArgs{
 			Config:      options.Config,
 			Lang:        lang,
@@ -833,12 +833,12 @@ func Build(options Options) (BuildResult, error) {
 				hasAlt := false
 				for _, grp := range groups {
 					var altNote *content.Note
-					if lang == "zh-CN" {
-						if n, ok := grp.Versions["en"]; ok {
+					if lang == "zh_CN" {
+						if n, ok := grp.Versions["en_US"]; ok {
 							altNote = n
 						}
-					} else if lang == "en" {
-						if n, ok := grp.Versions["zh-CN"]; ok {
+					} else if lang == "en_US" {
+						if n, ok := grp.Versions["zh_CN"]; ok {
 							altNote = n
 						}
 					}
@@ -1143,7 +1143,7 @@ func collectTagLinksForLang(groups []*content.ArticleGroup, lang string, tagRegi
 	})
 
 	langPrefix := ""
-	if lang == "en" {
+	if lang == "en_US" {
 		langPrefix = "/en"
 	}
 

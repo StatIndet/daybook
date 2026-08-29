@@ -4,10 +4,10 @@ import "testing"
 
 func TestGroupNotes(t *testing.T) {
 	notes := []Note{
-		{Slug: "foo", Lang: "zh-CN", I18nKey: "my-group"},
-		{Slug: "foo-en", Lang: "en", I18nKey: "my-group"},
-		{Slug: "bar", Lang: "zh-CN"}, // no i18n_key
-		{Slug: "baz", Lang: "en"},    // no i18n_key
+		{Slug: "foo", Lang: "zh_CN", I18nKey: "my-group"},
+		{Slug: "foo-en", Lang: "en_US", I18nKey: "my-group"},
+		{Slug: "bar", Lang: "zh_CN"}, // no i18n_key
+		{Slug: "baz", Lang: "en_US"},    // no i18n_key
 	}
 	
 	groups, err := GroupNotes(notes)
@@ -39,8 +39,8 @@ func TestGroupNotes(t *testing.T) {
 		t.Fatalf("my-group i18n_key should be my-group")
 	}
 
-	// Single language zh-CN
-	barKey := "single:zh-CN:bar"
+	// Single language zh_CN
+	barKey := "single:zh_CN:bar"
 	barGroup := groupsMap[barKey]
 	if barGroup == nil {
 		t.Fatalf("bar group not found")
@@ -52,8 +52,8 @@ func TestGroupNotes(t *testing.T) {
 		t.Errorf("Expected I18nKey empty, got %s", barGroup.I18nKey)
 	}
 
-	// Single language en
-	bazKey := "single:en:baz"
+	// Single language en_US
+	bazKey := "single:en_US:baz"
 	bazGroup := groupsMap[bazKey]
 	if bazGroup == nil {
 		t.Fatalf("baz group not found")

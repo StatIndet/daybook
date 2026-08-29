@@ -6,7 +6,7 @@
   const isEn = window.location.pathname.startsWith('/en');
   
   const translations = {
-    'zh-CN': {
+    'zh_CN': {
       'theme.light': '浅色',
       'theme.dark': '深色',
       'theme.system': '跟随系统',
@@ -15,7 +15,7 @@
       'palette.cool': '冷色',
       'palette.warm': '暖色',
     },
-    'en': {
+    'en_US': {
       'theme.light': 'Light',
       'theme.dark': 'Dark',
       'theme.system': 'System',
@@ -26,8 +26,8 @@
     }
   };
   
-  function T(key: keyof typeof translations['en']): string {
-    const lang = isEn ? 'en' : 'zh-CN';
+  function T(key: keyof typeof translations['en_US']): string {
+    const lang = isEn ? 'en_US' : 'zh_CN';
     return translations[lang][key] || key;
   }
 

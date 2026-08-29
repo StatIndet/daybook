@@ -1,12 +1,12 @@
 {{define "settings_overlay"}}
 <div id="settings-overlay" class="settings-overlay" role="dialog" aria-modal="true" aria-labelledby="settings-title" aria-hidden="true" inert>
-  <div class="settings-backdrop" data-settings-close aria-label="{{if eq .Lang "en"}}Close Settings{{else}}关闭设置面板{{end}}" data-i18n-aria-en="Close Settings" data-i18n-aria-zh="关闭设置面板"></div>
+  <div class="settings-backdrop" data-settings-close aria-label="{{if eq .Lang "en_US"}}Close Settings{{else}}关闭设置面板{{end}}" data-i18n-aria-en="Close Settings" data-i18n-aria-zh="关闭设置面板"></div>
   <div class="settings-paper">
-    <button class="settings-close-btn" type="button" data-settings-close aria-label="{{if eq .Lang "en"}}Close Settings{{else}}关闭设置面板{{end}}" data-i18n-aria-en="Close Settings" data-i18n-aria-zh="关闭设置面板">
+    <button class="settings-close-btn" type="button" data-settings-close aria-label="{{if eq .Lang "en_US"}}Close Settings{{else}}关闭设置面板{{end}}" data-i18n-aria-en="Close Settings" data-i18n-aria-zh="关闭设置面板">
       <span class="material-symbol" aria-hidden="true">close</span>
     </button>
     
-    <h2 id="settings-title" class="settings-title" data-i18n-en="Settings" data-i18n-zh="设置">{{if eq .Lang "en"}}Settings{{else}}设置{{end}}</h2>
+    <h2 id="settings-title" class="settings-title" data-i18n-en="Settings" data-i18n-zh="设置">{{if eq .Lang "en_US"}}Settings{{else}}设置{{end}}</h2>
     
     <div class="settings-content">
       <label class="settings-checkbox-label setting-item-cursor">
@@ -19,7 +19,7 @@
           <line x1="0" y1="0" x2="0" y2="24"></line>
         </svg>
         <span class="settings-checkbox-text" data-i18n-en="Use System Cursor" data-i18n-zh="使用系统默认光标">
-          {{if eq .Lang "en"}}Use System Cursor{{else}}使用系统默认光标{{end}}
+          {{if eq .Lang "en_US"}}Use System Cursor{{else}}使用系统默认光标{{end}}
         </span>
       </label>
 
@@ -33,7 +33,7 @@
           <line x1="0" y1="0" x2="0" y2="24"></line>
         </svg>
         <span class="settings-checkbox-text" data-i18n-en="Enable Clock Cursor Effect" data-i18n-zh="启用时钟光标效果">
-          {{if eq .Lang "en"}}Enable Clock Cursor Effect{{else}}启用时钟光标效果{{end}}
+          {{if eq .Lang "en_US"}}Enable Clock Cursor Effect{{else}}启用时钟光标效果{{end}}
         </span>
       </label>
       
@@ -47,7 +47,7 @@
           <line x1="0" y1="0" x2="0" y2="24"></line>
         </svg>
         <span class="settings-checkbox-text" data-i18n-en="Disable Comments" data-i18n-zh="禁用评论区">
-          {{if eq .Lang "en"}}Disable Comments{{else}}禁用评论区{{end}}
+          {{if eq .Lang "en_US"}}Disable Comments{{else}}禁用评论区{{end}}
         </span>
       </label>
 
@@ -61,7 +61,7 @@
           <line x1="0" y1="0" x2="0" y2="24"></line>
         </svg>
         <span class="settings-checkbox-text" data-i18n-en="Reduce Motion" data-i18n-zh="减少动画">
-          {{if eq .Lang "en"}}Reduce Motion{{else}}减少动画{{end}}
+          {{if eq .Lang "en_US"}}Reduce Motion{{else}}减少动画{{end}}
         </span>
       </label>
     </div>

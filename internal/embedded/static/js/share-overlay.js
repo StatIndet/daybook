@@ -134,11 +134,11 @@ function initShareOverlay() {
     copyBtn.addEventListener("click", () => {
       const text = textarea.value;
       navigator.clipboard.writeText(text).then(() => {
-        const lang = document.documentElement.lang.toLowerCase().startsWith("en") ? "en" : "zh";
+        const lang = document.documentElement.lang.toLowerCase().startsWith("en_US") ? "en_US" : "zh";
         const copiedText = copyText.getAttribute(`data-text-copied-${lang}`) || "Copied";
         animateTextChange(copyText, copiedText);
         setTimeout(() => {
-          const currentLang = document.documentElement.lang.toLowerCase().startsWith("en") ? "en" : "zh";
+          const currentLang = document.documentElement.lang.toLowerCase().startsWith("en_US") ? "en_US" : "zh";
           const freshOriginal = copyText.getAttribute(`data-text-copy-${currentLang}`) || "Copy";
           animateTextChange(copyText, freshOriginal);
         }, 1500);

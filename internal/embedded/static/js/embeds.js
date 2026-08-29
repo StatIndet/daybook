@@ -102,7 +102,7 @@
 
   // assets/ts/embeds.ts
   (function() {
-    var compactNumberFormat = new Intl.NumberFormat("en", {
+    var compactNumberFormat = new Intl.NumberFormat("en_US", {
       notation: "compact",
       maximumFractionDigits: 1
     });

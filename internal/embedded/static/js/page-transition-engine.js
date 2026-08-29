@@ -23,7 +23,7 @@
       let p = cleanPath(url);
       if (p.endsWith("/index.html")) p = p.substring(0, p.length - 11);
       if (p.endsWith("/")) p = p.substring(0, p.length - 1);
-      if (p.startsWith("/en/")) {
+      if (p.startsWith("/en_US/")) {
         p = "/" + p.substring(4);
       }
       if (p.startsWith("/notes/")) {
@@ -38,7 +38,7 @@
       let p = cleanPath(url);
       if (p.endsWith("/index.html")) p = p.substring(0, p.length - 11);
       if (p.endsWith("/")) p = p.substring(0, p.length - 1);
-      if (p.startsWith("/en/")) p = "/" + p.substring(4);
+      if (p.startsWith("/en_US/")) p = "/" + p.substring(4);
       return p === "/notes";
     }
     function articleTransitionInfo(currentUrlStr, targetUrlStr) {

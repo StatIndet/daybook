@@ -13,7 +13,7 @@
         anchor.className = "heading-anchor";
         anchor.href = "#" + heading.id;
         const lang = document.documentElement.lang;
-        if (lang === "en") {
+        if (lang === "en_US") {
           anchor.setAttribute("aria-label", "Link to " + label);
         } else {
           anchor.setAttribute("aria-label", label + " \u7684\u6C38\u4E45\u94FE\u63A5");

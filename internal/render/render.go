@@ -792,7 +792,7 @@ func (r Renderer) render(outputPath, pageTemplate string, data any) error {
 		"T": i18n.T,
 		"tagURL": func(lang, tag string) template.URL {
 			prefix := ""
-			if lang == "en" {
+			if lang == "en_US" {
 				prefix = "/en"
 			}
 			return template.URL(prefix + "/tags/" + seo.TagSlug(tag) + "/")
