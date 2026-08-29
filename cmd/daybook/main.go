@@ -71,6 +71,28 @@ func run() error {
 		ContentDir: contentDir,
 		NotesDir:   notesDir,
 		PublicDir:  publicDir,
+		OnProgress: func(current, total int) {
+			width := 40
+			percent := float64(current) / float64(total)
+			filled := int(float64(width) * percent)
+			
+			// Build the bar string
+			bar := ""
+			for i := 0; i < width; i++ {
+				if i < filled {
+					bar += "="
+				} else if i == filled && current < total {
+					bar += ">"
+				} else {
+					bar += " "
+				}
+			}
+			
+			fmt.Printf("\r构建中 [%s] %d/%d", bar, current, total)
+			if current == total {
+				fmt.Println()
+			}
+		},
 	}
 
 	if command == "build" {

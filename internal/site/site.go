@@ -36,6 +36,7 @@ type Options struct {
 	ContentDir   string
 	NotesDir     string
 	PublicDir    string
+	OnProgress   func(current, total int)
 }
 
 
@@ -170,6 +171,9 @@ func Build(options Options) (BuildResult, error) {
 	var allDiagnostics []obsidian.Diagnostic
 
 	langs := []string{"zh_CN", "en_US"}
+	totalItems := len(groups) * len(langs)
+	processedItems := 0
+
 	for _, lang := range langs {
 		langPrefix := ""
 		altLangPrefix := "en_US"
@@ -193,6 +197,11 @@ func Build(options Options) (BuildResult, error) {
 		tagLinks := collectTagLinksForLang(groups, lang, tagRegistry)
 
 		for _, group := range groups {
+			processedItems++
+			if options.OnProgress != nil {
+				options.OnProgress(processedItems, totalItems)
+			}
+
 			note, isFallback := group.SelectVersion(lang)
 			if note == nil || note.Draft {
 				continue
