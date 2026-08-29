@@ -376,6 +376,15 @@ class NoteTocController {
     if (currentLink) {
       event.preventDefault();
       this.jumpToHeading(this.activeIndex);
+      return;
+    }
+
+    const tocLink = target.closest<HTMLAnchorElement>(".note-toc-panel a[href^=\"#\"]");
+    if (tocLink) {
+      event.preventDefault();
+      const id = headingIdFromLink(tocLink);
+      const headingIndex = this.headings.findIndex((heading) => heading.id === id);
+      this.jumpToHeading(headingIndex);
     }
   };
 
@@ -391,7 +400,8 @@ class NoteTocController {
     });
 
     const url = new URL(window.location.href);
-    url.hash = heading.id;
+    const rawHash = heading.link.getAttribute("href");
+    url.hash = rawHash?.startsWith("#") ? rawHash.slice(1) : heading.id;
     const state = history.state;
     const nextState = state && typeof state === "object"
       ? { ...state, url: url.href }

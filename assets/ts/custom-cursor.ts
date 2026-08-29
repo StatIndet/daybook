@@ -133,10 +133,17 @@ function handleMouseLeave(e: MouseEvent) {
 }
 
 function handleMouseEnter(e: MouseEvent) {
+  // document 级 mouseenter 的 target 是 document（非 Element），
+  // 不能在窗口进入时把 mouseover 已算好的状态重置为 default
+  if (!(e.target instanceof Element)) return;
   updateStateFromTarget(e.target);
 }
 
-function handleClick(e: MouseEvent) {
+function isArticleDetailPage() {
+  return document.body?.dataset.pageKind === "note";
+}
+
+function toggleClockEffect() {
   if (document.documentElement.getAttribute('data-clock-cursor') !== 'true') {
     return;
   }
@@ -148,6 +155,16 @@ function handleClick(e: MouseEvent) {
       clockController.start(cursorX, cursorY);
     }
   }
+}
+
+function handleClick() {
+  if (isArticleDetailPage()) return;
+  toggleClockEffect();
+}
+
+function handleDoubleClick() {
+  if (!isArticleDetailPage()) return;
+  toggleClockEffect();
 }
 
 function handleVisibilityChange() {
@@ -216,6 +233,7 @@ function setupCustomCursor() {
   document.addEventListener("mouseleave", handleMouseLeave);
   document.addEventListener("mouseenter", handleMouseEnter);
   document.addEventListener("click", handleClick, { passive: true });
+  document.addEventListener("dblclick", handleDoubleClick, { passive: true });
   document.addEventListener("visibilitychange", handleVisibilityChange);
   document.addEventListener("daybook:page-load", handlePageLoad);
 
@@ -232,6 +250,7 @@ function teardownCustomCursor() {
   document.removeEventListener("mouseleave", handleMouseLeave);
   document.removeEventListener("mouseenter", handleMouseEnter);
   document.removeEventListener("click", handleClick);
+  document.removeEventListener("dblclick", handleDoubleClick);
   document.removeEventListener("visibilitychange", handleVisibilityChange);
   document.removeEventListener("daybook:page-load", handlePageLoad);
 

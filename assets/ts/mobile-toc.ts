@@ -2,6 +2,16 @@
  * Mobile TOC Controller
  * Manages the floating action button (FAB) and the bottom sheet for the Table of Contents on small screens.
  */
+function headingIdFromLink(link: HTMLAnchorElement): string {
+  const rawId = link.getAttribute("href")?.substring(1) || "";
+
+  try {
+    return decodeURIComponent(rawId);
+  } catch {
+    return rawId;
+  }
+}
+
 class MobileTocController {
   private readonly fab: HTMLElement;
   private readonly sheet: HTMLElement;
@@ -54,7 +64,7 @@ class MobileTocController {
     this.listItems.forEach(item => {
       const link = item.querySelector("a");
       if (link) {
-        const id = link.getAttribute("href")?.substring(1);
+        const id = headingIdFromLink(link);
         if (id) {
           const element = document.getElementById(id);
           if (element) {
@@ -73,7 +83,7 @@ class MobileTocController {
       const link = item.querySelector("a");
       link?.addEventListener("click", (e) => {
         e.preventDefault();
-        const id = link.getAttribute("href")?.substring(1);
+        const id = headingIdFromLink(link);
         const target = document.getElementById(id || "");
         if (target) {
           target.scrollIntoView({ behavior: "smooth" });

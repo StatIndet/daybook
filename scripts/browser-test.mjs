@@ -38,6 +38,19 @@ async function run() {
   });
 
   try {
+    const clockIsVisible = () => page.evaluate(() =>
+      document.querySelector('.daybook-cursor-clock')?.classList.contains('is-visible') ?? false
+    );
+
+    console.log('Testing homepage single-click clock effect...');
+    await page.goto(`${serverUrl}/`, { waitUntil: 'networkidle' });
+    await page.mouse.move(2400, 1200);
+    await page.mouse.click(2400, 1200);
+    await page.waitForTimeout(100);
+    if (!(await clockIsVisible())) {
+      throw new Error('Homepage single click did not activate the clock cursor effect.');
+    }
+
     console.log('Visiting /notes...');
     await page.goto(`${serverUrl}/notes/`, { waitUntil: 'networkidle' });
     
@@ -48,10 +61,27 @@ async function run() {
     await articleLink.click();
     
     await page.waitForSelector('div.post-content', { state: 'attached', timeout: 5000 });
-    
+
+    if (await clockIsVisible()) {
+      throw new Error('Clock effect was activated by the notes-list link click and carried into the article page.');
+    }
+
     const vtCount = await page.evaluate(() => window.__daybookViewTransitionCount);
     if (vtCount === 0) {
       throw new Error('View Transition API was not called during SPA navigation.');
+    }
+
+    console.log('Testing article double-click clock effect...');
+    await page.mouse.move(2400, 1200);
+    await page.mouse.click(2400, 1200);
+    await page.waitForTimeout(100);
+    if (await clockIsVisible()) {
+      throw new Error('Article single click activated the clock cursor effect.');
+    }
+    await page.mouse.dblclick(2400, 1200);
+    await page.waitForTimeout(100);
+    if (!(await clockIsVisible())) {
+      throw new Error('Article double click did not activate the clock cursor effect.');
     }
     
     console.log('Checking KaTeX render...');
@@ -61,16 +91,38 @@ async function run() {
       throw new Error('KaTeX DOM (.katex) was not generated.');
     }
     
-    console.log('Checking TOC Rail...');
-    await page.waitForSelector('[data-reading-toc-rail-base]', { state: 'attached', timeout: 5000 });
-    
-    const initialPath = await page.getAttribute('[data-reading-toc-rail-base]', 'd');
+    console.log('Checking TOC right rail...');
+    // 目录已移入右侧 sticky 阅读栏（note-page-aside），旧的超宽屏 SVG 弹簧轨道不再启用；
+    // 这里断言新契约：右栏目录可见、滚动后保持 sticky、阅读进度随滚动更新。
+    await page.waitForSelector('.note-page-aside [data-note-toc]', { state: 'visible', timeout: 5000 });
+
+    const railProbe = () => page.evaluate(() => {
+      const wrapper = document.querySelector('.note-page-aside .note-toc-wrapper');
+      const rect = wrapper?.getBoundingClientRect();
+      return {
+        top: rect?.top ?? null,
+        visible: !!rect && rect.bottom > 0 && rect.top < window.innerHeight,
+        progress: document.querySelector('[data-desktop-progress-text]')?.textContent ?? null,
+      };
+    });
+
     await page.evaluate(() => window.scrollBy(0, 500));
-    await page.waitForTimeout(500); 
-    
-    const scrolledPath = await page.getAttribute('[data-reading-toc-rail-base]', 'd');
-    if (initialPath === scrolledPath) {
-      throw new Error('TOC SVG path did not animate after scrolling (spring physics inactive).');
+    await page.waitForTimeout(300);
+    const firstScroll = await railProbe();
+    await page.evaluate(() => window.scrollBy(0, 500));
+    await page.waitForTimeout(300);
+    const secondScroll = await railProbe();
+
+    if (!secondScroll.visible) {
+      throw new Error('TOC right rail is not visible after scrolling.');
+    }
+    if (firstScroll.top === null || secondScroll.top === null
+        || Math.abs(secondScroll.top - firstScroll.top) > 2) {
+      throw new Error('TOC right rail did not stay sticky between scrolled positions.');
+    }
+    if (!secondScroll.progress || secondScroll.progress === '0%'
+        || secondScroll.progress === firstScroll.progress) {
+      throw new Error('Reading progress did not update while scrolling the article.');
     }
     
     console.log('Testing custom cursor regression...');

@@ -11,8 +11,7 @@
 </footer>
 {{end}}
 
-{{define "notes_aside"}}
-<aside class="notes-aside" aria-label="站点信息" data-transition-region="notes-aside">
+{{define "notes_aside_identity"}}
   <div class="notes-brand notes-aside-identity">
     <h1 class="notes-brand-name">
       <span class="notes-brand-cn{{if .Config.Profile.HasSignatureFont}} use-signature-font{{end}}">{{.Config.Profile.Author.Name}}</span>
@@ -20,7 +19,9 @@
     </h1>
     <p class="notes-brand-slogan">{{morphableText (.Config.Profile.GetSlogan .Lang) "site-slogan" "slogan"}}</p>
   </div>
+{{end}}
 
+{{define "notes_aside_controls"}}
   <div class="notes-aside-controls">
     <div class="notes-tools" data-notes-tools>
       <div class="notes-tool-panel notes-search-panel" id="notes-search-panel" data-notes-panel="search" aria-hidden="true">
@@ -51,6 +52,33 @@
       {{template "copyright" dict "Config" .Config "Class" ""}}
     </div>
   </div>
+{{end}}
+
+{{define "notes_aside"}}
+<aside class="notes-aside" aria-label="站点信息" data-transition-region="notes-aside">
+  {{template "notes_aside_identity" .}}
+  {{template "notes_aside_controls" .}}
+</aside>
+{{end}}
+
+{{define "note_aside"}}
+<aside class="notes-aside note-page-aside" aria-label="文章辅助信息" data-transition-region="notes-aside">
+  {{template "notes_aside_identity" .}}
+  {{if .Note.TocEnabled}}
+  <div class="note-aside-toc">
+    <div class="note-toc-wrapper">
+      <div class="note-sticky-column">
+        {{template "toc" .}}
+      </div>
+    </div>
+  </div>
+  {{if .Note.Headings}}
+  <div class="note-aside-reading-controls">
+    {{template "reading_controls" .}}
+  </div>
+  {{end}}
+  {{end}}
+  {{template "notes_aside_controls" .}}
 </aside>
 {{end}}
 

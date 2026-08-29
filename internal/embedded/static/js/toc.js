@@ -768,6 +768,14 @@
         if (currentLink) {
           event.preventDefault();
           this.jumpToHeading(this.activeIndex);
+          return;
+        }
+        const tocLink = target.closest('.note-toc-panel a[href^="#"]');
+        if (tocLink) {
+          event.preventDefault();
+          const id = headingIdFromLink(tocLink);
+          const headingIndex = this.headings.findIndex((heading) => heading.id === id);
+          this.jumpToHeading(headingIndex);
         }
       };
       this.runFrame = (timestamp) => {
@@ -932,7 +940,8 @@
         behavior: this.reducedMotion ? "instant" : "smooth"
       });
       const url = new URL(window.location.href);
-      url.hash = heading.id;
+      const rawHash = heading.link.getAttribute("href");
+      url.hash = rawHash?.startsWith("#") ? rawHash.slice(1) : heading.id;
       const state = history.state;
       const nextState = state && typeof state === "object" ? { ...state, url: url.href } : state;
       history.replaceState(nextState, "", `${url.pathname}${url.search}${url.hash}`);

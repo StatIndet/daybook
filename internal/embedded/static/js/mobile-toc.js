@@ -1,6 +1,14 @@
 "use strict";
 (() => {
   // assets/ts/mobile-toc.ts
+  function headingIdFromLink(link) {
+    const rawId = link.getAttribute("href")?.substring(1) || "";
+    try {
+      return decodeURIComponent(rawId);
+    } catch {
+      return rawId;
+    }
+  }
   var MobileTocController = class {
     constructor(fab, sheet, backdrop, panel, dragHandle, tocNav, indicator, listItems, postContent) {
       this.headings = [];
@@ -59,7 +67,7 @@
       this.listItems.forEach((item) => {
         const link = item.querySelector("a");
         if (link) {
-          const id = link.getAttribute("href")?.substring(1);
+          const id = headingIdFromLink(link);
           if (id) {
             const element = document.getElementById(id);
             if (element) {
@@ -74,7 +82,7 @@
         const link = item.querySelector("a");
         link?.addEventListener("click", (e) => {
           e.preventDefault();
-          const id = link.getAttribute("href")?.substring(1);
+          const id = headingIdFromLink(link);
           const target = document.getElementById(id || "");
           if (target) {
             target.scrollIntoView({ behavior: "smooth" });
