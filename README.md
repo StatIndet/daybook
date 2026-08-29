@@ -4,7 +4,10 @@ Daybook is a minimalist static blog generator for Go and HTML beginners, featuri
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/StatIndet/daybook-vault)
 
+If you enjoy Daybook, consider supporting its development.
 
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20Daybook-FF6433?style=for-the-badge&logo=kofi&logoColor=white)](https://ko-fi.com/shizhi)
+[![爱发电](https://img.shields.io/badge/爱发电-Support%20Daybook-946CE6?style=for-the-badge&logo=afdian&logoColor=white)](https://afdian.com/a/shi-zhi)
 
 ## Desktop
 
