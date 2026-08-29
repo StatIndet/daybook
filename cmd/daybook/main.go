@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/StatIndet/daybook/internal/config"
 	"github.com/StatIndet/daybook/internal/site"
+	"github.com/StatIndet/daybook/internal/progress"
 )
 
 var Version = "daybook dev"
@@ -67,39 +67,23 @@ func run() error {
 		}
 	}
 
+	var reporter *progress.Reporter
+	if command == "build" {
+		reporter = progress.NewReporter([]progress.Stage{
+			{Name: "扫描及解析文章", Weight: 0.10},
+			{Name: "抓取音乐元数据", Weight: 0.15},
+			{Name: "构建双向链接索引", Weight: 0.25},
+			{Name: "构建全局搜索索引", Weight: 0.15},
+			{Name: "写入静态构建产物", Weight: 0.35},
+		})
+	}
+
 	options := site.Options{
 		Config:     cfg,
 		ContentDir: contentDir,
 		NotesDir:   notesDir,
 		PublicDir:  publicDir,
-		OnProgress: func(taskName string, current, total int) {
-			width := 40
-			percent := float64(current) / float64(total)
-			filled := int(float64(width) * percent)
-			
-			// Build the bar string
-			bar := ""
-			for i := 0; i < width; i++ {
-				if i < filled {
-					bar += "="
-				} else if i == filled && current < total {
-					bar += ">"
-				} else {
-					bar += " "
-				}
-			}
-			
-			// Pad task name for alignment (assume max 12 chars for Chinese task names)
-			taskStr := taskName
-			if len(taskName) < 18 {
-				taskStr = taskName + strings.Repeat(" ", 18-len(taskName))
-			}
-			
-			fmt.Printf("\r%s [%s] %d/%d", taskStr, bar, current, total)
-			if current == total {
-				fmt.Println()
-			}
-		},
+		Reporter:   reporter,
 	}
 
 	if command == "build" {
@@ -111,14 +95,19 @@ func run() error {
 
 		result, err := site.Build(options)
 		if err != nil {
+			if reporter != nil {
+				reporter.Fail(err)
+			}
 			return err
+		}
+
+		if reporter != nil {
+			reporter.Done(fmt.Sprintf("Built %d notes to public/", len(result.Notes)))
 		}
 
 		for _, skipped := range result.Skipped {
 			fmt.Fprintf(os.Stderr, "跳过无效笔记: %s\n", skipped)
 		}
-
-		fmt.Printf("构建完成: 生成 %d 篇笔记到 public/\n", len(result.Notes))
 	}
 
 	if command == "serve" {

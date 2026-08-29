@@ -17,6 +17,7 @@ import (
 	"unicode"
 
 	"github.com/StatIndet/daybook/internal/config"
+	"github.com/StatIndet/daybook/internal/progress"
 	"github.com/StatIndet/daybook/internal/content"
 	"github.com/StatIndet/daybook/internal/feed"
 	"github.com/StatIndet/daybook/internal/graph"
@@ -36,7 +37,7 @@ type Options struct {
 	ContentDir   string
 	NotesDir     string
 	PublicDir    string
-	OnProgress   func(taskName string, current, total int)
+	Reporter     *progress.Reporter
 }
 
 
@@ -54,6 +55,9 @@ func joinURL(parts ...string) string {
 }
 
 func Build(options Options) (BuildResult, error) {
+	if options.Reporter != nil {
+		options.Reporter.SetStage(0, 0) // No total known for scanning
+	}
 	groups, skipped, err := content.LoadNotes(options.NotesDir)
 	if err != nil {
 		return BuildResult{}, err
@@ -125,11 +129,14 @@ func Build(options Options) (BuildResult, error) {
 		for u := range musicUrls {
 			musicUrlsList = append(musicUrlsList, u)
 		}
+		if options.Reporter != nil {
+			options.Reporter.SetStage(1, len(musicUrlsList))
+		}
 		for i, u := range musicUrlsList {
-			if options.OnProgress != nil {
-				options.OnProgress("抓取音乐元数据", i+1, len(musicUrlsList))
-			}
 			meta, err := media.FetchMusicMetadata(u, options.PublicDir)
+			if options.Reporter != nil {
+				options.Reporter.Advance(i + 1)
+			}
 			if err != nil {
 				fmt.Printf("[music] warning: failed to fetch metadata for %s: %v\n", u, err)
 				continue
@@ -158,9 +165,12 @@ func Build(options Options) (BuildResult, error) {
 		TotalWordCount: totalWordCount,
 	}
 
+	if options.Reporter != nil {
+		options.Reporter.SetStage(2, len(allNotes))
+	}
 	obsidianIndex, err := buildObsidianIndex(allNotes, options.ContentDir, options.PublicDir, "/", func(current, total int) {
-		if options.OnProgress != nil {
-			options.OnProgress("构建双向链接索引", current, total)
+		if options.Reporter != nil {
+			options.Reporter.Advance(current)
 		}
 	})
 	if err != nil {
@@ -173,9 +183,12 @@ func Build(options Options) (BuildResult, error) {
 	}
 
 	searchJSONPath := filepath.Join(options.PublicDir, "search.json")
+	if options.Reporter != nil {
+		options.Reporter.SetStage(3, len(groups))
+	}
 	if err := search.BuildIndex(groups, estimateReadingTime, tagRegistry, searchJSONPath, func(current, total int) {
-		if options.OnProgress != nil {
-			options.OnProgress("构建全局搜索索引", current, total)
+		if options.Reporter != nil {
+			options.Reporter.Advance(current)
 		}
 	}); err != nil {
 		return BuildResult{}, fmt.Errorf("生成 search.json: %w", err)
@@ -190,6 +203,10 @@ func Build(options Options) (BuildResult, error) {
 	langs := []string{"zh_CN", "en_US"}
 	totalItems := len(groups) * len(langs)
 	processedItems := 0
+
+	if options.Reporter != nil {
+		options.Reporter.SetStage(4, totalItems)
+	}
 
 	for _, lang := range langs {
 		langPrefix := ""
@@ -215,8 +232,8 @@ func Build(options Options) (BuildResult, error) {
 
 		for _, group := range groups {
 			processedItems++
-			if options.OnProgress != nil {
-				options.OnProgress("生成静态页面", processedItems, totalItems)
+			if options.Reporter != nil {
+				options.Reporter.Advance(processedItems)
 			}
 
 			note, isFallback := group.SelectVersion(lang)
