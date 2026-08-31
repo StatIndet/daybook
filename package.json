@@ -25,7 +25,7 @@
     "esbuild": "^0.28.2",
     "katex": "^0.18.4",
     "lxgw-wenkai-screen-web": "^1.522.0",
-    "material-symbols": "^0.46.0",
+    "material-symbols": "^0.47.0",
     "playwright": "^1.62.1",
     "typescript": "^7.0.2"
   }
