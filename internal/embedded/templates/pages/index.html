@@ -19,7 +19,6 @@
 
 {{define "content"}}
 {{if .GitHub}}
-{{$profile := .GitHub}}
 <section class="github-home" data-github-home data-github-login="{{.GitHub.Login}}" aria-label="GitHub">
   <aside class="github-profile">
     <div class="github-profile-identity">
@@ -30,7 +29,6 @@
     </div>
     {{if .GitHub.Status}}<p class="github-profile-status">{{.GitHub.Status.Emoji}} {{.GitHub.Status.Message}}</p>{{end}}
     {{if .GitHub.Bio}}<p class="github-profile-bio">{{.GitHub.Bio}}</p>{{end}}
-    <a class="github-profile-link" href="{{.GitHub.HTMLURL}}" target="_blank" rel="noopener noreferrer">{{if eq .Lang "en_US"}}View GitHub profile{{else}}查看 GitHub 主页{{end}}<span class="material-symbol" aria-hidden="true">open_in_new</span></a>
     <p class="github-followers"><span class="material-symbol" aria-hidden="true">group</span><a href="{{.GitHub.HTMLURL}}?tab=followers" target="_blank" rel="noopener noreferrer"><strong>{{formatNum .GitHub.Followers}}</strong> {{if eq .Lang "en_US"}}followers{{else}}关注者{{end}}</a><span>·</span><a href="{{.GitHub.HTMLURL}}?tab=following" target="_blank" rel="noopener noreferrer"><strong>{{formatNum .GitHub.Following}}</strong> {{if eq .Lang "en_US"}}following{{else}}关注{{end}}</a></p>
     <ul class="github-profile-details">
       {{if .GitHub.Company}}<li><span class="material-symbol" aria-hidden="true">domain</span><span>{{.GitHub.Company}}</span></li>{{end}}
@@ -42,28 +40,16 @@
       {{if .GitHub.CreatedAt}}<li class="github-joined"><span class="material-symbol" aria-hidden="true">calendar_month</span><span>{{if eq .Lang "en_US"}}Joined{{else}}加入于{{end}} <time datetime="{{.GitHub.CreatedAt}}">{{slice .GitHub.CreatedAt 0 10}}</time></span></li>{{end}}
     </ul>
     {{if .GitHub.Organizations}}<section class="github-organizations"><h2>{{if eq .Lang "en_US"}}Organizations{{else}}组织{{end}}</h2><div>{{range .GitHub.Organizations}}<a href="{{.HTMLURL}}" target="_blank" rel="noopener noreferrer" title="{{.Login}} · {{.Description}}"><img src="{{.AvatarURL}}" alt="{{.Login}}" width="36" height="36" loading="lazy"></a>{{end}}</div></section>{{end}}
-    <p class="github-gists"><a href="https://gist.github.com/{{.GitHub.Login}}" target="_blank" rel="noopener noreferrer">{{formatNum .GitHub.PublicGists}} {{if eq .Lang "en_US"}}public gists{{else}}个公开 Gist{{end}}</a></p>
   </aside>
 
   <div class="github-overview">
-    <nav class="github-tabs" aria-label="GitHub">
-      <a href="#github-readme" aria-current="page"><span class="material-symbol" aria-hidden="true">auto_stories</span>{{if eq .Lang "en_US"}}Overview{{else}}概览{{end}}</a>
-      <a href="{{.GitHub.HTMLURL}}?tab=repositories" target="_blank" rel="noopener noreferrer"><span class="material-symbol" aria-hidden="true">book</span>{{if eq .Lang "en_US"}}Repositories{{else}}仓库{{end}}<span class="github-count">{{formatNum .GitHub.PublicRepos}}</span></a>
-      <a href="{{.GitHub.HTMLURL}}?tab=projects" target="_blank" rel="noopener noreferrer"><span class="material-symbol" aria-hidden="true">account_tree</span>{{if eq .Lang "en_US"}}Projects{{else}}项目{{end}}</a>
-      <a href="{{.GitHub.HTMLURL}}?tab=packages" target="_blank" rel="noopener noreferrer"><span class="material-symbol" aria-hidden="true">archive</span>{{if eq .Lang "en_US"}}Packages{{else}}软件包{{end}}</a>
-      <a href="{{.GitHub.HTMLURL}}?tab=stars" target="_blank" rel="noopener noreferrer"><span class="material-symbol" aria-hidden="true">star</span>{{if eq .Lang "en_US"}}Stars{{else}}星标{{end}}{{if .GitHub.StarsAvailable}}<span class="github-count">{{formatNum .GitHub.Stars}}</span>{{end}}</a>
-    </nav>
-    {{if .GitHub.ReadmeHTML}}<section class="github-readme" id="github-readme"><div class="github-readme-heading"><a href="{{.GitHub.ReadmeURL}}" target="_blank" rel="noopener noreferrer">{{.GitHub.Login}} / README.md</a></div><div class="github-readme-content markdown">{{.GitHub.ReadmeHTML}}</div></section>{{end}}
+    {{if .GitHub.ReadmeHTML}}<section class="github-readme" id="github-readme"><div class="github-readme-content markdown">{{.GitHub.ReadmeHTML}}</div></section>{{end}}
     {{if .GitHub.PinnedRepositories}}
     <section class="github-repositories"><h2>{{if eq .Lang "en_US"}}Pinned{{else}}置顶仓库{{end}}</h2><div class="github-repository-grid">{{range .GitHub.PinnedRepositories}}{{template "github_repository" .}}{{end}}</div></section>
-    {{end}}
-    {{if .GitHub.Repositories}}
-    <section class="github-repositories"><h2>{{if eq .Lang "en_US"}}Repositories{{else}}仓库{{end}}<a href="{{.GitHub.HTMLURL}}?tab=repositories" target="_blank" rel="noopener noreferrer">{{if eq .Lang "en_US"}}View on GitHub{{else}}在 GitHub 查看{{end}}</a></h2><div class="github-repository-grid">{{range .GitHub.Repositories}}{{template "github_repository" .}}{{end}}</div></section>
     {{end}}
     {{if .GitHub.Contributions}}
     <section class="github-contributions"><h2>{{formatNum .GitHub.Contributions.Total}} {{if eq .Lang "en_US"}}contributions in the last year{{else}}次贡献 · 过去一年{{end}}</h2><div class="github-calendar-scroll"><div class="github-calendar" role="img" aria-label="{{if eq .Lang "en_US"}}GitHub contribution calendar{{else}}GitHub 贡献日历{{end}}">{{range .GitHub.Contributions.Weeks}}<div class="github-calendar-week">{{range .Days}}<span class="github-calendar-day" data-level="{{.Level}}" title="{{.Date}}: {{.Count}}" aria-label="{{.Date}}: {{.Count}}"></span>{{end}}</div>{{end}}</div></div><div class="github-calendar-key"><span>{{if eq .Lang "en_US"}}Less{{else}}少{{end}}</span><i data-level="0"></i><i data-level="1"></i><i data-level="2"></i><i data-level="3"></i><i data-level="4"></i><span>{{if eq .Lang "en_US"}}More{{else}}多{{end}}</span></div></section>
     {{end}}
-    {{if .GitHub.Events}}<section class="github-activity"><h2>{{if eq .Lang "en_US"}}Public activity{{else}}公开动态{{end}}</h2><ol>{{range .GitHub.Events}}<li><span class="material-symbol" aria-hidden="true">commit</span><div><a href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.Summary}}</a><time datetime="{{.CreatedAt}}">{{slice .CreatedAt 0 10}}</time></div></li>{{end}}</ol></section>{{end}}
   </div>
 </section>
 {{else}}

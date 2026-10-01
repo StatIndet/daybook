@@ -30,7 +30,7 @@ func TestGitHubProfileOverridesLegacyHomeMetadata(t *testing.T) {
 
 func TestHomeRendersGitHubSnapshot(t *testing.T) {
 	cfg := config.Config{Site: config.SiteConfig{URL: "https://example.com"}, Profile: config.ProfileConfig{Author: config.AuthorConfig{LogoText: "Daybook", AboutUrl: "/about/"}}}
-	p := &github.Profile{Login: "octocat", Name: "GitHub Name", Bio: "An upstream bio <with markup>", HTMLURL: "https://github.com/octocat", AvatarURL: "https://avatars.githubusercontent.com/u/1", CreatedAt: "2020-01-02T00:00:00Z", FetchedAt: "2026-09-30T00:00:00Z", Repositories: []github.Repository{{Name: "public-project", HTMLURL: "https://github.com/octocat/public-project", Description: "Public repository", Language: "Go", Stars: 3}}, Events: []github.Event{{Type: "PushEvent", CreatedAt: "2026-09-29T00:00:00Z", URL: "https://github.com/octocat/public-project", Summary: "Pushed to main"}}}
+	p := &github.Profile{Login: "octocat", Name: "GitHub Name", Bio: "An upstream bio <with markup>", HTMLURL: "https://github.com/octocat", AvatarURL: "https://avatars.githubusercontent.com/u/1", CreatedAt: "2020-01-02T00:00:00Z", FetchedAt: "2026-09-30T00:00:00Z", ReadmeHTML: "<p>README body</p>", PinnedRepositories: []github.Repository{{Name: "pinned-project", HTMLURL: "https://github.com/octocat/pinned-project"}}, Repositories: []github.Repository{{Name: "public-project", HTMLURL: "https://github.com/octocat/public-project", Description: "Public repository", Language: "Go", Stars: 3}}, Events: []github.Event{{Type: "PushEvent", CreatedAt: "2026-09-29T00:00:00Z", URL: "https://github.com/octocat/public-project", Summary: "Pushed to main"}}}
 	applyGitHubProfile(&cfg, p)
 	output := filepath.Join(t.TempDir(), "index.html")
 	data := render.IndexData{Config: cfg, GitHub: p, Lang: "zh_CN", PageKind: "home", BodyClass: "home-body", AlternateURL: "/en_US/", SEO: seo.BuildForHome(seo.BuilderArgs{Config: cfg, GitHub: p, Lang: "zh_CN", Title: cfg.GetHomeTitle("zh_CN"), Description: cfg.GetHomeDescription("zh_CN"), PageURL: "/"})}
@@ -42,9 +42,14 @@ func TestHomeRendersGitHubSnapshot(t *testing.T) {
 		t.Fatal(err)
 	}
 	html := string(body)
-	for _, want := range []string{"data-github-home", "GitHub Name", "public-project", "An upstream bio &lt;with markup&gt;", `fetchpriority="high"`, "s=520", "Pushed to main"} {
+	for _, want := range []string{"data-github-home", "GitHub Name", "pinned-project", "README body", "An upstream bio &lt;with markup&gt;", `fetchpriority="high"`, "s=520"} {
 		if !strings.Contains(html, want) {
 			t.Errorf("homepage missing %q", want)
+		}
+	}
+	for _, removed := range []string{"github-profile-link", "github-gists", "github-tabs", "github-readme-heading", "github-activity", "public-project", "Pushed to main"} {
+		if strings.Contains(html, removed) {
+			t.Errorf("homepage still renders removed section %q", removed)
 		}
 	}
 }

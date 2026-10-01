@@ -12,7 +12,6 @@
     "article",
     "artist",
     "attach_file",
-    "auto_stories",
     "autoplay",
     "block",
     "book",
@@ -27,7 +26,6 @@
     "circle",
     "close",
     "comment",
-    "commit",
     "content_copy",
     "copyright",
     "css",
@@ -114,5 +112,5 @@
     }
   },
   "originalBytes": 5347060,
-  "subsetBytes": 13004
+  "subsetBytes": 12740
 }
