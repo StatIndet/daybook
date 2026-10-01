@@ -134,3 +134,22 @@ go build -o daybook-cli ./cmd/daybook
 ## License
 
 This project is open-sourced under the [MIT License](LICENSE).
+
+## GitHub homepage
+
+The homepage is a public GitHub profile rendered with Daybook's existing themes. Configure the upstream account in the **external vault's** `daybook.yaml`:
+
+```yaml
+github:
+  username: StatIndet
+  tokenEnv: GITHUB_TOKEN
+profile:
+  author:
+    logoText: Daybook
+```
+
+Each `daybook build` requests fresh official GitHub data: name, login, avatar, Bio, contacts, followers, public repositories and stars, profile README, organizations and public activity. `GITHUB_TOKEN` is optional; a token enables GraphQL pinned repositories, status and contribution calendar. Use a token with access to public information only. It is read from the environment and is never written to HTML, JSON or the cache. GitHub achievements are omitted because the official APIs do not expose them.
+
+The GitHub Bio supplies homepage description, Open Graph, Twitter and JSON-LD metadata. Manual author names, avatars, slogans and home SEO values are no longer used for a configured GitHub homepage. The persistent logo and footer preferences remain configurable. A last-successful snapshot in `.daybook-cache/github/` supports offline rebuilds. A first build without accessible upstream data fails with a clear error. Generated `public/github-profile.json` contains only public profile data.
+
+For scheduled updates, use the external vault's Worker with a KV binding and a Cron Trigger. It serves a build snapshot until KV is refreshed, rewrites the homepage HTML and SEO together, and retains the last success during upstream failures. Deployment configuration belongs to the vault, not this CLI source repository.

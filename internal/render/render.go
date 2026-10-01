@@ -10,6 +10,7 @@ import (
 
 	"github.com/StatIndet/daybook/internal/config"
 	"github.com/StatIndet/daybook/internal/embedded"
+	"github.com/StatIndet/daybook/internal/github"
 	"github.com/StatIndet/daybook/internal/i18n"
 	"github.com/StatIndet/daybook/internal/morphable"
 	"github.com/StatIndet/daybook/internal/seo"
@@ -172,6 +173,7 @@ type GoldenSpiral struct {
 
 type IndexData struct {
 	Site         SiteData
+	GitHub       *github.Profile
 	Config       config.Config
 	PageTitle    string
 	PageKind     string

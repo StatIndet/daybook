@@ -1,11 +1,12 @@
 package site
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"html/template"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -17,29 +18,29 @@ import (
 	"unicode"
 
 	"github.com/StatIndet/daybook/internal/config"
-	"github.com/StatIndet/daybook/internal/progress"
 	"github.com/StatIndet/daybook/internal/content"
 	"github.com/StatIndet/daybook/internal/feed"
+	"github.com/StatIndet/daybook/internal/github"
 	"github.com/StatIndet/daybook/internal/graph"
 	"github.com/StatIndet/daybook/internal/i18n"
 	"github.com/StatIndet/daybook/internal/markdown"
 	"github.com/StatIndet/daybook/internal/media"
+	"github.com/StatIndet/daybook/internal/morphable"
 	"github.com/StatIndet/daybook/internal/obsidian"
+	"github.com/StatIndet/daybook/internal/progress"
 	"github.com/StatIndet/daybook/internal/render"
 	"github.com/StatIndet/daybook/internal/search"
 	"github.com/StatIndet/daybook/internal/seo"
 	"github.com/StatIndet/daybook/internal/sitemap"
-	"github.com/StatIndet/daybook/internal/morphable"
 )
 
 type Options struct {
-	Config       config.Config
-	ContentDir   string
-	NotesDir     string
-	PublicDir    string
-	Reporter     *progress.Reporter
+	Config     config.Config
+	ContentDir string
+	NotesDir   string
+	PublicDir  string
+	Reporter   *progress.Reporter
 }
-
 
 type BuildResult struct {
 	Notes   []content.Note
@@ -55,6 +56,18 @@ func joinURL(parts ...string) string {
 }
 
 func Build(options Options) (BuildResult, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 35*time.Second)
+	defer cancel()
+	githubProfile, warnings, err := github.Sync(ctx, options.Config.GitHub, filepath.Join(filepath.Dir(options.PublicDir), ".daybook-cache", "github"))
+	if err != nil {
+		return BuildResult{}, fmt.Errorf("sync GitHub profile: %w", err)
+	}
+	for _, warning := range warnings {
+		fmt.Printf("[github] warning: %s\n", warning)
+	}
+	if githubProfile != nil {
+		applyGitHubProfile(&options.Config, githubProfile)
+	}
 	if options.Reporter != nil {
 		options.Reporter.SetStage(0, 0) // No total known for scanning
 	}
@@ -83,6 +96,15 @@ func Build(options Options) (BuildResult, error) {
 	assets, err := buildAssets("static", options.PublicDir)
 	if err != nil {
 		return BuildResult{}, err
+	}
+	if githubProfile != nil {
+		data, err := json.Marshal(githubProfile)
+		if err != nil {
+			return BuildResult{}, fmt.Errorf("encode GitHub profile: %w", err)
+		}
+		if err := os.WriteFile(filepath.Join(options.PublicDir, "github-profile.json"), data, 0644); err != nil {
+			return BuildResult{}, fmt.Errorf("write GitHub profile: %w", err)
+		}
 	}
 	if err := copyAttachments(options.ContentDir, options.PublicDir); err != nil {
 		return BuildResult{}, err
@@ -144,8 +166,6 @@ func Build(options Options) (BuildResult, error) {
 			musicMetadataMap[u] = meta
 		}
 	}
-
-
 
 	markdown.SetMusicMetadataRegistry(musicMetadataMap)
 
@@ -499,6 +519,7 @@ func Build(options Options) (BuildResult, error) {
 		}
 
 		indexData := render.IndexData{
+			GitHub:       githubProfile,
 			Site:         siteData,
 			Config:       options.Config,
 			PageTitle:    i18n.T(lang, "nav.home"),
@@ -543,12 +564,12 @@ func Build(options Options) (BuildResult, error) {
 		sort.SliceStable(regularNotes, func(i, j int) bool { return sortByUpdated(i, j, regularNotes) })
 
 		baseNotesPath := joinURL("/", langPrefix, "notes")
-		
+
 		totalPages := int(math.Ceil(float64(len(regularNotes)) / float64(PageSize)))
 		if totalPages == 0 {
 			totalPages = 1
 		}
-		
+
 		for p := 1; p <= totalPages; p++ {
 			var pagePath string
 			var pageURL string
@@ -559,17 +580,17 @@ func Build(options Options) (BuildResult, error) {
 				pagePath = filepath.Join(langPublicDir, "notes", "page", fmt.Sprintf("%d", p), "index.html")
 				pageURL = joinURL(baseNotesPath, "page", fmt.Sprintf("%d", p))
 			}
-			
+
 			if err := os.MkdirAll(filepath.Dir(pagePath), 0755); err != nil {
 				return BuildResult{}, err
 			}
-			
+
 			startIdx := (p - 1) * PageSize
 			endIdx := startIdx + PageSize
 			if endIdx > len(regularNotes) {
 				endIdx = len(regularNotes)
 			}
-			
+
 			pageNotes := regularNotes
 			if startIdx < len(regularNotes) {
 				pageNotes = regularNotes[startIdx:endIdx]
@@ -597,16 +618,16 @@ func Build(options Options) (BuildResult, error) {
 				Alternates:  notesAlternates,
 			}
 			seoData := seo.BuildForCollection(notesSEOArgs)
-			
+
 			paginationData := generatePaginationData(len(regularNotes), p, joinURL(langPrefix, "notes"))
 			seoData.PaginationPrev = paginationData.PrevURL
 			seoData.PaginationNext = paginationData.NextURL
-			
+
 			altURL := joinURL("/", altLangPrefix, "notes")
 			if p > 1 {
 				altURL = joinURL("/", altLangPrefix, "notes", "page", fmt.Sprintf("%d", p))
 			}
-			
+
 			notesData := render.NotesData{
 				Site:         siteData,
 				Config:       options.Config,
@@ -623,20 +644,19 @@ func Build(options Options) (BuildResult, error) {
 				SEO:          seoData,
 				Pagination:   paginationData,
 			}
-			
+
 			if err := renderer.RenderNotes(pagePath, notesData); err != nil {
 				return BuildResult{}, fmt.Errorf("生成文章页: %w", err)
 			}
 			allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: pageURL})
 		}
-		
+
 		// Create alias redirect for page 1
 		page1AliasPath := filepath.Join(langPublicDir, "notes", "page", "1", "index.html")
 		if err := os.MkdirAll(filepath.Dir(page1AliasPath), 0755); err == nil {
 			aliasHTML := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="robots" content="noindex"><link rel="canonical" href="%s"><meta http-equiv="refresh" content="0; url=%s"></head><body></body></html>`, baseNotesPath, baseNotesPath)
 			os.WriteFile(page1AliasPath, []byte(aliasHTML), 0644)
 		}
-
 
 		archivePath := filepath.Join(langPublicDir, "archive", "index.html")
 		archiveAlternates := []seo.Alternate{{Lang: "zh_CN", URL: "/archive/"}, {Lang: "en_US", URL: "/en_US/archive/"}}
@@ -685,7 +705,7 @@ func Build(options Options) (BuildResult, error) {
 			Total:   len(noteLinks),
 			Rows:    allArchiveRows,
 		}
-		
+
 		dataJSONPath := filepath.Join(langPublicDir, "archive", "data.json")
 		dataJSONBytes, err := json.Marshal(archiveDataJSON)
 		if err != nil {
@@ -850,7 +870,7 @@ func Build(options Options) (BuildResult, error) {
 					pagePath = filepath.Join(langPublicDir, "tags", seo.TagSlug(tagLink.Name), "page", fmt.Sprintf("%d", p), "index.html")
 					pageURL = joinURL(baseTagPath, "page", fmt.Sprintf("%d", p))
 				}
-				
+
 				if err := os.MkdirAll(filepath.Dir(pagePath), 0755); err != nil {
 					return BuildResult{}, err
 				}
@@ -914,12 +934,12 @@ func Build(options Options) (BuildResult, error) {
 					PageURL:     pageURL,
 					Alternates:  tagAlternates,
 				}
-				
+
 				seoData := seo.BuildForTag(tagSEOArgs)
 				paginationData := generatePaginationData(len(tagNotes), p, joinURL(langPrefix, "tags", seo.TagSlug(tagLink.Name)))
 				seoData.PaginationPrev = paginationData.PrevURL
 				seoData.PaginationNext = paginationData.NextURL
-				
+
 				altURL := joinURL("/", altLangPrefix, "tags", seo.TagSlug(tagLink.Name))
 				if p > 1 {
 					altURL = joinURL(altURL, "page", fmt.Sprintf("%d", p))
@@ -943,11 +963,11 @@ func Build(options Options) (BuildResult, error) {
 				if err := renderer.RenderTag(pagePath, tagData); err != nil {
 					return BuildResult{}, fmt.Errorf("生成标签页: %w", err)
 				}
-				
+
 				// Add to sitemap
 				allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: pageURL})
 			}
-			
+
 			// Create alias redirect for page 1
 			page1AliasPath := filepath.Join(langPublicDir, "tags", seo.TagSlug(tagLink.Name), "page", "1", "index.html")
 			if err := os.MkdirAll(filepath.Dir(page1AliasPath), 0755); err == nil {
@@ -957,7 +977,7 @@ func Build(options Options) (BuildResult, error) {
 		}
 
 		allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: joinURL("/", langPrefix)})
-		
+
 		allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: joinURL("/", langPrefix, "archive")})
 		aboutLastMod := aboutPage.Updated
 		if aboutLastMod == "" {
@@ -1016,13 +1036,13 @@ func printDiagnostics(diags []obsidian.Diagnostic) {
 	summary := make(map[string]int)
 	for _, d := range diags {
 		summary[d.Code]++
-		
+
 		fmt.Printf("\n%s[%s]: %s\n", d.Severity, d.Code, d.Message)
 		fmt.Printf("  --> %s:%d:%d\n", d.SourcePath, d.Line, d.Column)
 		if d.Snippet != "" {
 			fmt.Printf("   |\n")
 			fmt.Printf("%-2d | %s\n", d.Line, d.Snippet)
-			
+
 			// simple underline
 			indent := "   | "
 			for i := 0; i < d.Column-1; i++ {
@@ -1121,7 +1141,7 @@ func buildArchiveRows(notes []render.NoteLink) []render.ArchiveRow {
 		})
 		lastNoteIdx = len(rows) - 1
 	}
-	
+
 	if lastNoteIdx != -1 {
 		rows[lastNoteIdx].IsLastInYear = true
 	}
@@ -1340,7 +1360,7 @@ func buildObsidianIndex(notes []content.Note, contentDir string, publicDir strin
 			if err != nil {
 				return nil
 			}
-			
+
 			relPath, err := filepath.Rel(contentDir, path)
 			if err != nil {
 				return nil
@@ -1431,8 +1451,6 @@ func normalizeHeading(text string) string {
 	text = strings.Join(strings.Fields(text), " ")
 	return text
 }
-
-
 
 func shouldSkipVaultDir(contentDir, relativePath, publicDir string) bool {
 	base := filepath.Base(relativePath)
@@ -1555,7 +1573,3 @@ func copyFile(sourcePath, targetPath string) error {
 
 	return nil
 }
-
-
-
-

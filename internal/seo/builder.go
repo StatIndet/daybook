@@ -7,10 +7,12 @@ import (
 	"strings"
 
 	"github.com/StatIndet/daybook/internal/config"
+	"github.com/StatIndet/daybook/internal/github"
 	"github.com/StatIndet/daybook/internal/i18n"
 )
 
 type BuilderArgs struct {
+	GitHub      *github.Profile
 	Config      config.Config
 	Lang        string
 	Title       string
@@ -82,15 +84,23 @@ func BuildForHome(args BuilderArgs) SEOData {
 
 	url := absURL(args.Config, args.PageURL)
 	desc := CleanDescription(args.Description)
+	person := Person{Type: "Person", ID: absURL(args.Config, "/#person"), Name: args.Config.Profile.Author.Name, AlternateName: args.Config.Profile.Author.NameEn, URL: absURL(args.Config, args.Config.Profile.Author.AboutUrl)}
+	image := args.Image
+	if args.GitHub != nil {
+		person.URL = args.GitHub.HTMLURL
+		person.Description = desc
+		person.Image = args.GitHub.AvatarSize(520)
+		person.SameAs = []string{args.GitHub.HTMLURL}
+		for _, account := range args.GitHub.SocialAccounts {
+			if account.URL != "" {
+				person.SameAs = append(person.SameAs, account.URL)
+			}
+		}
+		image = person.Image
+	}
 
 	graph := []any{
-		Person{
-			Type:          "Person",
-			ID:            absURL(args.Config, "/#person"),
-			Name:          args.Config.Profile.Author.Name,
-			AlternateName: args.Config.Profile.Author.NameEn,
-			URL:           absURL(args.Config, args.Config.Profile.Author.AboutUrl),
-		},
+		person,
 		WebSite{
 			Type:        "WebSite",
 			ID:          url + "#website",
@@ -117,6 +127,9 @@ func BuildForHome(args BuilderArgs) SEOData {
 		SiteName:     siteName,
 		Lang:         args.Lang,
 		Type:         "website",
+		Image:        image,
+		AuthorName:   person.Name,
+		AuthorURL:    person.URL,
 		Alternates:   args.Alternates,
 		JSONLD:       buildJSONLD(graph),
 	}
@@ -202,8 +215,8 @@ func BuildForAbout(args BuilderArgs) SEOData {
 		Person{
 			Type:          "Person",
 			ID:            absURL(args.Config, "/#person"),
-			Name:          "史帙",
-			AlternateName: "Stat Indet",
+			Name:          args.Config.Profile.Author.Name,
+			AlternateName: args.Config.Profile.Author.NameEn,
 			URL:           absURL(args.Config, "/about/"),
 		},
 		AboutPage{

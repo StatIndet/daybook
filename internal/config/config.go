@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -29,10 +30,10 @@ type AuthorConfig struct {
 }
 
 type ProfileConfig struct {
-	Author AuthorConfig      `yaml:"author"`
-	Slogan map[string]string `yaml:"slogan"`
-	Social []SocialLinkConfig `yaml:"social"`
-	ParsedSocial []SocialLink `yaml:"-"`
+	Author       AuthorConfig       `yaml:"author"`
+	Slogan       map[string]string  `yaml:"slogan"`
+	Social       []SocialLinkConfig `yaml:"social"`
+	ParsedSocial []SocialLink       `yaml:"-"`
 }
 
 func (p ProfileConfig) HasSignatureFont() bool {
@@ -46,7 +47,10 @@ func (p ProfileConfig) GetLogoText() string {
 	if p.Author.NameEn != "" {
 		return p.Author.NameEn
 	}
-	return p.Author.Name
+	if p.Author.Name != "" {
+		return p.Author.Name
+	}
+	return "Daybook"
 }
 
 func getMultilingualString(dict map[string]string, lang string) string {
@@ -91,6 +95,13 @@ type ShareConfig struct {
 	Text string `yaml:"text"`
 }
 
+// GitHubConfig selects the public profile used by the homepage. Credentials are
+// read from the environment at build time and are never included in output.
+type GitHubConfig struct {
+	Username string `yaml:"username"`
+	TokenEnv string `yaml:"tokenEnv"`
+}
+
 type SiteConfig struct {
 	Name      map[string]string `yaml:"name"`
 	URL       string            `yaml:"url"`
@@ -106,6 +117,7 @@ type Config struct {
 	Comment CommentConfig `yaml:"comment"`
 	Stats   StatsConfig   `yaml:"stats"`
 	Share   ShareConfig   `yaml:"share"`
+	GitHub  GitHubConfig  `yaml:"github"`
 }
 
 func (c Config) GetSiteName(lang string) string {
@@ -126,22 +138,21 @@ func (c Config) GetHomeDescription(lang string) string {
 func (c Config) GetSocialLinks(lang string) []SocialLink {
 	links := make([]SocialLink, len(c.Profile.ParsedSocial))
 	copy(links, c.Profile.ParsedSocial)
-	
+
 	rssURL := "/rss.xml"
 	if lang != "zh_CN" && lang != "zh" {
 		rssURL = "/" + lang + "/rss.xml"
 	}
-	
+
 	links = append(links, SocialLink{
 		Type:  "rss",
 		Label: "RSS",
 		URL:   rssURL,
 		Icon:  "/icons/social/rss.svg",
 	})
-	
+
 	return links
 }
-
 
 var supportedSocialPlatforms = map[string]struct{ Label, Icon string }{
 	"bilibili":  {"Bilibili", "/icons/social/bilibili.svg"},
@@ -170,13 +181,13 @@ func parseSocialLinks(configs []SocialLinkConfig) []SocialLink {
 		if c.Type == "rss" {
 			continue
 		}
-		
+
 		info, ok := supportedSocialPlatforms[c.Type]
 		if !ok {
 			fmt.Printf("[daybook] warning: unsupported social platform \"%s\", skipping\n", c.Type)
 			continue
 		}
-		
+
 		links = append(links, SocialLink{
 			Type:  c.Type,
 			Label: info.Label,
@@ -199,7 +210,7 @@ func Load() (Config, error) {
 	}
 
 	// Defaults and Fallbacks
-  cfg.Profile.ParsedSocial = parseSocialLinks(cfg.Profile.Social)
+	cfg.Profile.ParsedSocial = parseSocialLinks(cfg.Profile.Social)
 	if strings.TrimSpace(cfg.Site.StartedAt) == "" {
 		cfg.Site.StartedAt = "2026-06-08"
 	}
@@ -227,6 +238,14 @@ func Load() (Config, error) {
 
 	if cfg.Site.URL != "" && !strings.HasPrefix(cfg.Site.URL, "http://") && !strings.HasPrefix(cfg.Site.URL, "https://") {
 		return Config{}, fmt.Errorf("config error: site.url must be a valid http/https URL")
+	}
+
+	cfg.GitHub.Username = strings.TrimSpace(cfg.GitHub.Username)
+	if cfg.GitHub.Username != "" && !regexp.MustCompile(`^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$`).MatchString(cfg.GitHub.Username) {
+		return Config{}, fmt.Errorf("config error: github.username must be a GitHub username")
+	}
+	if cfg.GitHub.TokenEnv == "" {
+		cfg.GitHub.TokenEnv = "GITHUB_TOKEN"
 	}
 
 	return cfg, nil

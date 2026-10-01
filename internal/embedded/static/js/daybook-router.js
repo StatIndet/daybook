@@ -228,10 +228,23 @@
     let isNavigating = false;
     let abortController = null;
     let currentRouterUrl = location.href;
+    let githubAvatarURL = "";
+    function syncGitHubAvatar(source) {
+      const home = source.querySelector("[data-github-login]");
+      const profileImage = home?.querySelector("[data-site-avatar] img");
+      if (profileImage) githubAvatarURL = profileImage.src;
+      if (!githubAvatarURL) return;
+      source.querySelectorAll(".side-avatar").forEach((img) => {
+        const url = new URL(githubAvatarURL, location.origin);
+        url.searchParams.set("s", "96");
+        img.src = url.href;
+      });
+    }
     function isRouterState(state) {
       return state && state.__daybook === true;
     }
     function initRouter() {
+      syncGitHubAvatar(document);
       if (!isRouterState(history.state)) {
         history.replaceState({
           __daybook: true,
@@ -383,6 +396,7 @@
         const html = await response.text();
         const parser = new DOMParser();
         const newDocument = parser.parseFromString(html, "text/html");
+        syncGitHubAvatar(newDocument);
         const currentContainer = document.querySelector("[data-daybook-page]");
         const newContainer = newDocument.querySelector("[data-daybook-page]");
         await preloadStylesheets(newDocument);

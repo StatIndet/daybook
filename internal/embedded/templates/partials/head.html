@@ -4,7 +4,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   
   <title>{{.SEO.Title}}</title>
-  {{if .SEO.Description}}
+  {{if or .SEO.Description (eq .PageKind "home")}}
   <meta name="description" content="{{.SEO.Description}}">
   {{end}}
 
@@ -20,7 +20,7 @@
   {{end}}
 
   <meta property="og:title" content="{{.SEO.Title}}">
-  {{if .SEO.Description}}<meta property="og:description" content="{{.SEO.Description}}">{{end}}
+  {{if or .SEO.Description (eq .PageKind "home")}}<meta property="og:description" content="{{.SEO.Description}}">{{end}}
   <meta property="og:type" content="{{.SEO.Type}}">
   <meta property="og:url" content="{{.SEO.CanonicalURL}}">
   {{if .SEO.Image}}<meta property="og:image" content="{{.SEO.Image}}">{{end}}
@@ -29,7 +29,7 @@
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="{{.SEO.Title}}">
-  {{if .SEO.Description}}<meta name="twitter:description" content="{{.SEO.Description}}">{{end}}
+  {{if or .SEO.Description (eq .PageKind "home")}}<meta name="twitter:description" content="{{.SEO.Description}}">{{end}}
   {{if .SEO.Image}}<meta name="twitter:image" content="{{.SEO.Image}}">{{end}}
 
   {{if .SEO.JSONLD}}

@@ -38,11 +38,26 @@ interface DaybookTransitionFinishedDetail {
   let abortController: AbortController | null = null;
   let currentRouterUrl = location.href;
 
+  let githubAvatarURL = "";
+
+  function syncGitHubAvatar(source: Document): void {
+    const home = source.querySelector<HTMLElement>("[data-github-login]");
+    const profileImage = home?.querySelector<HTMLImageElement>("[data-site-avatar] img");
+    if (profileImage) githubAvatarURL = profileImage.src;
+    if (!githubAvatarURL) return;
+    source.querySelectorAll<HTMLImageElement>(".side-avatar").forEach(img => {
+      const url = new URL(githubAvatarURL, location.origin);
+      url.searchParams.set("s", "96");
+      img.src = url.href;
+    });
+  }
+
   function isRouterState(state: any): state is RouterState {
     return state && state.__daybook === true;
   }
 
   function initRouter() {
+    syncGitHubAvatar(document);
     if (!isRouterState(history.state)) {
       history.replaceState({
         __daybook: true,
@@ -238,6 +253,7 @@ interface DaybookTransitionFinishedDetail {
       const html = await response.text();
       const parser = new DOMParser();
       const newDocument = parser.parseFromString(html, "text/html");
+      syncGitHubAvatar(newDocument);
 
       
       const currentContainer = document.querySelector("[data-daybook-page]");

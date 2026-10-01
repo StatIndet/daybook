@@ -32,6 +32,9 @@ type SEOData struct {
 }
 
 type Person struct {
+	Description   string `json:"description,omitempty"`
+	Image         string `json:"image,omitempty"`
+	SameAs        []string `json:"sameAs,omitempty"`
 	Type          string `json:"@type,omitempty"`
 	ID            string `json:"@id"`
 	Name          string `json:"name,omitempty"`
