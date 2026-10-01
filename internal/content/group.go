@@ -11,6 +11,18 @@ type ArticleGroup struct {
 	Versions map[string]*Note
 }
 
+// PublishedVersions returns every published version in a stable order. UI
+// language chooses interface labels, never which article versions are listed.
+func (g *ArticleGroup) PublishedVersions() []*Note {
+	var notes []*Note
+	for _, lang := range []string{"zh_CN", "en_US"} {
+		if note := g.Versions[lang]; note != nil && !note.Draft {
+			notes = append(notes, note)
+		}
+	}
+	return notes
+}
+
 func (g *ArticleGroup) HasVersion(lang string) bool {
 	_, ok := g.Versions[lang]
 	return ok

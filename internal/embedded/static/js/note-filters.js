@@ -51,9 +51,9 @@
       const titleLayout = keyword && hasTitleMatch ? titleHtml : item.titleLayout || titleHtml;
       return `
 <article class="notes-item" data-note-card>
-  <div class="notes-item-header" data-transition-scope="${item.slug}">
+  <div class="notes-item-header" data-transition-scope="${engine.escapeHTML(item.url)}">
     <h1 class="notes-item-title">
-      <a href="${item.url}" data-title-transition-key="${item.slug}">
+      <a href="${item.url}" data-title-transition-key="${engine.escapeHTML(item.url)}">
         ${titleLayout}
       </a>
     </h1>

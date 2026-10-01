@@ -3,7 +3,6 @@
   // assets/ts/theme.ts
   (function() {
     const root = document.documentElement;
-    const isEn = window.location.pathname.startsWith("/en");
     const translations = {
       "zh_CN": {
         "theme.light": "\u6D45\u8272",
@@ -25,7 +24,7 @@
       }
     };
     function T(key) {
-      const lang = isEn ? "en_US" : "zh_CN";
+      const lang = root.lang.toLowerCase().startsWith("en") ? "en_US" : "zh_CN";
       return translations[lang][key] || key;
     }
     function savedThemeMode() {

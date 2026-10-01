@@ -3,6 +3,7 @@
 <html lang="{{if eq .Lang "en_US"}}en-US{{else}}zh-CN{{end}}">
 {{template "head" .}}
 <body class="{{.BodyClass}}" data-page-kind="{{.PageKind}}" data-search-index-url="/search.json" data-stats-enabled="{{if .Config.Stats.Enabled}}true{{else}}false{{end}}">
+  <script type="application/json" id="daybook-ui-translations">{{uiTranslations}}</script>
   <div class="reader-progress-bar" aria-hidden="true"></div>
   {{template "persistent_logo" .}}
   {{template "settings_overlay" .}}

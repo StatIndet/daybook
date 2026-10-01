@@ -27,17 +27,8 @@
     if (p.endsWith('/index.html')) p = p.substring(0, p.length - 11);
     if (p.endsWith('/')) p = p.substring(0, p.length - 1);
     
-    // strip /en prefix if present
-    if (p.startsWith('/en_US/')) {
-        p = '/' + p.substring(4);
-    }
-    
-    if (p.startsWith('/notes/')) {
-        const slug = p.substring(7); // remove /notes/
-        if (slug.length > 0) {
-            return decodeURIComponent(slug);
-        }
-    }
+    // Canonical article paths distinguish versions with the same source slug.
+    if (/^(?:\/en_US)?\/notes\/.+/.test(p)) return decodeURIComponent(p) + '/';
     return null;
   }
 
@@ -45,7 +36,7 @@
     let p = cleanPath(url);
     if (p.endsWith('/index.html')) p = p.substring(0, p.length - 11);
     if (p.endsWith('/')) p = p.substring(0, p.length - 1);
-    if (p.startsWith('/en_US/')) p = '/' + p.substring(4);
+    if (p.startsWith('/en_US/')) p = '/' + p.substring(7);
     return p === '/notes';
   }
 

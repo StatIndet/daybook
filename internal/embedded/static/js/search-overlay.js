@@ -44,9 +44,9 @@
       const titleLayout = keyword && hasTitleMatch ? titleHtml : item.titleLayout || titleHtml;
       return `
 <article class="notes-item" data-note-card>
-  <div class="notes-item-header" data-transition-scope="${item.slug}">
+  <div class="notes-item-header" data-transition-scope="${engine.escapeHTML(item.url)}">
     <h1 class="notes-item-title">
-      <a href="${item.url}" data-title-transition-key="${item.slug}">
+      <a href="${item.url}" data-title-transition-key="${engine.escapeHTML(item.url)}">
         ${titleLayout}
       </a>
     </h1>
@@ -99,7 +99,7 @@
           const ctx = engine.getCollectionContext();
           const results = await engine.searchNotes(query, ctx.tagSlug);
           if (results.length === 0) {
-            const emptyText = document.documentElement.lang === "en_US" ? "No results found" : "\u6CA1\u6709\u627E\u5230\u5339\u914D\u7684\u6587\u7AE0\u3002";
+            const emptyText = document.documentElement.lang.toLowerCase().startsWith("en") ? "No results found" : "\u6CA1\u6709\u627E\u5230\u5339\u914D\u7684\u6587\u7AE0\u3002";
             desktopContainer.innerHTML = '<div class="notes-month"><div class="notes-month-list"><p class="notes-empty">' + emptyText + "</p></div></div>";
           } else {
             desktopContainer.innerHTML = '<div class="notes-month"><div class="notes-month-list">' + results.map((item) => renderNoteCard(item, query)).join("") + "</div></div>";

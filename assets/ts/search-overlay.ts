@@ -54,9 +54,9 @@
 
     return `
 <article class="notes-item" data-note-card>
-  <div class="notes-item-header" data-transition-scope="${item.slug}">
+  <div class="notes-item-header" data-transition-scope="${engine.escapeHTML(item.url)}">
     <h1 class="notes-item-title">
-      <a href="${item.url}" data-title-transition-key="${item.slug}">
+      <a href="${item.url}" data-title-transition-key="${engine.escapeHTML(item.url)}">
         ${titleLayout}
       </a>
     </h1>
@@ -124,7 +124,7 @@
         const results = await engine.searchNotes(query, ctx.tagSlug);
         
         if (results.length === 0) {
-          const emptyText = document.documentElement.lang === "en_US" ? "No results found" : "没有找到匹配的文章。";
+          const emptyText = document.documentElement.lang.toLowerCase().startsWith("en") ? "No results found" : "没有找到匹配的文章。";
           desktopContainer.innerHTML = '<div class="notes-month"><div class="notes-month-list"><p class="notes-empty">' + emptyText + '</p></div></div>';
         } else {
           desktopContainer.innerHTML = '<div class="notes-month"><div class="notes-month-list">' + results.map((item: any) => renderNoteCard(item, query)).join("") + '</div></div>';

@@ -3,7 +3,6 @@
 
   // Polyfill translation lookup on client-side for dynamic updates
   // Since we don't have a JS i18n bundle, we'll derive translation from language
-  const isEn = window.location.pathname.startsWith('/en');
   
   const translations = {
     'zh_CN': {
@@ -27,7 +26,7 @@
   };
   
   function T(key: keyof typeof translations['en_US']): string {
-    const lang = isEn ? 'en_US' : 'zh_CN';
+    const lang = root.lang.toLowerCase().startsWith('en') ? 'en_US' : 'zh_CN';
     return translations[lang][key] || key;
   }
 

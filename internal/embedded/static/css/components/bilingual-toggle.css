@@ -7,8 +7,10 @@
   padding: 0;
   cursor: pointer;
   color: var(--color-muted);
-  font-family: var(--font-mono);
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
   vertical-align: middle;
   transform: translateY(-2px);
 }
@@ -24,36 +26,11 @@
   border-radius: 2px;
 }
 
-.bilingual-char {
-  position: absolute;
-  line-height: 1;
-  transition: all 0.4s cubic-bezier(0.2, 0.78, 0.24, 1);
-  user-select: none;
-  font-weight: 400;
-  font-family: inherit;
+.bilingual-toggle-btn .material-symbol {
+  font-size: 1.2rem;
 }
 
-/* Base Active State for Top-Left large char */
-.bilingual-toggle-btn[data-current-lang="zh_CN"] .bilingual-zh,
-.bilingual-toggle-btn[data-current-lang="en_US"] .bilingual-en {
-  top: 0;
-  left: 0;
-  font-size: 14px;
-  color: currentColor;
-}
-
-/* Base Inactive State for Bottom-Right small char */
-.bilingual-toggle-btn[data-current-lang="zh_CN"] .bilingual-en,
-.bilingual-toggle-btn[data-current-lang="en_US"] .bilingual-zh {
-  top: 14px;
-  left: 11px;
-  font-size: 10px;
-  color: inherit;
-  opacity: 0.8;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .bilingual-char {
-    transition: none;
-  }
+.bilingual-toggle-btn:hover .material-symbol,
+.bilingual-toggle-btn:focus-visible .material-symbol {
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
 }

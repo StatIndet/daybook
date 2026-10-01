@@ -188,23 +188,46 @@
   padding: 4px 10px 0 0;
 }
 
-@media (min-width: 116rem) {
+@media (min-width: 1200px) {
+  .note-detail-page {
+    display: grid;
+    gap: clamp(28px, 3vw, 48px);
+    grid-template-columns: minmax(0, var(--note-body-width)) minmax(176px, 208px);
+    max-width: calc(var(--note-body-width) + 208px + 48px);
+  }
+
+  .note-detail-page .notes-aside {
+    margin-top: 0;
+    min-height: calc(100dvh - 176px);
+    position: sticky;
+    top: 72px;
+  }
+
+  .note-detail-page .notes-aside-controls {
+    border-top: 0;
+    display: block;
+    margin-top: auto;
+    padding-top: 1.5rem;
+  }
+
+  .note-detail-page .notes-footer-actions {
+    margin-bottom: 1.15rem;
+  }
+
   .note-toc-wrapper {
     --reading-toc-rail-eligible: 1;
+    --reading-toc-rail-direction: 1;
+    --reading-toc-rail-line-inset: 12px;
 
-    bottom: 0;
-    pointer-events: none;
-    position: absolute;
-    right: calc(100% + clamp(18px, 2.8vw, 34px));
-    top: var(--note-toc-top);
+    pointer-events: auto;
+    position: static;
     width: var(--note-toc-width);
     z-index: 10;
   }
 
   .note-sticky-column {
     pointer-events: auto;
-    position: sticky;
-    top: var(--note-toc-top);
+    position: static;
   }
 
   .note-toc-stage {
@@ -218,7 +241,7 @@
   }
 
   .note-toc-panel {
-    max-height: calc(100vh - 176px);
+    max-height: calc(100dvh - 72px - 16rem);
   }
 
   .note-toc-stage.has-reading-rail {
@@ -301,7 +324,7 @@
   /* We remove the CSS hover logic for reading-toc-rail, JS will handle it now */
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1199px) {
   .note-toc-wrapper {
     display: none;
   }
@@ -584,7 +607,7 @@ html[data-reduced-motion="true"] .note-toc-stage .note-toc {
   display: none;
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1199px) {
   .mobile-toc-fab {
     align-items: center;
     background: var(--color-page);
@@ -647,7 +670,8 @@ html[data-reduced-motion="true"] .note-toc-stage .note-toc {
     box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
-    max-height: 85vh;
+    max-height: min(42rem, calc(85dvh - env(safe-area-inset-top)));
+    overflow: hidden;
     position: absolute;
     transform: translateY(100%);
     transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1);
@@ -685,6 +709,7 @@ html[data-reduced-motion="true"] .note-toc-stage .note-toc {
 
   .mobile-toc-nav {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 0 24px 24px;
@@ -708,6 +733,8 @@ html[data-reduced-motion="true"] .note-toc-stage .note-toc {
     color: var(--color-muted);
     text-decoration: none;
     transition: color 0.2s ease;
+    display: block;
+    padding: 6px 0;
   }
 
   .mobile-toc-nav li.is-active > a {

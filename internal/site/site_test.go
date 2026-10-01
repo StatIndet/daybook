@@ -1,10 +1,10 @@
 package site
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
-	"encoding/json"
 	"testing"
 
 	"github.com/StatIndet/daybook/internal/config"
@@ -85,7 +85,6 @@ func TestCollectTagLinks(t *testing.T) {
 	}
 }
 
-
 func TestBuildMarksNotesWithMermaid(t *testing.T) {
 	contentDir := filepath.Join(t.TempDir(), "content")
 	staticDir := filepath.Join(t.TempDir(), "static")
@@ -128,10 +127,10 @@ func TestBuildMarksNotesWithMermaid(t *testing.T) {
 
 	cfg := config.Config{}
 	_, err := Build(Options{
-		Config:       cfg,
-		NotesDir:     filepath.Join(contentDir, "notes"),
-		
-		PublicDir:    publicDir,
+		Config:   cfg,
+		NotesDir: filepath.Join(contentDir, "notes"),
+
+		PublicDir: publicDir,
 	})
 	if err != nil {
 		t.Fatalf("Build returned error: %v", err)
@@ -233,7 +232,7 @@ func TestShareRendering(t *testing.T) {
 		"",
 		"Testing CJK title.",
 	}, "\n"))
-	
+
 	writeTestFile(t, contentDir, "notes/space.md", strings.Join([]string{
 		"---",
 		"title: A Space Title",
@@ -251,9 +250,9 @@ func TestShareRendering(t *testing.T) {
 	cfg.Share.Text = "分享：\"{Title}\""
 
 	_, err := Build(Options{
-		Config:       cfg,
-		NotesDir:     filepath.Join(contentDir, "notes"),
-		PublicDir:    publicDir,
+		Config:    cfg,
+		NotesDir:  filepath.Join(contentDir, "notes"),
+		PublicDir: publicDir,
 	})
 	if err != nil {
 		t.Fatalf("Build returned error: %v", err)
@@ -318,12 +317,12 @@ func TestBuildGraphIdentity(t *testing.T) {
 	}, "\n"))
 
 	cfg := config.Config{}
-	
+
 	_, err := Build(Options{
-		Config:       cfg,
-		ContentDir:   contentDir,
-		NotesDir:     filepath.Join(contentDir, "notes"),
-		PublicDir:    publicDir,
+		Config:     cfg,
+		ContentDir: contentDir,
+		NotesDir:   filepath.Join(contentDir, "notes"),
+		PublicDir:  publicDir,
 	})
 	if err != nil {
 		t.Fatalf("Build returned error: %v", err)
@@ -346,7 +345,7 @@ func TestBuildGraphIdentity(t *testing.T) {
 	if len(graphData.Nodes) != 3 {
 		t.Fatalf("Expected 3 nodes, got %d", len(graphData.Nodes))
 	}
-	
+
 	nodeIDs := make(map[string]bool)
 	for _, n := range graphData.Nodes {
 		if n.ID == "" {
@@ -361,10 +360,74 @@ func TestBuildGraphIdentity(t *testing.T) {
 	if len(graphData.Links) != 1 {
 		t.Fatalf("Expected 1 deduplicated link (A-B), got %d: %v", len(graphData.Links), graphData.Links)
 	}
-	
+
 	link := graphData.Links[0]
-	isAB := (link.Source == "single:zh_CN:a" && link.Target == "single:zh_CN:b") || (link.Source == "single:zh_CN:b" && link.Target == "single:zh_CN:a")
+	isAB := (link.Source == "/notes/a/" && link.Target == "/notes/b/") || (link.Source == "/notes/b/" && link.Target == "/notes/a/")
 	if !isAB {
 		t.Errorf("Expected link A-B, got %s-%s", link.Source, link.Target)
+	}
+}
+
+func TestBuildListsAllLanguageVersionsAndKeepsArticleRoutes(t *testing.T) {
+	vault := t.TempDir()
+	publicDir := filepath.Join(t.TempDir(), "public")
+	writeTestFile(t, vault, "pages/about.md", "---\ntitle: About\n---\nAbout")
+	// The source filenames deliberately share a slug across language versions.
+	// Canonical language paths must keep the two articles distinct.
+	writeTestFile(t, vault, "notes/shared.md", "---\ntitle: 中文标题\ndate: 2026-01-02\nlang: zh_CN\ni18n_key: pair\ntags: [中文标签]\n---\n## 中文章节\n中文正文。")
+	writeTestFile(t, vault, "notes/shared.MD", "---\ntitle: English title\ndate: 2025-12-31\nlang: en_US\ni18n_key: pair\ntags: [English tag]\n---\n## English section\nEnglish article body.")
+	writeTestFile(t, vault, "notes/only.md", "---\ntitle: Chinese only\ndate: 2026-01-01\n---\nChinese only article.")
+	_, err := Build(Options{Config: config.Config{}, ContentDir: vault, NotesDir: filepath.Join(vault, "notes"), PublicDir: publicDir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, prefix := range []string{"", "/en_US"} {
+		list := readPublicAsset(t, publicDir, prefix+"/notes/index.html")
+		if strings.Count(list, "data-note-card") != 3 {
+			t.Fatalf("%s notes should list both versions", prefix)
+		}
+		for _, expected := range []string{`href="/notes/shared/"`, `href="/en_US/notes/shared/"`, "中文标题", "English title"} {
+			if !strings.Contains(list, expected) {
+				t.Errorf("%s notes missing %s", prefix, expected)
+			}
+		}
+		archive := readPublicAsset(t, publicDir, prefix+"/archive/data.json")
+		if !strings.Contains(archive, `"total":3`) || !strings.Contains(archive, "English title") || !strings.Contains(archive, "中文标题") {
+			t.Errorf("%s archive should include both versions: %s", prefix, archive)
+		}
+		for _, tag := range []string{"中文标签", "English-tag"} {
+			if !fileExists(filepath.Join(publicDir, prefix, "tags", tag, "index.html")) {
+				t.Errorf("%s locale missing tag %s from another source language", prefix, tag)
+			}
+		}
+	}
+	chinese := readPublicAsset(t, publicDir, "/notes/shared/index.html")
+	english := readPublicAsset(t, publicDir, "/en_US/notes/shared/index.html")
+	if !strings.Contains(chinese, "中文正文。") || strings.Contains(chinese, "English article body.") {
+		t.Error("Chinese article was replaced by its counterpart")
+	}
+	if !strings.Contains(english, "English article body.") || strings.Contains(english, "中文正文。") {
+		t.Error("English article was replaced by its counterpart")
+	}
+	if !strings.Contains(chinese, `class="bilingual-toggle-btn" href="/en_US/notes/shared/"`) || !strings.Contains(chinese, `href="/notes/shared/?ui=en_US"`) {
+		t.Error("Translation navigation and interface switching must use separate URLs")
+	}
+	if strings.Contains(chinese, "notes-aside-identity") {
+		t.Error("Article sidebar still contains the removed profile identity")
+	}
+	if strings.Index(chinese, `class="note-toc-wrapper"`) < strings.Index(chinese, `class="notes-aside"`) {
+		t.Error("Desktop TOC must be inside the right sidebar")
+	}
+	sitemap := readPublicAsset(t, publicDir, "/sitemap.xml")
+	if strings.Count(sitemap, "<loc>/notes/shared/</loc>") != 1 || strings.Count(sitemap, "<loc>/en_US/notes/shared/</loc>") != 1 {
+		t.Error("Canonical article routes must appear once in the sitemap")
+	}
+	graph := readPublicAsset(t, publicDir, "/graph.json")
+	if !strings.Contains(graph, `"id": "/notes/shared/"`) || !strings.Contains(graph, `"id": "/en_US/notes/shared/"`) {
+		t.Error("Graph must retain both language versions as distinct nodes")
+	}
+	legacy := readPublicAsset(t, publicDir, "/en_US/notes/only/index.html")
+	if !strings.Contains(legacy, `content="noindex"`) || !strings.Contains(legacy, `href="/notes/only/?ui=en_US"`) {
+		t.Error("Legacy UI-language article routes must redirect without changing article text")
 	}
 }

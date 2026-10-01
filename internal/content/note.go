@@ -71,13 +71,12 @@ func LoadNotes(dir string) ([]*ArticleGroup, []string, error) {
 			return fmt.Errorf("计算相对路径 %s: %w", path, err)
 		}
 		rel = filepath.ToSlash(rel)
-		
+
 		slug := strings.TrimSuffix(rel, filepath.Ext(rel))
 
 		if strings.HasPrefix(slug, "page/") || slug == "page" {
 			return fmt.Errorf("\"page\" is reserved for Daybook pagination. Conflict: %s", path)
 		}
-
 
 		note, err := ParseFile(path, slug)
 		if err != nil {
@@ -154,12 +153,16 @@ func Parse(sourcePath, text string, slug string) (Note, error) {
 		return note, nil
 	}
 
-	note.URL = "/notes/" + note.Slug + "/"
-	note.CanonicalPath = "/notes/" + note.Slug + "/"
-
 	if note.Lang == "" {
 		note.Lang = "zh_CN"
 	}
+
+	prefix := ""
+	if note.Lang == "en_US" {
+		prefix = "/en_US"
+	}
+	note.URL = prefix + "/notes/" + note.Slug + "/"
+	note.CanonicalPath = note.URL
 
 	note.WordCount = countWords(note.Body)
 	note.ReadingMinutes = int(math.Max(1, math.Ceil(float64(note.WordCount)/300.0)))
@@ -188,7 +191,7 @@ func splitFrontmatter(text string) (string, string, int, bool) {
 			}
 			body := strings.Join(bodyLines[startLineOffset:], "\n")
 			body = strings.TrimRight(body, " \t\r\n") // Only trim trailing, leading is already handled
-			
+
 			// body starts at line i+2+startLineOffset (1-based index)
 			return strings.Join(lines[1:i], "\n"), body, i + 2 + startLineOffset, true
 		}
@@ -223,7 +226,7 @@ func cleanBody(text string) string {
 
 	reHTML := regexp.MustCompile(`(?s)<.*?>`)
 	text = reHTML.ReplaceAllString(text, "")
-	
+
 	return text
 }
 

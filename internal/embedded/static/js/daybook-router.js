@@ -604,6 +604,9 @@
       const headSelectors = [
         'meta[name="description"]',
         'link[rel="canonical"]',
+        'link[rel="alternate"][hreflang]',
+        'link[rel="alternate"][type="application/rss+xml"]',
+        'script[type="application/ld+json"]',
         'meta[property^="og:"]',
         'meta[name^="twitter:"]'
       ];

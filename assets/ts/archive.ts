@@ -24,14 +24,8 @@
     const dataCache = new Map<string, Promise<ArchiveDataset>>();
 
     function resolveArchiveDataURL(): string {
-        const langStr = document.documentElement.lang;
-        if (langStr && langStr !== "zh_CN") {
-            const pathParts = window.location.pathname.split("/");
-            if (pathParts.length > 1 && pathParts[1] !== "archive") {
-                return `/${pathParts[1]}/archive/data.json`;
-            }
-        }
-        return "/archive/data.json";
+        return window.location.pathname.startsWith("/en_US/")
+            ? "/en_US/archive/data.json" : "/archive/data.json";
     }
 
     function loadArchiveDataset(url: string): Promise<ArchiveDataset> {
@@ -612,6 +606,14 @@
     function initStatsAnimation() {
         const nums = document.querySelectorAll(".archive-stat-num:not(.anim-done)");
         nums.forEach(el => {
+            const startedAt = el.getAttribute("data-started-at");
+            if (startedAt) {
+                const started = Date.parse(startedAt);
+                if (Number.isFinite(started)) {
+                    const days = Math.max(0, Math.floor((Date.now() - started) / 86400000));
+                    el.setAttribute("data-target", String(days));
+                }
+            }
             const targetAttr = el.getAttribute("data-target");
             if (!targetAttr) return;
             const target = parseInt(targetAttr, 10);

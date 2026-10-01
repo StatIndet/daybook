@@ -12,7 +12,7 @@
       anchor.href = "#" + heading.id;
       
       const lang = document.documentElement.lang;
-      if (lang === "en_US") {
+      if (lang.toLowerCase().startsWith("en")) {
         anchor.setAttribute("aria-label", "Link to " + label);
       } else {
         anchor.setAttribute("aria-label", label + " 的永久链接");

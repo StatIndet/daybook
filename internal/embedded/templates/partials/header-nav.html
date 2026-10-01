@@ -1,25 +1,25 @@
 {{define "header_nav"}}
 <header class="site-header">
   <nav class="site-nav" aria-label="主导航">
-    <a class="nav-link" href="{{if eq .Lang "en_US"}}/en{{end}}/">
+    <a class="nav-link" href="{{if eq .Lang "en_US"}}/en_US{{end}}/">
       <span class="nav-icon material-symbol" aria-hidden="true">home</span>
-      <span class="nav-label">{{T .Lang "nav.home"}}</span>
+      <span class="nav-label" data-ui-text="nav.home">{{T .Lang "nav.home"}}</span>
     </a>
-    <a class="nav-link" href="{{if eq .Lang "en_US"}}/en{{end}}/notes/">
+    <a class="nav-link" href="{{if eq .Lang "en_US"}}/en_US{{end}}/notes/">
       <span class="nav-icon material-symbol" aria-hidden="true">article</span>
-      <span class="nav-label">{{T .Lang "nav.notes"}}</span>
+      <span class="nav-label" data-ui-text="nav.notes">{{T .Lang "nav.notes"}}</span>
     </a>
-    <a class="nav-link" href="{{if eq .Lang "en_US"}}/en{{end}}/archive/">
+    <a class="nav-link" href="{{if eq .Lang "en_US"}}/en_US{{end}}/archive/">
       <span class="nav-icon material-symbol" aria-hidden="true">archive</span>
-      <span class="nav-label">{{T .Lang "nav.archive"}}</span>
+      <span class="nav-label" data-ui-text="nav.archive">{{T .Lang "nav.archive"}}</span>
     </a>
-    <a class="nav-link" href="{{if eq .Lang "en_US"}}/en{{end}}/graph/">
+    <a class="nav-link" href="{{if eq .Lang "en_US"}}/en_US{{end}}/graph/">
       <span class="nav-icon material-symbol" aria-hidden="true">account_tree</span>
-      <span class="nav-label">{{T .Lang "nav.graph"}}</span>
+      <span class="nav-label" data-ui-text="nav.graph">{{T .Lang "nav.graph"}}</span>
     </a>
-    <a class="nav-link" href="{{if eq .Lang "en_US"}}/en{{end}}/about/">
+    <a class="nav-link" href="{{if eq .Lang "en_US"}}/en_US{{end}}/about/">
       <span class="nav-icon material-symbol" aria-hidden="true">info</span>
-      <span class="nav-label">{{T .Lang "nav.about"}}</span>
+      <span class="nav-label" data-ui-text="nav.about">{{T .Lang "nav.about"}}</span>
     </a>
     {{template "theme_toggle_header" .}}
   </nav>

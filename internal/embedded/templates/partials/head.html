@@ -12,10 +12,10 @@
   
     {{range .SEO.Alternates}}
   {{if eq .Lang "zh_CN"}}
-  <link rel="alternate" hreflang="zh_CN" href="{{.URL}}">
+  <link rel="alternate" hreflang="zh-CN" href="{{.URL}}">
   <link rel="alternate" hreflang="x-default" href="{{.URL}}">
   {{else}}
-  <link rel="alternate" hreflang="{{.Lang}}" href="{{.URL}}">
+  <link rel="alternate" hreflang="{{if eq .Lang "en_US"}}en-US{{else}}{{.Lang}}{{end}}" href="{{.URL}}">
   {{end}}
   {{end}}
 
@@ -71,7 +71,7 @@
   <script src="{{.Assets.Path "/js/daybook-router.js"}}" defer></script>
   <script src="{{.Assets.Path "/js/katex-loader.js"}}" defer></script>
   <script src="{{.Assets.Path "/js/custom-cursor.js"}}" defer></script>
-  <script src="{{.Assets.Path "/js/note-bilingual.js"}}" defer></script>
+  <script src="{{.Assets.Path "/js/ui-language.js"}}" defer></script>
   <link rel="stylesheet" href="{{.Assets.Path "/vendor/fonts/lxgw-wenkai-screen/regular/result.css"}}">
   <link rel="stylesheet" href="{{.Assets.Path "/vendor/fonts/maple-mono-cn/regular/result.css"}}">
   <link rel="stylesheet" href="{{.Assets.Path "/vendor/fonts/maple-mono-cn/italic/result.css"}}">

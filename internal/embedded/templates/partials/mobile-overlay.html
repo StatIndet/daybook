@@ -4,8 +4,8 @@
 
   <div class="mobile-overlay mobile-tags-overlay" id="mobile-tags-overlay" data-overlay-panel="tags" aria-label="标签筛选">
     <div class="mobile-overlay-header">
-      <h2 class="mobile-overlay-title">标签</h2>
-      <button class="mobile-overlay-close" type="button" aria-label="关闭标签" data-overlay-close>
+      <h2 class="mobile-overlay-title" data-ui-text="action.tags">{{T .Lang "action.tags"}}</h2>
+      <button class="mobile-overlay-close" type="button" aria-label="{{T .Lang "action.close"}}" data-ui-aria="action.close" data-overlay-close>
         <span class="material-symbol" aria-hidden="true">close</span>
       </button>
     </div>
@@ -20,7 +20,7 @@
         {{end}}
       </nav>
       {{else}}
-      <p class="mobile-overlay-empty">暂无标签</p>
+      <p class="mobile-overlay-empty" data-ui-text="tag.empty">{{T .Lang "tag.empty"}}</p>
       {{end}}
     </div>
   </div>
@@ -29,9 +29,9 @@
     <div class="mobile-overlay-header">
       <div class="mobile-search-input-wrapper">
         <span class="material-symbol mobile-search-icon" aria-hidden="true">search</span>
-        <input class="mobile-search-input" type="search" placeholder="搜索：标题/摘要/标签" autocomplete="off" spellcheck="false" aria-label="搜索：标题/摘要/标签" id="mobile-search-input">
+        <input class="mobile-search-input" type="search" placeholder="{{T .Lang "search.placeholder"}}" data-ui-placeholder="search.placeholder" autocomplete="off" spellcheck="false" aria-label="{{T .Lang "action.search"}}" data-ui-aria="action.search" id="mobile-search-input">
       </div>
-      <button class="mobile-overlay-close" type="button" aria-label="关闭搜索" data-overlay-close>
+      <button class="mobile-overlay-close" type="button" aria-label="{{T .Lang "action.close"}}" data-ui-aria="action.close" data-overlay-close>
         <span class="material-symbol" aria-hidden="true">close</span>
       </button>
     </div>
@@ -39,9 +39,9 @@
       <div class="mobile-search-results" id="mobile-search-results">
         <!-- JS 会将结果渲染在这里 -->
       </div>
-      <p class="mobile-overlay-empty mobile-search-empty" id="mobile-search-empty" hidden>没有找到匹配的文章。</p>
+      <p class="mobile-overlay-empty mobile-search-empty" id="mobile-search-empty" data-ui-text="search.empty" hidden>{{T .Lang "search.empty"}}</p>
       <div class="mobile-search-loading" id="mobile-search-loading" hidden>
-        <p>正在加载搜索索引...</p>
+        <p data-ui-text="search.loading">{{T .Lang "search.loading"}}</p>
       </div>
     </div>
   </div>

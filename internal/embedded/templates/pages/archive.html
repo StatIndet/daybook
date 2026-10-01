@@ -1,20 +1,20 @@
 {{define "content"}}
 <div class="notes-page">
   <main class="archive-page" aria-label="归档">
-    <section class="archive-timeline" aria-label="{{T .Lang "nav.archive"}}">
+    <section class="archive-timeline" aria-label="{{T .Lang "nav.archive"}}" data-ui-aria="nav.archive">
       <header class="archive-header">
         <div class="archive-stats">
           <div class="archive-stat-item">
-            <span class="archive-stat-num" data-target="{{.Site.UptimeDays}}">0</span>
-            <span class="archive-stat-unit">{{T .Lang "archive.days"}}</span>
+            <span class="archive-stat-num" data-target="{{.Site.UptimeDays}}" data-started-at="{{.Site.StartedAt}}">{{.Site.UptimeDays}}</span>
+            <span class="archive-stat-unit" data-ui-text="archive.days">{{T .Lang "archive.days"}}</span>
           </div>
           <div class="archive-stat-item">
             <span class="archive-stat-num" data-target="{{.Total}}">0</span>
-            <span class="archive-stat-unit">{{T .Lang "archive.posts"}}</span>
+            <span class="archive-stat-unit" data-ui-text="archive.posts">{{T .Lang "archive.posts"}}</span>
           </div>
           <div class="archive-stat-item">
             <span class="archive-stat-num" data-target="{{.Site.TotalWordCount}}" data-format="k">0</span>
-            <span class="archive-stat-unit">{{T .Lang "archive.words.k"}}</span>
+            <span class="archive-stat-unit" data-ui-text="archive.words.k">{{T .Lang "archive.words.k"}}</span>
           </div>
         </div>
         {{if .Config.Stats.Enabled}}
@@ -62,7 +62,7 @@
               {{end}}
             {{end}}
           {{else}}
-            <p class="archive-empty">{{T .Lang "archive.empty"}}</p>
+            <p class="archive-empty" data-ui-text="archive.empty">{{T .Lang "archive.empty"}}</p>
           {{end}}
         </div>
         <div class="archive-virtual-spacer archive-virtual-spacer-bottom" aria-hidden="true" style="height: 0;"></div>

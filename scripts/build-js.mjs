@@ -24,7 +24,7 @@ const classicEntries = [
   'mermaid-loader',
   'mobile-drawer',
   'mobile-toc',
-  'note-bilingual',
+  'ui-language',
   'note-filters',
   'page-transition-engine',
   'search-engine',

@@ -30,7 +30,7 @@
   width: 220px; /* Increased width */
   height: 430px; /* Increased to fit playlist button without squishing */
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  /* /* overflow: hidden; */ Removed to allow 3D flip without clipping/flattening */
+  /* Overflow remains visible to allow the 3D flip without clipping. */
 
   
   /* Initial hidden state completely off-screen */
@@ -709,5 +709,4 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-playlist-
     display: none !important;
   }
 }
-
 

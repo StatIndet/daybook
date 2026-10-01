@@ -37,6 +37,16 @@ func TestParseNoteRequiresFrontmatter(t *testing.T) {
 	}
 }
 
+func TestEnglishNoteKeepsCanonicalLanguagePath(t *testing.T) {
+	note, err := Parse("shared.md", "---\ntitle: English\ndate: 2026-01-01\nlang: en_US\n---\nEnglish content", "shared")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if note.URL != "/en_US/notes/shared/" || note.CanonicalPath != note.URL {
+		t.Fatalf("English canonical paths = %q, %q", note.URL, note.CanonicalPath)
+	}
+}
+
 func TestParseDraftNote(t *testing.T) {
 	text := `---
 draft: true

@@ -153,3 +153,7 @@ Each `daybook build` requests fresh official GitHub data: name, login, avatar, B
 The GitHub Bio supplies homepage description, Open Graph, Twitter and JSON-LD metadata. Manual author names, avatars, slogans and home SEO values are no longer used for a configured GitHub homepage. The persistent logo and footer preferences remain configurable. A last-successful snapshot in `.daybook-cache/github/` supports offline rebuilds. A first build without accessible upstream data fails with a clear error. Generated `public/github-profile.json` contains only public profile data.
 
 For scheduled updates, use the external vault's Worker with a KV binding and a Cron Trigger. It serves a build snapshot until KV is refreshed, rewrites the homepage HTML and SEO together, and retains the last success during upstream failures. Deployment configuration belongs to the vault, not this CLI source repository.
+
+### Articles and interface language
+
+Chinese and English article versions both appear in Notes, Archive, tags, search and the graph. Each article keeps its canonical URL and original text. The global language button changes the interface; on an article it uses `?ui=zh_CN` or `?ui=en_US`. The separate `translate` icon in article metadata opens the corresponding translation. Existing `/en_US/` URL paths remain unchanged; HTML language and `hreflang` values use BCP 47 (`zh-CN`, `en-US`).

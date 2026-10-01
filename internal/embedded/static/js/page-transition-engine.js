@@ -23,22 +23,14 @@
       let p = cleanPath(url);
       if (p.endsWith("/index.html")) p = p.substring(0, p.length - 11);
       if (p.endsWith("/")) p = p.substring(0, p.length - 1);
-      if (p.startsWith("/en_US/")) {
-        p = "/" + p.substring(4);
-      }
-      if (p.startsWith("/notes/")) {
-        const slug = p.substring(7);
-        if (slug.length > 0) {
-          return decodeURIComponent(slug);
-        }
-      }
+      if (/^(?:\/en_US)?\/notes\/.+/.test(p)) return decodeURIComponent(p) + "/";
       return null;
     }
     function isNotesIndex(url) {
       let p = cleanPath(url);
       if (p.endsWith("/index.html")) p = p.substring(0, p.length - 11);
       if (p.endsWith("/")) p = p.substring(0, p.length - 1);
-      if (p.startsWith("/en_US/")) p = "/" + p.substring(4);
+      if (p.startsWith("/en_US/")) p = "/" + p.substring(7);
       return p === "/notes";
     }
     function articleTransitionInfo(currentUrlStr, targetUrlStr) {

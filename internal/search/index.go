@@ -36,11 +36,14 @@ func BuildIndex(groups []*content.ArticleGroup, estimateReadingTime func(string)
 	var items []IndexItem
 
 	for i, group := range groups {
+		if !group.IsListed() {
+			continue
+		}
 		if onProgress != nil {
 			onProgress(i+1, len(groups))
 		}
 		versions := make(map[string]IndexVersion)
-		hasTranslation := len(group.Versions) > 1
+		hasTranslation := len(group.PublishedVersions()) > 1
 
 		for lang, note := range group.Versions {
 			if note.Draft {
@@ -61,7 +64,7 @@ func BuildIndex(groups []*content.ArticleGroup, estimateReadingTime func(string)
 				tagIDs = append(tagIDs, canonicalID)
 			}
 
-			titleLayoutHTML := morphable.GenerateHTML(note.Title, note.Slug, "title")
+			titleLayoutHTML := morphable.GenerateHTML(note.Title, note.URL, "title")
 
 			versions[lang] = IndexVersion{
 				Title:          note.Title,

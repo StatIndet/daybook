@@ -6,7 +6,7 @@
       <button class="note-toc-toggle" type="button" aria-expanded="true" aria-controls="note-toc-list" aria-label="展开或收起文章目录">
         <span class="material-symbol" aria-hidden="true">menu_open</span>
       </button>
-      <span class="note-toc-title">目录</span>
+      <span class="note-toc-title" data-ui-text="post.toc">{{T .Lang "post.toc"}}</span>
     </div>
     <nav class="note-toc-panel" id="note-toc-list" aria-label="文章目录">
       <div class="note-toc-indicator" aria-hidden="true"></div>
@@ -45,16 +45,16 @@
 {{/* 移动端专用的独立 TOC 结构 */}}
 {{define "mobile-toc"}}
 {{if .Note.Headings}}
-<button class="mobile-toc-fab" data-mobile-toc-fab aria-label="{{if eq .Lang "en_US"}}Open Table of Contents{{else}}打开文章目录{{end}}">
+<button type="button" class="mobile-toc-fab" data-mobile-toc-fab aria-expanded="false" aria-controls="mobile-toc-sheet" aria-label="{{T .Lang "post.toc"}}" data-ui-aria="post.toc">
   <span class="material-symbol">format_list_bulleted</span>
 </button>
 
-<div class="mobile-toc-sheet" data-mobile-toc-sheet aria-hidden="true" inert>
+<div class="mobile-toc-sheet" id="mobile-toc-sheet" data-mobile-toc-sheet aria-hidden="true" inert>
   <div class="mobile-toc-backdrop" data-mobile-toc-backdrop></div>
   <div class="mobile-toc-panel">
     <div class="mobile-toc-drag-handle" data-mobile-toc-drag-handle></div>
     <div class="mobile-toc-header">
-      <span class="note-toc-title">{{if eq .Lang "en_US"}}Table of Contents{{else}}目录{{end}}</span>
+      <span class="note-toc-title" data-ui-text="post.toc">{{T .Lang "post.toc"}}</span>
     </div>
     <nav class="mobile-toc-nav" aria-label="文章目录">
       <div class="note-toc-indicator" data-mobile-toc-indicator aria-hidden="true"></div>

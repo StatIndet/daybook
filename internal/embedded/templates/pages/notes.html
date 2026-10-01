@@ -1,6 +1,6 @@
 {{define "content"}}
 <div class="notes-page">
-  <section class="notes-list article-stage" aria-label="{{T .Lang "nav.notes"}}">
+  <section class="notes-list article-stage" aria-label="{{T .Lang "nav.notes"}}" data-ui-aria="nav.notes">
     
 
     {{if .PinnedNotes}}
@@ -25,11 +25,11 @@
         </div>
       {{end}}
       {{else}}
-      <p class="notes-empty">{{T .Lang "archive.empty"}}</p>
+      <p class="notes-empty" data-ui-text="archive.empty">{{T .Lang "archive.empty"}}</p>
     {{end}}
     {{template "pagination" .}}
     <div class="notes-search-results notes-month-list" hidden></div>
-    <p class="notes-empty notes-filter-empty" hidden>{{T .Lang "search.empty"}}</p>
+    <p class="notes-empty notes-filter-empty" hidden data-ui-text="search.empty">{{T .Lang "search.empty"}}</p>
   </section>
 
   {{template "notes_aside" .}}

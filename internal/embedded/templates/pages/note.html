@@ -25,24 +25,19 @@
     <article class="note" data-has-mermaid="{{if .Note.HasMermaid}}true{{else}}false{{end}}" data-has-math="{{if .Note.HasMath}}true{{else}}false{{end}}">
       <header class="note-header">
         <div class="note-title-wrapper">
-          <a class="note-back-link" href="{{if eq .Lang "en_US"}}/en{{end}}/notes/" aria-label="{{T .Lang "action.back"}}">
+          <a class="note-back-link" href="{{if eq .Lang "en_US"}}/en_US{{end}}/notes/" aria-label="{{T .Lang "action.back"}}" data-ui-aria="action.back">
             <span class="material-symbol" aria-hidden="true">arrow_back</span>
           </a>
           <h1 class="note-title">
-            <span data-title-transition-key="{{.Note.Slug}}">
+            <span data-title-transition-key="{{.Note.URL}}">
               {{.Note.TitleLayout}}
             </span>
           </h1>
-          <button type="button" class="reader-mode-exit" aria-label="{{T .Lang "action.exit_reader"}}" data-tooltip="{{T .Lang "action.exit_reader"}}" data-reader-exit hidden>
+          <button type="button" class="reader-mode-exit" aria-label="{{T .Lang "action.exit_reader"}}" data-ui-aria="action.exit_reader" data-tooltip="{{T .Lang "action.exit_reader"}}" data-ui-tooltip="action.exit_reader" data-reader-exit hidden>
             <span class="material-symbol" aria-hidden="true">exit_to_app</span>
           </button>
         </div>
-        {{if .Note.IsFallback}}
-        <div class="note-fallback-warning">
-          <p>{{T .Lang "post.no_translation"}}</p>
-        </div>
-        {{end}}
-        <div class="article-meta-rows" data-transition-scope="{{.Note.Slug}}">
+        <div class="article-meta-rows" data-transition-scope="{{.Note.URL}}">
           <div class="article-shared-meta">
             {{if .Note.Pin}}<span class="notes-item-pin" aria-hidden="true" title="已固定" data-article-shared="pin"></span>{{end}}
             {{if .Note.HasMusic}}<span class="material-symbol notes-item-music" aria-hidden="true" title="包含音乐" data-article-shared="music">music_note_2</span>{{end}}
@@ -67,20 +62,20 @@
             {{end}}
 
             <span class="meta-stagger-item share-entry">
-              <button type="button" class="share-toggle-btn" aria-label="{{T .Lang "action.share"}}" data-tooltip="{{T .Lang "action.share"}}" data-share-open data-share-title="{{.Note.Title}}" data-share-link="{{.Note.ShareURL}}" data-share-text="{{.Note.ShareText}}">
+              <button type="button" class="share-toggle-btn" aria-label="{{T .Lang "action.share"}}" data-ui-aria="action.share" data-tooltip="{{T .Lang "action.share"}}" data-ui-tooltip="action.share" data-share-open data-share-title="{{.Note.Title}}" data-share-link="{{.Note.ShareURL}}" data-share-text="{{.Note.ShareText}}">
                 <span class="material-symbol" aria-hidden="true">share</span>
               </button>
             </span>
             
             <span class="meta-stagger-item reader-mode-entry">
-              <button type="button" class="reader-mode-toggle" aria-label="{{T .Lang "action.reader"}}" aria-pressed="false" data-tooltip="{{T .Lang "action.reader"}}" data-reader-toggle>
+              <button type="button" class="reader-mode-toggle" aria-label="{{T .Lang "action.reader"}}" data-ui-aria="action.reader" aria-pressed="false" data-tooltip="{{T .Lang "action.reader"}}" data-ui-tooltip="action.reader" data-reader-toggle>
                 <span class="material-symbol" aria-hidden="true">chrome_reader_mode</span>
               </button>
             </span>
 
             {{if .Note.HasTranslation}}
             <span class="meta-stagger-item note-bilingual-wrapper">
-              {{template "bilingual_toggle" .}}
+              {{template "bilingual_toggle" dict "Lang" .Lang "URL" .Note.TranslationURL}}
             </span>
             {{end}}
           </div>
@@ -89,23 +84,15 @@
       </header>
 
       {{if .Note.TocEnabled}}
-      <div class="note-toc-wrapper">
-        <div class="note-sticky-column">
-          {{template "toc" .}}
-        </div>
-      </div>
-      {{end}}
-
-      {{if .Note.TocEnabled}}
       {{template "mobile-toc" .}}
       {{end}}
 
-      <div class="markdown post-content">
+      <div class="markdown post-content" lang="{{if eq .Note.Lang "en_US"}}en-US{{else}}zh-CN{{end}}">
         {{.Note.HTML}}
       </div>
 
       {{if .Note.Tags}}
-      <section class="note-tags" aria-label="{{T .Lang "action.tags"}}">
+      <section class="note-tags" aria-label="{{T .Lang "action.tags"}}" data-ui-aria="action.tags">
         <hr class="note-tags-divider">
         <div class="note-tags-list">
           {{range .Note.Tags}}

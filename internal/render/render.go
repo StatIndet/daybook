@@ -64,6 +64,8 @@ type NoteLink struct {
 }
 
 type NotePage struct {
+	Lang                string
+	TranslationURL      string
 	Title               string
 	Date                string
 	Updated             string
@@ -85,7 +87,6 @@ type NotePage struct {
 	HasMath             bool
 	TocEnabled          bool
 	CommentEnabled      bool
-	IsFallback          bool
 	HasTranslation      bool
 	Pin                 bool
 	HasMusic            bool
@@ -172,8 +173,8 @@ type GoldenSpiral struct {
 }
 
 type IndexData struct {
-	Site         SiteData
 	GitHub       *github.Profile
+	Site         SiteData
 	Config       config.Config
 	PageTitle    string
 	PageKind     string
@@ -194,7 +195,6 @@ type TagLink struct {
 	Index        int
 	ReverseIndex int
 }
-
 
 type PaginationItem struct {
 	PageNumber int
@@ -236,19 +236,19 @@ type MonthGroup struct {
 }
 
 type ArchiveRow struct {
-	Type        string   `json:"type"` // "year" or "note"
-	ID          string   `json:"id"`
-	Year        string   `json:"year,omitempty"`
-	Date        string   `json:"date,omitempty"`
-	DateShort   string   `json:"dateShort,omitempty"`
-	Title       string   `json:"title,omitempty"`
-	ReadingTime string   `json:"readingTime,omitempty"`
-	Summary     string   `json:"summary,omitempty"`
-	URL         string   `json:"url,omitempty"`
-	TagIDs      []string `json:"tagIDs,omitempty"`
-	Index       int      `json:"index,omitempty"`
-    IsLastInYear bool    `json:"isLastInYear,omitempty"`
-	IsFirstYear  bool    `json:"isFirstYear,omitempty"`
+	Type         string   `json:"type"` // "year" or "note"
+	ID           string   `json:"id"`
+	Year         string   `json:"year,omitempty"`
+	Date         string   `json:"date,omitempty"`
+	DateShort    string   `json:"dateShort,omitempty"`
+	Title        string   `json:"title,omitempty"`
+	ReadingTime  string   `json:"readingTime,omitempty"`
+	Summary      string   `json:"summary,omitempty"`
+	URL          string   `json:"url,omitempty"`
+	TagIDs       []string `json:"tagIDs,omitempty"`
+	Index        int      `json:"index,omitempty"`
+	IsLastInYear bool     `json:"isLastInYear,omitempty"`
+	IsFirstYear  bool     `json:"isFirstYear,omitempty"`
 }
 
 type ArchiveData struct {
@@ -791,11 +791,12 @@ func (r Renderer) render(outputPath, pageTemplate string, data any) error {
 			}
 			return strings.Join(parts, ",")
 		},
-		"T": i18n.T,
+		"T":              i18n.T,
+		"uiTranslations": func() template.JS { return template.JS(i18n.JSON()) },
 		"tagURL": func(lang, tag string) template.URL {
 			prefix := ""
 			if lang == "en_US" {
-				prefix = "/en"
+				prefix = "/en_US"
 			}
 			return template.URL(prefix + "/tags/" + seo.TagSlug(tag) + "/")
 		},

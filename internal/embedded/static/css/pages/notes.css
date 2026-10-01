@@ -141,50 +141,6 @@ hr.notes-divider {
   top: 72px;
 }
 
-.notes-aside-identity {
-  
-}
-
-.notes-brand-name {
-  align-items: baseline;
-  display: flex;
-  flex-wrap: wrap;
-  font-weight: normal;
-  gap: 0.25em;
-  line-height: 0.95;
-  margin: 0;
-}
-
-.notes-brand-cn {
-  font-family: var(--font-signature-cn);
-  font-size: clamp(2.2rem, 3vw, 3rem);
-  font-weight: 400;
-  display: inline-block;
-  align-self: baseline;
-  color: var(--color-text);
-}
-
-.notes-brand-cn.use-signature-font {
-  font-family: "ShiZhi", var(--font-signature-cn);
-  font-variant-ligatures: common-ligatures;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-.notes-brand-en {
-  font-family: var(--font-signature-en);
-  font-size: clamp(2rem, 2.7vw, 2.8rem);
-  font-weight: 400;
-}
-
-.notes-brand p {
-  color: var(--color-muted);
-  font-family: var(--font-signature-cn);
-  font-size: clamp(1.1rem, 1.5vw, 1.45rem);
-  line-height: 1.35;
-  margin: 14px 0 0;
-}
-
 .notes-aside-controls {
   margin-top: auto;
   min-width: 0;
@@ -254,10 +210,6 @@ hr.notes-divider {
     margin-top: clamp(2.75rem, 7vw, 4.5rem);
     min-height: auto;
     position: static;
-  }
-
-  .notes-aside-identity {
-    display: none;
   }
 
   .notes-aside-controls {
@@ -392,8 +344,6 @@ hr.notes-divider {
 }
 
 
-.notes-brand-cn { view-transition-name: site-name-cn; }
-.notes-brand-en { view-transition-name: site-name-en; }
 
 /* Pagination */
 .pagination {

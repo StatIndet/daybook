@@ -13,14 +13,10 @@
         return res.json();
       }).then((data) => {
         const flattened = [];
-        const currentLang = document.documentElement.lang || "en_US";
         for (const item of data) {
-          let ver = item.versions[currentLang];
-          if (!ver) {
-            ver = item.versions["zh_CN"] || item.versions["en_US"];
-          }
-          if (ver) {
-            flattened.push(ver);
+          for (const lang of ["zh_CN", "en_US"]) {
+            const version = item.versions[lang];
+            if (version) flattened.push(version);
           }
         }
         return { flattened };

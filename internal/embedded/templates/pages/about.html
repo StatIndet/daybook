@@ -1,5 +1,5 @@
 {{define "content"}}
-<section class="about-page" aria-label="{{T .Lang "about.title"}}">
+<section class="about-page" aria-label="{{T .Lang "about.title"}}" data-ui-aria="about.title">
   {{template "golden_spiral" .}}
 
   <div class="about-content">
@@ -7,7 +7,7 @@
       {{.Title}}
       {{if .HasTranslation}}
       <span class="note-bilingual-wrapper">
-        {{template "bilingual_toggle" .}}
+        {{template "bilingual_toggle" dict "Lang" .Lang "URL" .AlternateURL}}
       </span>
       {{end}}
     </h1>

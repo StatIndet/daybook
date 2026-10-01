@@ -5,6 +5,8 @@
     constructor(fab, sheet, backdrop, panel, dragHandle, tocNav, indicator, listItems, postContent) {
       this.headings = [];
       this.observer = null;
+      this.events = new AbortController();
+      this.previousOverflow = "";
       this.isOpen = false;
       this.lastScrollY = window.scrollY;
       this.activeIndex = -1;
@@ -56,10 +58,12 @@
       this.init();
     }
     init() {
+      document.body.append(this.fab, this.sheet);
+      const signal = this.events.signal;
       this.listItems.forEach((item) => {
         const link = item.querySelector("a");
         if (link) {
-          const id = link.getAttribute("href")?.substring(1);
+          const id = this.headingID(link);
           if (id) {
             const element = document.getElementById(id);
             if (element) {
@@ -68,26 +72,48 @@
           }
         }
       });
-      this.fab.addEventListener("click", () => this.openSheet());
-      this.backdrop.addEventListener("click", () => this.closeSheet());
+      this.fab.addEventListener("click", () => this.openSheet(), { signal });
+      this.backdrop.addEventListener("click", () => this.closeSheet(), { signal });
       this.listItems.forEach((item) => {
         const link = item.querySelector("a");
         link?.addEventListener("click", (e) => {
           e.preventDefault();
-          const id = link.getAttribute("href")?.substring(1);
+          const id = this.headingID(link);
           const target = document.getElementById(id || "");
           if (target) {
-            target.scrollIntoView({ behavior: "smooth" });
             this.closeSheet();
+            requestAnimationFrame(() => {
+              const reduced = document.documentElement.dataset.reducedMotion === "true" || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+              const offset = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--mobile-topbar-height")) || 64;
+              window.scrollTo({ top: Math.max(0, target.getBoundingClientRect().top + window.scrollY - offset - 16), behavior: reduced ? "instant" : "smooth" });
+              const url = new URL(location.href);
+              url.hash = encodeURIComponent(id || "");
+              if (window.daybookReplaceURL) window.daybookReplaceURL(url.href);
+              else history.replaceState(history.state, "", url.href);
+            });
           }
-        });
+        }, { signal });
       });
-      this.dragHandle.addEventListener("touchstart", this.handleTouchStart, { passive: true });
-      document.addEventListener("touchmove", this.handleTouchMove, { passive: false });
-      document.addEventListener("touchend", this.handleTouchEnd);
-      window.addEventListener("scroll", () => this.handleScroll(), { passive: true });
+      this.dragHandle.addEventListener("touchstart", this.handleTouchStart, { passive: true, signal });
+      document.addEventListener("touchmove", this.handleTouchMove, { passive: false, signal });
+      document.addEventListener("touchend", this.handleTouchEnd, { signal });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && this.isOpen) this.closeSheet();
+      }, { signal });
+      window.addEventListener("scroll", () => this.handleScroll(), { passive: true, signal });
       this.setupIntersectionObserver();
       this.handleScroll();
+    }
+    headingID(link) {
+      const hash = link.getAttribute("href")?.slice(1) || "";
+      try {
+        return decodeURIComponent(hash);
+      } catch {
+        return hash;
+      }
+    }
+    isForContent(content) {
+      return this.postContent === content;
     }
     handleScroll() {
       const currentScrollY = window.scrollY;
@@ -104,6 +130,8 @@
       this.sheet.classList.add("is-open");
       this.sheet.removeAttribute("inert");
       this.sheet.setAttribute("aria-hidden", "false");
+      this.fab.setAttribute("aria-expanded", "true");
+      this.previousOverflow = document.body.style.overflow;
       document.body.style.overflow = "hidden";
       this.syncIndicator();
     }
@@ -113,7 +141,8 @@
       this.sheet.classList.remove("is-open");
       this.sheet.setAttribute("inert", "");
       this.sheet.setAttribute("aria-hidden", "true");
-      document.body.style.overflow = "";
+      this.fab.setAttribute("aria-expanded", "false");
+      document.body.style.overflow = this.previousOverflow;
       this.panel.style.transform = "";
     }
     // --- Active Heading Tracking ---
@@ -127,7 +156,7 @@
         threshold: 0
       });
       this.headings.forEach((h) => this.observer?.observe(h.element));
-      window.addEventListener("scroll", () => this.updateActiveHeading(), { passive: true });
+      window.addEventListener("scroll", () => this.updateActiveHeading(), { passive: true, signal: this.events.signal });
       this.updateActiveHeading();
     }
     updateActiveHeading() {
@@ -202,15 +231,16 @@
       });
     }
     destroy() {
+      this.closeSheet();
+      this.events.abort();
       this.observer?.disconnect();
-      window.removeEventListener("scroll", this.handleScroll);
-      this.isOpen = false;
-      document.removeEventListener("touchmove", this.handleTouchMove);
-      document.removeEventListener("touchend", this.handleTouchEnd);
+      this.fab.remove();
+      this.sheet.remove();
     }
   };
   var currentMobileTocController = null;
   function initMobileToc() {
+    if (currentMobileTocController?.isForContent(document.querySelector(".post-content"))) return;
     if (currentMobileTocController) {
       currentMobileTocController.destroy();
       currentMobileTocController = null;
@@ -244,4 +274,8 @@
     initMobileToc();
   }
   document.addEventListener("daybook:page-load", initMobileToc);
+  document.addEventListener("daybook:before-swap", () => {
+    currentMobileTocController?.destroy();
+    currentMobileTocController = null;
+  });
 })();

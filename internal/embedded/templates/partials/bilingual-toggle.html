@@ -1,6 +1,5 @@
 {{define "bilingual_toggle"}}
-<button type="button" class="bilingual-toggle-btn" aria-label="Toggle Bilingual Translation" data-current-lang="{{.Lang}}" data-alt-fragment-url="{{.AlternateURL}}fragment.json">
-  <span class="bilingual-char bilingual-zh">中</span>
-  <span class="bilingual-char bilingual-en">En</span>
-</button>
+<a class="bilingual-toggle-btn" href="{{.URL}}" aria-label="{{T .Lang "post.translation"}}" data-ui-aria="post.translation">
+  <span class="material-symbol" aria-hidden="true">translate</span>
+</a>
 {{end}}

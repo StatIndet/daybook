@@ -2,7 +2,7 @@
 <div class="notes-page">
   <section class="notes-list article-stage" aria-label="{{.PageTitle}}">
     <div class="tag-back-container">
-      <a class="tag-back-btn" aria-label="{{T .Lang "action.back"}}" href="{{if eq .Lang "en_US"}}/en{{end}}/notes/">
+      <a class="tag-back-btn" aria-label="{{T .Lang "action.back"}}" data-ui-aria="action.back" href="{{if eq .Lang "en_US"}}/en_US{{end}}/notes/">
         <span class="material-symbol" aria-hidden="true">arrow_back</span>
       </a>
       <h2 class="tag-back-title">{{.PageTitle}}</h2>
@@ -17,11 +17,11 @@
         </div>
       </div>
     {{else}}
-      <p class="notes-empty">{{T .Lang "archive.empty"}}</p>
+      <p class="notes-empty" data-ui-text="archive.empty">{{T .Lang "archive.empty"}}</p>
     {{end}}
     {{template "pagination" .}}
     <div class="notes-search-results notes-month-list" hidden></div>
-    <p class="notes-empty notes-filter-empty" hidden>{{T .Lang "search.empty"}}</p>
+    <p class="notes-empty notes-filter-empty" hidden data-ui-text="search.empty">{{T .Lang "search.empty"}}</p>
   </section>
 
   {{template "notes_aside" .}}

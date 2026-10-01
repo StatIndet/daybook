@@ -7,13 +7,13 @@
     </svg>
     <span class="note-rc-text" data-desktop-progress-text>0%</span>
   </div>
-  <button class="note-rc-btn back-to-top-btn" type="button" aria-label="回到顶部">
+  <button class="note-rc-btn back-to-top-btn" type="button" aria-label="{{T .Lang "action.top"}}" data-ui-aria="action.top">
     <span class="material-symbol" aria-hidden="true">arrow_upward</span>
-    <span class="note-rc-btn-text">回到顶部</span>
+    <span class="note-rc-btn-text" data-ui-text="action.top">{{T .Lang "action.top"}}</span>
   </button>
-  <button class="note-rc-btn go-to-bottom-btn" type="button" aria-label="前往底部">
+  <button class="note-rc-btn go-to-bottom-btn" type="button" aria-label="{{T .Lang "action.bottom"}}" data-ui-aria="action.bottom">
     <span class="material-symbol" aria-hidden="true">arrow_downward</span>
-    <span class="note-rc-btn-text">前往底部</span>
+    <span class="note-rc-btn-text" data-ui-text="action.bottom">{{T .Lang "action.bottom"}}</span>
   </button>
 </div>
 {{end}}

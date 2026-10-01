@@ -4,7 +4,7 @@ import {
   type ReadingTocRailHeading,
 } from "./toc/reading-toc-rail";
 
-const RAIL_MEDIA_QUERY = "(min-width: 116rem)";
+const RAIL_MEDIA_QUERY = "(min-width: 1200px)";
 const MOTION_MEDIA_QUERY = "(prefers-reduced-motion: reduce)";
 const DEFAULT_ACTIVATION_LINE = 96;
 const DEFAULT_BOTTOM_INSET = 96;
@@ -391,7 +391,7 @@ class NoteTocController {
     });
 
     const url = new URL(window.location.href);
-    url.hash = heading.id;
+    url.hash = encodeURIComponent(heading.id);
     const state = history.state;
     const nextState = state && typeof state === "object"
       ? { ...state, url: url.href }
@@ -492,7 +492,6 @@ class NoteTocController {
     const railRect = this.railRoot.getBoundingClientRect();
     const wrapperRect = this.tocWrapper.getBoundingClientRect();
     const noteRect = this.note.getBoundingClientRect();
-    const sideRailRect = document.querySelector<HTMLElement>(".side-rail")?.getBoundingClientRect() || null;
     const contentTop = layoutDocumentTop(this.postContent);
     const contentHeight = this.postContent.offsetHeight;
     const headerBottom = layoutDocumentTop(this.noteHeader) + this.noteHeader.offsetHeight;
@@ -502,13 +501,11 @@ class NoteTocController {
     const readingTravel = contentHeight - readableViewport;
     const direction = cssNumber(stageStyle, "--reading-toc-rail-direction", 1) < 0 ? -1 : 1;
     const cssEligible = cssNumber(stageStyle, "--reading-toc-rail-eligible", 0) === 1;
-    const sideRailRight = sideRailRect?.right || 0;
-    const hasHorizontalRoom = wrapperRect.left + GEOMETRY_EPSILON >= sideRailRight
-        && wrapperRect.right <= noteRect.left + GEOMETRY_EPSILON;
+    const hasHorizontalRoom = wrapperRect.left + GEOMETRY_EPSILON >= noteRect.right
+        && wrapperRect.right <= window.innerWidth + GEOMETRY_EPSILON;
     const hasVerticalRoom = readableViewport > 0 && railRect.height >= MIN_RAIL_HEIGHT;
     const railEligible = this.railMediaQuery.matches
       && cssEligible
-      && wrapperStyle.position === "absolute"
       && railRect.width >= MIN_RAIL_WIDTH
       && hasHorizontalRoom
       && hasVerticalRoom
@@ -571,7 +568,7 @@ class NoteTocController {
     this.rail.setGeometry(geometry);
 
     const language = (this.postContent.lang || document.documentElement.lang).toLowerCase();
-    const english = language.startsWith("en_US");
+    const english = language.startsWith("en");
     if (!this.railHeadingsReady) {
       const railHeadings: ReadingTocRailHeading[] = this.headings.map((heading) => ({
         id: heading.id,

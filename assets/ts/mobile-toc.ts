@@ -15,6 +15,8 @@ class MobileTocController {
   private readonly postContent: HTMLElement;
   private headings: { element: HTMLElement, id: string }[] = [];
   private observer: IntersectionObserver | null = null;
+  private readonly events = new AbortController();
+  private previousOverflow = "";
   private isOpen = false;
   private lastScrollY: number = window.scrollY;
   private activeIndex = -1;
@@ -50,11 +52,15 @@ class MobileTocController {
   }
   
   private init(): void {
+    // Fixed overlays must live outside animated article containers. Otherwise
+    // their transform creates a containing block and absorbs taps/scrolling.
+    document.body.append(this.fab, this.sheet);
+    const signal = this.events.signal;
     // Collect headings
     this.listItems.forEach(item => {
       const link = item.querySelector("a");
       if (link) {
-        const id = link.getAttribute("href")?.substring(1);
+        const id = this.headingID(link);
         if (id) {
           const element = document.getElementById(id);
           if (element) {
@@ -65,36 +71,57 @@ class MobileTocController {
     });
     
     // Bind events
-    this.fab.addEventListener("click", () => this.openSheet());
-    this.backdrop.addEventListener("click", () => this.closeSheet());
+    this.fab.addEventListener("click", () => this.openSheet(), { signal });
+    this.backdrop.addEventListener("click", () => this.closeSheet(), { signal });
     
     // Smooth scrolling for links
     this.listItems.forEach(item => {
       const link = item.querySelector("a");
       link?.addEventListener("click", (e) => {
         e.preventDefault();
-        const id = link.getAttribute("href")?.substring(1);
+        const id = this.headingID(link);
         const target = document.getElementById(id || "");
         if (target) {
-          target.scrollIntoView({ behavior: "smooth" });
           this.closeSheet();
+          requestAnimationFrame(() => {
+            const reduced = document.documentElement.dataset.reducedMotion === "true"
+              || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            const offset = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--mobile-topbar-height")) || 64;
+            window.scrollTo({ top: Math.max(0, target.getBoundingClientRect().top + window.scrollY - offset - 16), behavior: reduced ? "instant" : "smooth" });
+            const url = new URL(location.href);
+            url.hash = encodeURIComponent(id || "");
+            if (window.daybookReplaceURL) window.daybookReplaceURL(url.href);
+            else history.replaceState(history.state, "", url.href);
+          });
         }
-      });
+      }, { signal });
     });
     
     // Drag to close events
-    this.dragHandle.addEventListener("touchstart", this.handleTouchStart, { passive: true });
-    document.addEventListener("touchmove", this.handleTouchMove, { passive: false });
-    document.addEventListener("touchend", this.handleTouchEnd);
+    this.dragHandle.addEventListener("touchstart", this.handleTouchStart, { passive: true, signal });
+    document.addEventListener("touchmove", this.handleTouchMove, { passive: false, signal });
+    document.addEventListener("touchend", this.handleTouchEnd, { signal });
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && this.isOpen) this.closeSheet();
+    }, { signal });
     
     // Scroll event for FAB
-    window.addEventListener("scroll", () => this.handleScroll(), { passive: true });
+    window.addEventListener("scroll", () => this.handleScroll(), { passive: true, signal });
     
     // Intersection observer for headings
     this.setupIntersectionObserver();
     
     // Initial scroll check
     this.handleScroll();
+  }
+
+  private headingID(link: HTMLAnchorElement): string {
+    const hash = link.getAttribute("href")?.slice(1) || "";
+    try { return decodeURIComponent(hash); } catch { return hash; }
+  }
+
+  public isForContent(content: HTMLElement | null): boolean {
+    return this.postContent === content;
   }
   
   private handleScroll(): void {
@@ -115,6 +142,8 @@ class MobileTocController {
     this.sheet.classList.add("is-open");
     this.sheet.removeAttribute("inert");
     this.sheet.setAttribute("aria-hidden", "false");
+    this.fab.setAttribute("aria-expanded", "true");
+    this.previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden"; // Prevent background scrolling
     this.syncIndicator();
   }
@@ -125,7 +154,8 @@ class MobileTocController {
     this.sheet.classList.remove("is-open");
     this.sheet.setAttribute("inert", "");
     this.sheet.setAttribute("aria-hidden", "true");
-    document.body.style.overflow = "";
+    this.fab.setAttribute("aria-expanded", "false");
+    document.body.style.overflow = this.previousOverflow;
     
     // Reset any drag transforms
     this.panel.style.transform = "";
@@ -186,7 +216,7 @@ class MobileTocController {
     });
     
     this.headings.forEach(h => this.observer?.observe(h.element));
-    window.addEventListener("scroll", () => this.updateActiveHeading(), { passive: true });
+    window.addEventListener("scroll", () => this.updateActiveHeading(), { passive: true, signal: this.events.signal });
     
     // Initial check
     this.updateActiveHeading();
@@ -289,16 +319,11 @@ class MobileTocController {
   }
   
   public destroy(): void {
+    this.closeSheet();
+    this.events.abort();
     this.observer?.disconnect();
-    window.removeEventListener("scroll", this.handleScroll);
-    
-    // We used arrow functions for document touch events, so we can't remove them easily
-    // But we can set a flag so they don't do anything
-    this.isOpen = false; 
-    
-    // Actually we CAN remove them because they are bound to the class methods which are arrow functions
-    document.removeEventListener("touchmove", this.handleTouchMove);
-    document.removeEventListener("touchend", this.handleTouchEnd);
+    this.fab.remove();
+    this.sheet.remove();
   }
 }
 
@@ -306,6 +331,7 @@ let currentMobileTocController: MobileTocController | null = null;
 
 // Initialization
 function initMobileToc(): void {
+  if (currentMobileTocController?.isForContent(document.querySelector<HTMLElement>(".post-content"))) return;
   if (currentMobileTocController) {
     currentMobileTocController.destroy();
     currentMobileTocController = null;
@@ -337,3 +363,7 @@ if (document.readyState === "loading") {
 
 // Hook into page transitions if applicable
 document.addEventListener("daybook:page-load", initMobileToc);
+document.addEventListener("daybook:before-swap", () => {
+  currentMobileTocController?.destroy();
+  currentMobileTocController = null;
+});

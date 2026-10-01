@@ -77,9 +77,13 @@ func Build(options Options) (BuildResult, error) {
 	}
 
 	var allNotes []content.Note
+	canonicalArticleRoutes := make(map[string]bool)
 	for _, group := range groups {
 		for _, note := range group.Versions {
 			allNotes = append(allNotes, *note)
+			if !note.Draft {
+				canonicalArticleRoutes[note.URL] = true
+			}
 		}
 	}
 
@@ -118,20 +122,13 @@ func Build(options Options) (BuildResult, error) {
 	}
 
 	totalWordCount := 0
-	for _, group := range groups {
-		if note, _ := group.SelectVersion("zh_CN"); note != nil && !note.Draft {
-			totalWordCount += note.WordCount
-		} else if note, _ := group.SelectVersion("en_US"); note != nil && !note.Draft {
-			totalWordCount += note.WordCount
-		}
-	}
-
 	startedAt := options.Config.Site.StartedAt
-	if startedAt == "" && len(groups) > 0 {
-		if note, _ := groups[len(groups)-1].SelectVersion("zh_CN"); note != nil {
-			startedAt = note.Date
-		} else if note, _ := groups[len(groups)-1].SelectVersion("en_US"); note != nil {
-			startedAt = note.Date
+	for _, group := range groups {
+		for _, note := range group.PublishedVersions() {
+			totalWordCount += note.WordCount
+			if options.Config.Site.StartedAt == "" && (startedAt == "" || note.Date < startedAt) {
+				startedAt = note.Date
+			}
 		}
 	}
 
@@ -221,7 +218,7 @@ func Build(options Options) (BuildResult, error) {
 	var allDiagnostics []obsidian.Diagnostic
 
 	langs := []string{"zh_CN", "en_US"}
-	totalItems := len(groups) * len(langs)
+	totalItems := len(allNotes) * len(langs)
 	processedItems := 0
 
 	if options.Reporter != nil {
@@ -243,7 +240,6 @@ func Build(options Options) (BuildResult, error) {
 			}
 		}
 
-		var langNotes []content.Note
 		var noteLinks []render.NoteLink
 		var graphNodes []graph.InputNode
 		var graphLinks []graph.InputLink
@@ -251,265 +247,275 @@ func Build(options Options) (BuildResult, error) {
 		tagLinks := collectTagLinksForLang(groups, lang, tagRegistry)
 
 		for _, group := range groups {
-			processedItems++
-			if options.Reporter != nil {
-				options.Reporter.Advance(processedItems)
-			}
-
-			note, isFallback := group.SelectVersion(lang)
-			if note == nil || note.Draft {
-				continue
-			}
-
-			if group.IsListed() {
-				langNotes = append(langNotes, *note)
-			}
-
-			processed := obsidian.Process(note.Body, obsidianIndex, note.SourcePath, note.BodyStartLine)
-			allDiagnostics = append(allDiagnostics, processed.Diagnostics...)
-			document, err := markdown.ToHTMLWithHeadings(processed.Text)
-			if err != nil {
-				return BuildResult{}, fmt.Errorf("处理笔记 %s: %w", note.SourcePath, err)
-			}
-			document.HTML = obsidian.RestoreHTML(document.HTML, processed.HTML)
-			readingTime := estimateReadingTime(note.Body)
-
-			transitionIdentity := group.I18nKey
-			if transitionIdentity == "" {
-				transitionIdentity = note.Slug
-			}
-			titleTransitionName := transitionName("note-title", transitionIdentity)
-			dateTransitionName := transitionName("note-date", transitionIdentity)
-
-			var tagNodes []graph.TagNode
-			var displayTags []string
-			var tagIDs []string
-			seenTags := make(map[string]bool)
-
-			for _, rawTag := range note.Tags {
-				canonicalID := tagRegistry.GetID(rawTag)
-				if seenTags[canonicalID] {
-					continue
+			for _, note := range group.PublishedVersions() {
+				processedItems++
+				if options.Reporter != nil {
+					options.Reporter.Advance(processedItems)
 				}
-				seenTags[canonicalID] = true
 
-				displayTag := tagRegistry.GetTitle(canonicalID)
-				displayTags = append(displayTags, displayTag)
-				tagIDs = append(tagIDs, canonicalID)
-
-				tagNodes = append(tagNodes, graph.TagNode{
-					ID:    "tag:" + canonicalID,
-					Title: displayTag,
-				})
-			}
-
-			tags := displayTags
-
-			var attachmentNodes []graph.AttachmentNode
-			seenAttachments := make(map[string]bool)
-			for _, att := range processed.Attachments {
-				if seenAttachments[att.Name] {
-					continue
+				processed := obsidian.Process(note.Body, obsidianIndex, note.SourcePath, note.BodyStartLine)
+				allDiagnostics = append(allDiagnostics, processed.Diagnostics...)
+				document, err := markdown.ToHTMLWithHeadings(processed.Text)
+				if err != nil {
+					return BuildResult{}, fmt.Errorf("处理笔记 %s: %w", note.SourcePath, err)
 				}
-				seenAttachments[att.Name] = true
-				attachmentNodes = append(attachmentNodes, graph.AttachmentNode{
-					ID:    "attachment:" + att.Name,
-					Title: att.Name,
-					URL:   att.PublicURL,
-				})
-			}
+				document.HTML = obsidian.RestoreHTML(document.HTML, processed.HTML)
+				readingTime := estimateReadingTime(note.Body)
 
-			if group.IsListed() {
-				graphNodes = append(graphNodes, graph.InputNode{
-					ID:          group.Key,
-					Title:       note.Title,
-					URL:         joinURL("/", langPrefix, "notes", note.Slug),
-					Tags:        tagNodes,
-					Attachments: attachmentNodes,
-					Date:        note.Date,
-				})
-
-				for _, link := range processed.Links {
-					targetID := link.Slug
-					if !link.Exists {
-						targetID = link.Target
-					}
-					// We need to resolve target slug to unique Key if possible
-					resolvedID := targetID
-					targetIsListed := true
-					for _, searchGroup := range groups {
-						if targetNote, ok := searchGroup.Versions["zh_CN"]; ok && targetNote.Slug == targetID {
-							resolvedID = searchGroup.Key
-							targetIsListed = searchGroup.IsListed()
-							break
-						}
-						if targetNote, ok := searchGroup.Versions["en_US"]; ok && targetNote.Slug == targetID {
-							resolvedID = searchGroup.Key
-							targetIsListed = searchGroup.IsListed()
-							break
-						}
-					}
-
-					if targetIsListed {
-						graphLinks = append(graphLinks, graph.InputLink{
-							Source: group.Key,
-							Target: resolvedID,
-							Exists: link.Exists,
-						})
-					}
+				transitionIdentity := group.I18nKey
+				if transitionIdentity == "" {
+					transitionIdentity = note.Slug
 				}
-			}
+				titleTransitionName := transitionName("note-title", transitionIdentity)
+				dateTransitionName := transitionName("note-date", transitionIdentity)
 
-			titleLayoutHTML := morphable.GenerateHTML(note.Title, note.Slug, "title")
+				var tagNodes []graph.TagNode
+				var displayTags []string
+				var tagIDs []string
+				seenTags := make(map[string]bool)
 
-			hasTranslation := len(group.Versions) > 1
-
-			noteLink := render.NoteLink{
-				Title:               note.Title,
-				Date:                note.Date,
-				Updated:             note.Updated,
-				Lang:                lang,
-				ReadingTime:         readingTime,
-				ReadingMinutes:      note.ReadingMinutes,
-				Summary:             note.Summary,
-				Tags:                tags,
-				TagIDs:              tagIDs,
-				URL:                 joinURL("/", langPrefix, "notes", note.Slug),
-				Slug:                note.Slug,
-				Pin:                 note.Pin,
-				HasMusic:            note.HasMusic,
-				HasTranslation:      hasTranslation,
-				TitleLayout:         titleLayoutHTML,
-				TitleTransitionName: titleTransitionName,
-				DateTransitionName:  dateTransitionName,
-			}
-
-			if group.IsListed() {
-				noteLinks = append(noteLinks, noteLink)
-			}
-
-			commentEnabled := options.Config.Comment.Waline.ServerURL != ""
-			if note.Comment != nil {
-				commentEnabled = *note.Comment
-			}
-			tocEnabled := true
-			if note.Toc != nil {
-				tocEnabled = *note.Toc
-			}
-
-			altLang := "en_US"
-			if lang == "en_US" {
-				altLang = "zh_CN"
-			}
-			altNote, _ := group.SelectVersion(altLang)
-			altURL := joinURL("/", altLangPrefix, "notes", altNote.Slug)
-
-			outputPath := filepath.Join(langPublicDir, "notes", note.Slug, "index.html")
-			var noteAlternates []seo.Alternate
-			if hasTranslation {
-				for altL, altNote := range group.Versions {
-					if altNote.Draft {
+				for _, rawTag := range note.Tags {
+					canonicalID := tagRegistry.GetID(rawTag)
+					if seenTags[canonicalID] {
 						continue
 					}
-					altPrefix := ""
-					if altL == "en_US" {
-						altPrefix = "/en"
-					}
-					noteAlternates = append(noteAlternates, seo.Alternate{
-						Lang: altL,
-						URL:  joinURL("/", altPrefix, "notes", altNote.Slug),
+					seenTags[canonicalID] = true
+
+					displayTag := tagRegistry.GetTitle(canonicalID)
+					displayTags = append(displayTags, displayTag)
+					tagIDs = append(tagIDs, canonicalID)
+
+					tagNodes = append(tagNodes, graph.TagNode{
+						ID:    "tag:" + canonicalID,
+						Title: displayTag,
 					})
 				}
-			} else {
-				noteAlternates = []seo.Alternate{{Lang: lang, URL: joinURL("/", langPrefix, "notes", note.Slug)}}
-			}
 
-			noteSEOArgs := seo.BuilderArgs{
-				Config:      options.Config,
-				Lang:        lang,
-				Title:       note.Title,
-				Description: note.Summary,
-				PageURL:     joinURL("/", langPrefix, "notes", note.Slug),
-				Published:   note.Date,
-				Modified:    note.Updated,
-				Tags:        displayTags,
-				Alternates:  noteAlternates,
-			}
+				tags := displayTags
 
-			canonicalPath := joinURL("/", langPrefix, "notes", note.Slug)
-			shareURL := strings.TrimSuffix(options.Config.Site.URL, "/") + canonicalPath
-			shareText := strings.ReplaceAll(options.Config.Share.Text, "{Title}", note.Title)
+				var attachmentNodes []graph.AttachmentNode
+				seenAttachments := make(map[string]bool)
+				for _, att := range processed.Attachments {
+					if seenAttachments[att.Name] {
+						continue
+					}
+					seenAttachments[att.Name] = true
+					attachmentNodes = append(attachmentNodes, graph.AttachmentNode{
+						ID:    "attachment:" + att.Name,
+						Title: att.Name,
+						URL:   att.PublicURL,
+					})
+				}
 
-			notePageData := render.NoteData{
-				Site:         siteData,
-				Config:       options.Config,
-				PageTitle:    note.Title,
-				PageKind:     "note",
-				BodyClass:    "note-body page-body",
-				Lang:         lang,
-				AlternateURL: altURL,
-				Assets:       assets,
-				HasMath:      note.Math,
-				Tags:         tagLinks,
-				SEO:          seo.BuildForNote(noteSEOArgs),
-				Note: render.NotePage{
+				if group.IsListed() {
+					graphNodes = append(graphNodes, graph.InputNode{
+						ID:          note.URL,
+						Title:       note.Title,
+						URL:         note.URL,
+						Tags:        tagNodes,
+						Attachments: attachmentNodes,
+						Date:        note.Date,
+					})
+
+					for _, link := range processed.Links {
+						targetID := link.Slug
+						if !link.Exists {
+							targetID = link.Target
+						}
+						// We need to resolve target slug to unique Key if possible
+						resolvedID := targetID
+						targetIsListed := true
+						for _, searchGroup := range groups {
+							if targetNote, ok := searchGroup.Versions["zh_CN"]; ok && targetNote.Slug == targetID {
+								resolvedID = targetNote.URL
+								targetIsListed = searchGroup.IsListed()
+								break
+							}
+							if targetNote, ok := searchGroup.Versions["en_US"]; ok && targetNote.Slug == targetID {
+								resolvedID = targetNote.URL
+								targetIsListed = searchGroup.IsListed()
+								break
+							}
+						}
+
+						if targetIsListed {
+							graphLinks = append(graphLinks, graph.InputLink{
+								Source: note.URL,
+								Target: resolvedID,
+								Exists: link.Exists,
+							})
+						}
+					}
+				}
+
+				titleLayoutHTML := morphable.GenerateHTML(note.Title, note.URL, "title")
+
+				hasTranslation := len(group.PublishedVersions()) > 1
+
+				noteLink := render.NoteLink{
 					Title:               note.Title,
 					Date:                note.Date,
 					Updated:             note.Updated,
+					Lang:                lang,
 					ReadingTime:         readingTime,
-					Summary:             note.Summary,
-					URL:                 noteLink.URL,
-					Slug:                note.Slug,
-					I18nKey:             group.I18nKey,
-					CommentPath:         canonicalPath,
-					Tags:                tags,
-					WordCount:           note.WordCount,
 					ReadingMinutes:      note.ReadingMinutes,
-					CanonicalPath:       canonicalPath,
-					ShareURL:            shareURL,
-					ShareText:           shareText,
-					HTML:                template.HTML(document.HTML),
-					Headings:            renderHeadings(document.Headings),
-					HasMermaid:          document.HasMermaid,
-					HasMath:             note.Math,
-					TocEnabled:          tocEnabled,
-					CommentEnabled:      commentEnabled,
-					IsFallback:          isFallback,
-					HasTranslation:      hasTranslation,
+					Summary:             note.Summary,
+					Tags:                tags,
+					TagIDs:              tagIDs,
+					URL:                 note.URL,
+					Slug:                note.Slug,
 					Pin:                 note.Pin,
 					HasMusic:            note.HasMusic,
+					HasTranslation:      hasTranslation,
 					TitleLayout:         titleLayoutHTML,
 					TitleTransitionName: titleTransitionName,
 					DateTransitionName:  dateTransitionName,
-				},
-			}
+				}
 
-			if err := renderer.RenderNote(outputPath, notePageData); err != nil {
-				return BuildResult{}, fmt.Errorf("生成笔记页面 %s: %w", note.SourcePath, err)
-			}
+				if group.IsListed() {
+					noteLinks = append(noteLinks, noteLink)
+				}
 
-			// Generate lightweight fragment for temporary bilingual translation
-			fragmentPath := filepath.Join(langPublicDir, "notes", note.Slug, "fragment.json")
-			type fragmentData struct {
-				Lang     string           `json:"lang"`
-				Summary  string           `json:"summary"`
-				HTML     string           `json:"html"`
-				Headings []render.Heading `json:"headings"`
-			}
-			frag := fragmentData{
-				Lang:     note.Lang,
-				Summary:  note.Summary,
-				HTML:     string(document.HTML),
-				Headings: renderHeadings(document.Headings),
-			}
-			if b, err := json.Marshal(frag); err == nil {
-				os.WriteFile(fragmentPath, b, 0644)
+				// Article routes follow their source language. The surrounding UI can
+				// switch independently in the browser without replacing the article.
+				if note.Lang != lang {
+					legacyPath := joinURL("/", langPrefix, "notes", note.Slug)
+					if !canonicalArticleRoutes[legacyPath] {
+						target := note.URL + "?ui=" + lang
+						alias := fmt.Sprintf(`<!doctype html><html><head><meta charset="utf-8"><meta name="robots" content="noindex"><link rel="canonical" href="%s"><meta http-equiv="refresh" content="0; url=%s"></head><body><a href="%s">Continue</a></body></html>`, template.HTMLEscapeString(strings.TrimSuffix(options.Config.Site.URL, "/")+note.URL), template.HTMLEscapeString(target), template.HTMLEscapeString(target))
+						aliasPath := filepath.Join(langPublicDir, "notes", note.Slug, "index.html")
+						if err := os.MkdirAll(filepath.Dir(aliasPath), 0755); err != nil {
+							return BuildResult{}, err
+						}
+						if err := os.WriteFile(aliasPath, []byte(alias), 0644); err != nil {
+							return BuildResult{}, fmt.Errorf("生成文章语言界面重定向: %w", err)
+						}
+					}
+					continue
+				}
+
+				commentEnabled := options.Config.Comment.Waline.ServerURL != ""
+				if note.Comment != nil {
+					commentEnabled = *note.Comment
+				}
+				tocEnabled := true
+				if note.Toc != nil {
+					tocEnabled = *note.Toc
+				}
+
+				altLang := "en_US"
+				if lang == "en_US" {
+					altLang = "zh_CN"
+				}
+				translationURL := ""
+				if altNote := group.Versions[altLang]; altNote != nil && !altNote.Draft {
+					translationURL = altNote.URL
+				}
+				altURL := note.URL + "?ui=" + altLang
+
+				outputPath := filepath.Join(langPublicDir, "notes", note.Slug, "index.html")
+				var noteAlternates []seo.Alternate
+				if hasTranslation {
+					for altL, altNote := range group.Versions {
+						if altNote.Draft {
+							continue
+						}
+						altPrefix := ""
+						if altL == "en_US" {
+							altPrefix = "/en_US"
+						}
+						noteAlternates = append(noteAlternates, seo.Alternate{
+							Lang: altL,
+							URL:  joinURL("/", altPrefix, "notes", altNote.Slug),
+						})
+					}
+				} else {
+					noteAlternates = []seo.Alternate{{Lang: lang, URL: joinURL("/", langPrefix, "notes", note.Slug)}}
+				}
+
+				noteSEOArgs := seo.BuilderArgs{
+					Config:      options.Config,
+					Lang:        lang,
+					Title:       note.Title,
+					Description: note.Summary,
+					PageURL:     joinURL("/", langPrefix, "notes", note.Slug),
+					Published:   note.Date,
+					Modified:    note.Updated,
+					Tags:        displayTags,
+					Alternates:  noteAlternates,
+				}
+
+				canonicalPath := joinURL("/", langPrefix, "notes", note.Slug)
+				shareURL := strings.TrimSuffix(options.Config.Site.URL, "/") + canonicalPath
+				shareText := strings.ReplaceAll(options.Config.Share.Text, "{Title}", note.Title)
+
+				notePageData := render.NoteData{
+					Site:         siteData,
+					Config:       options.Config,
+					PageTitle:    note.Title,
+					PageKind:     "note",
+					BodyClass:    "note-body page-body",
+					Lang:         lang,
+					AlternateURL: altURL,
+					Assets:       assets,
+					HasMath:      note.Math,
+					Tags:         tagLinks,
+					SEO:          seo.BuildForNote(noteSEOArgs),
+					Note: render.NotePage{
+						Title:               note.Title,
+						Date:                note.Date,
+						Updated:             note.Updated,
+						ReadingTime:         readingTime,
+						Summary:             note.Summary,
+						URL:                 noteLink.URL,
+						Slug:                note.Slug,
+						I18nKey:             group.I18nKey,
+						CommentPath:         canonicalPath,
+						Tags:                tags,
+						WordCount:           note.WordCount,
+						ReadingMinutes:      note.ReadingMinutes,
+						CanonicalPath:       canonicalPath,
+						ShareURL:            shareURL,
+						ShareText:           shareText,
+						HTML:                template.HTML(document.HTML),
+						Headings:            renderHeadings(document.Headings),
+						HasMermaid:          document.HasMermaid,
+						HasMath:             note.Math,
+						TocEnabled:          tocEnabled,
+						CommentEnabled:      commentEnabled,
+						Lang:                note.Lang,
+						TranslationURL:      translationURL,
+						HasTranslation:      hasTranslation,
+						Pin:                 note.Pin,
+						HasMusic:            note.HasMusic,
+						TitleLayout:         titleLayoutHTML,
+						TitleTransitionName: titleTransitionName,
+						DateTransitionName:  dateTransitionName,
+					},
+				}
+
+				if err := renderer.RenderNote(outputPath, notePageData); err != nil {
+					return BuildResult{}, fmt.Errorf("生成笔记页面 %s: %w", note.SourcePath, err)
+				}
+
 			}
 		}
+
+		// Sorting versions by their own date prevents repeated archive year groups.
+		sort.SliceStable(noteLinks, func(i, j int) bool {
+			if noteLinks[i].Date != noteLinks[j].Date {
+				return noteLinks[i].Date > noteLinks[j].Date
+			}
+			if noteLinks[i].Title != noteLinks[j].Title {
+				return noteLinks[i].Title < noteLinks[j].Title
+			}
+			return noteLinks[i].URL < noteLinks[j].URL
+		})
 
 		indexPath := filepath.Join(langPublicDir, "index.html")
 		homeAlternates := []seo.Alternate{{Lang: "zh_CN", URL: "/"}, {Lang: "en_US", URL: "/en_US/"}}
 		homeSEOArgs := seo.BuilderArgs{
+			GitHub:      githubProfile,
 			Config:      options.Config,
 			Lang:        lang,
 			Title:       options.Config.GetHomeTitle(lang),
@@ -746,24 +752,6 @@ func Build(options Options) (BuildResult, error) {
 
 		aboutPath := filepath.Join(langPublicDir, "about", "index.html")
 
-		aboutFragmentPath := filepath.Join(langPublicDir, "about", "fragment.json")
-		type aboutFragmentData struct {
-			Lang     string           `json:"lang"`
-			Summary  string           `json:"summary"`
-			HTML     string           `json:"html"`
-			Headings []render.Heading `json:"headings"`
-		}
-		aboutFrag := aboutFragmentData{
-			Lang:     lang,
-			Summary:  aboutPage.Summary,
-			HTML:     string(aboutDocument.HTML),
-			Headings: renderHeadings(aboutDocument.Headings),
-		}
-		if b, err := json.Marshal(aboutFrag); err == nil {
-			os.MkdirAll(filepath.Dir(aboutFragmentPath), 0755)
-			os.WriteFile(aboutFragmentPath, b, 0644)
-		}
-
 		var aboutAlternates []seo.Alternate
 		if aboutHasTranslation {
 			aboutAlternates = []seo.Alternate{{Lang: "zh_CN", URL: "/about/"}, {Lang: "en_US", URL: "/en_US/about/"}}
@@ -893,38 +881,15 @@ func Build(options Options) (BuildResult, error) {
 					tagAlternates = []seo.Alternate{{Lang: lang, URL: joinURL(baseTagPath, "page", fmt.Sprintf("%d", p))}}
 				}
 
-				hasAlt := false
-				for _, grp := range groups {
-					var altNote *content.Note
-					if lang == "zh_CN" {
-						if n, ok := grp.Versions["en_US"]; ok {
-							altNote = n
-						}
-					} else if lang == "en_US" {
-						if n, ok := grp.Versions["zh_CN"]; ok {
-							altNote = n
-						}
-					}
-					if altNote != nil {
-						for _, t := range altNote.Tags {
-							if t == tagLink.Name {
-								hasAlt = true
-								break
-							}
-						}
-					}
-					if hasAlt {
-						break
-					}
+				altURL := joinURL("/", altLangPrefix, "tags", seo.TagSlug(tagLink.Name))
+				if p > 1 {
+					altURL = joinURL(altURL, "page", fmt.Sprintf("%d", p))
 				}
-
-				if hasAlt {
-					altURL := joinURL("/", altLangPrefix, "tags", seo.TagSlug(tagLink.Name))
-					if p > 1 {
-						altURL = joinURL(altURL, "page", fmt.Sprintf("%d", p))
-					}
-					tagAlternates = append(tagAlternates, seo.Alternate{Lang: altLangPrefix, URL: altURL})
+				altLang := "en_US"
+				if lang == "en_US" {
+					altLang = "zh_CN"
 				}
+				tagAlternates = append(tagAlternates, seo.Alternate{Lang: altLang, URL: altURL})
 
 				tagSEOArgs := seo.BuilderArgs{
 					Config:      options.Config,
@@ -939,11 +904,6 @@ func Build(options Options) (BuildResult, error) {
 				paginationData := generatePaginationData(len(tagNotes), p, joinURL(langPrefix, "tags", seo.TagSlug(tagLink.Name)))
 				seoData.PaginationPrev = paginationData.PrevURL
 				seoData.PaginationNext = paginationData.NextURL
-
-				altURL := joinURL("/", altLangPrefix, "tags", seo.TagSlug(tagLink.Name))
-				if p > 1 {
-					altURL = joinURL(altURL, "page", fmt.Sprintf("%d", p))
-				}
 
 				tagData := render.TagData{
 					Site:         siteData,
@@ -986,6 +946,9 @@ func Build(options Options) (BuildResult, error) {
 		allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: joinURL("/", langPrefix, "about"), LastMod: aboutLastMod})
 
 		for _, link := range noteLinks {
+			if strings.HasPrefix(link.URL, "/en_US/") != (lang == "en_US") {
+				continue
+			}
 			lastMod := link.Updated
 			if lastMod == "" {
 				lastMod = link.Date
@@ -1182,16 +1145,16 @@ func collectTagLinksForLang(groups []*content.ArticleGroup, lang string, tagRegi
 	seen := make(map[string]bool)
 
 	for _, group := range groups {
-		note, _ := group.SelectVersion(lang)
-		if note == nil || note.Draft {
+		if !group.IsListed() {
 			continue
 		}
-
-		for _, rawTag := range note.Tags {
-			id := tagRegistry.GetID(rawTag)
-			if !seen[id] {
-				seen[id] = true
-				canonicalIDs = append(canonicalIDs, id)
+		for _, note := range group.PublishedVersions() {
+			for _, rawTag := range note.Tags {
+				id := tagRegistry.GetID(rawTag)
+				if !seen[id] {
+					seen[id] = true
+					canonicalIDs = append(canonicalIDs, id)
+				}
 			}
 		}
 	}
@@ -1207,7 +1170,7 @@ func collectTagLinksForLang(groups []*content.ArticleGroup, lang string, tagRegi
 
 	langPrefix := ""
 	if lang == "en_US" {
-		langPrefix = "/en"
+		langPrefix = "/en_US"
 	}
 
 	links := make([]render.TagLink, 0, len(canonicalIDs))
