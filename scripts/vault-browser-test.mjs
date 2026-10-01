@@ -199,14 +199,14 @@ if (fixtures) {
       assert.equal(await page.locator('.github-badge').filter({ hasText: /^Public$/ }).count(), 0);
       const navigation = page.locator('.site-nav .nav-link').first();
       await navigation.hover();
-      await page.waitForFunction(() => getComputedStyle(document.querySelector('.site-nav .nav-link'), '::after').transform === 'matrix(1, 0, 0, 1, 0, 0)');
+      await page.waitForFunction(() => getComputedStyle(document.querySelector('.site-nav .nav-link'), '::after').clipPath === 'inset(0px)');
       const highlight = await navigation.evaluate(element => getComputedStyle(element).color);
       for (const selector of ['.github-repository-heading a', '.github-repository-meta a', '.github-profile-details a', '.github-followers a']) {
         const link = page.locator(selector).first();
         await link.hover();
         await page.waitForFunction(selector => {
           const element = document.querySelector(selector);
-          return getComputedStyle(element, '::before').transform === 'matrix(1, 0, 0, 1, 0, 0)' &&
+          return getComputedStyle(element, '::before').clipPath === 'inset(0px)' &&
             getComputedStyle(element.querySelector('.material-symbol')).fontVariationSettings.includes('"FILL" 1');
         }, selector);
         assert.equal(await link.evaluate(element => getComputedStyle(element).color), highlight);
@@ -230,7 +230,7 @@ if (fixtures) {
       });
       const upstream = page.locator('.github-readme-content a').last();
       await upstream.hover();
-      await page.waitForFunction(() => getComputedStyle(document.querySelector('.github-readme-content a'), '::before').transform === 'matrix(1, 0, 0, 1, 0, 0)');
+      await page.waitForFunction(() => getComputedStyle(document.querySelector('.github-readme-content a'), '::before').clipPath === 'inset(0px)');
       assert.equal(await upstream.evaluate(element => getComputedStyle(element).textDecorationLine), 'none');
       assert.equal(await upstream.evaluate(element => getComputedStyle(element).color), highlight);
       assert.equal(await upstream.getAttribute('title'), null);

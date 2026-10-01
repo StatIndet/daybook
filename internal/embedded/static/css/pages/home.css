@@ -34,9 +34,8 @@
 .github-profile-name > span { display: block; color: var(--color-muted); font-size: 1.2rem; font-weight: 400; margin-top: 5px; }
 .github-profile-bio { font-size: 1.02rem; margin: 0 0 18px; white-space: pre-line; overflow-wrap: anywhere; }
 .github-profile-status { padding: 6px 10px; background: var(--color-accent-soft); border-radius: 10px; margin: 0 0 14px; }
-.github-home a { position: relative; color: inherit; text-decoration: none; transition: color 180ms ease; }
+.github-home a { position: relative; isolation: isolate; color: inherit; text-decoration: none; transition: color 180ms ease; }
 .github-home a:not(:has(img)) { display: inline-block; max-width: 100%; }
-.github-home a:not(:has(img))::before { bottom: -2px; }
 .github-home a:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 4px; }
 .github-home [data-tooltip]::after { content: none; }
 .github-followers { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin: 22px 0; font-size: 0.88rem; color: var(--color-muted); }

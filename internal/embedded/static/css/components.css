@@ -8,6 +8,7 @@
 }
 
 .nav-link {
+  isolation: isolate;
   align-items: center;
   color: var(--color-muted);
   display: inline-flex;
@@ -21,17 +22,26 @@
 }
 
 .nav-link::after,
-.github-home a:not(:has(img))::before {
+.github-home a:not(:has(img))::before,
+.notes-footer-links a::after {
   background: currentColor;
-  bottom: -0.45rem;
+  bottom: 0.06em;
   content: "";
-  height: 1px;
+  height: 0.65em;
   left: 0;
+  opacity: 0;
+  pointer-events: none;
   position: absolute;
-  transform: scaleX(0);
-  transform-origin: center;
-  transition: transform 180ms ease;
+  mask: url("/icons/ui/marker-underline.svg") center / 100% 100% no-repeat;
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 180ms cubic-bezier(0.45, 0, 0.8, 0.35), opacity 140ms ease;
   width: 100%;
+  z-index: -1;
+}
+
+.nav-link::after {
+  left: calc(1.15rem + 0.38rem);
+  width: calc(100% - 1.15rem - 0.38rem);
 }
 
 .nav-link:hover,
@@ -46,8 +56,25 @@
 .nav-link:hover::after,
 .nav-link:focus-visible::after,
 .github-home a:hover::before,
-.github-home a:focus-visible::before {
-  transform: scaleX(1);
+.github-home a:focus-visible::before,
+.notes-footer-links a:hover::after,
+.notes-footer-links a:focus-visible::after {
+  clip-path: inset(0);
+  opacity: 0.26;
+  transition: clip-path 320ms cubic-bezier(0.14, 0.9, 0.26, 1), opacity 100ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-link::after,
+  .github-home a:not(:has(img))::before,
+  .notes-footer-links a::after {
+    transition: none;
+  }
+}
+
+html[data-reduced-motion="true"] :is(.nav-link, .notes-footer-links a)::after,
+html[data-reduced-motion="true"] .github-home a:not(:has(img))::before {
+  transition: none;
 }
 
 .nav-link:hover .nav-icon,
@@ -442,33 +469,16 @@ body.is-tags-overlay-open .mobile-tags-overlay .notes-tag-link {
 }
 
 .notes-footer-links a {
+  isolation: isolate;
   color: var(--color-muted);
   position: relative;
   text-decoration: none;
   transition: color 180ms ease;
 }
 
-.notes-footer-links a::after {
-  background: currentColor;
-  bottom: -2px;
-  content: "";
-  height: 1px;
-  left: 0;
-  position: absolute;
-  transform: scaleX(0);
-  transform-origin: center;
-  transition: transform 180ms ease;
-  width: 100%;
-}
-
 .notes-footer-links a:hover,
 .notes-footer-links a:focus-visible {
   color: var(--color-hover-text);
-}
-
-.notes-footer-links a:hover::after,
-.notes-footer-links a:focus-visible::after {
-  transform: scaleX(1);
 }
 
 .footer-separator {
