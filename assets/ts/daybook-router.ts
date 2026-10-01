@@ -1,5 +1,6 @@
 import { initSiteStats, initSiteUptime } from "./site-stats";
 import { initSitePresence } from "./site-presence";
+import { initHomeTooltips } from "./home-tooltips";
 
 interface RouterState {
   __daybook: boolean;
@@ -58,6 +59,7 @@ interface DaybookTransitionFinishedDetail {
   }
 
   function initRouter() {
+    initHomeTooltips();
     syncGitHubAvatar(document);
     if (!isRouterState(history.state)) {
       history.replaceState({

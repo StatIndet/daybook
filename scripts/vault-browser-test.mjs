@@ -191,6 +191,78 @@ if (fixtures) {
     });
   }
 
+  await run('home: shared link motion and unclipped tooltips across SPA navigation', async () => {
+    const { page, context, errors } = await createPage({ width: 1440, height: 1000 });
+    try {
+      await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
+      assert.equal(await page.locator('.github-repositories h2').count(), 0);
+      assert.equal(await page.locator('.github-badge').filter({ hasText: /^Public$/ }).count(), 0);
+      const navigation = page.locator('.site-nav .nav-link').first();
+      await navigation.hover();
+      await page.waitForFunction(() => getComputedStyle(document.querySelector('.site-nav .nav-link'), '::after').transform === 'matrix(1, 0, 0, 1, 0, 0)');
+      const highlight = await navigation.evaluate(element => getComputedStyle(element).color);
+      for (const selector of ['.github-repository-heading a', '.github-repository-meta a', '.github-profile-details a', '.github-followers a']) {
+        const link = page.locator(selector).first();
+        await link.hover();
+        await page.waitForFunction(selector => {
+          const element = document.querySelector(selector);
+          return getComputedStyle(element, '::before').transform === 'matrix(1, 0, 0, 1, 0, 0)' &&
+            getComputedStyle(element.querySelector('.material-symbol')).fontVariationSettings.includes('"FILL" 1');
+        }, selector);
+        assert.equal(await link.evaluate(element => getComputedStyle(element).color), highlight);
+      }
+      const stars = page.locator('.github-repository-meta a').first();
+      await stars.focus();
+      await page.waitForFunction(() => document.querySelector('#home-tooltip')?.classList.contains('is-visible'));
+      assert.equal(await page.locator('#home-tooltip').textContent(), 'Stars');
+      assert.equal(await stars.getAttribute('aria-describedby'), 'home-tooltip');
+      await page.keyboard.press('Escape');
+      assert.equal(await stars.getAttribute('aria-describedby'), null);
+
+      // Native upstream titles use the same tooltip; values remain plain text.
+      await page.evaluate(() => {
+        const link = document.createElement('a');
+        link.href = '#readme';
+        link.textContent = 'README link';
+        link.title = '<img src=x onerror=alert(1)> & tooltip';
+        document.querySelector('.github-readme-content').append(link);
+        document.dispatchEvent(new Event('daybook:page-load'));
+      });
+      const upstream = page.locator('.github-readme-content a').last();
+      await upstream.hover();
+      await page.waitForFunction(() => getComputedStyle(document.querySelector('.github-readme-content a'), '::before').transform === 'matrix(1, 0, 0, 1, 0, 0)');
+      assert.equal(await upstream.evaluate(element => getComputedStyle(element).textDecorationLine), 'none');
+      assert.equal(await upstream.evaluate(element => getComputedStyle(element).color), highlight);
+      assert.equal(await upstream.getAttribute('title'), null);
+      assert.equal(await page.locator('#home-tooltip').textContent(), '<img src=x onerror=alert(1)> & tooltip');
+      assert.equal(await page.locator('#home-tooltip img').count(), 0);
+
+      const day = page.locator('.github-calendar-day').last();
+      await day.hover();
+      // Scroll events queued by hover's scrollIntoView must not dismiss the hint.
+      await page.evaluate(() => document.querySelector('.github-calendar-scroll').dispatchEvent(new Event('scroll')));
+      await page.waitForFunction(() => getComputedStyle(document.querySelector('#home-tooltip')).opacity === '1');
+      assert.equal(await day.getAttribute('title'), null);
+      assert.equal(await page.locator('#home-tooltip').textContent(), await day.getAttribute('data-tooltip'));
+      const tooltip = await page.locator('#home-tooltip').boundingBox();
+      const calendar = await page.locator('.github-calendar-scroll').boundingBox();
+      assert.ok(tooltip.x >= 8 && tooltip.x + tooltip.width <= 1440 - 8);
+      assert.ok(tooltip.y >= 8 && tooltip.y + tooltip.height <= 1000 - 8);
+      assert.ok(tooltip.y >= calendar.y + calendar.height || tooltip.y + tooltip.height <= calendar.y + calendar.height, 'tooltip must escape the scrolling calendar');
+      await page.screenshot({ path: path.join(outputDir, 'home-tooltip.png') });
+      assert.equal(await page.locator('#home-tooltip.is-visible').count(), 1);
+      await navigate(page, '/notes/', 'notes');
+      assert.equal(await page.locator('#home-tooltip.is-visible').count(), 0);
+      await page.goBack();
+      await settled(page, 'home');
+      await page.locator('.github-calendar-day').first().hover();
+      assert.equal(await page.locator('#home-tooltip.is-visible').count(), 1);
+      assert.equal(await page.locator('#home-tooltip').count(), 1);
+      assert.deepEqual(errors, []);
+      return { tooltip, sharedHoverColor: highlight };
+    } finally { await context.close(); }
+  });
+
   await run('desktop UI language, counterpart and avatar snapshot transitions', async () => {
     const { page, context, errors } = await createPage({ width: 1440, height: 1000 });
     try {

@@ -97,6 +97,7 @@
     "target",
     "title",
     "toc",
+    "tooltip",
     "topic",
     "transform",
     "translate",
@@ -112,5 +113,5 @@
     }
   },
   "originalBytes": 5347060,
-  "subsetBytes": 12740
+  "subsetBytes": 12812
 }

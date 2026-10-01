@@ -20,7 +20,8 @@
   transition: color 180ms ease;
 }
 
-.nav-link::after {
+.nav-link::after,
+.github-home a:not(:has(img))::before {
   background: currentColor;
   bottom: -0.45rem;
   content: "";
@@ -35,18 +36,25 @@
 
 .nav-link:hover,
 .nav-link:focus-visible,
+.github-home a:hover,
+.github-home a:focus-visible,
 .site-logo:hover,
 .site-logo:focus-visible {
   color: var(--color-hover-text);
 }
 
 .nav-link:hover::after,
-.nav-link:focus-visible::after {
+.nav-link:focus-visible::after,
+.github-home a:hover::before,
+.github-home a:focus-visible::before {
   transform: scaleX(1);
 }
 
 .nav-link:hover .nav-icon,
-.nav-link:focus-visible .nav-icon {
+.nav-link:focus-visible .nav-icon,
+.github-home a:hover .material-symbol,
+.github-home a:focus-visible .material-symbol {
+  color: inherit;
   font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
 }
 
@@ -93,11 +101,15 @@
 }
 
 [data-tooltip]::after {
+  content: attr(data-tooltip);
+}
+
+[data-tooltip]::after,
+.floating-tooltip {
   background: var(--color-tooltip-bg);
   border-radius: 8px;
   top: calc(100% + 9px);
   color: var(--color-tooltip-text);
-  content: attr(data-tooltip);
   font-family: var(--font-ui);
   font-size: 0.72rem;
   left: 50%;
@@ -116,21 +128,36 @@
 }
 
 [data-tooltip]:hover::after,
-[data-tooltip]:focus-visible::after {
+[data-tooltip]:focus-visible::after,
+.floating-tooltip.is-visible {
   opacity: 1;
   clip-path: inset(0 0 0 0 round 8px);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-tooltip]::after {
+  [data-tooltip]::after,
+  .floating-tooltip {
     clip-path: none !important;
     transition: opacity 160ms ease !important;
   }
 }
 
-html[data-reduced-motion="true"] [data-tooltip]::after {
+html[data-reduced-motion="true"] [data-tooltip]::after,
+html[data-reduced-motion="true"] .floating-tooltip {
   clip-path: none !important;
   transition: opacity 160ms ease !important;
+}
+
+.floating-tooltip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  transform: none;
+  max-width: calc(100vw - 16px);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+  z-index: 2100;
 }
 
 .notes-action-button:hover,
