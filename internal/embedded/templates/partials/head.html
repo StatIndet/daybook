@@ -53,31 +53,39 @@
       } catch (e) {}
     })();
   </script>
-  <script src="{{.Assets.Path "/js/code-copy.js"}}" defer></script>
-  <script src="{{.Assets.Path "/js/toc.js"}}" defer></script>
-  <script src="{{.Assets.Path "/js/mobile-toc.js"}}" defer></script>
-  <script src="{{.Assets.Path "/js/heading-anchors.js"}}" defer></script>
+  {{if or (eq .PageKind "note") (eq .PageKind "about")}}
+  <script src="{{.Assets.Path "/js/code-copy.js"}}" data-daybook-page-script defer></script>
+  <script src="{{.Assets.Path "/js/toc.js"}}" data-daybook-page-script defer></script>
+  <script src="{{.Assets.Path "/js/mobile-toc.js"}}" data-daybook-page-script defer></script>
+  <script src="{{.Assets.Path "/js/heading-anchors.js"}}" data-daybook-page-script defer></script>
+  <script src="{{.Assets.Path "/js/lightbox.js"}}" data-daybook-page-script defer></script>
+  <script src="{{.Assets.Path "/js/mermaid-loader.js"}}" data-daybook-page-script defer></script>
+  <script src="{{.Assets.Path "/js/gallery.js"}}" data-daybook-page-script defer></script>
+  <script src="{{.Assets.Path "/js/embeds.js"}}" data-daybook-page-script defer></script>
+  <script src="{{.Assets.Path "/js/katex-loader.js"}}" data-daybook-page-script defer></script>
+  {{end}}
   <script src="{{.Assets.Path "/js/search-engine.js"}}" defer></script>
-  <script src="{{.Assets.Path "/js/note-filters.js"}}" defer></script>
-  <script src="{{.Assets.Path "/js/archive.js"}}" defer></script>
-  <script src="{{.Assets.Path "/js/lightbox.js"}}" defer></script>
-  <script src="{{.Assets.Path "/js/mermaid-loader.js"}}" defer></script>
-  <script src="{{.Assets.Path "/js/gallery.js"}}" defer></script>
-  <script src="{{.Assets.Path "/js/embeds.js"}}" defer></script>
+  {{if or (eq .PageKind "notes") (eq .PageKind "tag")}}
+  <script src="{{.Assets.Path "/js/note-filters.js"}}" data-daybook-page-script defer></script>
+  {{end}}
+  {{if eq .PageKind "archive"}}
+  <script src="{{.Assets.Path "/js/archive.js"}}" data-daybook-page-script defer></script>
+  {{end}}
   <script src="{{.Assets.Path "/js/page-transition-engine.js"}}" defer></script>
   <script src="{{.Assets.Path "/js/graph-loader.js"}}" defer></script>
   <script src="{{.Assets.Path "/js/mobile-drawer.js"}}" defer></script>
   <script src="{{.Assets.Path "/js/search-overlay.js"}}" defer></script>
   <script src="{{.Assets.Path "/js/daybook-router.js"}}" defer></script>
-  <script src="{{.Assets.Path "/js/katex-loader.js"}}" defer></script>
   <script src="{{.Assets.Path "/js/custom-cursor.js"}}" defer></script>
   <script src="{{.Assets.Path "/js/ui-language.js"}}" defer></script>
-  <link rel="stylesheet" href="{{.Assets.Path "/vendor/fonts/lxgw-wenkai-screen/regular/result.css"}}">
-  <link rel="stylesheet" href="{{.Assets.Path "/vendor/fonts/maple-mono-cn/regular/result.css"}}">
-  <link rel="stylesheet" href="{{.Assets.Path "/vendor/fonts/maple-mono-cn/italic/result.css"}}">
+  <link rel="stylesheet" data-daybook-style="fonts" href="{{.Assets.Path "/vendor/fonts/lxgw-wenkai-screen/regular/result.css"}}">
   <link rel="stylesheet" href="{{.Assets.Path "/vendor/fonts/noto-serif-sc/wght.css"}}">
-  <link rel="stylesheet" href="{{.Assets.Path "/css/decorative-fonts.css"}}">
-  <link rel="stylesheet" href="{{.Assets.Path "/css/global.css"}}">
+  <link rel="stylesheet" data-daybook-style="common" href="{{.Assets.Path "/css/bundles/common.css"}}">
+  {{if eq .PageKind "home"}}
+  <link rel="stylesheet" data-daybook-style="home" href="{{.Assets.Path "/css/bundles/home.css"}}">
+  {{else}}
+  <link rel="stylesheet" data-daybook-style="pages" href="{{.Assets.Path "/css/bundles/pages.css"}}">
+  {{end}}
   {{if .HasMath}}
   <link rel="stylesheet" href="{{.Assets.Path "/vendor/katex/katex.min.css"}}">
   {{end}}

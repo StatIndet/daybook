@@ -157,3 +157,7 @@ For scheduled updates, use the external vault's Worker with a KV binding and a C
 ### Articles and interface language
 
 Chinese and English article versions both appear in Notes, Archive, tags, search and the graph. Each article keeps its canonical URL and original text. The global language button changes the interface; on an article it uses `?ui=zh_CN` or `?ui=en_US`. The separate `translate` icon in article metadata opens the corresponding translation. Existing `/en_US/` URL paths remain unchanged; HTML language and `hreflang` values use BCP 47 (`zh-CN`, `en-US`).
+
+### Asset builds
+
+`npm run build:js` also builds flattened common, homepage and other-page CSS bundles. The router waits for destination styles before swapping pages, and loads article modules on demand. Code fonts are requested when code is present. Material Symbols are subset from template, TypeScript and Go callout sources; their `FILL` axis remains variable. The original settings paper lives in `assets/images/` and `npm run build:images` generates a WebP requested only when a settings or share panel opens. CSS, scripts, fonts and their dependent resources receive content-hash names; `_headers` uses immutable caching for those names and revalidation for HTML and unversioned resources.

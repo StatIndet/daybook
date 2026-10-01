@@ -12,14 +12,15 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/StatIndet/daybook/internal/render"
 	"github.com/StatIndet/daybook/internal/embedded"
+	"github.com/StatIndet/daybook/internal/render"
 	"io/fs"
 )
 
 const assetHashLength = 10
 
 var cssImportRulePattern = regexp.MustCompile(`(?i)@import\s+[^;]+;`)
+var cssURLPattern = regexp.MustCompile(`(?i)url\(\s*(?:"([^"\r\n]*)"|'([^'\r\n]*)'|([^\)\s]*))\s*\)`)
 
 type assetBuilder struct {
 	staticDir     string
@@ -41,6 +42,17 @@ func buildAssets(staticDir, publicDir string) (render.Assets, error) {
 		return render.Assets{}, err
 	}
 	for _, webPath := range cssFiles {
+		if _, err := builder.processCSSAsset(webPath); err != nil {
+			return render.Assets{}, err
+		}
+	}
+	// Vendor CSS contains @font-face declarations for the existing CJK shards.
+	// Hash their URLs as well so font updates invalidate the cached stylesheet.
+	vendorCSS, err := findAssetFiles(staticDir, "vendor", ".css")
+	if err != nil {
+		return render.Assets{}, err
+	}
+	for _, webPath := range vendorCSS {
 		if _, err := builder.processCSSAsset(webPath); err != nil {
 			return render.Assets{}, err
 		}
@@ -157,6 +169,10 @@ func (builder *assetBuilder) processCSSAsset(webPath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	rewritten, err = builder.rewriteCSSURLs(rewritten, webPath)
+	if err != nil {
+		return "", err
+	}
 
 	fingerprintedPath := fingerprintedAssetPath(webPath, rewritten)
 	if err := writePublicAsset(builder.publicDir, fingerprintedPath, rewritten); err != nil {
@@ -165,6 +181,58 @@ func (builder *assetBuilder) processCSSAsset(webPath string) (string, error) {
 
 	builder.manifest[webPath] = fingerprintedPath
 	return fingerprintedPath, nil
+}
+
+func (builder *assetBuilder) rewriteCSSURLs(content []byte, currentWebPath string) ([]byte, error) {
+	var rewriteErr error
+	rewritten := cssURLPattern.ReplaceAllStringFunc(string(content), func(rule string) string {
+		if rewriteErr != nil {
+			return rule
+		}
+		match := cssURLPattern.FindStringSubmatch(rule)
+		assetURL := match[1] + match[2] + match[3]
+		if assetURL == "" || strings.HasPrefix(assetURL, "#") || isExternalAssetPath(assetURL) {
+			return rule
+		}
+		assetPath, suffix, _ := strings.Cut(assetURL, "?")
+		if suffix != "" {
+			suffix = "?" + suffix
+		}
+		assetPath, fragment, _ := strings.Cut(assetPath, "#")
+		if fragment != "" {
+			suffix = "#" + fragment + suffix
+		}
+		webPath, local := resolveImportedAssetPath(currentWebPath, assetPath)
+		if !local || path.Ext(webPath) == "" {
+			return rule
+		}
+		fingerprinted, ok := builder.manifest[webPath]
+		if !ok {
+			// Custom vault assets are copied separately; leave those URLs intact.
+			asset, err := fs.ReadFile(embedded.FS, builder.sourcePath(webPath))
+			if os.IsNotExist(err) {
+				return rule
+			}
+			if err != nil {
+				rewriteErr = fmt.Errorf("读取 CSS 引用资源 %s: %w", webPath, err)
+				return rule
+			}
+			if strings.EqualFold(path.Ext(webPath), ".css") {
+				fingerprinted, rewriteErr = builder.processCSSAsset(webPath)
+			} else {
+				fingerprinted = fingerprintedAssetPath(webPath, asset)
+				rewriteErr = writePublicAsset(builder.publicDir, fingerprinted, asset)
+				if rewriteErr == nil {
+					builder.manifest[webPath] = fingerprinted
+				}
+			}
+			if rewriteErr != nil {
+				return rule
+			}
+		}
+		return `url("` + fingerprinted + suffix + `")`
+	})
+	return []byte(rewritten), rewriteErr
 }
 
 func (builder *assetBuilder) processJSAsset(webPath string) (string, error) {
@@ -336,7 +404,9 @@ func fingerprintedAssetPath(webPath string, content []byte) string {
 	baseName := strings.TrimSuffix(path.Base(webPath), extension)
 	sum := sha256.Sum256(content)
 	hash := hex.EncodeToString(sum[:])[:assetHashLength]
-	return path.Join(path.Dir(webPath), baseName+"."+hash+extension)
+	// Keep content-addressed files separate from unversioned vendor/vault files.
+	// A single cache rule can then safely mark only this namespace immutable.
+	return path.Join("/immutable", path.Dir(webPath), baseName+"."+hash+extension)
 }
 
 func writePublicAsset(publicDir, webPath string, content []byte) error {
@@ -400,7 +470,7 @@ func copyEmbeddedDirFiltered(sourceDir, targetDir string, skip func(string, fs.D
 		if err != nil {
 			return err
 		}
-		
+
 		relativePath := path
 		if path == sourceDir {
 			relativePath = "."
@@ -414,7 +484,7 @@ func copyEmbeddedDirFiltered(sourceDir, targetDir string, skip func(string, fs.D
 			}
 			return nil
 		}
-		
+
 		if relativePath == "." {
 			return nil
 		}

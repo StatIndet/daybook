@@ -1,0 +1,308 @@
+import assert from 'node:assert/strict';
+import { mkdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { chromium } from 'playwright';
+
+// Optional integration checks against an actual external vault. check.sh keeps
+// using its own portable fixture and never depends on this user's notes.
+const baseURL = process.env.DAYBOOK_TEST_BASE_URL || process.argv[2] || 'http://127.0.0.1:1415';
+const outputDir = process.env.DAYBOOK_TEST_OUTPUT_DIR || '/tmp/daybook-vault-browser';
+const testFilter = process.env.DAYBOOK_TEST_FILTER && new RegExp(process.env.DAYBOOK_TEST_FILTER);
+const fixtureTitles = {
+  toc: process.env.DAYBOOK_TEST_TOC_TITLE || 'Markdown、Obsidian 与 Daybook 语法',
+  zh: process.env.DAYBOOK_TEST_ZH_TITLE || '静夜思',
+  en: process.env.DAYBOOK_TEST_EN_TITLE || 'Thoughts in a Quiet Night',
+};
+await mkdir(outputDir, { recursive: true });
+const browser = await chromium.launch({ headless: true });
+const results = [];
+const failures = [];
+
+async function createPage(viewport, mobile = false) {
+  const context = await browser.newContext({ viewport, deviceScaleFactor: 1, isMobile: mobile, hasTouch: mobile });
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.route('**/api/hit', route => {
+    const data = route.request().postDataJSON();
+    return route.fulfill({ json: { path: data.path, pageViews: 1, totalViews: 1, visitors: 1 } });
+  });
+  await page.routeWebSocket('**/api/presence*', socket => {
+    const sendPresence = pathname => socket.send(JSON.stringify({ type: 'presence', path: pathname, pageViewers: 1, siteViewers: 1 }));
+    sendPresence(new URL(socket.url()).searchParams.get('path') || '/');
+    socket.onMessage(message => { try { sendPresence(JSON.parse(String(message)).path || '/'); } catch {} });
+  });
+  await page.addInitScript(() => {
+    window.__daybookTransitions = [];
+    const avatar = () => {
+      const element = document.querySelector('[data-site-avatar]');
+      if (!element) return null;
+      const rect = element.getBoundingClientRect();
+      return { name: getComputedStyle(element).viewTransitionName, x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+    };
+    if (document.startViewTransition) {
+      const original = document.startViewTransition.bind(document);
+      document.startViewTransition = update => {
+        const record = { oldURL: location.href, oldAvatar: avatar() };
+        window.__daybookTransitions.push(record);
+        return original(async () => {
+          await update();
+          record.newURL = location.href;
+          record.newAvatar = avatar();
+        });
+      };
+    }
+    const NativeDate = Date;
+    let offset = 0;
+    window.Date = class extends NativeDate {
+      constructor(...arguments_) { super(...(arguments_.length ? arguments_ : [NativeDate.now() + offset])); }
+      static now() { return NativeDate.now() + offset; }
+    };
+    window.__daybookAdvanceDay = () => { offset += 86400000; };
+  });
+  return { page, context, errors };
+}
+
+async function settled(page, pageKind) {
+  if (pageKind) await page.waitForFunction(kind => document.body.dataset.pageKind === kind, pageKind);
+  await page.waitForFunction(() => !document.documentElement.classList.contains('is-transitioning'));
+  await page.evaluate(() => document.fonts.ready);
+}
+
+async function navigate(page, pathname, kind) {
+  await page.evaluate(route => window.daybookNavigateTo(route), pathname);
+  await page.waitForFunction(route => location.pathname === route, pathname);
+  await settled(page, kind);
+}
+
+async function noteLinks(page) {
+  return page.locator('.notes-item-title a').evaluateAll(links => links.map(link => ({
+    title: link.textContent.replace(/\s+/g, ' ').trim(),
+    path: new URL(link.href).pathname,
+  })));
+}
+
+async function saveHomeScreenshots(page, mobile = false) {
+  const device = mobile ? 'mobile' : 'desktop';
+  await page.screenshot({ path: path.join(outputDir, `home-${device}-full.png`), fullPage: true });
+  await page.screenshot({ path: `/tmp/daybook-home-${device}.png` });
+}
+
+async function run(name, callback) {
+  if (testFilter && !name.startsWith('discover ') && !testFilter.test(name)) return;
+  try { results.push({ name, ...(await callback()), passed: true }); console.log(`PASS ${name}`); }
+  catch (error) { failures.push({ name, error: error.stack }); console.error(`FAIL ${name}: ${error.message}`); }
+}
+
+let fixtures;
+await run('discover canonical bilingual fixtures', async () => {
+  const { page, context, errors } = await createPage({ width: 1440, height: 1000 });
+  try {
+    await page.goto(`${baseURL}/notes/`, { waitUntil: 'networkidle' });
+    const links = await noteLinks(page);
+    fixtures = Object.fromEntries(Object.entries(fixtureTitles).map(([key, title]) => {
+      const link = links.find(link => link.title === title);
+      assert.ok(link, `Missing fixture '${title}'; override DAYBOOK_TEST_${key.toUpperCase()}_TITLE for another vault`);
+      return [key, link.path];
+    }));
+    assert.ok(fixtures.zh.startsWith('/notes/'));
+    assert.ok(fixtures.en.startsWith('/en_US/notes/'));
+    await navigate(page, '/en_US/notes/', 'notes');
+    const englishLinks = await noteLinks(page);
+    assert.deepEqual(englishLinks.map(link => link.path).sort(), links.map(link => link.path).sort(), 'UI locale must show the same set of article versions');
+    assert.deepEqual(errors, []);
+    return { fixtures, listedVersions: links.length };
+  } finally { await context.close(); }
+});
+
+if (fixtures) {
+  await run('home mobile 390: bounded page and avatar', async () => {
+    const { page, context, errors } = await createPage({ width: 390, height: 844 }, true);
+    try {
+      await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
+      await settled(page, 'home');
+      await saveHomeScreenshots(page, true);
+      const dimensions = await page.evaluate(() => {
+        const image = document.querySelector('.hero-avatar');
+        const nav = document.querySelector('.site-nav').getBoundingClientRect();
+        return { documentWidth: document.documentElement.scrollWidth, viewportWidth: innerWidth, navHeight: nav.height, avatarLoaded: image.complete && image.naturalWidth > 0, avatarPriority: image.fetchPriority };
+      });
+      assert.ok(dimensions.documentWidth <= dimensions.viewportWidth + 1, `Mobile homepage overflows horizontally: ${JSON.stringify(dimensions)}`);
+      assert.ok(dimensions.avatarLoaded, 'GitHub avatar did not load');
+      assert.equal(dimensions.avatarPriority, 'high');
+      assert.deepEqual(errors, []);
+      return dimensions;
+    } finally { await context.close(); }
+  });
+
+  for (const width of [1280, 1440, 2560]) {
+    await run(`desktop ${width}: TOC position and identity removal`, async () => {
+      const { page, context, errors } = await createPage({ width, height: 1000 });
+      try {
+        await page.goto(`${baseURL}${fixtures.toc}`, { waitUntil: 'networkidle' });
+        await settled(page, 'note');
+        assert.equal(await page.locator('.notes-brand, .notes-aside-identity, .hero-name').count(), 0, 'Old sidebar identity must be removed');
+        assert.equal(await page.locator('.post-content .note-toc, .note article > .note-toc').count(), 0, 'TOC must never interrupt article content');
+        const layout = await page.evaluate(() => {
+          const body = document.querySelector('.post-content').getBoundingClientRect();
+          const toc = document.querySelector('.note-toc').getBoundingClientRect();
+          const aside = document.querySelector('.notes-aside').getBoundingClientRect();
+          return { article: { x: body.x, right: body.right, y: body.y, width: body.width }, toc: { x: toc.x, y: toc.y, width: toc.width, height: toc.height }, aside: { x: aside.x, y: aside.y } };
+        });
+        await page.screenshot({ path: path.join(outputDir, `article-${width}.png`) });
+        assert.ok(layout.toc.width > 0, 'Desktop TOC must be visible');
+        assert.ok(layout.toc.x >= layout.article.right - 2, `TOC is not to article's right: ${JSON.stringify(layout)}`);
+        assert.ok(layout.toc.y < layout.article.y + 300, `TOC appears below article: ${JSON.stringify(layout)}`);
+        assert.deepEqual(errors, []);
+        return layout;
+      } finally { await context.close(); }
+    });
+  }
+
+  for (const width of [961, 1100]) {
+    await run(`compact ${width}: accessible TOC and fragment roundtrip`, async () => {
+      const { page, context, errors } = await createPage({ width, height: 1000 });
+      try {
+        await page.goto(`${baseURL}${fixtures.toc}`, { waitUntil: 'networkidle' });
+        await settled(page, 'note');
+        assert.equal(await page.locator('.note-toc-wrapper').isVisible(), false, 'Compact viewport should expose one TOC entry point');
+        await page.locator('[data-mobile-toc-fab]').click();
+        await page.waitForFunction(() => document.querySelector('[data-mobile-toc-sheet]').classList.contains('is-open'));
+        const box = await page.locator('.mobile-toc-panel').boundingBox();
+        assert.ok(box.height <= 1000 * 0.85 + 2, 'Compact TOC exceeds viewport cap');
+        const link = page.locator('[data-mobile-toc-sheet] nav a').nth(5);
+        const id = decodeURIComponent((await link.getAttribute('href')).slice(1));
+        await link.click();
+        await page.waitForFunction(expected => {
+          const heading = document.getElementById(expected);
+          const top = heading.getBoundingClientRect().top;
+          return decodeURIComponent(location.hash.slice(1)) === expected && top >= 0 && top < innerHeight / 2;
+        }, id);
+        assert.notEqual(await page.evaluate(() => document.body.style.overflow), 'hidden');
+        assert.deepEqual(errors, []);
+        return { tocSheetHeight: box.height, heading: id };
+      } finally { await context.close(); }
+    });
+  }
+
+  await run('desktop UI language, counterpart and avatar snapshot transitions', async () => {
+    const { page, context, errors } = await createPage({ width: 1440, height: 1000 });
+    try {
+      await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
+      await saveHomeScreenshots(page);
+      assert.equal(await page.locator('.site-nav .lang-toggle').getAttribute('href'), '/en_US/');
+      await page.locator('.site-nav .lang-toggle').click();
+      await page.waitForFunction(() => location.pathname === '/en_US/');
+      await settled(page, 'home');
+      const notes = page.locator('.site-nav a[href="/en_US/notes/"]');
+      assert.equal(await notes.count(), 1, 'English Home must link /en_US/notes/');
+      await notes.click();
+      await page.waitForFunction(() => location.pathname === '/en_US/notes/');
+      await settled(page, 'notes');
+      assert.equal(new URL(page.url()).pathname, '/en_US/notes/');
+      await navigate(page, fixtures.zh, 'note');
+      const before = { title: await page.locator('.note-title').textContent(), text: await page.locator('.post-content').textContent(), path: new URL(page.url()).pathname };
+      const oldLocale = await page.locator('html').getAttribute('lang');
+      await page.locator('.notes-footer-actions .lang-toggle').click();
+      await page.waitForFunction(old => document.documentElement.lang !== old, oldLocale);
+      assert.equal(await page.locator('.note-title').textContent(), before.title);
+      assert.equal(await page.locator('.post-content').textContent(), before.text, 'UI switch changed article content');
+      assert.equal(new URL(page.url()).pathname, before.path, 'UI switch changed article route');
+      assert.ok(new URL(page.url()).searchParams.has('ui'));
+      const counterpart = page.locator('.bilingual-toggle-btn');
+      assert.equal(await counterpart.getAttribute('href'), fixtures.en);
+      assert.equal(await counterpart.locator('.material-symbol').textContent(), 'translate');
+      await counterpart.click();
+      await page.waitForFunction(expected => location.pathname === expected, fixtures.en);
+      await settled(page, 'note');
+      assert.equal(new URL(page.url()).pathname, fixtures.en);
+      assert.notEqual(await page.locator('.post-content').textContent(), before.text, 'Counterpart did not change article text');
+      await page.goBack();
+      await page.waitForFunction(expected => location.pathname === expected, fixtures.zh);
+      await settled(page, 'note');
+      assert.equal(await page.locator('.post-content').textContent(), before.text);
+      await page.goForward();
+      await page.waitForFunction(expected => location.pathname === expected, fixtures.en);
+      await settled(page, 'note');
+      const transitions = await page.evaluate(() => window.__daybookTransitions);
+      assert.ok(transitions.length >= 4, 'SPA transitions were not invoked');
+      const homeToNotes = transitions.find(transition => new URL(transition.oldURL).pathname === '/en_US/' && new URL(transition.newURL).pathname === '/en_US/notes/');
+      assert.ok(homeToNotes?.oldAvatar && homeToNotes?.newAvatar, 'Avatar snapshot source or target missing');
+      assert.equal(homeToNotes.oldAvatar.name, 'site-avatar');
+      assert.equal(homeToNotes.newAvatar.name, 'site-avatar');
+      assert.ok(Math.abs(homeToNotes.oldAvatar.width - homeToNotes.newAvatar.width) > 20, 'Avatar size transition was lost');
+      assert.deepEqual(errors, []);
+      return { transitions: transitions.length, avatar: homeToNotes };
+    } finally { await context.close(); }
+  });
+
+  await run('mobile 390: TOC tap, scroll unlock and bounded sheets', async () => {
+    const { page, context, errors } = await createPage({ width: 390, height: 844 }, true);
+    try {
+      await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
+      await saveHomeScreenshots(page, true);
+      await navigate(page, fixtures.toc, 'note');
+      await page.screenshot({ path: path.join(outputDir, 'article-mobile.png') });
+      const fab = page.locator('[data-mobile-toc-fab]');
+      const sheet = page.locator('[data-mobile-toc-sheet]');
+      await fab.tap();
+      await page.waitForFunction(() => document.querySelector('[data-mobile-toc-sheet]').classList.contains('is-open'));
+      assert.equal(await fab.getAttribute('aria-expanded'), 'true');
+      const box = await page.locator('.mobile-toc-panel').boundingBox();
+      assert.ok(box.height <= 844 * 0.85 + 2, `TOC sheet exceeds 85% of viewport: ${box.height}`);
+      assert.equal(await page.evaluate(() => document.body.style.overflow), 'hidden');
+      await page.screenshot({ path: path.join(outputDir, 'toc-mobile-open.png') });
+      const links = sheet.locator('nav a');
+      const targetLink = links.nth(Math.floor(await links.count() / 2));
+      const targetID = decodeURIComponent((await targetLink.getAttribute('href')).slice(1));
+      const before = await page.evaluate(id => document.getElementById(id).getBoundingClientRect().top + scrollY, targetID);
+      assert.ok(before > 200, 'Fixture heading is not far enough down to test scrolling');
+      await targetLink.tap();
+      await page.waitForFunction(id => {
+        const target = document.getElementById(id);
+        const top = target.getBoundingClientRect().top;
+        return decodeURIComponent(location.hash.slice(1)) === id && top >= 0 && top < innerHeight / 2 && scrollY > 100;
+      }, targetID);
+      assert.equal(await fab.getAttribute('aria-expanded'), 'false');
+      assert.equal(await sheet.getAttribute('aria-hidden'), 'true');
+      assert.notEqual(await page.evaluate(() => document.body.style.overflow), 'hidden', 'TOC tap left body locked');
+      const scrollBefore = await page.evaluate(() => scrollY);
+      await page.mouse.wheel(0, 300);
+      await page.waitForFunction(previous => scrollY > previous + 50, scrollBefore);
+      await navigate(page, '/notes/', 'notes');
+      assert.equal(await page.locator('[data-mobile-toc-sheet]').count(), 0, 'SPA cleanup left old article sheet');
+      await page.locator('#mobile-menu-toggle').tap();
+      await page.locator('#drawer-tags-btn').tap();
+      await page.waitForFunction(() => document.body.classList.contains('is-tags-overlay-open'));
+      const tagsBox = await page.locator('#mobile-tags-overlay').boundingBox();
+      assert.ok(tagsBox.height <= 844 * 0.85 + 2, `Tags sheet exceeds viewport cap: ${tagsBox.height}`);
+      await page.locator('#mobile-tags-overlay [data-overlay-close]').tap();
+      await page.waitForFunction(() => !document.body.classList.contains('is-mobile-scroll-locked'));
+      assert.notEqual(await page.evaluate(() => document.body.style.overflow), 'hidden');
+      assert.deepEqual(errors, []);
+      return { tocSheetHeight: box.height, tagsSheetHeight: tagsBox.height, heading: targetID };
+    } finally { await context.close(); }
+  });
+
+  await run('archive uptime advances after one day without rebuilding', async () => {
+    const { page, context, errors } = await createPage({ width: 1440, height: 1000 });
+    try {
+      await page.goto(`${baseURL}/archive/`, { waitUntil: 'networkidle' });
+      const counter = page.locator('.archive-stat-num[data-started-at]');
+      const initial = Number(await counter.getAttribute('data-target'));
+      assert.ok(initial > 3, `Archive uptime remained stale: ${initial}`);
+      await page.waitForFunction(expected => Number(document.querySelector('.archive-stat-num[data-started-at]').textContent.replaceAll(',', '')) === expected, initial);
+      await page.evaluate(() => window.__daybookAdvanceDay());
+      await navigate(page, '/notes/', 'notes');
+      await navigate(page, '/archive/', 'archive');
+      await page.waitForFunction(expected => Number(document.querySelector('.archive-stat-num[data-started-at]').textContent.replaceAll(',', '')) === expected, initial + 1);
+      assert.equal(Number(await counter.getAttribute('data-target')), initial + 1);
+      assert.deepEqual(errors, []);
+      return { initialDays: initial, followingDay: initial + 1 };
+    } finally { await context.close(); }
+  });
+}
+
+await browser.close();
+await writeFile(path.join(outputDir, 'results.json'), JSON.stringify({ baseURL, results, failures }, null, 2) + '\n');
+if (failures.length) process.exitCode = 1;

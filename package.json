@@ -12,8 +12,10 @@
     "build:vendor": "npm run build:vendor-fonts && npm run build:vendor-katex && npm run build:vendor-waline",
     "test:reading-rail": "node --test test/reading-toc-rail.test.mjs",
     "typecheck": "tsc --noEmit",
-    "build:js": "node scripts/build-js.mjs",
-    "watch:js": "node scripts/build-js.mjs --watch"
+    "build:js": "npm run build:css && npm run build:images && node scripts/build-js.mjs",
+    "watch:js": "node scripts/build-js.mjs --watch",
+    "build:css": "node scripts/build-css.mjs",
+    "build:images": "node scripts/build-images.mjs"
   },
   "devDependencies": {
     "@chinese-fonts/maple-mono-cn": "^2.0.0",
@@ -23,10 +25,13 @@
     "@fontsource/fraunces": "^5.3.0",
     "@waline/client": "^3.15.2",
     "esbuild": "^0.28.2",
+    "fontkit": "^2.0.4",
     "katex": "^0.18.4",
     "lxgw-wenkai-screen-web": "^1.522.0",
     "material-symbols": "^0.46.0",
     "playwright": "^1.62.1",
+    "sharp": "^0.35.5",
+    "subset-font": "^2.9.0",
     "typescript": "^7.0.2"
   }
 }

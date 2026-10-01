@@ -1,6 +1,7 @@
 import { cp, copyFile, mkdir, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildMaterialSymbols } from './build-material-symbols.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -49,11 +50,7 @@ await copyDirClean(
   path.join(root, "internal", "embedded", "static", "vendor", "fonts", "maple-mono-cn", "italic"),
 );
 
-// Copy Material Symbols Rounded
-await copyFileClean(
-  path.join(root, "node_modules", "material-symbols", "material-symbols-rounded.woff2"),
-  path.join(root, "internal", "embedded", "static", "vendor", "fonts", "material-symbols", "material-symbols-rounded.woff2"),
-);
+await buildMaterialSymbols(root);
 
 // Copy Fraunces (Italic)
 await copyFileClean(

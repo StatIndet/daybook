@@ -1,8 +1,26 @@
-/css/*
+/immutable/*
   Cache-Control: public, max-age=31536000, immutable
 
-/js/*
-  Cache-Control: public, max-age=31536000, immutable
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*/
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/vendor/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/images/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/assets-manifest.json
+  Cache-Control: public, max-age=0, must-revalidate
+
+/github-profile.json
+  Cache-Control: public, max-age=0, must-revalidate
 
 /*
-  Cache-Control: public, max-age=0, must-revalidate
+  X-Content-Type-Options: nosniff

@@ -24,13 +24,13 @@ const classicEntries = [
   'mermaid-loader',
   'mobile-drawer',
   'mobile-toc',
-  'ui-language',
   'note-filters',
   'page-transition-engine',
   'search-engine',
   'search-overlay',
   'theme',
-  'toc'
+  'toc',
+  'ui-language'
 ].map(name => path.join(root, 'assets', 'ts', `${name}.ts`));
 
 const moduleEntries = [
@@ -45,7 +45,7 @@ const commonOptions = {
   outdir: path.join(root, 'internal', 'embedded', 'static', 'js'),
   bundle: true,
   sourcemap: isWatch ? 'inline' : false,
-  minify: false, // temporarily disabled to avoid regression
+  minify: !isWatch,
   target: ['es2020'],
   external: ['/vendor/*'],
   logLevel: 'info',

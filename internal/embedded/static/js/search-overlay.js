@@ -1,165 +1,18 @@
-"use strict";
-(() => {
-  // assets/ts/search-overlay.ts
-  (() => {
-    function getMobileInput() {
-      return document.getElementById("mobile-search-input");
-    }
-    function getMobileResults() {
-      return document.getElementById("mobile-search-results");
-    }
-    function getMobileEmpty() {
-      return document.getElementById("mobile-search-empty");
-    }
-    function getMobileLoading() {
-      return document.getElementById("mobile-search-loading");
-    }
-    function getOriginalContent() {
-      return document.querySelector(".page-content") || document.querySelector(".archive-virtual-list");
-    }
-    function getDesktopContainer() {
-      return document.querySelector(".global-search-results-container");
-    }
-    function isNotesPage() {
-      return Boolean(document.querySelector(".notes-list:not(.global-search-results-container)"));
-    }
-    function isGraphPage() {
-      return window.location.pathname.startsWith("/graph");
-    }
-    function renderNoteCard(item, keyword) {
-      const engine = window.daybookSearchEngine;
-      if (!engine) return "";
-      const titleHtml = engine.highlightMatches(item.title, keyword);
-      const summaryHtml = item.summary ? `<p class="notes-item-summary">${engine.highlightMatches(item.summary, keyword)}</p>` : "";
-      let indicators = "";
-      if (item.pin) indicators += `<span class="notes-item-pin" aria-hidden="true" title="\u5DF2\u56FA\u5B9A" data-article-shared="pin"></span>`;
-      if (item.hasMusic) indicators += `<span class="material-symbol notes-item-music" aria-hidden="true" title="\u5305\u542B\u97F3\u4E50" data-article-shared="music">music_note_2</span>`;
-      if (item.hasTranslation) indicators += `<span class="material-symbol notes-item-bilingual" aria-hidden="true" title="\u53CC\u8BED" data-article-shared="bilingual">translate</span>`;
-      let meta = `<time datetime="${item.date}" data-article-shared="published">${item.date}</time>
-      <span class="reading-time" data-article-shared="reading">${item.readingMinutes} min</span>`;
-      if (item.updated) {
-        meta += ` <span class="updated-time" data-article-shared="updated">&bull; updated <time datetime="${item.updated}">${item.updated}</time></span>`;
-      }
-      const hasTitleMatch = keyword && titleHtml !== engine.escapeHTML(item.title);
-      const titleLayout = keyword && hasTitleMatch ? titleHtml : item.titleLayout || titleHtml;
-      return `
+"use strict";(()=>{(()=>{function f(){return document.getElementById("mobile-search-input")}function u(){return document.getElementById("mobile-search-results")}function d(){return document.getElementById("mobile-search-empty")}function E(){return document.getElementById("mobile-search-loading")}function y(){return document.querySelector(".page-content")||document.querySelector(".archive-virtual-list")}function b(){return document.querySelector(".global-search-results-container")}function m(){return!!document.querySelector(".notes-list:not(.global-search-results-container)")}function L(){return window.location.pathname.startsWith("/graph")}function h(e,t){let n=window.daybookSearchEngine;if(!n)return"";let i=n.highlightMatches(e.title,t),o=e.summary?`<p class="notes-item-summary">${n.highlightMatches(e.summary,t)}</p>`:"",s="";e.pin&&(s+='<span class="notes-item-pin" aria-hidden="true" title="\u5DF2\u56FA\u5B9A" data-article-shared="pin"></span>'),e.hasMusic&&(s+='<span class="material-symbol notes-item-music" aria-hidden="true" title="\u5305\u542B\u97F3\u4E50" data-article-shared="music">music_note_2</span>'),e.hasTranslation&&(s+='<span class="material-symbol notes-item-bilingual" aria-hidden="true" title="\u53CC\u8BED" data-article-shared="bilingual">translate</span>');let a=`<time datetime="${e.date}" data-article-shared="published">${e.date}</time>
+      <span class="reading-time" data-article-shared="reading">${e.readingMinutes} min</span>`;e.updated&&(a+=` <span class="updated-time" data-article-shared="updated">&bull; updated <time datetime="${e.updated}">${e.updated}</time></span>`);let l=t&&i!==n.escapeHTML(e.title),c=t&&l?i:e.titleLayout||i;return`
 <article class="notes-item" data-note-card>
-  <div class="notes-item-header" data-transition-scope="${engine.escapeHTML(item.url)}">
+  <div class="notes-item-header" data-transition-scope="${n.escapeHTML(e.url)}">
     <h1 class="notes-item-title">
-      <a href="${item.url}" data-title-transition-key="${engine.escapeHTML(item.url)}">
-        ${titleLayout}
+      <a href="${e.url}" data-title-transition-key="${n.escapeHTML(e.url)}">
+        ${c}
       </a>
     </h1>
     <div class="notes-item-indicators">
-      ${indicators}
+      ${s}
     </div>
     <p class="notes-item-meta">
-      ${meta}
+      ${a}
     </p>
   </div>
-  ${summaryHtml}
-</article>`;
-    }
-    async function applyGlobalSearchUI() {
-      const engine = window.daybookSearchEngine;
-      if (!engine) return;
-      const query = engine.getCurrentQuery();
-      const mobileInput = getMobileInput();
-      if (mobileInput && mobileInput.value !== query) {
-        mobileInput.value = query;
-      }
-      if (query && mobileInput) {
-        const ctx = engine.getCollectionContext();
-        const results = await engine.searchNotes(query, ctx.tagSlug);
-        const resultsContainer = getMobileResults();
-        const emptyState = getMobileEmpty();
-        if (resultsContainer) {
-          resultsContainer.innerHTML = results.map((item) => renderNoteCard(item, query)).join("");
-        }
-        if (emptyState) {
-          emptyState.hidden = results.length > 0;
-        }
-      } else {
-        const resultsContainer = getMobileResults();
-        const emptyState = getMobileEmpty();
-        if (resultsContainer) resultsContainer.innerHTML = "";
-        if (emptyState) emptyState.hidden = true;
-      }
-      if (isNotesPage() || isGraphPage()) return;
-      const originalContent = getOriginalContent();
-      const desktopContainer = getDesktopContainer();
-      document.querySelectorAll("[data-notes-search]:not(.mobile-search-input)").forEach((inputEl) => {
-        const input = inputEl;
-        if (input.value !== query) input.value = query;
-      });
-      if (query) {
-        if (originalContent) originalContent.hidden = true;
-        if (desktopContainer) {
-          desktopContainer.hidden = false;
-          const ctx = engine.getCollectionContext();
-          const results = await engine.searchNotes(query, ctx.tagSlug);
-          if (results.length === 0) {
-            const emptyText = document.documentElement.lang.toLowerCase().startsWith("en") ? "No results found" : "\u6CA1\u6709\u627E\u5230\u5339\u914D\u7684\u6587\u7AE0\u3002";
-            desktopContainer.innerHTML = '<div class="notes-month"><div class="notes-month-list"><p class="notes-empty">' + emptyText + "</p></div></div>";
-          } else {
-            desktopContainer.innerHTML = '<div class="notes-month"><div class="notes-month-list">' + results.map((item) => renderNoteCard(item, query)).join("") + "</div></div>";
-          }
-        }
-      } else {
-        if (originalContent) originalContent.hidden = false;
-        if (desktopContainer) {
-          desktopContainer.hidden = true;
-          desktopContainer.innerHTML = "";
-        }
-      }
-    }
-    let debounceTimer;
-    function handleInputEvent(input, isMobile) {
-      const engine = window.daybookSearchEngine;
-      if (!engine) return;
-      clearTimeout(debounceTimer);
-      debounceTimer = window.setTimeout(() => {
-        const query = input.value.trim();
-        engine.updateSearchURL(query);
-        applyGlobalSearchUI();
-      }, 150);
-    }
-    document.addEventListener("input", function(event) {
-      const target = event.target;
-      if (!target) return;
-      if (target.id === "mobile-search-input") {
-        handleInputEvent(target, true);
-      } else {
-        const input = target.closest("[data-notes-search]:not(.mobile-search-input)");
-        if (input) {
-          if (!isNotesPage()) {
-            handleInputEvent(input, false);
-          }
-        }
-      }
-    });
-    document.addEventListener("focusin", function(event) {
-      const target = event.target;
-      if (!target) return;
-      if (target.closest("[data-notes-search]")) {
-        const engine = window.daybookSearchEngine;
-        if (engine) engine.loadSearchIndex();
-      }
-    });
-    document.addEventListener("click", function(event) {
-      const target = event.target;
-      if (!target) return;
-      const btn = target.closest('[data-mobile-overlay-target="search"]');
-      if (btn) {
-        const engine = window.daybookSearchEngine;
-        if (engine) engine.loadSearchIndex();
-      }
-    });
-    document.addEventListener("daybook:page-load", applyGlobalSearchUI);
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", applyGlobalSearchUI);
-    } else {
-      applyGlobalSearchUI();
-    }
-  })();
-})();
+  ${o}
+</article>`}async function r(){let e=window.daybookSearchEngine;if(!e)return;let t=e.getCurrentQuery(),n=f();if(n&&n.value!==t&&(n.value=t),t&&n){let s=e.getCollectionContext(),a=await e.searchNotes(t,s.tagSlug),l=u(),c=d();l&&(l.innerHTML=a.map(M=>h(M,t)).join("")),c&&(c.hidden=a.length>0)}else{let s=u(),a=d();s&&(s.innerHTML=""),a&&(a.hidden=!0)}if(m()||L())return;let i=y(),o=b();if(document.querySelectorAll("[data-notes-search]:not(.mobile-search-input)").forEach(s=>{let a=s;a.value!==t&&(a.value=t)}),t){if(i&&(i.hidden=!0),o){o.hidden=!1;let s=e.getCollectionContext(),a=await e.searchNotes(t,s.tagSlug);if(a.length===0){let l=document.documentElement.lang.toLowerCase().startsWith("en")?"No results found":"\u6CA1\u6709\u627E\u5230\u5339\u914D\u7684\u6587\u7AE0\u3002";o.innerHTML='<div class="notes-month"><div class="notes-month-list"><p class="notes-empty">'+l+"</p></div></div>"}else o.innerHTML='<div class="notes-month"><div class="notes-month-list">'+a.map(l=>h(l,t)).join("")+"</div></div>"}}else i&&(i.hidden=!1),o&&(o.hidden=!0,o.innerHTML="")}let p;function g(e,t){let n=window.daybookSearchEngine;n&&(clearTimeout(p),p=window.setTimeout(()=>{let i=e.value.trim();n.updateSearchURL(i),r()},150))}document.addEventListener("input",function(e){let t=e.target;if(t)if(t.id==="mobile-search-input")g(t,!0);else{let n=t.closest("[data-notes-search]:not(.mobile-search-input)");n&&(m()||g(n,!1))}}),document.addEventListener("focusin",function(e){let t=e.target;if(t&&t.closest("[data-notes-search]")){let n=window.daybookSearchEngine;n&&n.loadSearchIndex()}}),document.addEventListener("click",function(e){let t=e.target;if(!t)return;if(t.closest('[data-mobile-overlay-target="search"]')){let i=window.daybookSearchEngine;i&&i.loadSearchIndex()}}),document.addEventListener("daybook:page-load",r),document.readyState==="loading"?document.addEventListener("DOMContentLoaded",r):r()})();})();

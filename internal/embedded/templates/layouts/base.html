@@ -63,16 +63,40 @@
       }
     });
 
-    import("{{.Assets.Path "/js/reading-controls.js"}}").then(module => {
-      module.initReadingControls();
-      document.addEventListener("daybook:page-load", () => {
-        module.initReadingControls();
-      });
-    });
+    let articleControls = null;
+    async function setupArticleControls() {
+      // Once loaded, controls also run on other pages to clear reading state.
+      if (!document.querySelector('.post-content') && !articleControls) return;
+      articleControls ||= Promise.all([
+        import("{{.Assets.Path "/js/reading-controls.js"}}"),
+        import("{{.Assets.Path "/js/reader-mode.js"}}")
+      ]);
+      const [reading, reader] = await articleControls;
+      reading.initReadingControls();
+      reader.initReaderMode();
+    }
+    setupArticleControls();
+    document.addEventListener("daybook:page-load", setupArticleControls);
 
-    import("{{.Assets.Path "/js/reader-mode.js"}}").then(module => {
-      module.initReaderMode();
-    });
+    function setupCodeFonts() {
+      if (!document.querySelector('.post-content pre, .post-content code, .github-readme pre, .github-readme code')) return;
+      const load = () => {
+        for (const href of [
+          "{{.Assets.Path "/vendor/fonts/maple-mono-cn/regular/result.css"}}",
+          "{{.Assets.Path "/vendor/fonts/maple-mono-cn/italic/result.css"}}"
+        ]) {
+          if (Array.from(document.querySelectorAll('link[rel="stylesheet"]')).some(link => link.getAttribute('href') === href)) continue;
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = href;
+          document.head.appendChild(link);
+        }
+      };
+      if ('requestIdleCallback' in window) window.requestIdleCallback(load, { timeout: 1500 });
+      else setTimeout(load, 0);
+    }
+    setupCodeFonts();
+    document.addEventListener("daybook:page-load", setupCodeFonts);
 
     import("{{.Assets.Path "/js/settings-overlay.js"}}").then(module => {
       module.initSettingsOverlay();

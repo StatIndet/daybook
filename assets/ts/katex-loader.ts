@@ -13,10 +13,14 @@ function setupKatex() {
     };
     document.head.appendChild(script);
 
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = '/vendor/katex/katex.min.css';
-    document.head.appendChild(link);
+    // Initial rendering and SPA navigation already install the hashed sheet.
+    // Keep the fallback for math inserted dynamically without a page stylesheet.
+    if (!document.querySelector('link[rel="stylesheet"][href*="/vendor/katex/katex.min."]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = '/vendor/katex/katex.min.css';
+      document.head.appendChild(link);
+    }
   } else {
     renderAllMath(mathElements);
   }

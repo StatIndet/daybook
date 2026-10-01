@@ -95,9 +95,8 @@ if [ ! -d "public/vendor/fonts" ]; then
 fi
 
 echo "==> Checking for source leaks in generated assets"
-# Since minify is false for this run, it's expected to have // assets/ts/
-# But wait, we shouldn't have .js.map
-if find public/js -name "*.js.map" | grep -q .; then
+# Release scripts are minified; external source maps must not be shipped.
+if find public -name "*.js.map" | grep -q .; then
     echo "ERROR: Found external .js.map in generated JS"
     exit 1
 fi

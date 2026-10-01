@@ -12,6 +12,8 @@ async function run() {
   
   const page = await context.newPage();
   const errors = [];
+  const requests = [];
+  page.on('request', request => requests.push(request.url()));
   
   page.on('pageerror', err => {
     errors.push(`PageError: ${err.message}`);
@@ -38,8 +40,29 @@ async function run() {
   });
 
   try {
-    console.log('Visiting /notes...');
-    await page.goto(`${serverUrl}/notes/`, { waitUntil: 'networkidle' });
+    console.log('Checking homepage lazy resources...');
+    await page.goto(`${serverUrl}/`, { waitUntil: 'networkidle' });
+    const homeRequests = [...requests];
+    if (homeRequests.some(url => /settings-paper|maple-mono|\/(?:toc|mobile-toc|embeds|katex-loader|mermaid-loader|lightbox|code-copy)\.[a-f0-9]+\.js/.test(url))) {
+      throw new Error('Homepage eagerly loaded paper, code fonts, or article scripts.');
+    }
+    if (await page.locator('link[rel="stylesheet"][href*="/css/bundles/home."]').count() !== 1) {
+      throw new Error('Homepage CSS bundle is missing.');
+    }
+
+    console.log('Opening settings lazily...');
+    await page.locator('.persistent-logo').click();
+    await page.waitForSelector('#settings-overlay.is-open');
+    await page.waitForFunction(() => performance.getEntriesByType('resource').some(entry => entry.name.includes('settings-paper')));
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('#settings-overlay.is-open', { state: 'hidden' });
+
+    console.log('Navigating home → notes...');
+    await page.locator('.site-nav a[href="/notes/"]').click();
+    await page.waitForSelector('.notes-list', { state: 'attached', timeout: 5000 });
+    if (await page.locator('link[rel="stylesheet"][href*="/css/bundles/pages."]').count() !== 1) {
+      throw new Error('SPA navigation did not install the pages CSS bundle.');
+    }
     
     if (errors.length > 0) throw new Error(errors.join('\n'));
 
@@ -60,6 +83,15 @@ async function run() {
     if (katexCount === 0) {
       throw new Error('KaTeX DOM (.katex) was not generated.');
     }
+    if (requests.some(url => new URL(url).pathname === '/vendor/katex/katex.min.css')) {
+      throw new Error('KaTeX duplicated the existing hashed stylesheet.');
+    }
+
+    console.log('Checking share panel...');
+    await page.locator('[data-share-open]').first().click();
+    await page.waitForSelector('#share-overlay.is-open');
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('#share-overlay.is-open', { state: 'hidden' });
     
     console.log('Checking TOC Rail...');
     await page.waitForSelector('[data-reading-toc-rail-base]', { state: 'attached', timeout: 5000 });
@@ -88,6 +120,20 @@ async function run() {
     await page.goBack();
     await page.waitForSelector('.notes-list', { state: 'attached', timeout: 5000 });
     
+    if (errors.length > 0) throw new Error(errors.join('\n'));
+
+    console.log('Testing browser forward...');
+    await page.goForward();
+    await page.waitForSelector('div.post-content', { state: 'attached', timeout: 5000 });
+    await page.waitForSelector('.katex', { state: 'attached', timeout: 5000 });
+
+    console.log('Testing graph navigation...');
+    await page.locator('.side-nav a[href="/graph/"]').click();
+    await page.waitForSelector('#graph-container svg', { state: 'attached', timeout: 10000 });
+
+    console.log('Testing homepage return...');
+    await page.evaluate(() => window.daybookNavigateTo('/'));
+    await page.waitForSelector('[data-github-home]', { state: 'attached', timeout: 5000 });
     if (errors.length > 0) throw new Error(errors.join('\n'));
     
     console.log('Browser tests passed successfully.');

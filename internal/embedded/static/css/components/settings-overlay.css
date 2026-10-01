@@ -53,7 +53,6 @@ html.has-custom-cursor .settings-overlay * {
   min-height: 480px;
   padding: 50px 50px 70px 50px;
   background-color: #f8f5e1; /* darker outer rim */
-  background-image: url('../../images/0kjMcUe.png');
   background-size: 1000px;
   background-position: center right;
   border-radius: 2px 2px 0 0;
@@ -80,7 +79,6 @@ html.has-custom-cursor .settings-overlay * {
   right: 4px;
   bottom: 4px;
   background-color: #fcfbf5; /* lighter inner paper */
-  background-image: url('../../images/0kjMcUe.png');
   background-size: 1000px;
   background-position: right -4px center; /* perfectly align texture with parent */
   pointer-events: none;
@@ -91,7 +89,12 @@ html.has-custom-cursor .settings-overlay * {
 
 
 .settings-overlay.is-open .settings-paper {
+  background-image: url('/images/settings-paper.webp');
   transform: scale(1);
+}
+
+.settings-overlay.is-open .settings-paper::before {
+  background-image: url('/images/settings-paper.webp');
 }
 
 @media (prefers-reduced-motion: reduce) {

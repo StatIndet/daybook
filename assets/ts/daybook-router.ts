@@ -37,7 +37,8 @@ interface DaybookTransitionFinishedDetail {
   let isNavigating = false;
   let abortController: AbortController | null = null;
   let currentRouterUrl = location.href;
-
+  const stylesheetLoads = new Map<string, Promise<void>>();
+  const pageScriptLoads = new Map<string, Promise<void>>();
   let githubAvatarURL = "";
 
   function syncGitHubAvatar(source: Document): void {
@@ -259,7 +260,8 @@ interface DaybookTransitionFinishedDetail {
       const currentContainer = document.querySelector("[data-daybook-page]");
       const newContainer = newDocument.querySelector("[data-daybook-page]");
 
-      await preloadStylesheets(newDocument);
+      await Promise.all([prepareStylesheets(newDocument), preparePageScripts(newDocument)]);
+      if (signal.aborted) throw new DOMException("Navigation aborted", "AbortError");
 
 
       if (!currentContainer || !newContainer) {
@@ -435,53 +437,54 @@ interface DaybookTransitionFinishedDetail {
     }
   }
 
-    function preloadStylesheets(newDocument: Document): Promise<void> {
+  function prepareStylesheets(newDocument: Document): Promise<void> {
     const newLinks = Array.from(newDocument.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'));
-    const promises: Promise<void>[] = [];
-
-    newLinks.forEach(newLink => {
+    return Promise.all(newLinks.map(newLink => {
       const href = newLink.getAttribute("href");
-      if (!href) return;
-
+      if (!href) return Promise.resolve();
       const newUrl = new URL(href, location.href).href;
-      
-      // Check if already in current head
+      const pending = stylesheetLoads.get(newUrl);
+      if (pending) return pending;
       const exists = Array.from(document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'))
         .some(link => link.href && new URL(link.href, location.href).href === newUrl);
-        
-      if (!exists) {
-        // Preload it
-        const promise = new Promise<void>(resolve => {
-          const preload = document.createElement("link");
-          preload.rel = "preload";
-          preload.as = "style";
-          preload.href = href;
-          if (newLink.crossOrigin) preload.crossOrigin = newLink.crossOrigin;
-          if (newLink.integrity) preload.integrity = newLink.integrity;
-          if (newLink.referrerPolicy) preload.referrerPolicy = newLink.referrerPolicy;
-          
-          let timeout = setTimeout(() => {
-            console.warn("Timeout preloading stylesheet:", href);
-            resolve();
-          }, 3000); // 3s safeguard
-          
-          preload.onload = () => {
-            clearTimeout(timeout);
-            resolve();
-          };
-          preload.onerror = () => {
-            clearTimeout(timeout);
-            console.warn("Failed to preload stylesheet:", href);
-            resolve();
-          };
-          
-          document.head.appendChild(preload);
-        });
-        promises.push(promise);
-      }
-    });
+      if (exists) return Promise.resolve();
+      // Install and await the real stylesheet before the transition snapshot.
+      // A preload alone can finish before CSS is parsed and applied.
+      const promise = new Promise<void>((resolve, reject) => {
+        const stylesheet = newLink.cloneNode(true) as HTMLLinkElement;
+        const timeout = window.setTimeout(() => { stylesheet.remove(); reject(new Error(`Stylesheet timed out: ${href}`)); }, 10000);
+        stylesheet.onload = () => { clearTimeout(timeout); resolve(); };
+        stylesheet.onerror = () => { clearTimeout(timeout); stylesheet.remove(); reject(new Error(`Stylesheet failed: ${href}`)); };
+        // Keep the same cascade regardless of the direction of SPA navigation.
+        const pages = document.head.querySelector('link[data-daybook-style="pages"]');
+        if (stylesheet.dataset.daybookStyle === "home" && pages) pages.before(stylesheet);
+        else document.head.appendChild(stylesheet);
+      });
+      stylesheetLoads.set(newUrl, promise);
+      promise.catch(() => stylesheetLoads.delete(newUrl));
+      return promise;
+    })).then(() => {});
+  }
 
-    return Promise.all(promises).then(() => {});
+  function preparePageScripts(newDocument: Document): Promise<void> {
+    const scripts = Array.from(newDocument.head.querySelectorAll<HTMLScriptElement>('script[data-daybook-page-script][src]'));
+    return Promise.all(scripts.map(newScript => {
+      const url = new URL(newScript.getAttribute("src")!, location.href).href;
+      const pending = pageScriptLoads.get(url);
+      if (pending) return pending;
+      if (Array.from(document.scripts).some(script => script.src === url)) return Promise.resolve();
+      const promise = new Promise<void>((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = url;
+        script.dataset.daybookPageScript = "";
+        script.onload = () => resolve();
+        script.onerror = () => { script.remove(); reject(new Error(`Page script failed: ${url}`)); };
+        document.head.appendChild(script);
+      });
+      pageScriptLoads.set(url, promise);
+      promise.catch(() => pageScriptLoads.delete(url));
+      return promise;
+    })).then(() => {});
   }
 
   function updateHead(newDocument: Document) {
