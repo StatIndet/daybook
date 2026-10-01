@@ -65,6 +65,12 @@ async function createPage(viewport, mobile = false) {
 
 async function settled(page, pageKind) {
   if (pageKind) await page.waitForFunction(kind => document.body.dataset.pageKind === kind, pageKind);
+  // Traversal updates the URL before the router fetches and swaps the page.
+  // Wait for the recorded swap too, even when both pages have the same kind.
+  await page.waitForFunction(() => {
+    const latest = window.__daybookTransitions.at(-1);
+    return !latest || latest.newURL === location.href;
+  });
   await page.waitForFunction(() => !document.documentElement.classList.contains('is-transitioning'));
   await page.evaluate(() => document.fonts.ready);
 }
