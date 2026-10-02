@@ -307,45 +307,38 @@ func Build(options Options) (BuildResult, error) {
 					})
 				}
 
-				if group.IsListed() {
-					graphNodes = append(graphNodes, graph.InputNode{
-						ID:          note.URL,
-						Title:       note.Title,
-						URL:         note.URL,
-						Tags:        tagNodes,
-						Attachments: attachmentNodes,
-						Date:        note.Date,
-					})
+				graphNodes = append(graphNodes, graph.InputNode{
+					ID:          note.URL,
+					Title:       note.Title,
+					URL:         note.URL,
+					Tags:        tagNodes,
+					Attachments: attachmentNodes,
+					Date:        note.Date,
+				})
 
-					for _, link := range processed.Links {
-						targetID := link.Slug
-						if !link.Exists {
-							targetID = link.Target
+				for _, link := range processed.Links {
+					targetID := link.Slug
+					if !link.Exists {
+						targetID = link.Target
+					}
+					// Resolve each published target to its canonical article URL.
+					resolvedID := targetID
+					for _, searchGroup := range groups {
+						if targetNote, ok := searchGroup.Versions["zh_CN"]; ok && targetNote.Slug == targetID {
+							resolvedID = targetNote.URL
+							break
 						}
-						// We need to resolve target slug to unique Key if possible
-						resolvedID := targetID
-						targetIsListed := true
-						for _, searchGroup := range groups {
-							if targetNote, ok := searchGroup.Versions["zh_CN"]; ok && targetNote.Slug == targetID {
-								resolvedID = targetNote.URL
-								targetIsListed = searchGroup.IsListed()
-								break
-							}
-							if targetNote, ok := searchGroup.Versions["en_US"]; ok && targetNote.Slug == targetID {
-								resolvedID = targetNote.URL
-								targetIsListed = searchGroup.IsListed()
-								break
-							}
-						}
-
-						if targetIsListed {
-							graphLinks = append(graphLinks, graph.InputLink{
-								Source: note.URL,
-								Target: resolvedID,
-								Exists: link.Exists,
-							})
+						if targetNote, ok := searchGroup.Versions["en_US"]; ok && targetNote.Slug == targetID {
+							resolvedID = targetNote.URL
+							break
 						}
 					}
+
+					graphLinks = append(graphLinks, graph.InputLink{
+						Source: note.URL,
+						Target: resolvedID,
+						Exists: link.Exists,
+					})
 				}
 
 				titleLayoutHTML := morphable.GenerateHTML(note.Title, note.URL, "title")
@@ -372,9 +365,7 @@ func Build(options Options) (BuildResult, error) {
 					DateTransitionName:  dateTransitionName,
 				}
 
-				if group.IsListed() {
-					noteLinks = append(noteLinks, noteLink)
-				}
+				noteLinks = append(noteLinks, noteLink)
 
 				// Article routes follow their source language. The surrounding UI can
 				// switch independently in the browser without replacing the article.
@@ -1145,9 +1136,6 @@ func collectTagLinksForLang(groups []*content.ArticleGroup, lang string, tagRegi
 	seen := make(map[string]bool)
 
 	for _, group := range groups {
-		if !group.IsListed() {
-			continue
-		}
 		for _, note := range group.PublishedVersions() {
 			for _, rawTag := range note.Tags {
 				id := tagRegistry.GetID(rawTag)

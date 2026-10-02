@@ -20,7 +20,6 @@ type Note struct {
 	Tags           []string
 	Summary        string
 	Draft          bool
-	Listed         *bool
 	Math           bool
 	Pin            bool
 	HasMusic       bool
@@ -43,7 +42,6 @@ type frontmatter struct {
 	Updated string   `yaml:"updated"`
 	Lang    string   `yaml:"lang"`
 	I18nKey string   `yaml:"i18n_key"`
-	Listed  *bool    `yaml:"listed"`
 	Tags    []string `yaml:"tags"`
 	Summary string   `yaml:"summary"`
 	Draft   bool     `yaml:"draft"`
@@ -138,7 +136,6 @@ func Parse(sourcePath, text string, slug string) (Note, error) {
 		Tags:          meta.Tags,
 		Summary:       strings.TrimSpace(meta.Summary),
 		Draft:         meta.Draft,
-		Listed:        meta.Listed,
 		Math:          meta.Math,
 		Pin:           meta.Pin,
 		HasMusic:      strings.Contains(cleanBody(body), "::music{"),

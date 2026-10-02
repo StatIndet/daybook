@@ -51,14 +51,6 @@ func (g *ArticleGroup) SelectVersion(lang string) (*Note, bool) {
 	return nil, false
 }
 
-func (g *ArticleGroup) IsListed() bool {
-	note, _ := g.SelectVersion("zh_CN")
-	if note != nil && note.Listed != nil {
-		return *note.Listed
-	}
-	return true
-}
-
 // GroupNotes takes a flat slice of Notes and groups them into ArticleGroups.
 func GroupNotes(notes []Note) ([]*ArticleGroup, error) {
 	groupsMap := make(map[string]*ArticleGroup)

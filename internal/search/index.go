@@ -36,9 +36,6 @@ func BuildIndex(groups []*content.ArticleGroup, estimateReadingTime func(string)
 	var items []IndexItem
 
 	for i, group := range groups {
-		if !group.IsListed() {
-			continue
-		}
 		if onProgress != nil {
 			onProgress(i+1, len(groups))
 		}

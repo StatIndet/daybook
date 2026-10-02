@@ -156,6 +156,8 @@ For scheduled updates, use the external vault's Worker with a KV binding and a C
 
 ### Articles and interface language
 
+Every non-draft note is published in Notes, Archive, tags, search, RSS, the sitemap and the graph. Set `draft: true` to keep an unfinished note out of the build. There is no separate listing or discoverability setting.
+
 Chinese and English article versions both appear in Notes, Archive, tags, search and the graph. Each article keeps its canonical URL and original text. The global language button changes the interface; on an article it uses `?ui=zh_CN` or `?ui=en_US`. The separate `translate` icon in article metadata opens the corresponding translation. Existing `/en_US/` URL paths remain unchanged; HTML language and `hreflang` values use BCP 47 (`zh-CN`, `en-US`).
 
 ### Asset builds
