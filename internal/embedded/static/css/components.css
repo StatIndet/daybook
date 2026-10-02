@@ -21,13 +21,13 @@
   transition: color 180ms ease;
 }
 
-:is(.github-repository-heading a, .github-followers a, .notes-footer-links a, .drawer-footer-row a, .pagination-btn:not(.is-disabled), .note-rc-btn, .drawer-nav-content) {
+:is(.github-repository-heading a, .github-followers a, .notes-footer-links a, .pagination-btn:not(.is-disabled), .note-rc-btn) {
   isolation: isolate;
   position: relative;
 }
 
 .nav-link::after,
-:is(.github-repository-heading a, .github-followers a, .notes-footer-links a, .drawer-footer-row a, .pagination-btn:not(.is-disabled), .note-rc-btn, .drawer-nav-content)::before {
+:is(.github-repository-heading a, .github-followers a, .notes-footer-links a, .pagination-btn:not(.is-disabled), .note-rc-btn)::before {
   background: var(--color-marker);
   bottom: 0.06em;
   content: "";
@@ -45,8 +45,8 @@
 .nav-link:focus-visible,
 .github-home a:hover,
 .github-home a:focus-visible,
-:is(.github-followers a, .notes-footer-links a, .drawer-footer-row a, .pagination-btn:not(.is-disabled), .note-rc-btn):hover,
-:is(.github-followers a, .notes-footer-links a, .drawer-footer-row a, .pagination-btn:not(.is-disabled), .note-rc-btn):focus-visible,
+:is(.github-followers a, .notes-footer-links a, .pagination-btn:not(.is-disabled), .note-rc-btn):hover,
+:is(.github-followers a, .notes-footer-links a, .pagination-btn:not(.is-disabled), .note-rc-btn):focus-visible,
 .site-logo:hover,
 .site-logo:focus-visible {
   color: var(--color-hover-text);
@@ -54,23 +54,21 @@
 
 .nav-link:hover::after,
 .nav-link:focus-visible::after,
-:is(.github-repository-heading a, .github-followers a, .notes-footer-links a, .drawer-footer-row a, .pagination-btn:not(.is-disabled), .note-rc-btn):hover::before,
-:is(.github-repository-heading a, .github-followers a, .notes-footer-links a, .drawer-footer-row a, .pagination-btn:not(.is-disabled), .note-rc-btn):focus-visible::before,
-.drawer-nav-link:hover .drawer-nav-content::before,
-.drawer-nav-link:focus-visible .drawer-nav-content::before {
+:is(.github-repository-heading a, .github-followers a, .notes-footer-links a, .pagination-btn:not(.is-disabled), .note-rc-btn):hover::before,
+:is(.github-repository-heading a, .github-followers a, .notes-footer-links a, .pagination-btn:not(.is-disabled), .note-rc-btn):focus-visible::before {
   clip-path: inset(0);
   transition: clip-path 400ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .nav-link::after,
-  :is(.github-repository-heading a, .github-followers a, .notes-footer-links a, .drawer-footer-row a, .pagination-btn:not(.is-disabled), .note-rc-btn, .drawer-nav-content)::before {
+  :is(.github-repository-heading a, .github-followers a, .notes-footer-links a, .pagination-btn:not(.is-disabled), .note-rc-btn)::before {
     transition: none;
   }
 }
 
 html[data-reduced-motion="true"] .nav-link::after,
-html[data-reduced-motion="true"] :is(.github-repository-heading a, .github-followers a, .notes-footer-links a, .drawer-footer-row a, .pagination-btn:not(.is-disabled), .note-rc-btn, .drawer-nav-content)::before {
+html[data-reduced-motion="true"] :is(.github-repository-heading a, .github-followers a, .notes-footer-links a, .pagination-btn:not(.is-disabled), .note-rc-btn)::before {
   transition: none;
 }
 
@@ -78,8 +76,8 @@ html[data-reduced-motion="true"] :is(.github-repository-heading a, .github-follo
 .nav-link:focus-visible .nav-icon,
 .github-home a:hover .material-symbol,
 .github-home a:focus-visible .material-symbol,
-:is(.pagination-btn:not(.is-disabled), .note-rc-btn, .drawer-nav-link):hover .material-symbol,
-:is(.pagination-btn:not(.is-disabled), .note-rc-btn, .drawer-nav-link):focus-visible .material-symbol {
+:is(.pagination-btn:not(.is-disabled), .note-rc-btn):hover .material-symbol,
+:is(.pagination-btn:not(.is-disabled), .note-rc-btn):focus-visible .material-symbol {
   color: inherit;
   font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
 }
@@ -992,21 +990,14 @@ body.is-mobile-drawer-open .mobile-menu-toggle .icon-close {
   width: 100%;
 }
 
-.drawer-nav-link:hover,
-.drawer-nav-link:focus-visible {
-  background: var(--color-paper);
-  color: var(--color-hover-text);
-  outline: none;
+.drawer-nav-link:focus-visible,
+.drawer-footer-row a:focus-visible {
+  outline: 1px solid var(--color-accent);
+  outline-offset: 4px;
 }
 
 .drawer-nav-link .material-symbol {
   font-size: 1.35rem;
-}
-
-.drawer-nav-content {
-  align-items: center;
-  display: inline-flex;
-  gap: inherit;
 }
 
 .drawer-nav-label {
@@ -1396,7 +1387,6 @@ body.is-search-overlay-open .mobile-search-overlay {
   height: 18px;
 }
 
-.theme-selector-btn:hover,
 .theme-selector-btn:focus-visible,
 .theme-selector-btn[aria-checked="true"] {
   color: var(--color-hover-text);
