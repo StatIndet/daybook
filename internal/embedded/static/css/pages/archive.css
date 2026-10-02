@@ -16,7 +16,7 @@
   flex-wrap: wrap;
   gap: 2rem;
   align-items: baseline;
-  font-family: var(--font-ui);
+  font-family: var(--font-cormorant);
 }
 
 .archive-stat-item {
@@ -42,7 +42,7 @@
 .archive-stats-secondary {
   margin-top: 1.25rem;
   gap: 1.5rem;
-  font-family: var(--font-meta);
+  font-family: var(--font-cormorant);
   font-style: italic;
 }
 
@@ -69,7 +69,7 @@
 
 .archive-year h2 {
   color: var(--color-text);
-  font-family: var(--font-serif);
+  font-family: var(--font-cormorant);
   font-size: clamp(1.35rem, 2.6vw, 1.75rem);
   font-style: italic;
   font-weight: 600;
@@ -124,7 +124,7 @@
 
 .archive-item time {
   color: var(--color-muted);
-  font-family: var(--font-meta);
+  font-family: var(--font-cormorant);
   font-size: 0.96rem;
   font-style: italic;
   line-height: 1.25;
@@ -166,7 +166,7 @@
 .archive-reading-time {
   color: var(--color-muted);
   display: inline-block;
-  font-family: var(--font-meta);
+  font-family: var(--font-cormorant);
   font-size: 1.02rem;
   font-style: italic;
   margin-left: 0.65rem;
@@ -271,7 +271,7 @@
 }
 .archive-year-row h2 {
   color: var(--color-text);
-  font-family: var(--font-serif);
+  font-family: var(--font-cormorant);
   font-size: clamp(1.35rem, 2.6vw, 1.75rem);
   font-style: italic;
   font-weight: 600;

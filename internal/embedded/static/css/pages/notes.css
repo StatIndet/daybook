@@ -110,7 +110,7 @@ hr.notes-divider {
 .notes-item-meta {
   color: var(--color-muted);
   display: inline-flex;
-  font-family: var(--font-meta);
+  font-family: var(--font-cormorant);
   font-size: 1.05rem;
   font-weight: 600;
   font-style: italic;
@@ -268,7 +268,7 @@ hr.notes-divider {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-family: var(--font-ui);
+  font-family: var(--font-cormorant);
   font-size: 0.95rem;
   color: var(--color-muted);
 }
