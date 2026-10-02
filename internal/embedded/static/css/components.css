@@ -21,9 +21,13 @@
   transition: color 180ms ease;
 }
 
+:is(.github-repository-heading a, .notes-item-title a, .archive-entry a, .pagination-btn:not(.is-disabled), .note-rc-btn, .drawer-nav-content) {
+  isolation: isolate;
+  position: relative;
+}
+
 .nav-link::after,
-.github-home a:not(:has(img))::before,
-.notes-footer-links a::after {
+:is(.github-repository-heading a, .notes-item-title a, .archive-entry a, .pagination-btn:not(.is-disabled), .note-rc-btn, .drawer-nav-content)::before {
   background: var(--color-marker);
   bottom: 0.06em;
   content: "";
@@ -41,6 +45,8 @@
 .nav-link:focus-visible,
 .github-home a:hover,
 .github-home a:focus-visible,
+:is(.notes-item-title a, .archive-entry a, .pagination-btn:not(.is-disabled), .note-rc-btn):hover,
+:is(.notes-item-title a, .archive-entry a, .pagination-btn:not(.is-disabled), .note-rc-btn):focus-visible,
 .site-logo:hover,
 .site-logo:focus-visible {
   color: var(--color-hover-text);
@@ -48,31 +54,32 @@
 
 .nav-link:hover::after,
 .nav-link:focus-visible::after,
-.github-home a:hover::before,
-.github-home a:focus-visible::before,
-.notes-footer-links a:hover::after,
-.notes-footer-links a:focus-visible::after {
+:is(.github-repository-heading a, .notes-item-title a, .archive-entry a, .pagination-btn:not(.is-disabled), .note-rc-btn):hover::before,
+:is(.github-repository-heading a, .notes-item-title a, .archive-entry a, .pagination-btn:not(.is-disabled), .note-rc-btn):focus-visible::before,
+.drawer-nav-link:hover .drawer-nav-content::before,
+.drawer-nav-link:focus-visible .drawer-nav-content::before {
   clip-path: inset(0);
-  transition: clip-path 700ms cubic-bezier(0.3, 0, 0.4, 1);
+  transition: clip-path 400ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .nav-link::after,
-  .github-home a:not(:has(img))::before,
-  .notes-footer-links a::after {
+  :is(.github-repository-heading a, .notes-item-title a, .archive-entry a, .pagination-btn:not(.is-disabled), .note-rc-btn, .drawer-nav-content)::before {
     transition: none;
   }
 }
 
-html[data-reduced-motion="true"] :is(.nav-link, .notes-footer-links a)::after,
-html[data-reduced-motion="true"] .github-home a:not(:has(img))::before {
+html[data-reduced-motion="true"] .nav-link::after,
+html[data-reduced-motion="true"] :is(.github-repository-heading a, .notes-item-title a, .archive-entry a, .pagination-btn:not(.is-disabled), .note-rc-btn, .drawer-nav-content)::before {
   transition: none;
 }
 
 .nav-link:hover .nav-icon,
 .nav-link:focus-visible .nav-icon,
 .github-home a:hover .material-symbol,
-.github-home a:focus-visible .material-symbol {
+.github-home a:focus-visible .material-symbol,
+:is(.pagination-btn:not(.is-disabled), .note-rc-btn, .drawer-nav-link):hover .material-symbol,
+:is(.pagination-btn:not(.is-disabled), .note-rc-btn, .drawer-nav-link):focus-visible .material-symbol {
   color: inherit;
   font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
 }
@@ -461,9 +468,7 @@ body.is-tags-overlay-open .mobile-tags-overlay .notes-tag-link {
 }
 
 .notes-footer-links a {
-  isolation: isolate;
   color: var(--color-muted);
-  position: relative;
   text-decoration: none;
   transition: color 180ms ease;
 }
@@ -996,6 +1001,12 @@ body.is-mobile-drawer-open .mobile-menu-toggle .icon-close {
 
 .drawer-nav-link .material-symbol {
   font-size: 1.35rem;
+}
+
+.drawer-nav-content {
+  align-items: center;
+  display: inline-flex;
+  gap: inherit;
 }
 
 .drawer-nav-label {

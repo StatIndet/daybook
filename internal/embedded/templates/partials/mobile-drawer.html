@@ -4,24 +4,34 @@
   <div class="mobile-drawer-content">
     <nav class="mobile-drawer-nav" aria-label="主导航">
       <a class="drawer-nav-link" href="{{if eq .Lang "en_US"}}/en_US{{end}}/">
-        <span class="material-symbol" aria-hidden="true">home</span>
-        <span class="drawer-nav-label" data-ui-text="nav.home">{{T .Lang "nav.home"}}</span>
+        <span class="drawer-nav-content">
+          <span class="material-symbol" aria-hidden="true">home</span>
+          <span class="drawer-nav-label" data-ui-text="nav.home">{{T .Lang "nav.home"}}</span>
+        </span>
       </a>
       <a class="drawer-nav-link" href="{{if eq .Lang "en_US"}}/en_US{{end}}/notes/">
-        <span class="material-symbol" aria-hidden="true">article</span>
-        <span class="drawer-nav-label" data-ui-text="nav.notes">{{T .Lang "nav.notes"}}</span>
+        <span class="drawer-nav-content">
+          <span class="material-symbol" aria-hidden="true">article</span>
+          <span class="drawer-nav-label" data-ui-text="nav.notes">{{T .Lang "nav.notes"}}</span>
+        </span>
       </a>
       <a class="drawer-nav-link" href="{{if eq .Lang "en_US"}}/en_US{{end}}/archive/">
-        <span class="material-symbol" aria-hidden="true">archive</span>
-        <span class="drawer-nav-label" data-ui-text="nav.archive">{{T .Lang "nav.archive"}}</span>
+        <span class="drawer-nav-content">
+          <span class="material-symbol" aria-hidden="true">archive</span>
+          <span class="drawer-nav-label" data-ui-text="nav.archive">{{T .Lang "nav.archive"}}</span>
+        </span>
       </a>
       <a class="drawer-nav-link" href="{{if eq .Lang "en_US"}}/en_US{{end}}/graph/">
-        <span class="material-symbol" aria-hidden="true">account_tree</span>
-        <span class="drawer-nav-label" data-ui-text="nav.graph">{{T .Lang "nav.graph"}}</span>
+        <span class="drawer-nav-content">
+          <span class="material-symbol" aria-hidden="true">account_tree</span>
+          <span class="drawer-nav-label" data-ui-text="nav.graph">{{T .Lang "nav.graph"}}</span>
+        </span>
       </a>
       <a class="drawer-nav-link" href="{{if eq .Lang "en_US"}}/en_US{{end}}/about/">
-        <span class="material-symbol" aria-hidden="true">info</span>
-        <span class="drawer-nav-label" data-ui-text="nav.about">{{T .Lang "nav.about"}}</span>
+        <span class="drawer-nav-content">
+          <span class="material-symbol" aria-hidden="true">info</span>
+          <span class="drawer-nav-label" data-ui-text="nav.about">{{T .Lang "nav.about"}}</span>
+        </span>
       </a>
     </nav>
 
@@ -29,12 +39,16 @@
 
     <div class="mobile-drawer-funcs" data-mobile-overlay-tools>
       <button class="drawer-nav-link" type="button" aria-expanded="false" data-mobile-overlay-target="search" id="drawer-search-btn">
-        <span class="material-symbol" aria-hidden="true">search</span>
-        <span class="drawer-nav-label" data-ui-text="action.search">{{T .Lang "action.search"}}</span>
+        <span class="drawer-nav-content">
+          <span class="material-symbol" aria-hidden="true">search</span>
+          <span class="drawer-nav-label" data-ui-text="action.search">{{T .Lang "action.search"}}</span>
+        </span>
       </button>
       <button class="drawer-nav-link" type="button" aria-expanded="false" data-mobile-overlay-target="tags" id="drawer-tags-btn">
-        <span class="material-symbol" aria-hidden="true">sell</span>
-        <span class="drawer-nav-label" data-ui-text="action.tags">{{T .Lang "action.tags"}}</span>
+        <span class="drawer-nav-content">
+          <span class="material-symbol" aria-hidden="true">sell</span>
+          <span class="drawer-nav-label" data-ui-text="action.tags">{{T .Lang "action.tags"}}</span>
+        </span>
       </button>
 
     </div>

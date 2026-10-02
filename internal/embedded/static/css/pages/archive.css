@@ -137,6 +137,7 @@
 }
 
 .archive-entry a {
+  display: inline-block;
   color: var(--color-text);
   font-family: var(--font-serif);
   font-size: 1.02rem;

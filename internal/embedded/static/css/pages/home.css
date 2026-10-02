@@ -64,7 +64,7 @@
 .github-home .github-readme-content pre { max-width: 100%; overflow: auto; border: 0; border-radius: 0; padding: 0; margin: 0; background: transparent; box-shadow: none; font-size: clamp(8px, 0.7vw, 10.5px); line-height: 1.35; }
 .github-home .github-readme-content pre code { font-size: inherit; }
 .github-readme-content table { display: block; max-width: 100%; overflow-x: auto; }
-.github-home .github-readme-content a { text-decoration: none; transition: color 180ms ease; }
+.github-home .github-readme-content a { text-decoration-line: underline; transition: color 200ms ease, text-decoration-color 200ms ease; }
 .github-repositories, .github-contributions { margin-top: 32px; }
 .github-repository-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .github-repository { background: var(--home-card); box-shadow: var(--home-shadow-low); border-radius: 16px; padding: 20px; min-width: 0; display: flex; flex-direction: column; }
@@ -81,7 +81,6 @@
 .github-repository-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: auto; padding-top: 10px; color: var(--color-muted); font-size: 0.76rem; }
 .github-repository-meta > span, .github-home .github-repository-meta a { display: inline-flex; align-items: center; gap: 4px; }
 .github-repository-meta .material-symbol { font-size: 16px; }
-.github-home .github-repository-meta a::before { content: none; }
 .github-language-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--color-accent); display: inline-block; margin-right: 3px; }
 .github-contributions { background: var(--home-card); box-shadow: var(--home-shadow-low); border-radius: 20px; padding: 24px; }
 .github-calendar-scroll { overflow-x: auto; }
