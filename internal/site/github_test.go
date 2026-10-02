@@ -77,12 +77,12 @@ func TestGitHubContactsUseLocalBrandIconsAndReadableFooterLabels(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"/favicon.svg", "/icons/social/bilibili.svg", "/icons/social/kofi.svg", "/icons/social/afdian.svg", "/icons/social/buymeacoffee.svg", `class="material-symbol" aria-hidden="true">link</span><span>https://unknown.example`, ">Ko-fi</a>", ">Website</a>"} {
+	for _, want := range []string{"/favicon.svg", "/icons/social/bilibili.svg", "/icons/social/kofi.svg", "/icons/social/afdian.svg", "/icons/social/buymeacoffee.svg", `class="material-symbol" aria-hidden="true">link</span><span>https://unknown.example`} {
 		if !strings.Contains(string(body), want) {
 			t.Errorf("missing contact identity %q", want)
 		}
 	}
-	if strings.Contains(string(body), "ZgotmplZ") || strings.Contains(string(body), ">generic</a>") {
+	if strings.Contains(string(body), "notes-footer-links") || strings.Contains(string(body), "drawer-footer-row") || strings.Contains(string(body), "ZgotmplZ") || strings.Contains(string(body), ">generic</a>") {
 		t.Fatal("social icon or label did not survive template escaping")
 	}
 }

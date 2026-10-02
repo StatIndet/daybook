@@ -92,7 +92,6 @@
 .github-home [data-level="3"] { background: color-mix(in srgb, var(--color-accent) 78%, var(--color-page)); }
 .github-home [data-level="4"] { background: var(--color-accent); }
 .github-calendar-key { display: flex; gap: 4px; align-items: center; justify-content: end; margin-top: 10px; font-size: 0.7rem; color: var(--color-muted); }
-.home-footer { color: var(--color-muted); font-size: 0.8rem; margin-top: 48px; text-align: center; }
 .github-home-empty { display: block; min-height: 50vh; padding-top: 8vh; }
 @media (max-width: 960px) {
   .home-main { max-width: 850px; padding-top: 12px; }

@@ -15,22 +15,6 @@
     return document.getElementById("mobile-search-loading");
   }
 
-  function getOriginalContent(): HTMLElement | null {
-    return document.querySelector(".page-content") || document.querySelector(".archive-virtual-list");
-  }
-
-  function getDesktopContainer(): HTMLElement | null {
-    return document.querySelector(".global-search-results-container");
-  }
-
-  function isNotesPage(): boolean {
-    return Boolean(document.querySelector(".notes-list:not(.global-search-results-container)"));
-  }
-
-  function isGraphPage(): boolean {
-    return window.location.pathname.startsWith("/graph");
-  }
-
   function renderNoteCard(item: any, keyword: string): string {
     const engine = window.daybookSearchEngine;
     if (!engine) return "";
@@ -104,43 +88,10 @@
       if (emptyState) emptyState.hidden = true;
     }
 
-    // 2. Desktop Global Search (non-Notes, non-Graph pages)
-    if (isNotesPage() || isGraphPage()) return;
-
-    const originalContent = getOriginalContent();
-    const desktopContainer = getDesktopContainer();
-
-    document.querySelectorAll("[data-notes-search]:not(.mobile-search-input)").forEach(inputEl => {
-      const input = inputEl as HTMLInputElement;
-      if (input.value !== query) input.value = query;
-    });
-
-    if (query) {
-      if (originalContent) originalContent.hidden = true;
-      if (desktopContainer) {
-        desktopContainer.hidden = false;
-        
-        const ctx = engine.getCollectionContext();
-        const results = await engine.searchNotes(query, ctx.tagSlug);
-        
-        if (results.length === 0) {
-          const emptyText = document.documentElement.lang.toLowerCase().startsWith("en") ? "No results found" : "没有找到匹配的文章。";
-          desktopContainer.innerHTML = '<div class="notes-month"><div class="notes-month-list"><p class="notes-empty">' + emptyText + '</p></div></div>';
-        } else {
-          desktopContainer.innerHTML = '<div class="notes-month"><div class="notes-month-list">' + results.map((item: any) => renderNoteCard(item, query)).join("") + '</div></div>';
-        }
-      }
-    } else {
-      if (originalContent) originalContent.hidden = false;
-      if (desktopContainer) {
-        desktopContainer.hidden = true;
-        desktopContainer.innerHTML = "";
-      }
-    }
   }
 
   let debounceTimer: number;
-  function handleInputEvent(input: HTMLInputElement, isMobile: boolean) {
+  function handleInputEvent(input: HTMLInputElement) {
     const engine = window.daybookSearchEngine;
     if (!engine) return;
 
@@ -157,14 +108,7 @@
     if (!target) return;
     
     if (target.id === "mobile-search-input") {
-      handleInputEvent(target as HTMLInputElement, true);
-    } else {
-      const input = target.closest("[data-notes-search]:not(.mobile-search-input)") as HTMLInputElement | null;
-      if (input) {
-        if (!isNotesPage()) {
-          handleInputEvent(input, false);
-        }
-      }
+      handleInputEvent(target as HTMLInputElement);
     }
   });
 
@@ -187,7 +131,10 @@
     }
   });
 
-  document.addEventListener("daybook:page-load", applyGlobalSearchUI);
+  document.addEventListener("daybook:page-load", () => {
+    clearTimeout(debounceTimer);
+    applyGlobalSearchUI();
+  });
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", applyGlobalSearchUI);

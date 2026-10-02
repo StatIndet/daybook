@@ -3,7 +3,7 @@
 }
 
 .note-detail {
-  margin-left: calc(var(--notes-content-width) - var(--note-body-width));
+  margin-left: 0;
   max-width: var(--note-body-width);
   min-width: 0;
   position: relative;
@@ -200,18 +200,7 @@
     margin-top: 0;
     min-height: calc(100dvh - 176px);
     position: sticky;
-    top: 72px;
-  }
-
-  .note-detail-page .notes-aside-controls {
-    border-top: 0;
-    display: block;
-    margin-top: auto;
-    padding-top: 1.5rem;
-  }
-
-  .note-detail-page .notes-footer-actions {
-    margin-bottom: 1.15rem;
+    top: 88px;
   }
 
   .note-toc-wrapper {
@@ -241,7 +230,7 @@
   }
 
   .note-toc-panel {
-    max-height: calc(100dvh - 72px - 16rem);
+    max-height: calc(100dvh - 88px - 3rem);
   }
 
   .note-toc-stage.has-reading-rail {
@@ -871,4 +860,8 @@ body[data-reader-mode="immersive"] .note-title-wrapper {
     );
     transform: translateY(max(var(--reader-progress-visual-top, 0px), env(safe-area-inset-top, 0px)));
   }
+}
+
+@media (min-width: 961px) and (max-width: 1399px) {
+  .note-back-link { left: 0; top: -40px; height: 32px; width: 32px; }
 }

@@ -11,6 +11,7 @@
 
 
   <div class="page-frame" id="daybook-page" data-daybook-page>
+  {{template "site_tools" .}}
   {{if eq .PageKind "home"}}
   {{template "header_nav" .}}
 
@@ -30,6 +31,7 @@
     </main>
   </div>
   {{end}}
+  {{template "home_footer" .}}
   </div>
   {{template "mobile_drawer" .}}
   {{template "mobile_overlay" .}}

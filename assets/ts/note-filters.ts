@@ -89,7 +89,24 @@
     if (!engine) return;
     
     const ctx = engine.getCollectionContext();
-    if (ctx.kind !== "notes" && ctx.kind !== "tag") return;
+    if (!document.querySelector(".notes-list")) {
+      const input = document.querySelector<HTMLInputElement>("[data-notes-search]");
+      const results = document.querySelector<HTMLElement>("[data-desktop-search-results]");
+      if (!input || !results) return;
+      const query = input.value.trim();
+      const matches = query ? await engine.searchNotes(query) : [];
+      // Ignore a response from an input that has since changed or left the page.
+      if (!input.isConnected || input.value.trim() !== query) return;
+      results.hidden = !query;
+      results.innerHTML = matches.map((item: any) => renderNoteCard(item, query)).join("");
+      if (query && !matches.length) {
+        const empty = document.createElement("p");
+        empty.className = "notes-tool-empty";
+        empty.textContent = document.documentElement.lang.startsWith("en") ? "No results found" : "没有找到相关内容";
+        results.append(empty);
+      }
+      return;
+    }
 
     const query = engine.getCurrentQuery();
     
@@ -141,7 +158,7 @@
         const query = input.value.trim();
         const engine = window.daybookSearchEngine;
         if (engine && isNotesPage()) {
-          engine.updateSearchURL(query);
+          if (document.querySelector(".notes-list")) engine.updateSearchURL(query);
           applySearchUI();
         }
     }, 150);
@@ -154,7 +171,7 @@
     const toolButton = target.closest("[data-notes-tool]") as HTMLElement | null;
     if (toolButton) {
       const toolName = toolButton.dataset.notesTool as DesktopTool;
-      if (toolName) {
+      if (toolName === "search" || toolName === "tags") {
         if (currentDesktopTool === toolName) {
           // Toggle off
           setDesktopTool(null);
@@ -182,6 +199,8 @@
   });
 
   document.addEventListener("daybook:page-load", function () {
+    clearTimeout(debounceTimer);
+    currentDesktopTool = null;
     if (isNotesPage()) {
       applySearchUI();
     }

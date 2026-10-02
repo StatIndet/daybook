@@ -77,15 +77,6 @@
     </div>
 
     <div class="mobile-drawer-footer">
-      <div class="drawer-footer-row" style="display: flex; flex-wrap: wrap; gap: 0 8px; justify-content: center; padding: 0 16px;">
-        {{$socials := .Config.GetSocialLinks .Lang}}
-                {{range $index, $social := $socials}}
-          {{if gt $index 0}}<span class="footer-separator" aria-hidden="true">/</span>{{end}}
-    <a href="{{.URL}}" 
-            {{if and (not (eq .Type "email")) (not (eq .Type "rss"))}}target="_blank" rel="noopener noreferrer"{{end}}>{{.Label}}</a>
-          
-        {{end}}
-      </div>
       {{template "copyright" dict "Config" .Config "Class" "drawer-copyright"}}
     </div>
   </div>

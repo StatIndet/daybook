@@ -1,9 +1,10 @@
 /* Override global padding for graph page to maximize viewport */
 .graph-body .page-main {
-  padding: 24px clamp(24px, 4vw, 40px);
+  grid-column: 2;
+  padding: 88px clamp(24px, 4vw, 40px) 0;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: calc(100dvh - 84px);
 }
 
 /* Graph Page Layout */
@@ -26,7 +27,8 @@
   flex-direction: column;
   position: relative;
   background: var(--color-paper);
-  border: 1px solid var(--color-line);
+  border: 0;
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--color-text) 7%, transparent), 0 8px 20px color-mix(in srgb, var(--color-text) 4%, transparent);
   border-radius: 16px;
   overflow: hidden;
   min-height: 400px;
@@ -36,10 +38,10 @@
 .graph-toolbar {
   position: absolute;
   top: 16px;
-  right: 16px;
+  left: 16px;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   z-index: 10;
   pointer-events: none;
 }
@@ -47,7 +49,7 @@
 .graph-toolbar-inner {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 16px;
 }
 
@@ -71,7 +73,8 @@
 #graph-local-search-panel {
   position: absolute;
   top: calc(100% + 8px);
-  right: 0;
+  left: 0;
+  right: auto;
   display: flex;
   align-items: flex-end;
   visibility: hidden;
@@ -306,6 +309,7 @@
     margin-bottom: 0;
     min-height: 500px;
     background: transparent;
+    box-shadow: none;
   }
 
   .graph-toolbar {
@@ -379,4 +383,8 @@
   .graph-toolbar .palette-toggle {
     display: none !important;
   }
+}
+
+@media (min-width: 961px) {
+  :root[data-theme="dark"] .graph-shell { box-shadow: 0 2px 4px rgb(0 0 0 / .16), 0 8px 20px rgb(0 0 0 / .14); }
 }

@@ -122,6 +122,46 @@ await run('discover canonical bilingual fixtures', async () => {
 });
 
 if (fixtures) {
+  await run('desktop: shared top-right tools and centered footer across SPA routes', async () => {
+    const { page, context, errors } = await createPage({ width: 1440, height: 1000 });
+    try {
+      await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
+      for (const [route, kind] of [['/', 'home'], ['/notes/', 'notes'], ['/archive/', 'archive'], ['/graph/', 'graph'], ['/about/', 'about'], [fixtures.toc, 'note']]) {
+        await navigate(page, route, kind);
+        assert.equal(await page.locator('.site-tools .notes-action-button').count(), 5);
+        const tools = await page.locator('.site-tools').boundingBox();
+        assert.ok(tools.y < 40 && tools.x > 1440 - 280);
+        assert.equal(await page.locator('.notes-footer-links, .drawer-footer-row').count(), 0);
+        assert.equal(await page.locator('.home-footer').count(), 1);
+        const footer = await page.locator('.home-footer').boundingBox();
+        assert.ok(Math.abs(footer.x + footer.width / 2 - 720) < 8);
+        await page.locator('.site-tools [data-notes-tool="search"]').click();
+        await page.locator('[data-notes-search]').fill('Markdown');
+        if (kind === 'notes') await page.waitForSelector('.notes-search-results .notes-item');
+        else await page.waitForSelector('[data-desktop-search-results] .notes-item');
+        await page.keyboard.press('Escape');
+        await page.locator('.site-tools [data-notes-tool="tags"]').click();
+        await page.waitForFunction(() => document.querySelector('[data-notes-panel="tags"]').getAttribute('aria-hidden') === 'false');
+        assert.ok(await page.locator('.site-tools .notes-tag-link').count() > 0);
+        await page.keyboard.press('Escape');
+      }
+      await page.goBack();
+      await settled(page, 'about');
+      await page.goForward();
+      await settled(page, 'note');
+      await page.evaluate(() => scrollTo(0, 1800));
+      await page.waitForFunction(() => document.querySelector('.note-toc-stage').classList.contains('is-reading'));
+      const overlap = await page.evaluate(() => {
+        const content = document.querySelector('.post-content').getBoundingClientRect();
+        const rail = document.querySelector('.reading-toc-rail').getBoundingClientRect();
+        return rail.left < content.right;
+      });
+      assert.equal(overlap, false, 'Reading rail overlaps article content');
+      assert.deepEqual(errors, []);
+      return {};
+    } finally { await context.close(); }
+  });
+
   await run('home mobile 390: bounded page and avatar', async () => {
     const { page, context, errors } = await createPage({ width: 390, height: 844 }, true);
     try {
@@ -274,9 +314,7 @@ if (fixtures) {
       assert.equal(await page.locator('#home-tooltip.is-visible').count(), 0);
       await page.locator('.notes-item-title a').first().hover();
       assert.equal(await page.locator('.notes-item-title a').first().evaluate(element => getComputedStyle(element, '::before').content), 'none');
-      const footerLink = page.locator('.notes-footer-links a').first();
-      await footerLink.hover();
-      await page.waitForFunction(() => getComputedStyle(document.querySelector('.notes-footer-links a'), '::before').clipPath === 'inset(0px)');
+      assert.equal(await page.locator('.notes-footer-links, .drawer-footer-row').count(), 0);
       await page.goBack();
       await settled(page, 'home');
       await page.locator('.github-calendar-day').first().hover();
@@ -292,8 +330,8 @@ if (fixtures) {
     try {
       await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
       await saveHomeScreenshots(page);
-      assert.equal(await page.locator('.site-nav .lang-toggle').getAttribute('href'), '/en_US/');
-      await page.locator('.site-nav .lang-toggle').click();
+      assert.equal(await page.locator('.site-tools .lang-toggle').getAttribute('href'), '/en_US/');
+      await page.locator('.site-tools .lang-toggle').click();
       await page.waitForFunction(() => location.pathname === '/en_US/');
       await settled(page, 'home');
       const notes = page.locator('.site-nav a[href="/en_US/notes/"]');
@@ -374,7 +412,7 @@ if (fixtures) {
       await navigate(page, '/notes/', 'notes');
       assert.equal(await page.locator('[data-mobile-toc-sheet]').count(), 0, 'SPA cleanup left old article sheet');
       await page.locator('#mobile-menu-toggle').tap();
-      for (const selector of ['.mobile-drawer-nav .drawer-nav-link', '.drawer-footer-row a']) {
+      for (const selector of ['.mobile-drawer-nav .drawer-nav-link']) {
         const link = page.locator(selector).first();
         const originalColor = await link.evaluate(element => getComputedStyle(element).color);
         await link.hover();

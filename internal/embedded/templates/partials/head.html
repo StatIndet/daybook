@@ -65,9 +65,7 @@
   <script src="{{.Assets.Path "/js/katex-loader.js"}}" data-daybook-page-script defer></script>
   {{end}}
   <script src="{{.Assets.Path "/js/search-engine.js"}}" defer></script>
-  {{if or (eq .PageKind "notes") (eq .PageKind "tag")}}
-  <script src="{{.Assets.Path "/js/note-filters.js"}}" data-daybook-page-script defer></script>
-  {{end}}
+  <script src="{{.Assets.Path "/js/note-filters.js"}}" defer></script>
   {{if eq .PageKind "archive"}}
   <script src="{{.Assets.Path "/js/archive.js"}}" data-daybook-page-script defer></script>
   {{end}}

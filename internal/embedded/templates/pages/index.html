@@ -1,5 +1,5 @@
 {{define "github_contact"}}
-<li><a href="{{.Link.URL}}" {{if ne .Link.Type "email"}}target="_blank" rel="noopener noreferrer"{{end}}>{{if .Link.Icon}}<span class="github-contact-icon" style="mask-image: url('{{.Assets.Path .Link.Icon}}')" aria-hidden="true"></span>{{else}}<span class="material-symbol" aria-hidden="true">link</span>{{end}}<span>{{.Text}}</span></a></li>
+<li><a href="{{.Link.URL}}" {{if ne .Link.Type "email"}}target="_blank" rel="noopener noreferrer"{{end}}>{{if eq .Link.Type "email"}}<span class="material-symbol" aria-hidden="true">mail</span>{{else if .Link.Icon}}<span class="github-contact-icon" style="mask-image: url('{{.Assets.Path .Link.Icon}}')" aria-hidden="true"></span>{{else}}<span class="material-symbol" aria-hidden="true">link</span>{{end}}<span>{{.Text}}</span></a></li>
 {{end}}
 
 {{define "github_repository"}}
@@ -58,5 +58,4 @@
 {{else}}
 <section class="github-home github-home-empty" data-github-home><h1>GitHub</h1><p>{{if eq .Lang "en_US"}}GitHub profile is unavailable.{{else}}GitHub 资料暂不可用。{{end}}</p>{{if .Config.GitHub.Username}}<a href="https://github.com/{{.Config.GitHub.Username}}">{{.Config.GitHub.Username}}</a>{{end}}</section>
 {{end}}
-{{template "home_footer" .}}
 {{end}}

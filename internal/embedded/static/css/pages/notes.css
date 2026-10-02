@@ -1,9 +1,7 @@
 .notes-page {
-  display: grid;
-  gap: var(--notes-page-gap);
-  grid-template-columns: minmax(0, var(--notes-content-width)) minmax(220px, var(--notes-aside-width));
+  display: block;
   margin: 0 auto;
-  max-width: calc(var(--notes-content-width) + var(--notes-aside-width) + var(--notes-page-gap));
+  max-width: var(--notes-content-width);
   width: 100%;
 }
 
@@ -132,38 +130,7 @@ hr.notes-divider {
   max-width: var(--notes-content-width);
 }
 
-.notes-aside {
-  align-self: start;
-  display: flex;
-  flex-direction: column;
-  min-height: calc(100vh - 176px);
-  position: sticky;
-  top: 72px;
-}
-
-.notes-aside-controls {
-  margin-top: auto;
-  min-width: 0;
-}
-
-.notes-footer {
-  color: var(--color-muted);
-  font-family: var(--font-ui);
-  font-size: 0.82rem;
-  line-height: 1.65;
-  margin-top: 0;
-}
-
-.notes-footer-actions {
-  align-items: center;
-  display: flex;
-  gap: 12px;
-  margin-bottom: 30px;
-}
-
-.notes-footer p {
-  margin: 4px 0 0;
-}
+.notes-aside { align-self: start; min-width: 0; position: sticky; top: 88px; }
 .articles {
   margin-top: 12px;
 }
@@ -198,61 +165,6 @@ hr.notes-divider {
 .note-list .note-summary {
   color: var(--color-muted);
   font-size: 1.05rem;
-}
-
-@media (max-width: 1280px) {
-  .notes-page {
-    display: block;
-    max-width: min(var(--note-body-width), 100%);
-  }
-
-  .notes-aside {
-    margin-top: clamp(2.75rem, 7vw, 4.5rem);
-    min-height: auto;
-    position: static;
-  }
-
-  .notes-aside-controls {
-    border-top: 1px solid var(--color-line);
-    display: grid;
-    gap: clamp(1.35rem, 5vw, 2.5rem);
-    grid-template-columns: minmax(12rem, max-content) minmax(16rem, 1fr);
-    margin-top: 0;
-    padding-top: 1.5rem;
-  }
-
-  .notes-footer {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .notes-tools {
-    align-self: start;
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  .notes-tools.has-open-panel {
-    margin: 0;
-  }
-
-  .notes-footer-actions {
-    margin-bottom: 1.15rem;
-  }
-}
-
-@media (max-width: 960px) {
-  .notes-page {
-    max-width: 100%;
-  }
-
-  .notes-aside-controls {
-    display: block;
-  }
-
-  .notes-tools.has-open-panel {
-    margin-bottom: 1.5rem;
-  }
 }
 
 @media (max-width: 960px) {
