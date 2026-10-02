@@ -2,6 +2,7 @@
 export class IdleClockController {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
+  private fontFamily: string;
   private rafId: number | null = null;
   private onResizeBound: () => void;
   
@@ -56,6 +57,7 @@ export class IdleClockController {
     this.canvas.className = "daybook-cursor-clock";
     this.canvas.setAttribute("aria-hidden", "true");
     this.ctx = this.canvas.getContext("2d")!;
+    this.fontFamily = getComputedStyle(document.documentElement).getPropertyValue("--font-mono");
     
     document.body.appendChild(this.canvas);
     
@@ -117,6 +119,7 @@ export class IdleClockController {
 
   public start(x: number, y: number) {
     if (this.state === 'entering' || this.state === 'active') return;
+    document.dispatchEvent(new Event("daybook:code-font-needed"));
     this.updateTarget(x, y);
     
     // Reset inertia array to (0, 0) for the original whip effect
@@ -282,8 +285,7 @@ export class IdleClockController {
     const hrs = time.getHours();
     const hr = (Math.PI * (hrs - 3)) / 6 + (Math.PI * time.getMinutes()) / 360;
 
-    // Use project's Maple Mono font with normal weight for a clean look
-    this.ctx.font = "normal 14px 'Maple Mono CN', 'Maple Mono', monospace";
+    this.ctx.font = `normal 14px ${this.fontFamily}`;
     this.ctx.textAlign = "center";
     this.ctx.textBaseline = "middle";
 

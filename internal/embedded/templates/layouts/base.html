@@ -80,25 +80,26 @@
     setupArticleControls();
     document.addEventListener("daybook:page-load", setupArticleControls);
 
+    function loadCodeFonts() {
+      for (const href of [
+        "{{.Assets.Path "/vendor/fonts/maple-mono-cn/regular/result.css"}}",
+        "{{.Assets.Path "/vendor/fonts/maple-mono-cn/italic/result.css"}}"
+      ]) {
+        if (Array.from(document.querySelectorAll('link[rel="stylesheet"]')).some(link => link.getAttribute('href') === href)) continue;
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = href;
+        document.head.appendChild(link);
+      }
+    }
     function setupCodeFonts() {
-      if (!document.querySelector('.post-content pre, .post-content code, .github-readme pre, .github-readme code')) return;
-      const load = () => {
-        for (const href of [
-          "{{.Assets.Path "/vendor/fonts/maple-mono-cn/regular/result.css"}}",
-          "{{.Assets.Path "/vendor/fonts/maple-mono-cn/italic/result.css"}}"
-        ]) {
-          if (Array.from(document.querySelectorAll('link[rel="stylesheet"]')).some(link => link.getAttribute('href') === href)) continue;
-          const link = document.createElement('link');
-          link.rel = 'stylesheet';
-          link.href = href;
-          document.head.appendChild(link);
-        }
-      };
-      if ('requestIdleCallback' in window) window.requestIdleCallback(load, { timeout: 1500 });
-      else setTimeout(load, 0);
+      if (!document.querySelector('pre, code, kbd, samp, #waline')) return;
+      if ('requestIdleCallback' in window) window.requestIdleCallback(loadCodeFonts, { timeout: 1500 });
+      else setTimeout(loadCodeFonts, 0);
     }
     setupCodeFonts();
     document.addEventListener("daybook:page-load", setupCodeFonts);
+    document.addEventListener("daybook:code-font-needed", loadCodeFonts);
 
     import("{{.Assets.Path "/js/settings-overlay.js"}}").then(module => {
       module.initSettingsOverlay();

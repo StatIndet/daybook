@@ -29,8 +29,8 @@
 }
 .hero-avatar { display: block; border-radius: inherit; width: 100%; height: 100%; object-fit: cover; }
 .github-profile-name { font-size: 1.75rem; font-weight: 600; line-height: 1.2; margin: 26px 0 16px; }
-.github-profile-name > span { display: block; color: var(--color-muted); font-size: 1.2rem; font-weight: 400; margin-top: 5px; }
-.github-profile-pronouns { display: block; color: var(--color-muted); font-size: 0.88rem; font-weight: 400; margin-top: 6px; }
+.github-profile-name > span { display: block; color: var(--color-muted); font-family: var(--font-ui); font-size: 1.2rem; font-weight: 400; margin-top: 5px; }
+.github-profile-pronouns { display: block; color: var(--color-muted); font-family: var(--font-ui); font-size: 0.88rem; font-weight: 400; margin-top: 6px; }
 .github-profile-bio { font-size: 1.02rem; margin: 0 0 18px; white-space: pre-line; overflow-wrap: anywhere; }
 .github-profile-status { padding: 6px 10px; background: var(--color-accent-soft); border-radius: 10px; margin: 0 0 14px; }
 .github-home a { position: relative; isolation: isolate; color: inherit; text-decoration: none; transition: color 180ms ease; }
@@ -67,7 +67,7 @@
 .github-repositories, .github-contributions { margin-top: 32px; }
 .github-repository-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .github-repository { background: var(--home-card); box-shadow: var(--home-shadow-low); border-radius: 16px; padding: 20px; min-width: 0; display: flex; flex-direction: column; }
-.github-repository-heading { display: flex; align-items: center; gap: 7px; }
+.github-repository-heading { display: flex; align-items: center; gap: 7px; font-family: var(--font-serif); }
 .github-repository-heading .material-symbol { font-size: 18px; color: var(--color-muted); flex-shrink: 0; }
 .github-home .github-repository-heading > a { display: inline-flex; align-items: start; gap: 7px; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
 .github-repository-heading > a > .material-symbol { margin-top: 3px; }

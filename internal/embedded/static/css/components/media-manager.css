@@ -86,7 +86,7 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-collapsed
 
 .mm-vertical-title {
   writing-mode: vertical-lr;
-  font-family: var(--font-headline);
+  font-family: var(--font-serif);
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-on-surface);
@@ -213,7 +213,7 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-expanded-
 }
 
 .mm-title {
-  font-family: var(--font-headline);
+  font-family: var(--font-serif);
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--color-primary, var(--color-on-surface));
@@ -500,7 +500,7 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-playlist-
 }
 
 .mm-playlist-header-title {
-  font-family: var(--font-headline);
+  font-family: var(--font-serif);
   font-weight: 600;
   color: var(--color-on-surface);
 }
@@ -556,7 +556,7 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-playlist-
 }
 
 .mm-playlist-item-title {
-  font-family: var(--font-ui);
+  font-family: var(--font-serif);
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--color-on-surface);
@@ -709,4 +709,3 @@ body[data-media-manager-active="true"] .mm-desktop-ui:focus-within .mm-playlist-
     display: none !important;
   }
 }
-

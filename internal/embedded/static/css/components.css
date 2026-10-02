@@ -8,6 +8,7 @@
 }
 
 .nav-link {
+  font-family: var(--font-serif);
   isolation: isolate;
   align-items: center;
   color: var(--color-muted);
@@ -515,6 +516,7 @@ body.is-tags-overlay-open .mobile-tags-overlay .notes-tag-link {
 }
 
 .note-toc-title {
+  font-family: var(--font-serif);
   color: var(--color-muted);
   font-size: 0.78rem;
   line-height: 1;
@@ -1007,7 +1009,7 @@ body.is-mobile-drawer-open .mobile-menu-toggle .icon-close {
 }
 
 .drawer-nav-label {
-  font-family: var(--font-ui);
+  font-family: var(--font-serif);
   font-size: 1.05rem;
 }
 
@@ -1200,7 +1202,7 @@ body.is-search-overlay-open .mobile-search-overlay {
 .mobile-overlay-title {
   color: var(--color-text);
   flex: 1;
-  font-family: var(--font-ui);
+  font-family: var(--font-serif);
   font-size: 1.3rem;
   margin: 0;
 }

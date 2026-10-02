@@ -6,6 +6,7 @@ import { buildMaterialSymbols } from './build-material-symbols.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "..");
+const fontsRoot = path.join(root, "internal", "embedded", "static", "vendor", "fonts");
 
 async function mustExist(file) {
   try {
@@ -31,6 +32,9 @@ async function copyFileClean(source, target) {
   await copyFile(source, target);
   console.log(`Copied ${source} -> ${target}`);
 }
+
+// All fonts are generated from npm dependencies; discard obsolete assets too.
+await rm(fontsRoot, { recursive: true, force: true });
 
 // Copy LXGW WenKai Screen
 await copyDirClean(
@@ -58,17 +62,17 @@ await copyFileClean(
   path.join(root, "internal", "embedded", "static", "vendor", "fonts", "fraunces", "fraunces-latin-400-italic.woff2"),
 );
 
-// Copy Allura (Normal)
-await copyFileClean(
-  path.join(root, "node_modules", "@fontsource", "allura", "files", "allura-latin-400-normal.woff2"),
-  path.join(root, "internal", "embedded", "static", "vendor", "fonts", "allura", "allura-latin-400-normal.woff2"),
-);
-
-// Copy Cormorant Garamond Meta (Italic)
-await copyFileClean(
-  path.join(root, "node_modules", "@fontsource", "cormorant-garamond", "files", "cormorant-garamond-latin-400-italic.woff2"),
-  path.join(root, "internal", "embedded", "static", "vendor", "fonts", "cormorant-garamond", "cormorant-garamond-latin-400-italic.woff2"),
-);
+// Rebuild the English body font assets, including real bold and italic faces.
+const cormorantTarget = path.join(root, "internal", "embedded", "static", "vendor", "fonts", "cormorant-garamond");
+for (const weight of [400, 500, 600, 700]) {
+  for (const style of ["normal", "italic"]) {
+    const filename = `cormorant-garamond-latin-${weight}-${style}.woff2`;
+    await copyFileClean(
+      path.join(root, "node_modules", "@fontsource", "cormorant-garamond", "files", filename),
+      path.join(cormorantTarget, filename),
+    );
+  }
+}
 
 // Copy Noto Serif SC Variable CSS
 await copyFileClean(

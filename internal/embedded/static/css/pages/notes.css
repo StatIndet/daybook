@@ -249,7 +249,7 @@ hr.notes-divider {
 
 .tag-back-title {
   color: var(--color-text);
-  font-family: var(--font-ui);
+  font-family: var(--font-serif);
   font-size: clamp(1.5rem, 2.2vw, 1.8rem);
   font-weight: 700;
   margin: 0;

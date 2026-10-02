@@ -1156,7 +1156,7 @@
   background: var(--color-surface);
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   color: #fff;
-  font-family: var(--font-sans);
+  font-family: var(--font-ui);
 }
 
 .music-bg {
@@ -1216,6 +1216,7 @@
 }
 
 .music-title {
+  font-family: var(--font-serif);
   font-size: 16px;
   font-weight: 600;
   margin-right: 8px;

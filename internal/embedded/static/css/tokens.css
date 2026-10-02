@@ -1,13 +1,11 @@
 :root {
   --font-logo: "Daybook Fraunces", serif;
-  --font-ui: "LXGW WenKai Screen", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-body: "LXGW WenKai Screen", "PingFang SC", "Microsoft YaHei", serif;
+  --font-ui: var(--font-body);
   --font-serif: "Noto Serif SC Variable", "Songti SC", "STSong", serif;
   --font-mono: "Maple Mono CN", "Maple Mono", "SFMono-Regular", "Cascadia Code", "JetBrains Mono", ui-monospace, monospace;
   --font-icon: "Material Symbols Rounded";
-  --font-meta: "Cormorant Garamond Meta", var(--font-serif);
-  --font-signature-cn: var(--font-ui);
-  --font-signature-en: "Daybook Allura", cursive;
+  --font-meta: var(--font-body);
   --side-rail-width: 220px;
   --persistent-logo-left: 40px;
   --persistent-logo-top: 23px;
@@ -106,6 +104,10 @@
     0 10px 28px oklch(25% 0.005 298 / 0.1),
     0 3px 10px oklch(25% 0.005 298 / 0.07);
   color-scheme: light;
+}
+
+:root:lang(en) {
+  --font-body: "Cormorant Garamond", "LXGW WenKai Screen", "Times New Roman", serif;
 }
 
 :root[data-theme="dark"] {

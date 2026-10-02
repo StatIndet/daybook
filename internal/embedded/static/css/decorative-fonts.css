@@ -5,13 +5,3 @@
   font-style: italic;
   font-display: swap;
 }
-
-
-@font-face {
-  font-family: "Daybook Allura";
-  src: url("/vendor/fonts/allura/allura-latin-400-normal.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-

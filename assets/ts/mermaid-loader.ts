@@ -196,15 +196,17 @@
     renderRun += 1;
 
     return loadMermaid()
-      .then(function (mermaid) {
+      .then(async function (mermaid) {
         if (!mermaid || typeof mermaid.initialize !== "function" || typeof mermaid.render !== "function") {
           throw new Error("Mermaid library is not available.");
         }
 
+        await document.fonts.ready;
         mermaid.initialize({
           startOnLoad: false,
           theme: theme,
           securityLevel: "strict",
+          fontFamily: getComputedStyle(document.documentElement).getPropertyValue("--font-body").trim(),
         });
 
         return Promise.all(
@@ -257,5 +259,9 @@
 
   document.addEventListener("daybook:article-content-swapped", function () {
     scheduleInit();
+  });
+
+  document.addEventListener("daybook:lang-change", function () {
+    scheduleInit({ force: true });
   });
 })();

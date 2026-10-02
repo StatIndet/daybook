@@ -9,7 +9,7 @@
 
 /* Base styles are handled by .settings-overlay, .settings-paper etc. */
 .share-paper {
-  font-family: var(--font-serif);
+  font-family: var(--font-body);
 }
 
 .share-textarea {

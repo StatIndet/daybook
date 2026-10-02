@@ -70,7 +70,7 @@
   border-radius: 8px;
   text-align: center;
   color: var(--color-muted);
-  font-family: var(--font-sans);
+  font-family: var(--font-ui);
   font-size: 0.9rem;
   min-height: 120px;
   gap: 0.5rem;

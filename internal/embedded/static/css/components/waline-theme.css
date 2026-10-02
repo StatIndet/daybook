@@ -1,5 +1,6 @@
 /* Waline Theme overrides for Daybook */
 #waline {
+  font-family: var(--font-body);
   --waline-theme-color: var(--color-accent);
   --waline-active-color: var(--color-hover-text);
   
@@ -20,6 +21,13 @@
   --waline-avatar-radius: 50%;
   
   margin-top: 1.5rem;
+}
+
+#waline pre,
+#waline code,
+#waline kbd,
+#waline samp {
+  font-family: var(--font-mono);
 }
 
 /* Make panel transparent and blend in */

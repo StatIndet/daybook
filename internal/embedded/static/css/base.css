@@ -24,6 +24,18 @@ body {
   display: contents;
 }
 
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+}
+
+button, input, select, textarea {
+  font-family: var(--font-ui);
+}
+
+pre, code, kbd, samp {
+  font-family: var(--font-mono);
+}
+
 html {
   background: var(--color-page);
   scroll-behavior: smooth;
