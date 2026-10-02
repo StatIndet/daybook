@@ -25,8 +25,7 @@ func TestWriteRSS(t *testing.T) {
 
 	err := Write(path, "zh_CN", config.Config{
 		Site: config.SiteConfig{
-			Name: map[string]string{"zh": "Daybook"},
-			URL:  "https://example.com",
+			URL: "https://example.com",
 		},
 	}, notes)
 	if err != nil {

@@ -84,7 +84,7 @@ func BuildForHome(args BuilderArgs) SEOData {
 
 	url := absURL(args.Config, args.PageURL)
 	desc := CleanDescription(args.Description)
-	person := Person{Type: "Person", ID: absURL(args.Config, "/#person"), Name: args.Config.Profile.Author.Name, AlternateName: args.Config.Profile.Author.NameEn, URL: absURL(args.Config, args.Config.Profile.Author.AboutUrl)}
+	person := Person{Type: "Person", ID: absURL(args.Config, "/#person"), Name: args.Config.Profile.Author.Name, AlternateName: args.Config.Profile.Author.NameEn, URL: absURL(args.Config, "/")}
 	image := args.Image
 	if args.GitHub != nil {
 		person.URL = args.GitHub.HTMLURL

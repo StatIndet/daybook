@@ -26,7 +26,6 @@ type AuthorConfig struct {
 	NameEn   string `yaml:"nameEn"`
 	LogoText string `yaml:"logoText"`
 	Avatar   string `yaml:"avatar"`
-	AboutUrl string `yaml:"aboutUrl"`
 }
 
 type ProfileConfig struct {
@@ -103,11 +102,10 @@ type GitHubConfig struct {
 }
 
 type SiteConfig struct {
-	Name      map[string]string `yaml:"name"`
-	URL       string            `yaml:"url"`
-	StartedAt string            `yaml:"startedAt"`
-	Favicon   string            `yaml:"favicon"`
-	Copyright string            `yaml:"copyright"`
+	URL       string `yaml:"url"`
+	StartedAt string `yaml:"startedAt"`
+	Favicon   string `yaml:"favicon"`
+	Copyright string `yaml:"copyright"`
 }
 
 type Config struct {
@@ -120,11 +118,8 @@ type Config struct {
 	GitHub  GitHubConfig  `yaml:"github"`
 }
 
-func (c Config) GetSiteName(lang string) string {
-	if val := getMultilingualString(c.Site.Name, lang); val != "" {
-		return val
-	}
-	return "Daybook"
+func (c Config) GetSiteName(_ string) string {
+	return c.Profile.GetLogoText()
 }
 
 func (c Config) GetHomeTitle(lang string) string {

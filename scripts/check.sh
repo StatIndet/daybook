@@ -33,8 +33,10 @@ mkdir -p "$VAULT_DIR/vault/pages"
 
 cat << 'YAML' > "$VAULT_DIR/daybook.yaml"
 site:
-  title: Smoke Test Vault
   url: https://example.com
+profile:
+  author:
+    logoText: Smoke Test Vault
 YAML
 
 cat << 'ABOUT' > "$VAULT_DIR/vault/pages/about.md"

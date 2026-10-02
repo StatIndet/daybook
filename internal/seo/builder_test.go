@@ -9,12 +9,7 @@ import (
 
 func TestSEOBuilder(t *testing.T) {
 	cfg := config.Config{
-		Site: config.SiteConfig{
-			Name: map[string]string{
-				"zh": "中文站名",
-				"en_US": "English Site",
-			},
-		},
+		Profile: config.ProfileConfig{Author: config.AuthorConfig{LogoText: "My Blog"}},
 	}
 
 	argsZH := seo.BuilderArgs{
@@ -27,8 +22,8 @@ func TestSEOBuilder(t *testing.T) {
 	if data.Title != "中文首页完整标题" {
 		t.Errorf("expected Title to be '中文首页完整标题', got '%s'", data.Title)
 	}
-	if data.SiteName != "中文站名" {
-		t.Errorf("expected SiteName to be '中文站名', got '%s'", data.SiteName)
+	if data.SiteName != "My Blog" {
+		t.Errorf("expected SiteName to be 'My Blog', got '%s'", data.SiteName)
 	}
 
 	argsEN := seo.BuilderArgs{
@@ -40,8 +35,8 @@ func TestSEOBuilder(t *testing.T) {
 	if data.Title != "English Full Home Title" {
 		t.Errorf("expected Title to be 'English Full Home Title', got '%s'", data.Title)
 	}
-	if data.SiteName != "English Site" {
-		t.Errorf("expected SiteName to be 'English Site', got '%s'", data.SiteName)
+	if data.SiteName != "My Blog" {
+		t.Errorf("expected SiteName to be 'My Blog', got '%s'", data.SiteName)
 	}
 
 	noteArgsZH := seo.BuilderArgs{
@@ -50,11 +45,11 @@ func TestSEOBuilder(t *testing.T) {
 		Title:  "测试文章",
 	}
 	data = seo.BuildForNote(noteArgsZH)
-	if data.Title != "测试文章 | 中文站名" {
-		t.Errorf("expected '测试文章 | 中文站名', got '%s'", data.Title)
+	if data.Title != "测试文章 | My Blog" {
+		t.Errorf("expected '测试文章 | My Blog', got '%s'", data.Title)
 	}
-	if data.SiteName != "中文站名" {
-		t.Errorf("expected SiteName '中文站名', got '%s'", data.SiteName)
+	if data.SiteName != "My Blog" {
+		t.Errorf("expected SiteName 'My Blog', got '%s'", data.SiteName)
 	}
 
 	noteArgsEN := seo.BuilderArgs{
@@ -63,7 +58,7 @@ func TestSEOBuilder(t *testing.T) {
 		Title:  "Test Note",
 	}
 	data = seo.BuildForNote(noteArgsEN)
-	if data.Title != "Test Note | English Site" {
-		t.Errorf("expected 'Test Note | English Site', got '%s'", data.Title)
+	if data.Title != "Test Note | My Blog" {
+		t.Errorf("expected 'Test Note | My Blog', got '%s'", data.Title)
 	}
 }
