@@ -21,13 +21,13 @@
   transition: color 180ms ease;
 }
 
-:is(.github-repository-heading a, .notes-item-title a, .archive-entry a, .pagination-btn:not(.is-disabled), .note-rc-btn, .drawer-nav-content) {
+:is(.github-repository-heading a, .github-followers a, .notes-footer-links a, .drawer-footer-row a, .pagination-btn:not(.is-disabled), .note-rc-btn, .drawer-nav-content) {
   isolation: isolate;
   position: relative;
 }
 
 .nav-link::after,
-:is(.github-repository-heading a, .notes-item-title a, .archive-entry a, .pagination-btn:not(.is-disabled), .note-rc-btn, .drawer-nav-content)::before {
+:is(.github-repository-heading a, .github-followers a, .notes-footer-links a, .drawer-footer-row a, .pagination-btn:not(.is-disabled), .note-rc-btn, .drawer-nav-content)::before {
   background: var(--color-marker);
   bottom: 0.06em;
   content: "";
@@ -45,8 +45,8 @@
 .nav-link:focus-visible,
 .github-home a:hover,
 .github-home a:focus-visible,
-:is(.notes-item-title a, .archive-entry a, .pagination-btn:not(.is-disabled), .note-rc-btn):hover,
-:is(.notes-item-title a, .archive-entry a, .pagination-btn:not(.is-disabled), .note-rc-btn):focus-visible,
+:is(.github-followers a, .notes-footer-links a, .drawer-footer-row a, .pagination-btn:not(.is-disabled), .note-rc-btn):hover,
+:is(.github-followers a, .notes-footer-links a, .drawer-footer-row a, .pagination-btn:not(.is-disabled), .note-rc-btn):focus-visible,
 .site-logo:hover,
 .site-logo:focus-visible {
   color: var(--color-hover-text);
@@ -54,8 +54,8 @@
 
 .nav-link:hover::after,
 .nav-link:focus-visible::after,
-:is(.github-repository-heading a, .notes-item-title a, .archive-entry a, .pagination-btn:not(.is-disabled), .note-rc-btn):hover::before,
-:is(.github-repository-heading a, .notes-item-title a, .archive-entry a, .pagination-btn:not(.is-disabled), .note-rc-btn):focus-visible::before,
+:is(.github-repository-heading a, .github-followers a, .notes-footer-links a, .drawer-footer-row a, .pagination-btn:not(.is-disabled), .note-rc-btn):hover::before,
+:is(.github-repository-heading a, .github-followers a, .notes-footer-links a, .drawer-footer-row a, .pagination-btn:not(.is-disabled), .note-rc-btn):focus-visible::before,
 .drawer-nav-link:hover .drawer-nav-content::before,
 .drawer-nav-link:focus-visible .drawer-nav-content::before {
   clip-path: inset(0);
@@ -64,13 +64,13 @@
 
 @media (prefers-reduced-motion: reduce) {
   .nav-link::after,
-  :is(.github-repository-heading a, .notes-item-title a, .archive-entry a, .pagination-btn:not(.is-disabled), .note-rc-btn, .drawer-nav-content)::before {
+  :is(.github-repository-heading a, .github-followers a, .notes-footer-links a, .drawer-footer-row a, .pagination-btn:not(.is-disabled), .note-rc-btn, .drawer-nav-content)::before {
     transition: none;
   }
 }
 
 html[data-reduced-motion="true"] .nav-link::after,
-html[data-reduced-motion="true"] :is(.github-repository-heading a, .notes-item-title a, .archive-entry a, .pagination-btn:not(.is-disabled), .note-rc-btn, .drawer-nav-content)::before {
+html[data-reduced-motion="true"] :is(.github-repository-heading a, .github-followers a, .notes-footer-links a, .drawer-footer-row a, .pagination-btn:not(.is-disabled), .note-rc-btn, .drawer-nav-content)::before {
   transition: none;
 }
 
@@ -1114,6 +1114,7 @@ body.is-mobile-drawer-open .mobile-menu-toggle .icon-close {
   font-family: var(--font-ui);
   font-size: 0.82rem;
   text-decoration: none;
+  transition: color 180ms ease;
 }
 
 .drawer-copyright {

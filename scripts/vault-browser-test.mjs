@@ -201,7 +201,7 @@ if (fixtures) {
       await navigation.hover();
       await page.waitForFunction(() => getComputedStyle(document.querySelector('.site-nav .nav-link'), '::after').clipPath === 'inset(0px)');
       const highlight = await navigation.evaluate(element => getComputedStyle(element).color);
-      for (const selector of ['.github-repository-heading a']) {
+      for (const selector of ['.github-repository-heading a', '.github-followers a']) {
         const link = page.locator(selector).first();
         await link.hover();
         await page.waitForFunction(selector => {
@@ -211,7 +211,7 @@ if (fixtures) {
         }, selector);
         assert.equal(await link.evaluate(element => getComputedStyle(element).color), highlight);
       }
-      for (const selector of ['.github-profile-details a', '.github-followers a']) {
+      for (const selector of ['.github-profile-details a']) {
         const link = page.locator(selector).first();
         await link.hover();
         await page.waitForFunction(selector => getComputedStyle(document.querySelector(selector).querySelector('.material-symbol')).fontVariationSettings.includes('"FILL" 1'), selector);
@@ -273,10 +273,10 @@ if (fixtures) {
       await navigate(page, '/notes/', 'notes');
       assert.equal(await page.locator('#home-tooltip.is-visible').count(), 0);
       await page.locator('.notes-item-title a').first().hover();
-      await page.waitForFunction(() => getComputedStyle(document.querySelector('.notes-item-title a'), '::before').clipPath === 'inset(0px)');
+      assert.equal(await page.locator('.notes-item-title a').first().evaluate(element => getComputedStyle(element, '::before').content), 'none');
       const footerLink = page.locator('.notes-footer-links a').first();
       await footerLink.hover();
-      assert.equal(await footerLink.evaluate(element => getComputedStyle(element, '::after').content), 'none');
+      await page.waitForFunction(() => getComputedStyle(document.querySelector('.notes-footer-links a'), '::before').clipPath === 'inset(0px)');
       await page.goBack();
       await settled(page, 'home');
       await page.locator('.github-calendar-day').first().hover();
