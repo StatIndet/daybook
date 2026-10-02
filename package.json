@@ -26,7 +26,7 @@
     "fontkit": "^2.0.4",
     "katex": "^0.18.4",
     "lxgw-wenkai-screen-web": "^1.522.0",
-    "material-symbols": "^0.46.0",
+    "material-symbols": "^0.47.5",
     "playwright": "^1.62.1",
     "sharp": "^0.35.5",
     "subset-font": "^2.9.0",
