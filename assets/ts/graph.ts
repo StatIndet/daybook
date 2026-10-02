@@ -84,6 +84,7 @@ interface GraphData {
   let svg: any | null = null;
   let g: any | null = null;
   let isDragging = false;
+  const nodeCache = new Map<string, GraphNode>();
 
   async function init(root?: Document | HTMLElement) {
     if (!root) root = document;
@@ -117,12 +118,19 @@ interface GraphData {
 
   function destroy() {
     if (simulation) {
-      simulation.stop();
+      simulation.on('tick', null).stop();
       simulation = null;
     }
     if (container) {
       container.innerHTML = '';
     }
+    svg?.interrupt();
+    svg?.selectAll('*').interrupt();
+    svg = null;
+    g = null;
+    zoomBehavior = null;
+    isDragging = false;
+    nodeCache.clear();
     rawNodes = [];
     rawLinks = [];
     graphMeta = null;
@@ -199,19 +207,6 @@ interface GraphData {
   }
 
   function render(initialAlpha = 1) {
-    let currentPositions = new Map<string, { x?: number, y?: number, vx?: number, vy?: number }>();
-    let currentTransform: any | null = null;
-    
-    const graphNodesSelection: any | null = (window as any).__graphNodes;
-    if (graphNodesSelection) {
-      graphNodesSelection.each(function(d: GraphNode) {
-        currentPositions.set(d.id, { x: d.x, y: d.y, vx: d.vx, vy: d.vy });
-      });
-      if (svg && svg.node()) {
-        currentTransform = window.window.d3.zoomTransform(svg.node()!);
-      }
-    }
-
     const urlParams = new URLSearchParams(window.location.search);
     const centerNodeId = urlParams.get('node');
     let depth = parseInt(urlParams.get('depth') || '1', 10);
@@ -233,22 +228,20 @@ interface GraphData {
     const initialRadius = Math.max(50, Math.sqrt(filteredNodes.length) * 15);
 
     let nodes: GraphNode[] = filteredNodes.map((n, i) => {
-      const existing = currentPositions.get(n.id);
+      const existing = nodeCache.get(n.id);
       if (existing && existing.x !== undefined && existing.y !== undefined) {
-        return { 
-          ...n, 
-          radius: getRadius(n.degree),
-          x: existing.x, y: existing.y, vx: existing.vx, vy: existing.vy
-        };
+        return Object.assign(existing, n, { radius: getRadius(n.degree) });
       }
       const angle = i * Math.PI * 2 / filteredNodes.length;
       const r = initialRadius * (0.5 + Math.random() * 0.5);
-      return { 
-        ...n, 
+      const node = {
+        ...n,
         radius: getRadius(n.degree),
         x: cx + Math.cos(angle) * r,
         y: cy + Math.sin(angle) * r
       };
+      nodeCache.set(n.id, node);
+      return node;
     });
 
     const nodeMap = new Map(nodes.map(n => [n.id, n]));
@@ -269,16 +262,19 @@ interface GraphData {
               // Add a slight random offset to prevent near-zero distance singularity physics explosion
               const angle = Math.random() * Math.PI * 2;
               const offset = 20;
-              tagNodesMap.set(tagId, {
+              const cached = nodeCache.get(tagId);
+              const tagNode = Object.assign(cached || {}, {
                 id: tagId,
                 title: '#' + tagObj.title,
                 isTag: true,
                 exists: true,
                 degree: 1,
                 radius: getRadius(1),
-                x: (n.x || 0) + Math.cos(angle) * offset,
-                y: (n.y || 0) + Math.sin(angle) * offset
+                x: cached?.x ?? (n.x ?? cx) + Math.cos(angle) * offset,
+                y: cached?.y ?? (n.y ?? cy) + Math.sin(angle) * offset
               });
+              nodeCache.set(tagId, tagNode);
+              tagNodesMap.set(tagId, tagNode);
             } else {
               const tagNode = tagNodesMap.get(tagId)!;
               tagNode.degree++;
@@ -304,7 +300,8 @@ interface GraphData {
             if (!attNodesMap.has(attId)) {
               const angle = Math.random() * Math.PI * 2;
               const offset = 20;
-              attNodesMap.set(attId, {
+              const cached = nodeCache.get(attId);
+              const attachmentNode = Object.assign(cached || {}, {
                 id: attId,
                 title: attObj.title,
                 url: attObj.url,
@@ -312,9 +309,11 @@ interface GraphData {
                 exists: true,
                 degree: 1,
                 radius: getRadius(1),
-                x: (n.x || cx) + Math.cos(angle) * offset,
-                y: (n.y || cy) + Math.sin(angle) * offset
+                x: cached?.x ?? (n.x ?? cx) + Math.cos(angle) * offset,
+                y: cached?.y ?? (n.y ?? cy) + Math.sin(angle) * offset
               });
+              nodeCache.set(attId, attachmentNode);
+              attNodesMap.set(attId, attachmentNode);
             } else {
               const attNode = attNodesMap.get(attId)!;
               attNode.degree++;
@@ -329,13 +328,21 @@ interface GraphData {
       links = links.concat(newLinks);
     }
 
-    drawGraph(nodes, links, centerNodeId, initialAlpha, currentTransform);
+    const activeIds = new Set(nodes.map(node => node.id));
+    // Hidden nodes keep their last position, but should not return with stale momentum.
+    nodeCache.forEach(node => {
+      if (!activeIds.has(node.id)) {
+        node.vx = 0;
+        node.vy = 0;
+        node.fx = null;
+        node.fy = null;
+      }
+    });
+    drawGraph(nodes, links, centerNodeId, initialAlpha);
   }
 
-  function drawGraph(nodes: GraphNode[], links: GraphLink[], centerNodeId: string | null, initialAlpha = 1, currentTransform: any | null = null) {
+  function drawGraph(nodes: GraphNode[], links: GraphLink[], centerNodeId: string | null, initialAlpha = 1) {
     if (!container) return;
-    container.innerHTML = '';
-    
     // Add flex: 1 style so it definitely takes height if parent is flex
     container.style.flex = "1";
 
@@ -343,48 +350,69 @@ interface GraphData {
     const height = container.clientHeight || 600;
     const d3 = window.d3;
 
-    svg = window.d3.select(container)
-      .append('svg')
-      .attr('width', '100%')
-      .attr('height', '100%')
-      .attr('viewBox', [0, 0, width, height]);
+    if (!svg) {
+      svg = d3.select(container)
+        .append('svg')
+        .attr('width', '100%')
+        .attr('height', '100%')
+        .attr('viewBox', [0, 0, width, height]);
+      g = svg.append('g');
+      g.append('g').attr('class', 'graph-links');
+      g.append('g').attr('class', 'graph-nodes');
 
-    g = svg!.append('g');
-
-    zoomBehavior = window.d3.zoom()
-      .scaleExtent([0.2, 5])
-      .on('zoom', (event: any) => {
-        g!.attr('transform', event.transform);
-        updateLabelVisibility(event.transform.k);
-      });
-
-    svg!.call(zoomBehavior);
-
-    if (currentTransform) {
-      svg!.call(zoomBehavior.transform, currentTransform);
-    } else {
-      const defaultFit = getDefaultGraphTransform(width, height);
-      svg!.call(zoomBehavior.transform, defaultFit.transform);
+      zoomBehavior = d3.zoom()
+        .scaleExtent([0.2, 5])
+        .on('zoom', (event: any) => {
+          g.attr('transform', event.transform);
+          updateLabelVisibility(event.transform.k);
+        });
+      svg.call(zoomBehavior);
+      svg.call(zoomBehavior.transform, getDefaultGraphTransform(width, height).transform);
     }
 
-    simulation = window.d3.forceSimulation(nodes)
-      .alpha(initialAlpha)
-      .force('link', window.d3.forceLink(links).id((d: any) => d.id).distance(120))
-      .force('charge', window.d3.forceManyBody().strength(-280))
-      .force('x', window.d3.forceX(width / 2).strength(0.05))
-      .force('y', window.d3.forceY(height / 2).strength(0.05))
-      .force('collide', window.d3.forceCollide().radius((d: any) => d.radius + 6));
+    if (!simulation) {
+      simulation = d3.forceSimulation(nodes)
+        .alpha(initialAlpha)
+        .force('link', d3.forceLink(links).id((d: GraphNode) => d.id).distance(120))
+        .force('charge', d3.forceManyBody().strength(-280))
+        .force('x', d3.forceX(width / 2).strength(0.05))
+        .force('y', d3.forceY(height / 2).strength(0.05))
+        .force('collide', d3.forceCollide().radius((d: GraphNode) => d.radius + 6));
+    } else {
+      // Clear old endpoints before changing the active nodes; D3 mutates link objects.
+      const linkForce = simulation.force('link');
+      linkForce.links([]);
+      simulation.nodes(nodes);
+      linkForce.links(links);
+      simulation.alpha(Math.max(simulation.alpha(), initialAlpha)).restart();
+    }
 
-    const link = g!.append('g')
+    const link = g!.select('.graph-links')
       .selectAll('line')
-      .data(links)
+      .data(links, (d: GraphLink) => {
+        const source = typeof d.source === 'string' ? d.source : d.source.id;
+        const target = typeof d.target === 'string' ? d.target : d.target.id;
+        return JSON.stringify([source, target]);
+      })
       .join('line')
       .attr('class', 'graph-link');
 
-    const nodeGroup = g!.append('g')
+    const nodeGroup = g!.select('.graph-nodes')
       .selectAll('g')
-      .data(nodes)
-      .join('g')
+      .data(nodes, (d: GraphNode) => d.id)
+      .join(
+        (enter: any) => {
+          const group = enter.append('g');
+          group.append('circle');
+          group.append('text');
+          return group;
+        },
+        (update: any) => update,
+        (exit: any) => {
+          exit.selectAll('*').interrupt();
+          return exit.remove();
+        },
+      )
       .on('mouseover', handleMouseOver)
       .on('mouseout', handleMouseOut)
       .on('click', (event: any, d: GraphNode) => {
@@ -400,7 +428,7 @@ interface GraphData {
       })
       .call(drag(simulation));
 
-    const circle = nodeGroup.append('circle')
+    nodeGroup.select('circle')
       .attr('class', (d: GraphNode) => {
         let cls = 'graph-node';
         if (d.id === centerNodeId) cls += ' is-center';
@@ -411,7 +439,7 @@ interface GraphData {
       })
       .attr('r', (d: GraphNode) => d.radius);
 
-    const label = nodeGroup.append('text')
+    nodeGroup.select('text')
       .attr('class', (d: GraphNode) => {
         if (d.isTag) return 'graph-label is-tag';
         if (d.isAttachment) return 'graph-label is-attachment';
@@ -421,15 +449,17 @@ interface GraphData {
       .attr('text-anchor', 'middle')
       .text((d: GraphNode) => d.title);
 
-    simulation.on('tick', () => {
+    const ticked = () => {
       link
         .attr('x1', (d: any) => d.source.x)
         .attr('y1', (d: any) => d.source.y)
         .attr('x2', (d: any) => d.target.x)
         .attr('y2', (d: any) => d.target.y);
 
-      nodeGroup.attr('transform', (d: any) => `translate(${d.x},${d.y})`);
-    });
+      nodeGroup.attr('transform', (d: GraphNode) => `translate(${d.x},${d.y})`);
+    };
+    simulation.on('tick', ticked);
+    ticked();
 
     function handleMouseOver(event: any, d: GraphNode) {
       if (!container) return;
@@ -548,7 +578,7 @@ interface GraphData {
       orphanBtn.onclick = () => {
         showOrphans = !showOrphans;
         orphanBtn!.setAttribute('aria-expanded', String(showOrphans));
-        render(0.3);
+        render(0.12);
       };
     }
 
@@ -583,7 +613,7 @@ interface GraphData {
       tagsBtn.onclick = () => {
         showTags = !showTags;
         tagsBtn!.setAttribute('aria-expanded', String(showTags));
-        render(0.15); // Very soft alpha for sprouting
+        render(0.12);
       };
     }
 
@@ -591,7 +621,7 @@ interface GraphData {
       attachmentsBtn.onclick = () => {
         showAttachments = !showAttachments;
         attachmentsBtn!.setAttribute('aria-expanded', String(showAttachments));
-        render(0.15); // Very soft alpha for sprouting
+        render(0.12);
       };
     }
 
