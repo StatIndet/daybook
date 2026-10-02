@@ -7,6 +7,7 @@ npm run typecheck
 npm run test:reading-rail
 npm run build:js
 npm run build:vendor
+npm run test:giscus
 node scripts/graph-browser-test.mjs
 node scripts/gallery-browser-test.mjs
 
@@ -85,10 +86,19 @@ if [ ! -f "public/index.html" ]; then
     echo "ERROR: public/index.html is missing"
     exit 1
 fi
-if [ ! -f "public/vendor/waline/waline.js" ] || [ ! -f "public/vendor/waline/waline.css" ]; then
-    echo "ERROR: Waline assets are missing"
-    exit 1
-fi
+node --input-type=module <<'JS'
+import { readFileSync, existsSync } from 'node:fs';
+const manifest = JSON.parse(readFileSync('public/assets-manifest.json', 'utf8'));
+for (const asset of [
+  '/js/giscus-loader.js',
+  ...['default', 'warm'].flatMap(palette => ['light', 'dark'].map(theme => `/css/components/giscus-${palette}-${theme}.css`)),
+]) {
+  if (!manifest[asset] || !existsSync(`public${manifest[asset]}`)) throw new Error(`Missing giscus asset: ${asset}`);
+}
+if (JSON.stringify(manifest).toLowerCase().includes('waline') || existsSync('public/vendor/waline')) {
+  throw new Error('Obsolete Waline assets were emitted');
+}
+JS
 if [ ! -f "public/vendor/katex/katex.js" ] || [ ! -f "public/vendor/katex/katex.min.css" ]; then
     echo "ERROR: KaTeX assets are missing"
     exit 1

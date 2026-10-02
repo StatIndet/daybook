@@ -31,7 +31,7 @@ This repository (`StatIndet/daybook`) contains the Daybook CLI source code. It i
 * **Go runtime**: Core CLI application and build engine.
 * **Embedded assets**: Templates, CSS, and generated static files (`internal/embedded/`).
 * **Frontend source**: TypeScript source files (`assets/ts/`).
-* **Vendor pipeline**: npm-based asset generation for fonts, KaTeX, and Waline.
+* **Vendor pipeline**: npm-based asset generation for fonts and KaTeX.
 * **Release workflow**: GitHub Actions for building cross-platform standalone binaries.
 
 ### The Vault
@@ -112,7 +112,7 @@ npm ci
 # Build first-party TypeScript files
 npm run build:js
 
-# Build third-party vendor assets (KaTeX, Waline, Fonts)
+# Build third-party vendor assets (KaTeX, Fonts)
 npm run build:vendor
 
 # Run Go unit tests
@@ -161,3 +161,38 @@ Chinese and English article versions both appear in Notes, Archive, tags, search
 ### Asset builds
 
 `npm run build:js` also builds flattened common, homepage and other-page CSS bundles. The router waits for destination styles before swapping pages, and loads article modules on demand. Code fonts are requested when code is present. Material Symbols are subset from template, TypeScript and Go callout sources; their `FILL` axis remains variable. The original settings paper lives in `assets/images/` and `npm run build:images` generates a WebP requested only when a settings or share panel opens. CSS, scripts, fonts and their dependent resources receive content-hash names; `_headers` uses immutable caching for those names and revalidation for HTML and unversioned resources.
+
+### Comments with giscus
+
+Enable Discussions and install the [giscus GitHub App](https://github.com/apps/giscus) on a public comments repository. Use the repository and category IDs shown by [giscus](https://giscus.app), then configure the **external vault's** `daybook.yaml`:
+
+```yaml
+comment:
+  enabled: true
+  provider: giscus
+  giscus:
+    repo: StatIndet/giscus
+    repoId: R_kgDOU4xqeQ
+    category: Announcements
+    categoryId: DIC_kwDOU4xqec4DG4Zb
+```
+
+Replace these repository values for your own blog. Incomplete settings disable comments. Each article maps its canonical comment path to a discussion with strict matching within the selected category. The input appears above comments; article reactions and metadata output are disabled. Articles with `comment: false`, and the reader's Disable Comments preference, suppress the widget. Comment loading starts when the section approaches the viewport. Reading public comments requires no login; posting uses GitHub authorization. The old Waline configuration and vendor assets are no longer used; this change does not import old comments.
+
+In the comments repository's default branch, add `giscus.json` to allow your production and preview origins and select the default order. For example:
+
+```json
+{
+  "origins": [
+    "https://daybook.page",
+    "https://giscus.app",
+    "http://localhost:1313",
+    "http://127.0.0.1:1313"
+  ],
+  "defaultCommentOrder": "newest"
+}
+```
+
+The four giscus themes are generated from `tokens.css`, existing font declarations and `components/giscus-theme.css` by `npm run build:css`. Palette, light/dark mode and interface language update the existing iframe. Theme and font URLs use the current build's asset manifest and the current page's origin, so local previews do not request unpublished hashes from production. Generated `_headers` and `daybook serve` allow cross-origin requests for the public theme and font assets.
+
+For local review, build the updated CLI, run it in your vault, and start `daybook serve`. Open an article at `http://localhost:1313`, scroll to comments, and test the language and palette controls. Preview comments are real GitHub Discussions: use a dedicated test article for posting. Browsers may request permission for the giscus iframe to fetch local theme resources. If local network access is blocked, review the same build through a public HTTPS preview; do not substitute production theme URLs with new local hashes. See the [official advanced configuration](https://github.com/giscus/giscus/blob/main/ADVANCED-USAGE.md) for the origin, theme and runtime configuration protocol.

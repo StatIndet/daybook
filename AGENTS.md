@@ -15,7 +15,7 @@ The directory structure is strictly separated into source code and embedded asse
   * `internal/embedded/templates/`: Go HTML templates (`layouts/`, `pages/`, `partials/`).
   * `internal/embedded/static/css/`: Global CSS and page-specific styles.
   * `internal/embedded/static/js/`: **Generated** JavaScript files.
-  * `internal/embedded/static/vendor/`: **Generated** third-party runtime assets (Fonts, KaTeX, Waline).
+  * `internal/embedded/static/vendor/`: **Generated** third-party runtime assets (Fonts, KaTeX).
 * `cmd/daybook/`: The CLI entry point.
 * `internal/`: Core Go application logic.
 

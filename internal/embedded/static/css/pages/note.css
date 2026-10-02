@@ -410,6 +410,22 @@ html[data-reduced-motion="true"] .note-toc-stage .note-toc {
   padding-top: clamp(2rem, 4vw, 3rem);
 }
 
+#giscus {
+  min-height: 150px;
+}
+
+#giscus .giscus-frame {
+  display: block;
+  width: 100%;
+  min-height: 150px;
+  border: 0;
+  color-scheme: inherit;
+}
+
+#giscus .giscus-frame--loading {
+  opacity: 0;
+}
+
 /* Right Reading Controls */
 .note-right-controls {
   display: flex;

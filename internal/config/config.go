@@ -71,19 +71,27 @@ type SEOConfig struct {
 	HomeDescription map[string]string `yaml:"homeDescription"`
 }
 
-type WalineConfig struct {
-	ServerURL      string `yaml:"serverURL"`
-	Lang           string `yaml:"lang"`
-	PageSize       int    `yaml:"pageSize"`
-	CommentSorting string `yaml:"commentSorting"`
-	Search         bool   `yaml:"search"`
-	ImageUploader  bool   `yaml:"imageUploader"`
+type GiscusConfig struct {
+	Repo       string `yaml:"repo"`
+	RepoID     string `yaml:"repoId"`
+	Category   string `yaml:"category"`
+	CategoryID string `yaml:"categoryId"`
 }
 
 type CommentConfig struct {
 	Enabled  bool         `yaml:"enabled"`
 	Provider string       `yaml:"provider"`
-	Waline   WalineConfig `yaml:"waline"`
+	Giscus   GiscusConfig `yaml:"giscus"`
+}
+
+// Available also protects callers that construct Config directly instead of
+// loading daybook.yaml. A note may opt out, but cannot bypass this global gate.
+func (c CommentConfig) Available() bool {
+	return c.Enabled && c.Provider == "giscus" &&
+		strings.TrimSpace(c.Giscus.Repo) != "" &&
+		strings.TrimSpace(c.Giscus.RepoID) != "" &&
+		strings.TrimSpace(c.Giscus.Category) != "" &&
+		strings.TrimSpace(c.Giscus.CategoryID) != ""
 }
 
 type StatsConfig struct {
@@ -187,22 +195,18 @@ func Load() (Config, error) {
 		cfg.Share.Text = `"{Title}"`
 	}
 
-	if cfg.Comment.Enabled {
-		if cfg.Comment.Provider == "waline" {
-			if cfg.Comment.Waline.ServerURL == "" {
-				fmt.Println("[daybook] warning: comment provider is waline but serverURL is empty, disabling comments.")
-				cfg.Comment.Enabled = false
-			}
-			if cfg.Comment.Waline.PageSize == 0 {
-				cfg.Comment.Waline.PageSize = 10
-			}
-			if cfg.Comment.Waline.Lang == "" {
-				cfg.Comment.Waline.Lang = "zh_CN"
-			}
-			if cfg.Comment.Waline.CommentSorting == "" {
-				cfg.Comment.Waline.CommentSorting = "latest"
-			}
+	cfg.Comment.Provider = strings.TrimSpace(cfg.Comment.Provider)
+	cfg.Comment.Giscus.Repo = strings.TrimSpace(cfg.Comment.Giscus.Repo)
+	cfg.Comment.Giscus.RepoID = strings.TrimSpace(cfg.Comment.Giscus.RepoID)
+	cfg.Comment.Giscus.Category = strings.TrimSpace(cfg.Comment.Giscus.Category)
+	cfg.Comment.Giscus.CategoryID = strings.TrimSpace(cfg.Comment.Giscus.CategoryID)
+	if cfg.Comment.Enabled && !cfg.Comment.Available() {
+		if cfg.Comment.Provider != "giscus" {
+			fmt.Printf("[daybook] warning: unsupported comment provider %q; use giscus, disabling comments.\n", cfg.Comment.Provider)
+		} else {
+			fmt.Println("[daybook] warning: giscus requires repo, repoId, category and categoryId, disabling comments.")
 		}
+		cfg.Comment.Enabled = false
 	}
 
 	if cfg.Site.URL != "" && !strings.HasPrefix(cfg.Site.URL, "http://") && !strings.HasPrefix(cfg.Site.URL, "https://") {

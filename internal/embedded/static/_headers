@@ -1,6 +1,12 @@
 /immutable/*
   Cache-Control: public, max-age=31536000, immutable
 
+/immutable/css/components/giscus-*
+  Access-Control-Allow-Origin: *
+
+/immutable/vendor/fonts/*
+  Access-Control-Allow-Origin: *
+
 /
   Cache-Control: public, max-age=0, must-revalidate
 

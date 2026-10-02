@@ -2,9 +2,11 @@ import * as esbuild from 'esbuild';
 import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildGiscusThemes } from './build-giscus-themes.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const cssRoot = path.join(root, 'internal', 'embedded', 'static', 'css');
+await buildGiscusThemes(root);
 const global = await readFile(path.join(cssRoot, 'global.css'), 'utf8');
 const imports = [...global.matchAll(/@import\s+url\("([^"]+)"\);/g)].map(match => match[1]);
 const pageImports = imports.filter(file => file.startsWith('pages/') && file !== 'pages/home.css');

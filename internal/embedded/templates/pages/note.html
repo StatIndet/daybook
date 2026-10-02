@@ -104,16 +104,17 @@
 
       {{if .Note.CommentEnabled}}
       <section class="post-comments">
-        <div id="waline"
-             data-server-url="{{$.Config.Comment.Waline.ServerURL}}"
-             data-lang="{{if eq $.Lang "en_US"}}en-US{{else}}zh-CN{{end}}"
-             data-page-size="{{$.Config.Comment.Waline.PageSize}}"
-             data-comment-sorting="{{$.Config.Comment.Waline.CommentSorting}}"
-             data-search="{{$.Config.Comment.Waline.Search}}"
-             data-image-uploader="{{$.Config.Comment.Waline.ImageUploader}}"
+        <div id="giscus"
+             data-repo="{{$.Config.Comment.Giscus.Repo}}"
+             data-repo-id="{{$.Config.Comment.Giscus.RepoID}}"
+             data-category="{{$.Config.Comment.Giscus.Category}}"
+             data-category-id="{{$.Config.Comment.Giscus.CategoryID}}"
+             data-lang="{{if eq $.Lang "en_US"}}en{{else}}zh-CN{{end}}"
+             data-theme-default-light="{{.Assets.Path "/css/components/giscus-default-light.css"}}"
+             data-theme-default-dark="{{.Assets.Path "/css/components/giscus-default-dark.css"}}"
+             data-theme-warm-light="{{.Assets.Path "/css/components/giscus-warm-light.css"}}"
+             data-theme-warm-dark="{{.Assets.Path "/css/components/giscus-warm-dark.css"}}"
              data-path="{{.Note.CommentPath}}"></div>
-        <link rel="stylesheet" href="/vendor/waline/waline.css">
-        <link rel="stylesheet" href="{{.Assets.Path "/css/components/waline-theme.css"}}">
       </section>
       {{end}}
     </article>

@@ -19,7 +19,7 @@ import (
 
 const assetHashLength = 10
 
-var cssImportRulePattern = regexp.MustCompile(`(?i)@import\s+[^;]+;`)
+var cssImportRulePattern = regexp.MustCompile(`(?i)@import\s*(?:"[^"]*"|'[^']*'|url\([^)]*\))[^;]*;`)
 var cssURLPattern = regexp.MustCompile(`(?i)url\(\s*(?:"([^"\r\n]*)"|'([^'\r\n]*)'|([^\)\s]*))\s*\)`)
 
 type assetBuilder struct {
@@ -97,6 +97,11 @@ func requireTemplateAssets(manifest map[string]string) error {
 		"/js/search-overlay.js",
 		"/js/daybook-router.js",
 		"/js/katex-loader.js",
+		"/js/giscus-loader.js",
+		"/css/components/giscus-default-light.css",
+		"/css/components/giscus-default-dark.css",
+		"/css/components/giscus-warm-light.css",
+		"/css/components/giscus-warm-dark.css",
 	}
 
 	for _, originalPath := range requiredPaths {
@@ -194,6 +199,11 @@ func (builder *assetBuilder) rewriteCSSURLs(content []byte, currentWebPath strin
 		if assetURL == "" || strings.HasPrefix(assetURL, "#") || isExternalAssetPath(assetURL) {
 			return rule
 		}
+		// @import url(...) was already rewritten relative to the output CSS
+		// directory. Do not interpret it again relative to the source tree.
+		if builder.isBuiltCSSReference(currentWebPath, assetURL) {
+			return rule
+		}
 		assetPath, suffix, _ := strings.Cut(assetURL, "?")
 		if suffix != "" {
 			suffix = "?" + suffix
@@ -230,7 +240,12 @@ func (builder *assetBuilder) rewriteCSSURLs(content []byte, currentWebPath strin
 				return rule
 			}
 		}
-		return `url("` + fingerprinted + suffix + `")`
+		relativePath, err := relativeCSSAssetPath(currentWebPath, fingerprinted)
+		if err != nil {
+			rewriteErr = err
+			return rule
+		}
+		return `url("` + relativePath + suffix + `")`
 	})
 	return []byte(rewritten), rewriteErr
 }
@@ -297,7 +312,11 @@ func (builder *assetBuilder) rewriteImportRule(rule, currentWebPath string) (str
 		return rule, nil
 	}
 
-	return rule[:start] + fingerprintedPath + rule[end:], nil
+	relativePath, err := relativeCSSAssetPath(currentWebPath, fingerprintedPath)
+	if err != nil {
+		return "", err
+	}
+	return rule[:start] + relativePath + rule[end:], nil
 }
 
 func (builder *assetBuilder) fingerprintImportedCSS(importPath, currentWebPath string) (string, bool, error) {
@@ -305,7 +324,8 @@ func (builder *assetBuilder) fingerprintImportedCSS(importPath, currentWebPath s
 	if !isLocal {
 		return "", false, nil
 	}
-	if !strings.HasPrefix(importedWebPath, "/css/") || !strings.EqualFold(path.Ext(importedWebPath), ".css") {
+	if (!strings.HasPrefix(importedWebPath, "/css/") && !strings.HasPrefix(importedWebPath, "/vendor/")) ||
+		!strings.EqualFold(path.Ext(importedWebPath), ".css") {
 		return "", false, nil
 	}
 
@@ -314,6 +334,29 @@ func (builder *assetBuilder) fingerprintImportedCSS(importPath, currentWebPath s
 		return "", true, fmt.Errorf("处理 CSS import %q: %w", importPath, err)
 	}
 	return fingerprintedPath, true, nil
+}
+
+// Every generated stylesheet lives below /immutable with its original directory
+// structure. Relative references keep custom giscus CSS and fonts on the blog's
+// origin when the stylesheet is loaded inside the giscus.app iframe.
+func relativeCSSAssetPath(currentWebPath, targetPath string) (string, error) {
+	outputDir := path.Join("/immutable", path.Dir(cleanAssetWebPath(currentWebPath)))
+	relativePath, err := filepath.Rel(filepath.FromSlash(outputDir), filepath.FromSlash(targetPath))
+	if err != nil {
+		return "", fmt.Errorf("生成 CSS 相对资源路径 %s: %w", targetPath, err)
+	}
+	return filepath.ToSlash(relativePath), nil
+}
+
+func (builder *assetBuilder) isBuiltCSSReference(currentWebPath, assetURL string) bool {
+	outputDir := path.Join("/immutable", path.Dir(cleanAssetWebPath(currentWebPath)))
+	resolved := path.Clean(path.Join(outputDir, assetURL))
+	for _, builtPath := range builder.manifest {
+		if builtPath == resolved {
+			return true
+		}
+	}
+	return false
 }
 
 func importPathRange(rule string) (int, int, string, bool) {

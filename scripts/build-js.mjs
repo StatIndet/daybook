@@ -38,7 +38,7 @@ const moduleEntries = [
   'reading-controls',
   'settings-overlay',
   'share-overlay',
-  'waline-loader'
+  'giscus-loader'
 ].map(name => path.join(root, 'assets', 'ts', `${name}.ts`));
 
 const commonOptions = {

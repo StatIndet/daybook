@@ -8,21 +8,20 @@
   "scripts": {
     "build:vendor-fonts": "node scripts/build-vendor-fonts.mjs",
     "build:vendor-katex": "node scripts/build-vendor-katex.mjs",
-    "build:vendor-waline": "node scripts/build-vendor-waline.mjs",
-    "build:vendor": "npm run build:vendor-fonts && npm run build:vendor-katex && npm run build:vendor-waline",
+    "build:vendor": "node scripts/build-vendor.mjs",
     "test:reading-rail": "node --test test/reading-toc-rail.test.mjs",
     "typecheck": "tsc --noEmit",
     "build:js": "npm run build:css && npm run build:images && node scripts/build-js.mjs",
     "watch:js": "node scripts/build-js.mjs --watch",
     "build:css": "node scripts/build-css.mjs",
-    "build:images": "node scripts/build-images.mjs"
+    "build:images": "node scripts/build-images.mjs",
+    "test:giscus": "node scripts/giscus-browser-test.mjs"
   },
   "devDependencies": {
     "@chinese-fonts/maple-mono-cn": "^2.0.0",
     "@fontsource-variable/noto-serif-sc": "^5.3.0",
     "@fontsource/cormorant-garamond": "^5.3.0",
     "@fontsource/fraunces": "^5.3.0",
-    "@waline/client": "^3.15.2",
     "esbuild": "^0.28.2",
     "fontkit": "^2.0.4",
     "katex": "^0.18.4",

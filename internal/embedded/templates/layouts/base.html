@@ -36,7 +36,7 @@
   {{template "mobile_drawer" .}}
   {{template "mobile_overlay" .}}
   <script type="module">
-    let walineLoader = null;
+    import "{{.Assets.Path "/js/giscus-loader.js"}}";
     
     function updateStaggerIndices() {
       const staggerMeta = document.querySelector(".article-stagger-meta");
@@ -51,19 +51,7 @@
     // Run on initial load
     updateStaggerIndices();
     
-    document.addEventListener("daybook:page-load", async () => {
-      updateStaggerIndices();
-      
-      const container = document.getElementById("waline");
-      if (container) {
-        if (!walineLoader) {
-          walineLoader = await import("{{.Assets.Path "/js/waline-loader.js"}}");
-        }
-        walineLoader.setupWaline();
-      } else if (walineLoader) {
-        walineLoader.setupWaline(); // setupWaline will destroy it if no container
-      }
-    });
+    document.addEventListener("daybook:page-load", updateStaggerIndices);
 
     let articleControls = null;
     async function setupArticleControls() {
@@ -93,7 +81,7 @@
       }
     }
     function setupCodeFonts() {
-      if (!document.querySelector('pre, code, kbd, samp, #waline')) return;
+      if (!document.querySelector('pre, code, kbd, samp')) return;
       if ('requestIdleCallback' in window) window.requestIdleCallback(loadCodeFonts, { timeout: 1500 });
       else setTimeout(loadCodeFonts, 0);
     }

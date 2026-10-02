@@ -394,9 +394,9 @@ func Build(options Options) (BuildResult, error) {
 					continue
 				}
 
-				commentEnabled := options.Config.Comment.Waline.ServerURL != ""
+				commentEnabled := options.Config.Comment.Available()
 				if note.Comment != nil {
-					commentEnabled = *note.Comment
+					commentEnabled = commentEnabled && *note.Comment
 				}
 				tocEnabled := true
 				if note.Toc != nil {
@@ -1463,7 +1463,7 @@ func Serve(publicDir, address string) error {
 	}
 
 	fmt.Println("预览地址: http://localhost:1313")
-	fileServer := http.FileServer(http.Dir(publicDir))
+	fileServer := previewHandler(publicDir)
 	mux := http.NewServeMux()
 	mux.Handle("/", fileServer)
 
@@ -1472,6 +1472,19 @@ func Serve(publicDir, address string) error {
 	}
 
 	return nil
+}
+
+func previewHandler(publicDir string) http.Handler {
+	fileServer := http.FileServer(http.Dir(publicDir))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Custom giscus themes and their fonts are loaded by its cross-origin
+		// iframe. Match the public static asset rules in the embedded _headers.
+		if strings.HasPrefix(r.URL.Path, "/immutable/css/components/giscus-") && strings.HasSuffix(r.URL.Path, ".css") ||
+			strings.HasPrefix(r.URL.Path, "/immutable/vendor/fonts/") {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		}
+		fileServer.ServeHTTP(w, r)
+	})
 }
 
 func copyDir(sourceDir, targetDir string) error {

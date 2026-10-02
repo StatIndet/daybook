@@ -13,7 +13,6 @@ declare global {
     daybookShouldAnimateTheme: () => boolean;
     daybookClearThemeTransition: (attributeName: string) => void;
     daybookSyncNoteTocs: (toc?: any) => void;
-    initWaline: () => void;
     daybookSyncHeadingAnchors: () => void;
     daybookSyncNoteFilters: () => void;
     daybookSyncEmbeds: () => void;
@@ -44,8 +43,4 @@ declare global {
       skipTransition: () => void;
     };
   }
-}
-
-declare module '*waline.js' {
-  export function init(options: any): any;
 }

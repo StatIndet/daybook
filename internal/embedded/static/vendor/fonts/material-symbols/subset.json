@@ -17,6 +17,7 @@
     "bug_report",
     "calendar_month",
     "cancel",
+    "category",
     "center_focus_strong",
     "check",
     "check_circle",
@@ -47,6 +48,7 @@
     "home",
     "html",
     "http",
+    "iframe",
     "image",
     "info",
     "input",
@@ -78,7 +80,6 @@
     "refresh",
     "report",
     "resize",
-    "rss_feed",
     "scatter_plot",
     "science",
     "script",
@@ -113,5 +114,5 @@
     }
   },
   "originalBytes": 5347060,
-  "subsetBytes": 12896
+  "subsetBytes": 13076
 }
