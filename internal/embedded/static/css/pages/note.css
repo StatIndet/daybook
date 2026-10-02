@@ -129,7 +129,7 @@
   flex-direction: column;
   gap: 0.6rem;
   color: var(--color-muted);
-  font-family: var(--font-meta);
+  font-family: "Cormorant Garamond Meta", var(--font-serif);
   font-style: italic;
   font-weight: 600;
   font-size: clamp(0.95rem, 1.3vw, 1.12rem);
