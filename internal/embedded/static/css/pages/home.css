@@ -81,6 +81,7 @@
 .github-repository-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: auto; padding-top: 10px; color: var(--color-muted); font-size: 0.76rem; }
 .github-repository-meta > span, .github-home .github-repository-meta a { display: inline-flex; align-items: center; gap: 4px; }
 .github-repository-meta .material-symbol { font-size: 16px; }
+.github-home .github-repository-meta a::before { content: none; }
 .github-language-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--color-accent); display: inline-block; margin-right: 3px; }
 .github-contributions { background: var(--home-card); box-shadow: var(--home-shadow-low); border-radius: 20px; padding: 24px; }
 .github-calendar-scroll { overflow-x: auto; }

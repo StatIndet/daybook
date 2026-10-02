@@ -70,6 +70,7 @@
   --color-muted: oklch(40% 0.005 298);
   --color-line: oklch(25% 0.005 298 / 0.16);
   --color-accent: #6750a4;
+  --color-marker: #cfb7f9;
   --color-hover-text: var(--color-accent);
   --graph-node-attachment: #c7b34b;
   --color-paper: oklch(98% 0.004 298);
@@ -113,6 +114,7 @@
   --color-muted: oklch(77% 0.005 298);
   --color-line: oklch(92% 0.005 298 / 0.14);
   --color-accent: #d0bcff;
+  --color-marker: #8063a6;
   --color-hover-text: var(--color-accent);
   --graph-node-attachment: #d6c776;
   --color-paper: oklch(25% 0.005 298);
@@ -156,6 +158,7 @@
   --color-muted: #4a4239;
   --color-line: #d9cfb9;
   --color-accent: #8a4423;
+  --color-marker: #f1b880;
   --color-hover-text: var(--color-accent);
   --graph-node-attachment: #d4b856;
   --color-paper: #fbf6ec;
@@ -199,6 +202,7 @@
   --color-muted: #c8c1ae;
   --color-line: #2a2622;
   --color-accent: #c89761;
+  --color-marker: #89582e;
   --color-hover-text: var(--color-accent);
   --graph-node-attachment: #d6c776;
   --color-paper: #1a1715;

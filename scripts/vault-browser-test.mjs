@@ -201,7 +201,7 @@ if (fixtures) {
       await navigation.hover();
       await page.waitForFunction(() => getComputedStyle(document.querySelector('.site-nav .nav-link'), '::after').clipPath === 'inset(0px)');
       const highlight = await navigation.evaluate(element => getComputedStyle(element).color);
-      for (const selector of ['.github-repository-heading a', '.github-repository-meta a', '.github-profile-details a', '.github-followers a']) {
+      for (const selector of ['.github-repository-heading a', '.github-profile-details a', '.github-followers a']) {
         const link = page.locator(selector).first();
         await link.hover();
         await page.waitForFunction(selector => {
@@ -209,6 +209,17 @@ if (fixtures) {
           return getComputedStyle(element, '::before').clipPath === 'inset(0px)' &&
             getComputedStyle(element.querySelector('.material-symbol')).fontVariationSettings.includes('"FILL" 1');
         }, selector);
+        assert.equal(await link.evaluate(element => getComputedStyle(element).color), highlight);
+      }
+      for (const icon of ['star', 'fork_right', 'open_in_new']) {
+        const link = page.locator('.github-repository-meta a').filter({ has: page.locator('.material-symbol', { hasText: new RegExp(`^${icon}$`) }) }).first();
+        assert.equal(await link.count(), 1, `missing repository ${icon} action`);
+        await link.hover();
+        await page.waitForFunction(icon => {
+          const symbol = [...document.querySelectorAll('.github-repository-meta a .material-symbol')].find(element => element.textContent.trim() === icon);
+          return getComputedStyle(symbol).fontVariationSettings.includes('"FILL" 1');
+        }, icon);
+        assert.equal(await link.evaluate(element => getComputedStyle(element, '::before').content), 'none');
         assert.equal(await link.evaluate(element => getComputedStyle(element).color), highlight);
       }
       const stars = page.locator('.github-repository-meta a').first();
