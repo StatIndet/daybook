@@ -1274,6 +1274,42 @@ body.is-search-overlay-open .mobile-search-overlay {
   padding: 24px;
 }
 
+/* Desktop tags replace the content area while navigation and tools remain available. */
+@media (min-width: 961px) {
+  .mobile-overlay-container {
+    display: block;
+    top: 72px;
+    z-index: 920;
+  }
+
+  .page-body .mobile-overlay-container {
+    left: var(--side-rail-width);
+  }
+
+  .mobile-overlay-mask, .mobile-search-overlay {
+    display: none;
+  }
+
+  .mobile-tags-overlay {
+    inset: 0;
+    max-height: none;
+    border-radius: 0;
+    padding: 0 clamp(32px, 6vw, 84px) 32px;
+  }
+
+  .mobile-tags-overlay .mobile-overlay-header,
+  .mobile-tags-overlay .mobile-overlay-content {
+    width: min(var(--notes-content-width), 100%);
+    margin-inline: auto;
+    padding-inline: 0;
+  }
+
+  body.is-tags-overlay-open .page-frame main,
+  body.is-tags-overlay-open .home-footer {
+    visibility: hidden;
+  }
+}
+
 .mobile-search-results {
   display: flex;
   flex-direction: column;

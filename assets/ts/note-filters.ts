@@ -1,5 +1,5 @@
 (() => {
-  type DesktopTool = "search" | "tags" | null;
+  type DesktopTool = "search" | null;
   
   let currentDesktopTool: DesktopTool = null;
   let pendingSearchFocus = false;
@@ -167,11 +167,15 @@
   document.addEventListener("click", function (event: MouseEvent) {
     const target = event.target as HTMLElement;
 
-    // Desktop Buttons fix
+    if (target.closest('[data-mobile-overlay-target="tags"]')) {
+      setDesktopTool(null);
+    }
+
     const toolButton = target.closest("[data-notes-tool]") as HTMLElement | null;
     if (toolButton) {
       const toolName = toolButton.dataset.notesTool as DesktopTool;
-      if (toolName === "search" || toolName === "tags") {
+      if (toolName === "search") {
+        window.daybookCloseMobileOverlays?.();
         if (currentDesktopTool === toolName) {
           // Toggle off
           setDesktopTool(null);

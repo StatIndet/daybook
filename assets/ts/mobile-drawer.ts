@@ -1,4 +1,5 @@
 (function () {
+  let overlayOpener: HTMLElement | null = null;
   function getDrawerToggle() {
     return document.getElementById("mobile-menu-toggle");
   }
@@ -20,6 +21,14 @@
     var isTagsOpen = document.body.classList.contains("is-tags-overlay-open");
     var isSearchOpen = document.body.classList.contains("is-search-overlay-open");
     
+    const overlay = document.getElementById("mobile-overlay-container");
+    overlay?.setAttribute("aria-hidden", String(!isTagsOpen && !isSearchOpen));
+    document.querySelectorAll<HTMLElement>("[data-mobile-overlay-target]").forEach(button => {
+      button.setAttribute("aria-expanded", String(button.dataset.mobileOverlayTarget === "tags" ? isTagsOpen : isSearchOpen));
+    });
+    const main = document.querySelector<HTMLElement>(".page-frame main");
+    if (main) main.inert = isTagsOpen && window.matchMedia("(min-width: 961px)").matches;
+
     if (isDrawerOpen || isTagsOpen || isSearchOpen) {
       document.body.style.overflow = "hidden";
     } else {
@@ -52,6 +61,9 @@
     document.body.classList.add(overlayClass);
     updateScrollLock();
 
+    if (overlayTarget === "tags") {
+      document.querySelector<HTMLElement>("#mobile-tags-overlay [data-overlay-close]")?.focus();
+    }
     if (overlayTarget === "search") {
       var searchInput = document.getElementById("mobile-search-input");
       if (searchInput) {
@@ -65,6 +77,8 @@
   function closeOverlays() {
     document.body.classList.remove("is-tags-overlay-open", "is-search-overlay-open");
     updateScrollLock();
+    if (overlayOpener?.isConnected) overlayOpener.focus({ preventScroll: true });
+    overlayOpener = null;
   }
 
   document.addEventListener("keydown", function (event: KeyboardEvent) {
@@ -112,7 +126,12 @@
       }
       var target = overlayBtn.dataset.mobileOverlayTarget;
       if (!target) return;
-      
+      if (document.body.classList.contains("is-" + target + "-overlay-open")) {
+        closeOverlays();
+        return;
+      }
+      overlayOpener = overlayBtn;
+
       if (document.body.classList.contains("is-mobile-drawer-open")) {
         setDrawerOpen(false);
         
@@ -156,6 +175,12 @@
     }
   });
 
+  window.addEventListener("resize", () => {
+    if (document.body.classList.contains("is-tags-overlay-open") || document.body.classList.contains("is-search-overlay-open")) {
+      updateScrollLock();
+    }
+  });
+  document.addEventListener("daybook:page-load", updateScrollLock);
   window.daybookCloseMobileOverlays = closeOverlays;
 
 })();

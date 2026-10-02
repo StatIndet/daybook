@@ -140,16 +140,37 @@ if (fixtures) {
         if (kind === 'notes') await page.waitForSelector('.notes-search-results .notes-item');
         else await page.waitForSelector('[data-desktop-search-results] .notes-item');
         await page.keyboard.press('Escape');
-        await page.locator('.site-tools [data-notes-tool="tags"]').click();
-        await page.waitForFunction(() => document.querySelector('[data-notes-panel="tags"]').getAttribute('aria-hidden') === 'false');
-        assert.ok(await page.locator('.site-tools .notes-tag-link').count() > 0);
+        const searchStyle = await page.locator('.site-tools .notes-tools').evaluate(el => {
+          const style = getComputedStyle(el);
+          return { shadow: style.boxShadow, background: style.backgroundColor };
+        });
+        assert.equal(searchStyle.shadow, 'none');
+        assert.equal(searchStyle.background, 'rgba(0, 0, 0, 0)');
+        const scrollBefore = await page.evaluate(() => scrollY);
+        await page.locator('.site-tools [data-mobile-overlay-target="tags"]').click();
+        await page.waitForFunction(() => document.body.classList.contains('is-tags-overlay-open'));
+        assert.ok(await page.locator('#mobile-tags-overlay .notes-tag-link').count() > 0);
+        assert.equal(await page.locator('.page-frame main').first().evaluate(el => el.inert), true);
+        assert.equal(await page.locator('.page-frame main').first().evaluate(el => getComputedStyle(el).visibility), 'hidden');
         await page.keyboard.press('Escape');
+        assert.equal(await page.locator('.page-frame main').first().evaluate(el => el.inert), false);
+        assert.equal(await page.evaluate(() => scrollY), scrollBefore);
+        assert.notEqual(await page.evaluate(() => document.body.style.overflow), 'hidden');
+        if (kind === 'about') {
+          const original = await page.locator('.about-page').boundingBox();
+          assert.equal(Math.round(original.x), 304, 'About must retain its original left alignment');
+        }
       }
       await page.goBack();
       await settled(page, 'about');
       await page.goForward();
       await settled(page, 'note');
       await page.evaluate(() => scrollTo(0, 1800));
+      await page.waitForFunction(() => scrollY >= 1790);
+      const readingScroll = await page.evaluate(() => scrollY);
+      await page.locator('.site-tools [data-mobile-overlay-target="tags"]').click();
+      await page.locator('#mobile-tags-overlay [data-overlay-close]').click();
+      assert.equal(await page.evaluate(() => scrollY), readingScroll, 'Closing tags must preserve reading position');
       await page.waitForFunction(() => document.querySelector('.note-toc-stage').classList.contains('is-reading'));
       const overlap = await page.evaluate(() => {
         const content = document.querySelector('.post-content').getBoundingClientRect();
@@ -157,6 +178,17 @@ if (fixtures) {
         return rail.left < content.right;
       });
       assert.equal(overlap, false, 'Reading rail overlaps article content');
+      await page.locator('.site-tools [data-mobile-overlay-target="tags"]').click();
+      const tag = page.locator('#mobile-tags-overlay [data-mobile-tag]').first();
+      const tagRoute = new URL(await tag.getAttribute('href'), baseURL).pathname;
+      await tag.click();
+      await page.waitForFunction(route => location.pathname === route, tagRoute);
+      await settled(page, 'tag');
+      assert.equal(await page.locator('.page-frame main').first().evaluate(el => el.inert), false);
+      assert.notEqual(await page.evaluate(() => document.body.style.overflow), 'hidden');
+      await page.goBack();
+      await settled(page, 'note');
+      assert.equal(await page.locator('.site-tools [data-mobile-overlay-target="tags"]').getAttribute('aria-expanded'), 'false');
       assert.deepEqual(errors, []);
       return {};
     } finally { await context.close(); }
@@ -196,6 +228,9 @@ if (fixtures) {
           return { article: { x: body.x, right: body.right, y: body.y, width: body.width }, toc: { x: toc.x, y: toc.y, width: toc.width, height: toc.height }, aside: { x: aside.x, y: aside.y } };
         });
         await page.screenshot({ path: path.join(outputDir, `article-${width}.png`) });
+        // The root reserves a stable 10px scrollbar gutter on desktop.
+        const viewportCenter = await page.evaluate(() => document.body.getBoundingClientRect().width / 2);
+        assert.ok(Math.abs(layout.article.x + layout.article.width / 2 - viewportCenter) <= 1, `Article itself must be centered: ${JSON.stringify(layout)}`);
         assert.ok(layout.toc.width > 0, 'Desktop TOC must be visible');
         assert.ok(layout.toc.x >= layout.article.right - 2, `TOC is not to article's right: ${JSON.stringify(layout)}`);
         assert.ok(layout.toc.y < layout.article.y + 300, `TOC appears below article: ${JSON.stringify(layout)}`);

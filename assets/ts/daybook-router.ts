@@ -211,6 +211,7 @@ interface DaybookTransitionFinishedDetail {
   }
 
   function closeOverlays() {
+    window.daybookCloseMobileOverlays?.();
     document.body.classList.remove("is-mobile-drawer-open");
     document.body.classList.remove("is-search-overlay-open");
     document.body.classList.remove("is-tags-overlay-open");
