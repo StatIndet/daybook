@@ -29,8 +29,9 @@
 }
 .hero-avatar { display: block; border-radius: inherit; width: 100%; height: 100%; object-fit: cover; }
 .github-profile-name { font-size: 1.75rem; font-weight: 600; line-height: 1.2; margin: 26px 0 16px; }
-.github-profile-name > span { display: block; color: var(--color-muted); font-family: var(--font-ui); font-size: 1.2rem; font-weight: 400; margin-top: 5px; }
-.github-profile-pronouns { display: block; color: var(--color-muted); font-family: var(--font-ui); font-size: 0.88rem; font-weight: 400; margin-top: 6px; }
+.github-profile-handle { display: flex; align-items: baseline; gap: 0.5em; color: var(--color-muted); font-family: var(--font-ui); font-size: 1.2rem; font-weight: 400; margin-top: 5px; }
+.github-profile-login { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.github-profile-separator, .github-profile-pronouns { flex-shrink: 0; font-size: 0.88rem; }
 .github-profile-bio { font-size: 1.02rem; margin: 0 0 18px; white-space: pre-line; overflow-wrap: anywhere; }
 .github-profile-status { padding: 6px 10px; background: var(--color-accent-soft); border-radius: 10px; margin: 0 0 14px; }
 .github-home a { position: relative; isolation: isolate; color: inherit; text-decoration: none; transition: color 180ms ease; }
@@ -112,7 +113,7 @@
   .github-profile-identity { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 16px; align-items: center; }
   .hero-avatar-wrap { width: 88px; height: 88px; }
   .github-profile-name { font-size: 1.5rem; margin: 0; }
-  .github-profile-name > span { font-size: 1.1rem; }
+  .github-profile-handle { font-size: 1.1rem; }
   .github-profile-bio { margin-top: 20px; }
   .github-profile-status { margin-top: 16px; }
   .github-followers { margin: 18px 0; }
