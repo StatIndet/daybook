@@ -746,6 +746,12 @@ body.is-tags-overlay-open .mobile-tags-overlay .notes-tag-link {
 
 
 
+[data-note-toc-stage][data-rail-direction="1"] .reading-toc-rail-current {
+  align-items: flex-start;
+  text-align: left;
+  transform-origin: left center;
+}
+
 .reading-toc-rail-current:hover,
 .reading-toc-rail-current:focus-visible {
   color: var(--color-accent);

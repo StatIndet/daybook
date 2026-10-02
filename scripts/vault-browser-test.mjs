@@ -289,8 +289,36 @@ if (fixtures) {
         assert.ok(layout.toc.width > 0, 'Desktop TOC must be visible');
         assert.ok(layout.toc.x >= layout.article.right - 2, `TOC is not to article's right: ${JSON.stringify(layout)}`);
         assert.ok(layout.toc.y < layout.article.y + 300, `TOC appears below article: ${JSON.stringify(layout)}`);
+        const longHeading = await page.locator('.post-content h2, .post-content h3, .post-content h4').evaluateAll(headings => {
+          const titles = headings.map(heading => {
+            const content = heading.cloneNode(true);
+            content.querySelectorAll('.heading-anchor').forEach(anchor => anchor.remove());
+            return { id: heading.id, title: content.textContent.trim() };
+          });
+          return titles.find(heading => heading.title.length >= 16) || titles[0];
+        });
+        await page.evaluate(id => {
+          const heading = document.getElementById(id);
+          scrollTo({ top: heading.getBoundingClientRect().top + scrollY - 80, behavior: 'instant' });
+        }, longHeading.id);
+        await page.waitForFunction(() => document.querySelector('.note-toc-stage').classList.contains('is-reading'));
+        await page.waitForTimeout(1200);
+        const railLabel = await page.evaluate(() => {
+          const root = document.querySelector('[data-reading-toc-rail]');
+          const bounds = root.getBoundingClientRect();
+          const curve = root.querySelector('[data-reading-toc-rail-base]').getBBox();
+          const label = root.querySelector('[data-reading-toc-rail-label]').getBoundingClientRect();
+          const title = root.querySelector('.reading-toc-rail-title.is-active');
+          return { railLeft: bounds.left, railRight: bounds.right, curveRight: bounds.left + curve.x + curve.width, labelLeft: label.left, labelRight: label.right, titleWidth: title.getBoundingClientRect().width, title: title.textContent, alignment: getComputedStyle(title).textAlign };
+        });
+        assert.ok(railLabel.labelLeft >= railLabel.curveRight + 10, `Current heading must appear outside the right rail: ${JSON.stringify(railLabel)}`);
+        assert.ok(railLabel.labelRight <= railLabel.railRight + 1, `Current heading is clipped by the rail edge: ${JSON.stringify(railLabel)}`);
+        assert.ok(railLabel.titleWidth > 20, `Heading must retain readable width: ${JSON.stringify(railLabel)}`);
+        assert.equal(railLabel.title, longHeading.title);
+        assert.equal(railLabel.alignment, 'left');
+        await page.screenshot({ path: path.join(outputDir, `reading-label-${width}.png`) });
         assert.deepEqual(errors, []);
-        return layout;
+        return { ...layout, railLabel };
       } finally { await context.close(); }
     });
   }

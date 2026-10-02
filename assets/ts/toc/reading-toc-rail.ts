@@ -502,6 +502,7 @@ export class ReadingTocRail {
     this.label.style.left = "";
     this.label.style.top = "";
     this.label.style.transform = "";
+    this.label.style.maxWidth = "";
     this.currentLink.setAttribute("href", "#");
     this.currentLink.removeAttribute("aria-current");
     this.currentLink.tabIndex = -1;
@@ -699,12 +700,14 @@ export class ReadingTocRail {
       button.style.transform = `translate3d(calc(-50% + ${formatNumber(offsetX)}px), -50%, 0)`;
     });
 
-    const labelX = path.peakX - this.geometry.labelGap;
+    const labelX = path.peakX + this.geometry.direction * this.geometry.labelGap;
+    const labelSpace = this.geometry.direction > 0 ? this.geometry.width - labelX : labelX;
+    this.label.style.maxWidth = `min(var(--reading-toc-rail-title-max-width), ${formatNumber(Math.max(0, labelSpace))}px)`;
     this.label.style.left = "0";
     this.label.style.top = `clamp(var(--reading-toc-rail-label-edge-inset), ${formatNumber(markerY)}px, calc(100% - var(--reading-toc-rail-label-edge-inset)))`;
     this.label.style.transform = [
       `translate3d(${formatNumber(labelX)}px, 0, 0)`,
-      "translate(-100%, -50%)",
+      this.geometry.direction > 0 ? "translate(0, -50%)" : "translate(-100%, -50%)",
     ].join(" ");
 
     this.writeLabelContent();
