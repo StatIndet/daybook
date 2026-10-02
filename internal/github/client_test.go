@@ -117,13 +117,13 @@ func TestGraphQLPublicPinsCalendarAndTokenNotInCache(t *testing.T) {
 		}
 		switch r.URL.Path {
 		case "/users/example":
-			serveProfile(w)
+			fmt.Fprint(w, `{"login":"example","email":"public@example.com"}`)
 		case "/graphql":
 			var request map[string]any
 			if json.NewDecoder(r.Body).Decode(&request) != nil || request["variables"].(map[string]any)["login"] != "example" {
 				t.Error("invalid GraphQL request")
 			}
-			fmt.Fprint(w, `{"data":{"user":{"pinnedItems":{"nodes":[{"name":"public","nameWithOwner":"example/public","url":"https://github.com/example/public","isPrivate":false,"primaryLanguage":{"name":"Go","color":"#00ADD8"}},{"name":"private","nameWithOwner":"example/private","isPrivate":true}]},"starredRepositories":{"totalCount":8},"status":{"emoji":"🌱","message":"Growing"},"contributionsCollection":{"contributionCalendar":{"totalContributions":3,"weeks":[{"contributionDays":[{"date":"2026-09-30","contributionCount":3,"contributionLevel":"THIRD_QUARTILE"}]}]}}}}}`)
+			fmt.Fprint(w, `{"data":{"user":{"pronouns":"he/him","pinnedItems":{"nodes":[{"name":"public","nameWithOwner":"example/public","url":"https://github.com/example/public","isPrivate":false,"primaryLanguage":{"name":"Go","color":"#00ADD8"}},{"name":"private","nameWithOwner":"example/private","isPrivate":true}]},"starredRepositories":{"totalCount":8},"status":{"emoji":"🌱","message":"Growing"},"contributionsCollection":{"contributionCalendar":{"totalContributions":3,"weeks":[{"contributionDays":[{"date":"2026-09-30","contributionCount":3,"contributionLevel":"THIRD_QUARTILE"}]}]}}}}}`)
 		case "/repos/example/example/readme":
 			w.WriteHeader(http.StatusNotFound)
 		case "/users/example/starred":
@@ -145,7 +145,7 @@ func TestGraphQLPublicPinsCalendarAndTokenNotInCache(t *testing.T) {
 	if p.Contributions == nil || p.Contributions.Total != 3 || p.Contributions.Weeks[0].Days[0].Level != 3 {
 		t.Fatalf("calendar: %#v", p.Contributions)
 	}
-	if p.Status.Message != "Growing" || p.Stars != 8 {
+	if p.Email != "public@example.com" || p.Pronouns != "he/him" || p.Status.Message != "Growing" || p.Stars != 8 {
 		t.Fatalf("enhanced data missing")
 	}
 	cache, err := os.ReadFile(filepath.Join(cacheDir, "example.json"))

@@ -11,6 +11,7 @@ import (
 // written to the static snapshot; authentication enables GitHub's profile API.
 const profileQuery = `query DaybookProfile($login: String!) {
   user(login: $login) {
+    pronouns
     pinnedItems(first: 6, types: [REPOSITORY]) {
       nodes { ... on Repository { name nameWithOwner url description isPrivate isArchived isFork stargazerCount forkCount updatedAt homepageUrl primaryLanguage { name color } repositoryTopics(first: 20) { nodes { topic { name } } } } }
     }
@@ -36,6 +37,7 @@ func (c *Client) graphQL(ctx context.Context, p *Profile) error {
 		} `json:"errors"`
 		Data struct {
 			User *struct {
+				Pronouns    string `json:"pronouns"`
 				PinnedItems struct {
 					Nodes []struct {
 						Name            string `json:"name"`
@@ -92,6 +94,7 @@ func (c *Client) graphQL(ctx context.Context, p *Profile) error {
 	if u == nil {
 		return fmt.Errorf("GitHub GraphQL user not found")
 	}
+	p.Pronouns = u.Pronouns
 	p.PinnedRepositories = nil
 	for _, repo := range u.PinnedItems.Nodes {
 		if repo.Private || repo.Name == "" {

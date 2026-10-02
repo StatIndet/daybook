@@ -148,7 +148,7 @@ profile:
     logoText: Daybook
 ```
 
-Each `daybook build` requests fresh official GitHub data: name, login, avatar, Bio, contacts, followers, public repositories and stars, profile README, organizations and public activity. `GITHUB_TOKEN` is optional; a token enables GraphQL pinned repositories, status and contribution calendar. Use a token with access to public information only. It is read from the environment and is never written to HTML, JSON or the cache. GitHub achievements are omitted because the official APIs do not expose them.
+Each `daybook build` requests fresh official GitHub data: name, login, avatar, Bio, contacts, followers, public repositories and stars, profile README, organizations and public activity. `GITHUB_TOKEN` is optional; a token enables GraphQL pronouns, pinned repositories, status and contribution calendar, and REST public profile email (GitHub omits email for anonymous requests). Use a token with access to public information only. It is read from the environment and is never written to HTML, JSON or the cache. GitHub local time/timezone visibility and achievements are omitted because the official APIs do not expose them.
 
 The GitHub Bio supplies homepage description, Open Graph, Twitter and JSON-LD metadata. Manual author names, avatars, slogans and home SEO values are no longer used for a configured GitHub homepage. The persistent logo and footer preferences remain configurable. A last-successful snapshot in `.daybook-cache/github/` supports offline rebuilds. A first build without accessible upstream data fails with a clear error. Generated `public/github-profile.json` contains only public profile data.
 

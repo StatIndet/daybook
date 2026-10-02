@@ -28,7 +28,7 @@
       <a class="hero-avatar-wrap" data-site-avatar href="{{.GitHub.HTMLURL}}" target="_blank" rel="noopener noreferrer" aria-label="{{.GitHub.Login}} GitHub">
         <img class="hero-avatar" src="{{.GitHub.AvatarURL}}" {{if .GitHub.AvatarSrcSet}}srcset="{{.GitHub.AvatarSrcSet}}" sizes="(max-width: 640px) 88px, (max-width: 960px) 160px, 260px"{{end}} width="260" height="260" fetchpriority="high" alt="{{.GitHub.Name}}">
       </a>
-      <h1 class="github-profile-name">{{if .GitHub.Name}}{{.GitHub.Name}}{{else}}{{.GitHub.Login}}{{end}}<span>{{.GitHub.Login}}</span></h1>
+      <h1 class="github-profile-name">{{if .GitHub.Name}}{{.GitHub.Name}}{{else}}{{.GitHub.Login}}{{end}}<span>{{.GitHub.Login}}</span>{{if .GitHub.Pronouns}}<small class="github-profile-pronouns">{{.GitHub.Pronouns}}</small>{{end}}</h1>
     </div>
     {{if .GitHub.Status}}<p class="github-profile-status">{{.GitHub.Status.Emoji}} {{.GitHub.Status.Message}}</p>{{end}}
     {{if .GitHub.Bio}}<p class="github-profile-bio">{{.GitHub.Bio}}</p>{{end}}

@@ -9,6 +9,7 @@ import (
 )
 
 type Profile struct {
+	Pronouns           string          `json:"pronouns"`
 	Login              string          `json:"login"`
 	Name               string          `json:"name"`
 	Bio                string          `json:"bio"`
