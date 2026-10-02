@@ -214,7 +214,7 @@ if (fixtures) {
       for (const selector of ['.github-profile-details a']) {
         const link = page.locator(selector).first();
         await link.hover();
-        await page.waitForFunction(selector => getComputedStyle(document.querySelector(selector).querySelector('.material-symbol')).fontVariationSettings.includes('"FILL" 1'), selector);
+        await page.waitForFunction(({ selector, highlight }) => getComputedStyle(document.querySelector(selector)).color === highlight, { selector, highlight });
         assert.equal(await link.evaluate(element => getComputedStyle(element, '::before').content), 'none');
         assert.equal(await link.evaluate(element => getComputedStyle(element).color), highlight);
       }
@@ -374,6 +374,13 @@ if (fixtures) {
       await navigate(page, '/notes/', 'notes');
       assert.equal(await page.locator('[data-mobile-toc-sheet]').count(), 0, 'SPA cleanup left old article sheet');
       await page.locator('#mobile-menu-toggle').tap();
+      for (const selector of ['.mobile-drawer-nav .drawer-nav-link', '.drawer-footer-row a']) {
+        const link = page.locator(selector).first();
+        const originalColor = await link.evaluate(element => getComputedStyle(element).color);
+        await link.hover();
+        assert.equal(await link.evaluate(element => getComputedStyle(element).color), originalColor);
+        assert.equal(await link.evaluate(element => getComputedStyle(element, '::before').content), 'none');
+      }
       await page.locator('#drawer-tags-btn').tap();
       await page.waitForFunction(() => document.body.classList.contains('is-tags-overlay-open'));
       const tagsBox = await page.locator('#mobile-tags-overlay').boundingBox();

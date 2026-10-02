@@ -48,6 +48,7 @@
 .github-home .github-profile-details a { display: inline-flex; align-items: start; gap: 8px; min-width: 0; }
 .github-profile-details a > span:last-child { min-width: 0; }
 .github-profile-details .material-symbol { color: var(--color-muted); font-size: 19px; flex: 0 0 19px; margin-top: 2px; }
+.github-contact-icon { display: block; width: 19px; height: 19px; flex: 0 0 19px; margin-top: 2px; background-color: currentColor; mask-position: center; mask-repeat: no-repeat; mask-size: contain; }
 .github-joined { color: var(--color-muted); }
 .github-organizations { margin-top: 24px; }
 .github-home h2 { font-size: 1rem; font-weight: 500; margin: 0 0 14px; }

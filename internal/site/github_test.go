@@ -53,3 +53,36 @@ func TestHomeRendersGitHubSnapshot(t *testing.T) {
 		}
 	}
 }
+
+func TestGitHubContactsUseLocalBrandIconsAndReadableFooterLabels(t *testing.T) {
+	cfg := config.Config{Site: config.SiteConfig{URL: "https://daybook.page"}}
+	p := &github.Profile{Login: "example", HTMLURL: "https://github.com/example", AvatarURL: "https://avatars.githubusercontent.com/u/1", Blog: "https://daybook.page", SocialAccounts: []github.SocialAccount{
+		{Provider: "generic", URL: "https://space.bilibili.com/1"},
+		{Provider: "generic", URL: "https://ko-fi.com/example"},
+		{Provider: "generic", URL: "https://ifdian.net/a/example"},
+		{Provider: "generic", URL: "https://buymeacoffee.com/example"},
+		{Provider: "generic", URL: "https://unknown.example"},
+	}}
+	applyGitHubProfile(&cfg, p)
+	for index, want := range []string{"GitHub", "Bilibili", "Ko-fi", "AFDIAN", "Buy Me a Coffee", "Website"} {
+		if cfg.Profile.ParsedSocial[index].Label != want {
+			t.Fatalf("wrong footer label: %+v", cfg.Profile.ParsedSocial[index])
+		}
+	}
+	output := filepath.Join(t.TempDir(), "index.html")
+	if err := render.New("templates").RenderIndex(output, render.IndexData{Config: cfg, GitHub: p, Lang: "zh_CN", PageKind: "home"}); err != nil {
+		t.Fatal(err)
+	}
+	body, err := os.ReadFile(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"/favicon.svg", "/icons/social/bilibili.svg", "/icons/social/kofi.svg", "/icons/social/afdian.svg", "/icons/social/buymeacoffee.svg", `class="material-symbol" aria-hidden="true">link</span><span>https://unknown.example`, ">Ko-fi</a>", ">Website</a>"} {
+		if !strings.Contains(string(body), want) {
+			t.Errorf("missing contact identity %q", want)
+		}
+	}
+	if strings.Contains(string(body), "ZgotmplZ") || strings.Contains(string(body), ">generic</a>") {
+		t.Fatal("social icon or label did not survive template escaping")
+	}
+}

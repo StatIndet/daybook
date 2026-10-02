@@ -154,24 +154,6 @@ func (c Config) GetSocialLinks(lang string) []SocialLink {
 	return links
 }
 
-var supportedSocialPlatforms = map[string]struct{ Label, Icon string }{
-	"bilibili":  {"Bilibili", "/icons/social/bilibili.svg"},
-	"bluesky":   {"Bluesky", "/icons/social/bluesky.svg"},
-	"discord":   {"Discord", "/icons/social/discord.svg"},
-	"email":     {"Email", "/icons/social/gmail.svg"},
-	"github":    {"GitHub", "/icons/social/github.svg"},
-	"gitlab":    {"GitLab", "/icons/social/gitlab.svg"},
-	"instagram": {"Instagram", "/icons/social/instagram.svg"},
-	"mastodon":  {"Mastodon", "/icons/social/mastodon.svg"},
-	"qq":        {"QQ", "/icons/social/qq.svg"},
-	"reddit":    {"Reddit", "/icons/social/reddit.svg"},
-	"telegram":  {"Telegram", "/icons/social/telegram.svg"},
-	"threads":   {"Threads", "/icons/social/threads.svg"},
-	"twitch":    {"Twitch", "/icons/social/twitch.svg"},
-	"x":         {"X (Twitter)", "/icons/social/x.svg"},
-	"youtube":   {"YouTube", "/icons/social/youtube.svg"},
-}
-
 func parseSocialLinks(configs []SocialLinkConfig) []SocialLink {
 	var links []SocialLink
 	for _, c := range configs {
@@ -182,18 +164,10 @@ func parseSocialLinks(configs []SocialLinkConfig) []SocialLink {
 			continue
 		}
 
-		info, ok := supportedSocialPlatforms[c.Type]
-		if !ok {
-			fmt.Printf("[daybook] warning: unsupported social platform \"%s\", skipping\n", c.Type)
-			continue
+		link := (Config{}).ResolveSocialLink(c.URL, c.Type)
+		if link.URL != "" {
+			links = append(links, link)
 		}
-
-		links = append(links, SocialLink{
-			Type:  c.Type,
-			Label: info.Label,
-			URL:   c.URL,
-			Icon:  info.Icon,
-		})
 	}
 	return links
 }

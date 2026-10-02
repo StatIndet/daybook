@@ -1,3 +1,7 @@
+{{define "github_contact"}}
+<li><a href="{{.Link.URL}}" {{if ne .Link.Type "email"}}target="_blank" rel="noopener noreferrer"{{end}}>{{if .Link.Icon}}<span class="github-contact-icon" style="mask-image: url('{{.Assets.Path .Link.Icon}}')" aria-hidden="true"></span>{{else}}<span class="material-symbol" aria-hidden="true">link</span>{{end}}<span>{{.Text}}</span></a></li>
+{{end}}
+
 {{define "github_repository"}}
 <article class="github-repository">
   <div class="github-repository-heading">
@@ -18,7 +22,7 @@
 
 {{define "content"}}
 {{if .GitHub}}
-<section class="github-home" data-github-home data-github-login="{{.GitHub.Login}}" aria-label="GitHub">
+<section class="github-home" data-github-home data-github-login="{{.GitHub.Login}}" data-site-url="{{.Config.Site.URL}}" aria-label="GitHub">
   <aside class="github-profile">
     <div class="github-profile-identity">
       <a class="hero-avatar-wrap" data-site-avatar href="{{.GitHub.HTMLURL}}" target="_blank" rel="noopener noreferrer" aria-label="{{.GitHub.Login}} GitHub">
@@ -32,10 +36,10 @@
     <ul class="github-profile-details">
       {{if .GitHub.Company}}<li><span class="material-symbol" aria-hidden="true">domain</span><span>{{.GitHub.Company}}</span></li>{{end}}
       {{if .GitHub.Location}}<li><span class="material-symbol" aria-hidden="true">location_on</span><span>{{.GitHub.Location}}</span></li>{{end}}
-      {{if .GitHub.Email}}<li><a href="mailto:{{.GitHub.Email}}"><span class="material-symbol" aria-hidden="true">mail</span><span>{{.GitHub.Email}}</span></a></li>{{end}}
-      {{if .GitHub.Blog}}<li><a href="{{.GitHub.Blog}}" target="_blank" rel="noopener noreferrer"><span class="material-symbol" aria-hidden="true">link</span><span>{{.GitHub.Blog}}</span></a></li>{{end}}
-      {{if .GitHub.TwitterUsername}}<li><a href="https://x.com/{{.GitHub.TwitterUsername}}" target="_blank" rel="noopener noreferrer"><span class="material-symbol" aria-hidden="true">alternate_email</span><span>{{.GitHub.TwitterUsername}}</span></a></li>{{end}}
-      {{range .GitHub.SocialAccounts}}<li><a href="{{.URL}}" target="_blank" rel="noopener noreferrer"><span class="material-symbol" aria-hidden="true">link</span><span>{{.URL}}</span></a></li>{{end}}
+      {{if .GitHub.Email}}{{template "github_contact" dict "Link" (.Config.ResolveSocialLink (printf "mailto:%s" .GitHub.Email) "email") "Text" .GitHub.Email "Assets" .Assets}}{{end}}
+      {{if .GitHub.Blog}}{{template "github_contact" dict "Link" (.Config.ResolveSocialLink .GitHub.Blog "") "Text" .GitHub.Blog "Assets" .Assets}}{{end}}
+      {{if .GitHub.TwitterUsername}}{{template "github_contact" dict "Link" (.Config.ResolveSocialLink (printf "https://x.com/%s" .GitHub.TwitterUsername) "x") "Text" .GitHub.TwitterUsername "Assets" .Assets}}{{end}}
+      {{range .GitHub.SocialAccounts}}{{template "github_contact" dict "Link" ($.Config.ResolveSocialLink .URL .Provider) "Text" .URL "Assets" $.Assets}}{{end}}
       {{if .GitHub.CreatedAt}}<li class="github-joined"><span class="material-symbol" aria-hidden="true">calendar_month</span><span>{{if eq .Lang "en_US"}}Joined{{else}}加入于{{end}} <time datetime="{{.GitHub.CreatedAt}}">{{slice .GitHub.CreatedAt 0 10}}</time></span></li>{{end}}
     </ul>
     {{if .GitHub.Organizations}}<section class="github-organizations"><h2>{{if eq .Lang "en_US"}}Organizations{{else}}组织{{end}}</h2><div>{{range .GitHub.Organizations}}<a href="{{.HTMLURL}}" target="_blank" rel="noopener noreferrer" data-tooltip="{{.Login}} · {{.Description}}"><img src="{{.AvatarURL}}" alt="{{.Login}}" width="36" height="36" loading="lazy"></a>{{end}}</div></section>{{end}}
