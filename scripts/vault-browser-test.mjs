@@ -150,6 +150,9 @@ if (fixtures) {
         await page.locator('.site-tools [data-mobile-overlay-target="tags"]').click();
         await page.waitForFunction(() => document.body.classList.contains('is-tags-overlay-open'));
         assert.ok(await page.locator('#mobile-tags-overlay .notes-tag-link').count() > 0);
+        const tags = await page.locator('#mobile-tags-overlay .mobile-overlay-content').boundingBox();
+        const center = await page.evaluate(() => document.body.getBoundingClientRect().width / 2);
+        assert.ok(Math.abs(tags.x + tags.width / 2 - center) <= 1, 'Desktop tags must be centered in the viewport');
         assert.equal(await page.locator('.page-frame main').first().evaluate(el => el.inert), true);
         assert.equal(await page.locator('.page-frame main').first().evaluate(el => getComputedStyle(el).visibility), 'hidden');
         await page.keyboard.press('Escape');
@@ -172,6 +175,8 @@ if (fixtures) {
       await page.locator('#mobile-tags-overlay [data-overlay-close]').click();
       assert.equal(await page.evaluate(() => scrollY), readingScroll, 'Closing tags must preserve reading position');
       await page.waitForFunction(() => document.querySelector('.note-toc-stage').classList.contains('is-reading'));
+      const sticky = await page.locator('.note-toc-wrapper').boundingBox();
+      assert.ok(Math.abs(sticky.y - 88) <= 1, `TOC must remain in view while reading: ${JSON.stringify(sticky)}`);
       const overlap = await page.evaluate(() => {
         const content = document.querySelector('.post-content').getBoundingClientRect();
         const rail = document.querySelector('.reading-toc-rail').getBoundingClientRect();
@@ -191,6 +196,56 @@ if (fixtures) {
       assert.equal(await page.locator('.site-tools [data-mobile-overlay-target="tags"]').getAttribute('aria-expanded'), 'false');
       assert.deepEqual(errors, []);
       return {};
+    } finally { await context.close(); }
+  });
+
+  await run('desktop: TOC enters once during article navigation and stays in view', async () => {
+    const { page, context, errors } = await createPage({ width: 1440, height: 1000 });
+    try {
+      await page.goto(`${baseURL}/notes/`, { waitUntil: 'networkidle' });
+      await page.evaluate(() => {
+        window.__tocAnimations = [];
+        document.addEventListener('animationstart', event => {
+          if (event.target.matches('.note-toc-header')) {
+            window.__tocAnimations.push({ name: event.animationName, transitioning: document.documentElement.classList.contains('is-transitioning') });
+          }
+        });
+      });
+      await page.locator(`.notes-item-title a[href="${fixtures.toc}"]`).click();
+      await settled(page, 'note');
+      await page.waitForTimeout(1200);
+      const animations = await page.evaluate(() => window.__tocAnimations);
+      assert.equal(animations.length, 1, `TOC header must enter exactly once: ${JSON.stringify(animations)}`);
+      assert.equal(animations[0].transitioning, true, 'TOC must enter with the article rather than reappear after the transition');
+      for (const top of [1000, 2000]) {
+        await page.evaluate(top => scrollTo({ top, behavior: 'instant' }), top);
+        const wrapper = await page.locator('.note-toc-wrapper').boundingBox();
+        assert.ok(Math.abs(wrapper.y - 88) <= 1, `TOC is no longer sticky at ${top}px: ${JSON.stringify(wrapper)}`);
+      }
+      await page.locator('.note-toc-stage').hover();
+      await page.waitForFunction(() => document.querySelector('.note-toc-stage').classList.contains('is-hovered'));
+      assert.equal(await page.locator('.note-toc').getAttribute('aria-hidden'), null);
+      assert.deepEqual(errors, []);
+      return { animations };
+    } finally { await context.close(); }
+  });
+
+  await run('graph: local node search has the same opaque background as article search', async () => {
+    const { page, context, errors } = await createPage({ width: 1440, height: 1000 });
+    try {
+      await page.goto(`${baseURL}/graph/`, { waitUntil: 'networkidle' });
+      await page.locator('#graph-search-btn').click();
+      await page.waitForFunction(() => document.querySelector('.graph-actions-horizontal').classList.contains('is-search-open'));
+      const backgrounds = await page.evaluate(() => ({
+        node: getComputedStyle(document.querySelector('#graph-local-search-panel')).backgroundColor,
+        article: getComputedStyle(document.querySelector('.site-tools .notes-search-panel')).backgroundColor,
+      }));
+      assert.equal(backgrounds.node, backgrounds.article);
+      assert.notEqual(backgrounds.node, 'rgba(0, 0, 0, 0)');
+      await page.locator('#graph-search-input').fill('Markdown');
+      assert.ok(await page.locator('#graph-search-input').isVisible());
+      assert.deepEqual(errors, []);
+      return backgrounds;
     } finally { await context.close(); }
   });
 

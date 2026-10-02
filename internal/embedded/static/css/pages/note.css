@@ -195,7 +195,7 @@
   }
 
   .note-detail-page .notes-aside {
-    bottom: 0;
+    height: 100%;
     left: calc(100% + clamp(28px, 3vw, 48px));
     margin-top: 0;
     position: absolute;

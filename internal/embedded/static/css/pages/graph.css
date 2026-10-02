@@ -71,6 +71,7 @@
 
 /* Local Search Box overrides */
 #graph-local-search-panel {
+  background: var(--color-page);
   position: absolute;
   top: calc(100% + 8px);
   left: 0;

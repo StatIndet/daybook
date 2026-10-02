@@ -1297,6 +1297,11 @@ body.is-search-overlay-open .mobile-search-overlay {
     padding: 0 clamp(32px, 6vw, 84px) 32px;
   }
 
+  /* Balance the reserved left navigation space so tags share the article center. */
+  .page-body .mobile-tags-overlay {
+    padding-inline: 0 var(--side-rail-width);
+  }
+
   .mobile-tags-overlay .mobile-overlay-header,
   .mobile-tags-overlay .mobile-overlay-content {
     width: min(var(--notes-content-width), 100%);

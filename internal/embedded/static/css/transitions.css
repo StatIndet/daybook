@@ -519,7 +519,6 @@ html.article-transition .side-nav:not(.transition-stable) .nav-link,
 html.article-transition .side-avatar-link,
 html.article-transition .side-avatar-wrap,
 html.article-transition .notes-aside,
-html.article-transition .notes-aside *,
 html.article-transition .notes-aside:not(.transition-stable) .notes-footer-actions .notes-action-button,
 html.article-transition .notes-aside:not(.transition-stable) .notes-footer-links,
 html.article-transition .notes-aside:not(.transition-stable) .notes-footer > p {
