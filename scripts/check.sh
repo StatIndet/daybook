@@ -8,6 +8,7 @@ npm run test:reading-rail
 npm run build:js
 npm run build:vendor
 node scripts/graph-browser-test.mjs
+node scripts/gallery-browser-test.mjs
 
 echo "==> Phase B: Go Validation"
 go test ./...

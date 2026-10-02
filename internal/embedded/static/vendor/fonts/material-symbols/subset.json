@@ -60,6 +60,7 @@
     "mail",
     "menu",
     "menu_open",
+    "mouse",
     "music_note_2",
     "navigation",
     "notes",
@@ -112,5 +113,5 @@
     }
   },
   "originalBytes": 5347060,
-  "subsetBytes": 12788
+  "subsetBytes": 12896
 }

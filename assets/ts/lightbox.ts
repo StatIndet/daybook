@@ -101,7 +101,10 @@
       document.body.style.overflow = "hidden";
 
       // FLIP - First
+      const galleryItem = img.closest<HTMLElement>(".md-carousel-item");
       const rect = img.getBoundingClientRect();
+      const galleryMask = galleryItem ? Math.max(0, (rect.width - galleryItem.getBoundingClientRect().width) / 2) : 0;
+      const galleryRadius = galleryItem ? getComputedStyle(galleryItem).borderRadius : "0px";
 
       // Create clone
       this.clonedImg = img.cloneNode() as HTMLImageElement;
@@ -116,6 +119,13 @@
       this.clonedImg.style.height = rect.height + "px";
       // Remove any CSS transition so WAAPI takes full control
       this.clonedImg.style.transition = "none";
+      if (galleryItem) {
+        this.clonedImg.removeAttribute("tabindex");
+        this.clonedImg.removeAttribute("role");
+        this.clonedImg.style.objectFit = "cover";
+        // Keep the same image surface and crop, including portrait photos.
+        this.clonedImg.style.clipPath = `inset(0 ${galleryMask}px round ${galleryRadius})`;
+      }
 
       // Add to DOM
       document.body.appendChild(this.clonedImg);
@@ -136,11 +146,22 @@
       const translateX = -rect.left + (viewportWidth - rect.width) / 2;
       const translateY = -rect.top + (viewportHeight - rect.height) / 2;
       const targetTransform = `translate3d(${translateX}px, ${translateY}px, 0) scale(${scale})`;
+      const naturalScale = Math.min(viewportWidth * scaleFactor / img.naturalWidth, viewportHeight * scaleFactor / img.naturalHeight);
+      const galleryFrame: Keyframe = {
+        left: `${(viewportWidth - img.naturalWidth * naturalScale) / 2}px`,
+        top: `${(viewportHeight - img.naturalHeight * naturalScale) / 2}px`,
+        width: `${img.naturalWidth * naturalScale}px`,
+        height: `${img.naturalHeight * naturalScale}px`,
+        clipPath: "inset(0 0px round 0px)"
+      };
 
       // FLIP - Play
       await Promise.all([
         this.fadeOverlay("1"),
-        this.playAnimation(this.clonedImg, [
+        this.playAnimation(this.clonedImg, galleryItem ? [
+          { left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px`, clipPath: this.clonedImg.style.clipPath },
+          galleryFrame
+        ] : [
           { transform: "translate3d(0, 0, 0) scale(1)" },
           { transform: targetTransform }
         ], {
@@ -152,7 +173,7 @@
 
       if (this.state === "opening") {
         this.state = "open";
-        this.clonedImg.style.transform = targetTransform;
+        if (!galleryItem) this.clonedImg.style.transform = targetTransform;
         this.overlay.focus();
       }
     }
@@ -167,7 +188,9 @@
       }
 
       // Re-read original rect in case of scrolling/resizing
+      const galleryItem = this.originalImg.closest<HTMLElement>(".md-carousel-item");
       const newRect = this.originalImg.getBoundingClientRect();
+      const galleryMask = galleryItem ? Math.max(0, (newRect.width - galleryItem.getBoundingClientRect().width) / 2) : 0;
       const oldRectTop = parseFloat(this.clonedImg.style.top || "0");
       const oldRectLeft = parseFloat(this.clonedImg.style.left || "0");
 
@@ -183,7 +206,10 @@
       // Play closing animation
       await Promise.all([
         this.fadeOverlay("0"),
-        this.playAnimation(this.clonedImg, [
+        this.playAnimation(this.clonedImg, galleryItem ? [
+          { left: getComputedStyle(this.clonedImg).left, top: getComputedStyle(this.clonedImg).top, width: getComputedStyle(this.clonedImg).width, height: getComputedStyle(this.clonedImg).height, clipPath: getComputedStyle(this.clonedImg).clipPath },
+          { left: `${newRect.left}px`, top: `${newRect.top}px`, width: `${newRect.width}px`, height: `${newRect.height}px`, clipPath: `inset(0 ${galleryMask}px round ${getComputedStyle(galleryItem).borderRadius})` }
+        ] : [
           { transform: currentTransform !== "none" ? currentTransform : "translate3d(0, 0, 0) scale(1)" },
           { transform: targetTransform }
         ], {
@@ -251,7 +277,7 @@
       }
 
       const imgTarget = target as HTMLImageElement;
-      if (!imgTarget.complete || imgTarget.width < 100 || imgTarget.height < 100) {
+      if (!imgTarget.complete || !imgTarget.naturalWidth || imgTarget.width < 100 || imgTarget.height < 100) {
         return;
       }
 

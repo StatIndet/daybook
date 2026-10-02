@@ -411,6 +411,92 @@
   width: 100%;
 }
 
+/* Material multi-browse: native scrolling drives a stationary, masked stage. */
+.markdown .md-gallery.is-carousel {
+  --gallery-height: clamp(13rem, 38vw, 18rem);
+  --gallery-radius: 24px;
+  display: block;
+  height: var(--gallery-height);
+  padding: 0;
+  position: relative;
+  scrollbar-width: none;
+  touch-action: pan-x pan-y pinch-zoom;
+}
+
+.markdown .md-gallery.is-carousel::-webkit-scrollbar { display: none; }
+
+.markdown .md-gallery.is-carousel:focus-visible {
+  border-radius: var(--gallery-radius);
+  outline: 2px solid var(--color-accent);
+  outline-offset: 5px;
+}
+
+.markdown .md-carousel-track { height: 100%; }
+
+.markdown .md-carousel-stage {
+  height: 100%;
+  left: 0;
+  overflow: hidden;
+  position: sticky;
+}
+
+.markdown .md-carousel-item {
+  background: var(--color-paper);
+  border-radius: var(--gallery-radius);
+  height: 100%;
+  left: 0;
+  margin: 0;
+  max-width: none;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+}
+
+.markdown .md-carousel-item img {
+  border: 0;
+  height: 100%;
+  left: 50%;
+  max-width: none;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  width: var(--gallery-image-width);
+}
+
+.markdown .md-carousel-item:has(:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -3px;
+}
+
+.markdown .md-carousel-item figcaption {
+  background: linear-gradient(transparent, rgb(0 0 0 / 0.7));
+  bottom: 0;
+  box-sizing: border-box;
+  color: white;
+  display: -webkit-box;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  left: 0;
+  line-height: 1.4;
+  margin: 0;
+  opacity: var(--gallery-caption-opacity, 1);
+  overflow: hidden;
+  padding: 36px 16px 16px;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  text-align: left;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.markdown .md-gallery.is-dragging,
+.markdown .md-gallery.is-dragging img {
+  cursor: grabbing;
+  user-select: none;
+}
+
 .markdown .mermaid-block {
   background: color-mix(in srgb, var(--color-paper) 72%, transparent);
   border: 1px solid var(--color-line);
