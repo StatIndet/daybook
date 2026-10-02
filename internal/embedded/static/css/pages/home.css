@@ -4,8 +4,6 @@
 }
 .github-home {
   --home-card: var(--color-paper);
-  --home-shadow-ink: color-mix(in srgb, var(--color-text) 12%, transparent);
-  --home-shadow: 0 2px 5px var(--home-shadow-ink), 0 18px 40px color-mix(in srgb, var(--color-text) 5%, transparent);
   --home-shadow-low: 0 2px 4px color-mix(in srgb, var(--color-text) 7%, transparent), 0 8px 20px color-mix(in srgb, var(--color-text) 4%, transparent);
   display: grid;
   grid-template-columns: 304px minmax(0, 1fr);
@@ -17,7 +15,7 @@
 }
 .github-profile { position: relative; isolation: isolate; padding: 20px 22px 26px; min-width: 0; }
 .github-profile::before { content: ""; position: absolute; inset: 82px 0 0; z-index: -1; border-radius: 24px; background: var(--home-card); box-shadow: var(--home-shadow-low); pointer-events: none; }
-:root[data-theme="dark"] .github-home { --home-shadow-ink: rgb(0 0 0 / 0.2); --home-shadow: 0 2px 6px rgb(0 0 0 / 0.18), 0 18px 40px rgb(0 0 0 / 0.2); --home-shadow-low: 0 2px 4px rgb(0 0 0 / 0.16), 0 8px 20px rgb(0 0 0 / 0.14); }
+:root[data-theme="dark"] .github-home { --home-shadow-low: 0 2px 4px rgb(0 0 0 / 0.16), 0 8px 20px rgb(0 0 0 / 0.14); }
 .hero-avatar-wrap {
   display: block;
   aspect-ratio: 1;
@@ -56,9 +54,8 @@
 .github-organizations img { display: block; border-radius: 6px; }
 .github-overview { min-width: 0; }
 .github-badge { border-radius: 8px; font-size: 0.74rem; padding: 2px 8px; line-height: 1.6; background: color-mix(in srgb, var(--color-muted) 6%, var(--home-card)); color: var(--color-muted); font-weight: 400; white-space: nowrap; }
-.github-readme { position: relative; isolation: isolate; border-radius: 24px; background: var(--home-card); box-shadow: var(--home-shadow); scroll-margin-top: 80px; }
-.github-readme::before { content: ""; position: absolute; inset: 12px 10px -8px; z-index: -1; border-radius: inherit; background: color-mix(in srgb, var(--color-page) 55%, var(--home-card)); box-shadow: var(--home-shadow-low); pointer-events: none; }
-.github-readme-content { padding: 24px; border-radius: inherit; background: var(--home-card); overflow: hidden; font-size: 0.92rem; min-width: 0; }
+.github-readme { scroll-margin-top: 80px; }
+.github-readme-content { font-size: 0.92rem; min-width: 0; }
 .github-readme-content > :first-child { margin-top: 0; }
 .github-readme-content > :last-child { margin-bottom: 0; }
 .github-readme-content img { max-width: 100%; height: auto; }
@@ -123,8 +120,6 @@
   .github-profile-details li { max-width: 100%; }
   .github-organizations { margin-top: 16px; }
   .github-overview { margin-top: 24px; }
-  .github-readme { border-radius: 20px; }
-  .github-readme-content { padding: 18px; }
   .github-repository-grid { gap: 12px; }
   .github-repository { padding: 18px; }
   .github-contributions { padding: 20px 18px; }
