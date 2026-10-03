@@ -17,14 +17,16 @@ type IndexVersion struct {
 	TagIDs         []string      `json:"tagIDs"`
 	Date           string        `json:"date"`
 	URL            string        `json:"url"`
-	ReadingTime    string        `json:"readingTime"`
-	ReadingMinutes int           `json:"readingMinutes"`
+	ReadingTime    string        `json:"readingTime,omitempty"`
+	ReadingMinutes int           `json:"readingMinutes,omitempty"`
 	Updated        string        `json:"updated"`
 	Slug           string        `json:"slug"`
-	Pin            bool          `json:"pin"`
+	Pinned         bool          `json:"pinned"`
 	HasMusic       bool          `json:"hasMusic"`
 	HasTranslation bool          `json:"hasTranslation"`
 	TitleLayout    template.HTML `json:"titleLayout"`
+	Section        string        `json:"section"`
+	Location       string        `json:"location,omitempty"`
 }
 
 type IndexItem struct {
@@ -62,6 +64,10 @@ func BuildIndex(groups []*content.ArticleGroup, estimateReadingTime func(string)
 			}
 
 			titleLayoutHTML := morphable.GenerateHTML(note.Title, note.URL, "title")
+			readingTime := ""
+			if note.Section != "memos" {
+				readingTime = estimateReadingTime(note.Body)
+			}
 
 			versions[lang] = IndexVersion{
 				Title:          note.Title,
@@ -70,14 +76,16 @@ func BuildIndex(groups []*content.ArticleGroup, estimateReadingTime func(string)
 				TagIDs:         tagIDs,
 				Date:           note.Date,
 				URL:            note.URL,
-				ReadingTime:    estimateReadingTime(note.Body),
+				ReadingTime:    readingTime,
 				ReadingMinutes: note.ReadingMinutes,
 				Updated:        note.Updated,
 				Slug:           note.Slug,
-				Pin:            note.Pin,
+				Pinned:         note.Pinned,
 				HasMusic:       note.HasMusic,
 				HasTranslation: hasTranslation,
 				TitleLayout:    titleLayoutHTML,
+				Section:        note.Section,
+				Location:       note.Location,
 			}
 		}
 

@@ -41,33 +41,33 @@ func TestBuildJSON_EdgeCases(t *testing.T) {
 		{Source: "B", Target: "A", Exists: true}, // B->A duplicate reverse
 		{Source: "A", Target: "C", Exists: true}, // A->C
 	}
-	
+
 	tmpDir := t.TempDir()
 	out := filepath.Join(tmpDir, "graph.json")
 	err := BuildJSON(nodes, links, out)
 	if err != nil {
 		t.Fatalf("BuildJSON failed: %v", err)
 	}
-	
+
 	b, err := os.ReadFile(out)
 	if err != nil {
 		t.Fatalf("Failed to read output: %v", err)
 	}
-	
+
 	var data Data
 	if err := json.Unmarshal(b, &data); err != nil {
 		t.Fatalf("Failed to unmarshal output: %v", err)
 	}
-	
+
 	if len(data.Links) != 2 {
 		t.Fatalf("Expected 2 links, got %d", len(data.Links))
 	}
-	
+
 	degree := make(map[string]int)
 	for _, n := range data.Nodes {
 		degree[n.ID] = n.Degree
 	}
-	
+
 	if degree["A"] != 2 {
 		t.Errorf("Expected A degree 2, got %d", degree["A"])
 	}
@@ -76,5 +76,32 @@ func TestBuildJSON_EdgeCases(t *testing.T) {
 	}
 	if degree["C"] != 1 {
 		t.Errorf("Expected C degree 1, got %d", degree["C"])
+	}
+}
+
+func TestBuildJSONKeepsSameNamedContentDistinct(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "graph.json")
+	err := BuildJSON([]InputNode{
+		{ID: "/notes/foo/", Title: "foo", URL: "/notes/foo/"},
+		{ID: "/memos/foo/", Title: "foo", URL: "/memos/foo/"},
+		{ID: "/en_US/memos/foo/", Title: "foo", URL: "/en_US/memos/foo/"},
+	}, []InputLink{
+		{Source: "/notes/foo/", Target: "/memos/foo/", Exists: true},
+		{Source: "/memos/foo/", Target: "/notes/foo/", Exists: true},
+		{Source: "/en_US/memos/foo/", Target: "/notes/foo/", Exists: true},
+	}, out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var graph Data
+	if err := json.Unmarshal(b, &graph); err != nil {
+		t.Fatal(err)
+	}
+	if len(graph.Nodes) != 3 || len(graph.Links) != 2 || graph.Nodes[0].Degree != 2 {
+		t.Fatalf("graph conflated content with the same filename: %+v", graph)
 	}
 }

@@ -4,12 +4,15 @@
 
   <div class="mobile-overlay mobile-tags-overlay" id="mobile-tags-overlay" data-overlay-panel="tags" aria-label="标签筛选">
     <div class="mobile-overlay-header">
-      <h2 class="mobile-overlay-title" data-ui-text="action.tags">{{T .Lang "action.tags"}}</h2>
+      <h2 class="mobile-overlay-title" data-ui-text="{{if eq .PageKind "memos"}}memos.filters{{else}}action.tags{{end}}">{{if eq .PageKind "memos"}}{{T .Lang "memos.filters"}}{{else}}{{T .Lang "action.tags"}}{{end}}</h2>
       <button class="mobile-overlay-close" type="button" aria-label="{{T .Lang "action.close"}}" data-ui-aria="action.close" data-overlay-close>
         <span class="material-symbol" aria-hidden="true">close</span>
       </button>
     </div>
     <div class="mobile-overlay-content">
+      {{if eq .PageKind "memos"}}
+      {{template "memos_filters" .}}
+      {{else}}
       {{if .Tags}}
       <nav class="notes-tag-list" aria-label="标签列表">
         {{range .Tags}}
@@ -21,6 +24,7 @@
       </nav>
       {{else}}
       <p class="mobile-overlay-empty" data-ui-text="tag.empty">{{T .Lang "tag.empty"}}</p>
+      {{end}}
       {{end}}
     </div>
   </div>

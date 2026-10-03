@@ -1,10 +1,10 @@
 package obsidian
 
 import (
-	"net/url"
 	"fmt"
 	stdhtml "html"
-		"path"
+	"net/url"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -20,6 +20,8 @@ type Target struct {
 	SourcePath string
 	Headings   map[string]string
 	Blocks     map[string]string
+	URL        string
+	Section    string
 }
 
 type Attachment struct {
@@ -51,11 +53,13 @@ type Result struct {
 }
 
 type Link struct {
-	Raw    string
-	Target string
-	Slug   string
-	Alias  string
-	Exists bool
+	Raw     string
+	Target  string
+	Slug    string
+	Alias   string
+	Exists  bool
+	URL     string
+	Section string
 }
 
 var (
@@ -100,6 +104,11 @@ func NewIndex(targets []Target, attachments []Attachment, publicPath string, app
 			index.attachments[nameKey] = att
 		}
 		index.attachments[normalize(att.RelPath)] = att
+		// SourcePath is absolute in a built vault. Indexing the real attachment
+		// path lets note-relative links resolve before the basename fallback.
+		if att.AbsPath != "" {
+			index.attachments[normalize(filepath.ToSlash(att.AbsPath))] = att
+		}
 	}
 	return index
 }
@@ -139,7 +148,7 @@ func processWithContext(input string, index Index, sourcePath string, bodyStartL
 
 	result.Text = replaceImageHTML(&result, true, index, sourcePath)
 	result.Text = replaceImageHTML(&result, false, index, sourcePath)
-	
+
 	maskedInputStr := getMaskedInput(input)
 	lastSearchIndex := 0
 
@@ -156,12 +165,12 @@ func processWithContext(input string, index Index, sourcePath string, bodyStartL
 		if index := strings.IndexAny(basename, "?#"); index >= 0 {
 			basename = basename[:index]
 		}
-		
+
 		targetUrl := urlStr
 		if index := strings.IndexAny(targetUrl, "?#"); index >= 0 {
 			targetUrl = targetUrl[:index]
 		}
-		
+
 		if att, ok, candidates := index.ResolveAttachment(targetUrl, sourcePath); ok {
 			result.Attachments = append(result.Attachments, att)
 			if len(parts) == 4 {
@@ -180,13 +189,13 @@ func processWithContext(input string, index Index, sourcePath string, bodyStartL
 				Candidates: candidates,
 			})
 		}
-		
+
 		if len(parts) == 4 {
 			return "![" + parts[1] + "](" + rewriteAssetPath(parts[2]) + parts[3] + ")"
 		}
 		return match
 	})
-	
+
 	lastSearchIndex = 0
 
 	result.Text = wikilinkPattern.ReplaceAllStringFunc(result.Text, func(match string) string {
@@ -215,15 +224,17 @@ func processWithContext(input string, index Index, sourcePath string, bodyStartL
 			target, ok, candidates := index.ResolveNote(noteText, sourcePath)
 			if ok {
 				link := Link{
-					Raw:    match,
-					Target: noteText,
-					Alias:  label,
-					Exists: true,
-					Slug:   target.Slug,
+					Raw:     match,
+					Target:  noteText,
+					Alias:   label,
+					Exists:  true,
+					Slug:    target.Slug,
+					URL:     target.canonicalURL(),
+					Section: target.Section,
 				}
 				result.Links = append(result.Links, link)
 
-				href := "/notes/" + target.Slug + "/"
+				href := target.canonicalURL()
 				if headingText != "" {
 					if id := target.headingID(headingText); id != "" {
 						href += "#" + url.PathEscape(id)
@@ -269,7 +280,7 @@ func processWithContext(input string, index Index, sourcePath string, bodyStartL
 				}
 				return true, "[" + escapeMarkdownLabel(label) + "](" + escapeMarkdownURL(href) + ")"
 			}
-			
+
 			if len(candidates) > 0 {
 				line, col, snippet := getLineColSnippet(input, matchStart, bodyStartLine)
 				msg := "note \"" + noteText + "\" matches multiple files\n  candidates:\n"
@@ -285,7 +296,7 @@ func processWithContext(input string, index Index, sourcePath string, bodyStartL
 					Column:     col,
 					Snippet:    snippet,
 				})
-				
+
 				fallbackText := label
 				if fallbackText == "" {
 					fallbackText = inner
@@ -413,11 +424,10 @@ func RestoreHTML(html string, replacements map[string]string) string {
 	return html
 }
 
-
 // ResolveAttachment resolves an attachment reference according to Obsidian rules.
 func (idx Index) ResolveAttachment(target string, sourcePath string) (Attachment, bool, []string) {
 	// target is the raw link inside ![[target]]. It might be "a.png" or "sub/a.png"
-	
+
 	// Helper to lookup exact path in our map
 	lookupPath := func(p string) (Attachment, bool) {
 		norm := normalize(filepath.ToSlash(p))
@@ -498,6 +508,17 @@ func (target Target) headingID(text string) string {
 	return target.Headings[normalize(text)]
 }
 
+func (target Target) canonicalURL() string {
+	if target.URL != "" {
+		return target.URL
+	}
+	section := target.Section
+	if section == "" {
+		section = "notes"
+	}
+	return "/" + section + "/" + target.Slug + "/"
+}
+
 func targetKeys(target Target) []string {
 	keys := []string{target.Title, target.Slug}
 	if target.SourcePath != "" {
@@ -537,7 +558,6 @@ func escapeMarkdownLabel(text string) string {
 func escapeMarkdownURL(text string) string {
 	return strings.ReplaceAll(text, " ", "%20")
 }
-
 
 func replaceImageHTML(result *Result, centered bool, index Index, sourcePath string) string {
 	pattern := imageHTMLPattern
@@ -638,7 +658,7 @@ func renderAttachmentEmbed(att Attachment, label string) (string, bool) {
 		Align: attrs.Align,
 	}
 
-	// We only map label to Caption if it explicitly looks like a caption? 
+	// We only map label to Caption if it explicitly looks like a caption?
 	// The user said: "只有用户显式指定 caption 时，才显示 figcaption。本地 alias 如果当前存在可合理映射为 caption 的语义，再按照现有语法兼容；不要随便把 center/500 当 caption。"
 	// If label is not empty and not just width/align, we can use it as Alt. Should it be Caption?
 	// Obsidian natively uses the alias (label) as Alt text, not caption. We'll leave Caption empty unless it's explicitly supported in some way. We'll just use it for Alt.
@@ -784,7 +804,7 @@ func renderNoteEmbed(target Target, heading string, href string, index Index, em
 		fallback := fmt.Sprintf(`<a class="wiki-link is-unresolved" href="%s" data-tooltip="Cycle detected">%s</a>`, escapeMarkdownURL(href), stdhtml.EscapeString(label))
 		return fallback, false
 	}
-	
+
 	newVisited := make(map[string]bool)
 	for k, v := range visited {
 		newVisited[k] = v
@@ -823,7 +843,7 @@ func renderNoteEmbed(target Target, heading string, href string, index Index, em
 	} else {
 		contentHTML = stdhtml.EscapeString(rawMarkdown)
 	}
-	
+
 	if isWholeNote {
 		titleHTML := fmt.Sprintf(`<div class="obsidian-embed-title">%s</div>`, stdhtml.EscapeString(target.Title))
 		contentHTML = titleHTML + "\n" + contentHTML

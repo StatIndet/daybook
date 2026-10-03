@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 	"unicode"
 
 	"gopkg.in/yaml.v3"
@@ -21,7 +22,7 @@ type Note struct {
 	Summary        string
 	Draft          bool
 	Math           bool
-	Pin            bool
+	Pinned         bool
 	HasMusic       bool
 	Body           string
 	BodyStartLine  int
@@ -34,24 +35,39 @@ type Note struct {
 	Lang           string
 	I18nKey        string
 	CanonicalPath  string
+	Section        string
+	Location       string
 }
 
 type frontmatter struct {
-	Title   string   `yaml:"title"`
-	Date    string   `yaml:"date"`
-	Updated string   `yaml:"updated"`
-	Lang    string   `yaml:"lang"`
-	I18nKey string   `yaml:"i18n_key"`
-	Tags    []string `yaml:"tags"`
-	Summary string   `yaml:"summary"`
-	Draft   bool     `yaml:"draft"`
-	Math    bool     `yaml:"math"`
-	Pin     bool     `yaml:"pin"`
-	Toc     *bool    `yaml:"toc"`
-	Comment *bool    `yaml:"comment"`
+	Date     string   `yaml:"date"`
+	Updated  string   `yaml:"updated"`
+	Lang     string   `yaml:"lang"`
+	I18nKey  string   `yaml:"i18n_key"`
+	Tags     []string `yaml:"tags"`
+	Summary  string   `yaml:"summary"`
+	Draft    bool     `yaml:"draft"`
+	Math     bool     `yaml:"math"`
+	Pinned   bool     `yaml:"pinned"`
+	Toc      *bool    `yaml:"toc"`
+	Comment  *bool    `yaml:"comment"`
+	Location string   `yaml:"location"`
 }
 
 func LoadNotes(dir string) ([]*ArticleGroup, []string, error) {
+	return loadSection(dir, "notes")
+}
+
+// LoadMemos loads the optional memos directory with the same publishing rules
+// as notes. Existing vaults without memos continue to build unchanged.
+func LoadMemos(dir string) ([]*ArticleGroup, []string, error) {
+	return loadSection(dir, "memos")
+}
+
+func loadSection(dir, section string) ([]*ArticleGroup, []string, error) {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		return nil, nil, nil
+	}
 	var notes []Note
 	var skipped []string
 	seenSlugs := make(map[string]string) // "lang:slug" -> path
@@ -76,7 +92,7 @@ func LoadNotes(dir string) ([]*ArticleGroup, []string, error) {
 			return fmt.Errorf("\"page\" is reserved for Daybook pagination. Conflict: %s", path)
 		}
 
-		note, err := ParseFile(path, slug)
+		note, err := parseSectionFile(path, slug, section)
 		if err != nil {
 			skipped = append(skipped, fmt.Sprintf("%s (%v)", path, err))
 			return nil
@@ -107,15 +123,30 @@ func LoadNotes(dir string) ([]*ArticleGroup, []string, error) {
 }
 
 func ParseFile(path string, slug string) (Note, error) {
+	return parseSectionFile(path, slug, "notes")
+}
+
+func parseSectionFile(path, slug, section string) (Note, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return Note{}, fmt.Errorf("读取笔记文件: %w", err)
 	}
 
-	return Parse(path, string(data), slug)
+	return ParseSection(path, string(data), slug, section)
 }
 
 func Parse(sourcePath, text string, slug string) (Note, error) {
+	return ParseSection(sourcePath, text, slug, "notes")
+}
+
+func ParseMemo(sourcePath, text, slug string) (Note, error) {
+	return ParseSection(sourcePath, text, slug, "memos")
+}
+
+func ParseSection(sourcePath, text, slug, section string) (Note, error) {
+	if section != "notes" && section != "memos" {
+		return Note{}, fmt.Errorf("未知内容目录: %s", section)
+	}
 	yamlText, body, bodyStartLine, ok := splitFrontmatter(text)
 	if !ok {
 		return Note{}, fmt.Errorf("缺少 YAML frontmatter")
@@ -127,7 +158,7 @@ func Parse(sourcePath, text string, slug string) (Note, error) {
 	}
 
 	note := Note{
-		Title:         strings.TrimSpace(meta.Title),
+		Title:         titleFromFilename(sourcePath, slug),
 		Date:          strings.TrimSpace(meta.Date),
 		Updated:       strings.TrimSpace(meta.Updated),
 		Slug:          slug,
@@ -137,13 +168,15 @@ func Parse(sourcePath, text string, slug string) (Note, error) {
 		Summary:       strings.TrimSpace(meta.Summary),
 		Draft:         meta.Draft,
 		Math:          meta.Math,
-		Pin:           meta.Pin,
+		Pinned:        meta.Pinned,
 		HasMusic:      strings.Contains(cleanBody(body), "::music{"),
 		Toc:           meta.Toc,
 		Comment:       meta.Comment,
 		Body:          body,
 		BodyStartLine: bodyStartLine,
 		SourcePath:    sourcePath,
+		Section:       section,
+		Location:      strings.TrimSpace(meta.Location),
 	}
 
 	if note.Draft {
@@ -158,17 +191,48 @@ func Parse(sourcePath, text string, slug string) (Note, error) {
 	if note.Lang == "en_US" {
 		prefix = "/en_US"
 	}
-	note.URL = prefix + "/notes/" + note.Slug + "/"
+	note.URL = prefix + "/" + section + "/" + note.Slug + "/"
 	note.CanonicalPath = note.URL
 
-	note.WordCount = countWords(note.Body)
-	note.ReadingMinutes = int(math.Max(1, math.Ceil(float64(note.WordCount)/300.0)))
+	if section != "memos" {
+		note.WordCount = countWords(note.Body)
+		note.ReadingMinutes = int(math.Max(1, math.Ceil(float64(note.WordCount)/300.0)))
+	}
 
 	if err := validate(note); err != nil {
 		return Note{}, err
 	}
 
 	return note, nil
+}
+
+func titleFromFilename(sourcePath, slug string) string {
+	name := filepath.Base(sourcePath)
+	if sourcePath == "" || name == "." {
+		name = filepath.Base(slug)
+		return name
+	}
+	return strings.TrimSuffix(name, filepath.Ext(name))
+}
+
+// ParseDate accepts a calendar date or an RFC3339 timestamp with an explicit
+// timezone. Keeping the original string preserves the author's local time.
+func ParseDate(value string) (time.Time, error) {
+	if date, err := time.Parse(time.DateOnly, value); err == nil {
+		return date, nil
+	}
+	return time.Parse(time.RFC3339, value)
+}
+
+// CompareDates orders publication instants, including timestamps with different
+// UTC offsets. The lexical fallback also supports optional legacy updated values.
+func CompareDates(a, b string) int {
+	ta, errA := ParseDate(a)
+	tb, errB := ParseDate(b)
+	if errA != nil || errB != nil {
+		return strings.Compare(a, b)
+	}
+	return ta.Compare(tb)
 }
 
 func splitFrontmatter(text string) (string, string, int, bool) {
@@ -198,14 +262,19 @@ func splitFrontmatter(text string) (string, string, int, bool) {
 }
 
 func validate(note Note) error {
-	if note.Title == "" {
-		return fmt.Errorf("缺少必填字段 title")
-	}
 	if note.Date == "" {
 		return fmt.Errorf("缺少必填字段 date")
 	}
+	if _, err := ParseDate(note.Date); err != nil {
+		return fmt.Errorf("date 必须是有效的 YYYY-MM-DD 日期或带时区的 RFC3339 时间，当前为 %q", note.Date)
+	}
 	if note.Lang != "zh_CN" && note.Lang != "en_US" {
 		return fmt.Errorf("lang 必须是 zh_CN 或 en_US，当前为 %s", note.Lang)
+	}
+	if note.Section == "memos" && note.Updated != "" {
+		if _, err := ParseDate(note.Updated); err != nil {
+			return fmt.Errorf("updated 必须是有效的 YYYY-MM-DD 日期或带时区的 RFC3339 时间，当前为 %q", note.Updated)
+		}
 	}
 
 	return nil

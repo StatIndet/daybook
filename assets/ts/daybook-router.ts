@@ -430,7 +430,7 @@ interface DaybookTransitionFinishedDetail {
   }
 
   function syncShellFragments(newDocument: Document) {
-    const fragmentsToSync = ["#mobile-drawer", "#mobile-overlay", "#mobile-drawer-mask", "#mobile-overlay-mask"];
+    const fragmentsToSync = ["#mobile-drawer", "#mobile-overlay-container", "#mobile-drawer-mask"];
     for (const selector of fragmentsToSync) {
       const oldEl = document.querySelector(selector);
       const newEl = newDocument.querySelector(selector);

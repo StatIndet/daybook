@@ -1,0 +1,61 @@
+{{define "content"}}
+<div class="memos-page" data-memos-page>
+  <section class="memos-feed article-stage" aria-label="{{T .Lang "nav.memos"}}" data-ui-aria="nav.memos">
+    <header class="memos-header">
+      <div class="memos-heading">
+        <h1 data-ui-text="nav.memos">{{T .Lang "nav.memos"}}</h1>
+        <span class="memos-count" data-memos-count aria-live="polite"></span>
+      </div>
+      <div class="memos-toolbar">
+        <label class="memos-search">
+          <span class="material-symbol" aria-hidden="true">search</span>
+          <input type="search" data-memos-search autocomplete="off" spellcheck="false" placeholder="{{T .Lang "memos.search_placeholder"}}" data-ui-placeholder="memos.search_placeholder" aria-label="{{T .Lang "memos.search"}}" data-ui-aria="memos.search">
+        </label>
+        <button class="memos-filter-toggle" type="button" data-mobile-overlay-target="tags" aria-expanded="false" aria-label="{{T .Lang "memos.filters"}}" data-ui-aria="memos.filters">
+          <span class="material-symbol" aria-hidden="true">calendar_month</span>
+        </button>
+      </div>
+    </header>
+    <div class="memos-active-filters" data-memos-active hidden>
+      <span data-memos-active-label></span>
+      <button type="button" data-memos-reset data-ui-text="memos.reset">{{T .Lang "memos.reset"}}</button>
+    </div>
+    <div class="memos-cards">
+      {{range .Memos}}
+      <article class="memo-card" data-memo-card data-memo-date="{{.DateDay}}" data-memo-search="{{.Title}} {{.SearchText}} {{.Date}} {{.DateDisplay}} {{.Location}} {{range .Tags}}{{.}} {{end}}" data-memo-url="{{.URL}}">
+        <div class="memo-avatar-column" aria-hidden="true">
+          {{if $.Config.Profile.Author.Avatar}}<img class="memo-avatar" src="{{$.Config.Profile.Author.Avatar}}" alt="" width="36" height="36" loading="lazy">{{end}}
+        </div>
+        <div class="memo-entry">
+          <header class="memo-entry-header">
+            <div class="memo-author">
+              <span>{{if and (eq $.Lang "en_US") $.Config.Profile.Author.NameEn}}{{$.Config.Profile.Author.NameEn}}{{else}}{{$.Config.Profile.Author.Name}}{{end}}</span>
+              {{if .Pinned}}<span class="notes-item-pin" role="img" aria-label="{{T $.Lang "memos.pinned"}}" data-ui-aria="memos.pinned"></span>{{end}}
+            </div>
+            <div class="memo-dates">
+              <a class="memo-permalink" href="{{.URL}}" aria-label="{{T $.Lang "memos.open"}}: {{.DateDisplay}}"><time datetime="{{.Date}}">{{.DateDisplay}}</time><span class="material-symbol" aria-hidden="true">arrow_outward</span></a>
+              {{if .Updated}}<span class="memo-updated"><span data-ui-text="memos.updated">{{T $.Lang "memos.updated"}}</span> <time datetime="{{.Updated}}">{{.UpdatedDisplay}}</time></span>{{end}}
+            </div>
+          </header>
+          <div class="markdown memo-content" lang="{{if eq .Lang "en_US"}}en-US{{else}}zh-CN{{end}}">{{.HTML}}</div>
+          {{if or .Tags .Location}}
+          <footer class="memo-footer">
+            {{if .Tags}}<div class="memo-labels">
+              {{range .Tags}}<button class="memo-tag" type="button" data-memo-tag="{{.}}">#{{.}}</button>{{end}}
+            </div>{{end}}
+            {{if .Location}}<span class="memo-location"><span class="material-symbol" aria-hidden="true">location_on</span><span>{{.Location}}</span></span>{{end}}
+          </footer>
+          {{end}}
+        </div>
+      </article>
+      {{else}}
+      <p class="memos-empty" data-ui-text="memos.empty">{{T .Lang "memos.empty"}}</p>
+      {{end}}
+    </div>
+    <p class="memos-empty" data-memos-empty hidden data-ui-text="search.empty">{{T .Lang "search.empty"}}</p>
+  </section>
+  <aside class="memos-aside" aria-label="{{T .Lang "memos.filters"}}" data-ui-aria="memos.filters">
+    {{template "memos_filters" .}}
+  </aside>
+</div>
+{{end}}

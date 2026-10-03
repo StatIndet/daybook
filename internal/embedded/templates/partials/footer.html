@@ -12,7 +12,7 @@
 {{end}}
 
 {{define "notes_aside"}}
-{{if eq .PageKind "note"}}
+{{if or (eq .PageKind "note") (eq .PageKind "memo")}}
 <aside class="notes-aside" aria-label="站点信息" data-transition-region="notes-aside">
   {{if .Note.TocEnabled}}
   <div class="note-toc-wrapper">

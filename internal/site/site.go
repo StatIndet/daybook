@@ -38,12 +38,14 @@ type Options struct {
 	Config     config.Config
 	ContentDir string
 	NotesDir   string
+	MemosDir   string
 	PublicDir  string
 	Reporter   *progress.Reporter
 }
 
 type BuildResult struct {
 	Notes   []content.Note
+	Memos   []content.Note
 	Skipped []string
 }
 
@@ -75,6 +77,16 @@ func Build(options Options) (BuildResult, error) {
 	if err != nil {
 		return BuildResult{}, err
 	}
+	if options.MemosDir == "" {
+		options.MemosDir = filepath.Join(filepath.Dir(options.NotesDir), "memos")
+	}
+	memoGroups, memoSkipped, err := content.LoadMemos(options.MemosDir)
+	if err != nil {
+		return BuildResult{}, err
+	}
+	noteGroups := groups
+	groups = append(groups, memoGroups...)
+	skipped = append(skipped, memoSkipped...)
 
 	var allNotes []content.Note
 	canonicalArticleRoutes := make(map[string]bool)
@@ -126,7 +138,7 @@ func Build(options Options) (BuildResult, error) {
 	for _, group := range groups {
 		for _, note := range group.PublishedVersions() {
 			totalWordCount += note.WordCount
-			if options.Config.Site.StartedAt == "" && (startedAt == "" || note.Date < startedAt) {
+			if options.Config.Site.StartedAt == "" && (startedAt == "" || content.CompareDates(note.Date, startedAt) < 0) {
 				startedAt = note.Date
 			}
 		}
@@ -168,7 +180,7 @@ func Build(options Options) (BuildResult, error) {
 
 	uptimeDays := 0
 	if startedAt != "" {
-		if t, err := time.Parse("2006-01-02", startedAt); err == nil {
+		if t, err := content.ParseDate(startedAt); err == nil {
 			uptimeDays = int(time.Since(t).Hours() / 24)
 			if uptimeDays < 0 {
 				uptimeDays = 0
@@ -241,6 +253,8 @@ func Build(options Options) (BuildResult, error) {
 		}
 
 		var noteLinks []render.NoteLink
+		var memoCards []render.MemoCard
+		memosHaveMath := false
 		var graphNodes []graph.InputNode
 		var graphLinks []graph.InputLink
 
@@ -260,7 +274,10 @@ func Build(options Options) (BuildResult, error) {
 					return BuildResult{}, fmt.Errorf("处理笔记 %s: %w", note.SourcePath, err)
 				}
 				document.HTML = obsidian.RestoreHTML(document.HTML, processed.HTML)
-				readingTime := estimateReadingTime(note.Body)
+				readingTime := ""
+				if note.Section != "memos" {
+					readingTime = estimateReadingTime(note.Body)
+				}
 
 				transitionIdentity := group.I18nKey
 				if transitionIdentity == "" {
@@ -296,12 +313,12 @@ func Build(options Options) (BuildResult, error) {
 				var attachmentNodes []graph.AttachmentNode
 				seenAttachments := make(map[string]bool)
 				for _, att := range processed.Attachments {
-					if seenAttachments[att.Name] {
+					if seenAttachments[att.RelPath] {
 						continue
 					}
-					seenAttachments[att.Name] = true
+					seenAttachments[att.RelPath] = true
 					attachmentNodes = append(attachmentNodes, graph.AttachmentNode{
-						ID:    "attachment:" + att.Name,
+						ID:    "attachment:" + att.RelPath,
 						Title: att.Name,
 						URL:   att.PublicURL,
 					})
@@ -317,26 +334,14 @@ func Build(options Options) (BuildResult, error) {
 				})
 
 				for _, link := range processed.Links {
-					targetID := link.Slug
+					targetID := link.URL
 					if !link.Exists {
 						targetID = link.Target
-					}
-					// Resolve each published target to its canonical article URL.
-					resolvedID := targetID
-					for _, searchGroup := range groups {
-						if targetNote, ok := searchGroup.Versions["zh_CN"]; ok && targetNote.Slug == targetID {
-							resolvedID = targetNote.URL
-							break
-						}
-						if targetNote, ok := searchGroup.Versions["en_US"]; ok && targetNote.Slug == targetID {
-							resolvedID = targetNote.URL
-							break
-						}
 					}
 
 					graphLinks = append(graphLinks, graph.InputLink{
 						Source: note.URL,
-						Target: resolvedID,
+						Target: targetID,
 						Exists: link.Exists,
 					})
 				}
@@ -346,6 +351,7 @@ func Build(options Options) (BuildResult, error) {
 				hasTranslation := len(group.PublishedVersions()) > 1
 
 				noteLink := render.NoteLink{
+					Section:             note.Section,
 					Title:               note.Title,
 					Date:                note.Date,
 					Updated:             note.Updated,
@@ -357,7 +363,7 @@ func Build(options Options) (BuildResult, error) {
 					TagIDs:              tagIDs,
 					URL:                 note.URL,
 					Slug:                note.Slug,
-					Pin:                 note.Pin,
+					Pinned:              note.Pinned,
 					HasMusic:            note.HasMusic,
 					HasTranslation:      hasTranslation,
 					TitleLayout:         titleLayoutHTML,
@@ -366,15 +372,30 @@ func Build(options Options) (BuildResult, error) {
 				}
 
 				noteLinks = append(noteLinks, noteLink)
+				hasMath := note.Math || strings.Contains(document.HTML, `class="math-`)
+				dateDisplay := note.Date
+				updatedDisplay := note.Updated
+				if note.Section == "memos" {
+					memoLink := noteLink
+					memoLink.Lang = note.Lang
+					card, err := buildMemoCard(memoLink, note.Location, document.HTML)
+					if err != nil {
+						return BuildResult{}, fmt.Errorf("处理短记卡片 %s: %w", note.SourcePath, err)
+					}
+					memoCards = append(memoCards, card)
+					dateDisplay = card.DateDisplay
+					updatedDisplay = card.UpdatedDisplay
+					memosHaveMath = memosHaveMath || hasMath
+				}
 
 				// Article routes follow their source language. The surrounding UI can
 				// switch independently in the browser without replacing the article.
 				if note.Lang != lang {
-					legacyPath := joinURL("/", langPrefix, "notes", note.Slug)
+					legacyPath := joinURL("/", langPrefix, note.Section, note.Slug)
 					if !canonicalArticleRoutes[legacyPath] {
 						target := note.URL + "?ui=" + lang
 						alias := fmt.Sprintf(`<!doctype html><html><head><meta charset="utf-8"><meta name="robots" content="noindex"><link rel="canonical" href="%s"><meta http-equiv="refresh" content="0; url=%s"></head><body><a href="%s">Continue</a></body></html>`, template.HTMLEscapeString(strings.TrimSuffix(options.Config.Site.URL, "/")+note.URL), template.HTMLEscapeString(target), template.HTMLEscapeString(target))
-						aliasPath := filepath.Join(langPublicDir, "notes", note.Slug, "index.html")
+						aliasPath := filepath.Join(langPublicDir, note.Section, note.Slug, "index.html")
 						if err := os.MkdirAll(filepath.Dir(aliasPath), 0755); err != nil {
 							return BuildResult{}, err
 						}
@@ -389,7 +410,7 @@ func Build(options Options) (BuildResult, error) {
 				if note.Comment != nil {
 					commentEnabled = commentEnabled && *note.Comment
 				}
-				tocEnabled := true
+				tocEnabled := note.Section != "memos"
 				if note.Toc != nil {
 					tocEnabled = *note.Toc
 				}
@@ -404,7 +425,7 @@ func Build(options Options) (BuildResult, error) {
 				}
 				altURL := note.URL + "?ui=" + altLang
 
-				outputPath := filepath.Join(langPublicDir, "notes", note.Slug, "index.html")
+				outputPath := filepath.Join(langPublicDir, note.Section, note.Slug, "index.html")
 				var noteAlternates []seo.Alternate
 				if hasTranslation {
 					for altL, altNote := range group.Versions {
@@ -417,11 +438,11 @@ func Build(options Options) (BuildResult, error) {
 						}
 						noteAlternates = append(noteAlternates, seo.Alternate{
 							Lang: altL,
-							URL:  joinURL("/", altPrefix, "notes", altNote.Slug),
+							URL:  joinURL("/", altPrefix, altNote.Section, altNote.Slug),
 						})
 					}
 				} else {
-					noteAlternates = []seo.Alternate{{Lang: lang, URL: joinURL("/", langPrefix, "notes", note.Slug)}}
+					noteAlternates = []seo.Alternate{{Lang: lang, URL: joinURL("/", langPrefix, note.Section, note.Slug)}}
 				}
 
 				noteSEOArgs := seo.BuilderArgs{
@@ -429,33 +450,41 @@ func Build(options Options) (BuildResult, error) {
 					Lang:        lang,
 					Title:       note.Title,
 					Description: note.Summary,
-					PageURL:     joinURL("/", langPrefix, "notes", note.Slug),
+					PageURL:     joinURL("/", langPrefix, note.Section, note.Slug),
 					Published:   note.Date,
 					Modified:    note.Updated,
 					Tags:        displayTags,
 					Alternates:  noteAlternates,
 				}
 
-				canonicalPath := joinURL("/", langPrefix, "notes", note.Slug)
+				canonicalPath := joinURL("/", langPrefix, note.Section, note.Slug)
 				shareURL := strings.TrimSuffix(options.Config.Site.URL, "/") + canonicalPath
 				shareText := strings.ReplaceAll(options.Config.Share.Text, "{Title}", note.Title)
 
+				pageKind, bodyClass := "note", "note-body page-body"
+				if note.Section == "memos" {
+					pageKind, bodyClass = "memo", "note-body memo-body page-body"
+				}
 				notePageData := render.NoteData{
 					Site:         siteData,
 					Config:       options.Config,
 					PageTitle:    note.Title,
-					PageKind:     "note",
-					BodyClass:    "note-body page-body",
+					PageKind:     pageKind,
+					BodyClass:    bodyClass,
 					Lang:         lang,
 					AlternateURL: altURL,
 					Assets:       assets,
-					HasMath:      note.Math,
+					HasMath:      hasMath,
 					Tags:         tagLinks,
 					SEO:          seo.BuildForNote(noteSEOArgs),
 					Note: render.NotePage{
+						Section:             note.Section,
+						Location:            note.Location,
 						Title:               note.Title,
 						Date:                note.Date,
+						DateDisplay:         dateDisplay,
 						Updated:             note.Updated,
+						UpdatedDisplay:      updatedDisplay,
 						ReadingTime:         readingTime,
 						Summary:             note.Summary,
 						URL:                 noteLink.URL,
@@ -471,13 +500,13 @@ func Build(options Options) (BuildResult, error) {
 						HTML:                template.HTML(document.HTML),
 						Headings:            renderHeadings(document.Headings),
 						HasMermaid:          document.HasMermaid,
-						HasMath:             note.Math,
+						HasMath:             hasMath,
 						TocEnabled:          tocEnabled,
 						CommentEnabled:      commentEnabled,
 						Lang:                note.Lang,
 						TranslationURL:      translationURL,
 						HasTranslation:      hasTranslation,
-						Pin:                 note.Pin,
+						Pinned:              note.Pinned,
 						HasMusic:            note.HasMusic,
 						TitleLayout:         titleLayoutHTML,
 						TitleTransitionName: titleTransitionName,
@@ -494,8 +523,8 @@ func Build(options Options) (BuildResult, error) {
 
 		// Sorting versions by their own date prevents repeated archive year groups.
 		sort.SliceStable(noteLinks, func(i, j int) bool {
-			if noteLinks[i].Date != noteLinks[j].Date {
-				return noteLinks[i].Date > noteLinks[j].Date
+			if cmp := content.CompareDates(noteLinks[i].Date, noteLinks[j].Date); cmp != 0 {
+				return cmp > 0
 			}
 			if noteLinks[i].Title != noteLinks[j].Title {
 				return noteLinks[i].Title < noteLinks[j].Title
@@ -536,7 +565,10 @@ func Build(options Options) (BuildResult, error) {
 		var pinnedNotes []render.NoteLink
 		var regularNotes []render.NoteLink
 		for _, link := range noteLinks {
-			if link.Pin {
+			if link.Section == "memos" {
+				continue
+			}
+			if link.Pinned {
 				pinnedNotes = append(pinnedNotes, link)
 			} else {
 				regularNotes = append(regularNotes, link)
@@ -555,7 +587,7 @@ func Build(options Options) (BuildResult, error) {
 			if timeI == timeJ {
 				return list[i].Title < list[j].Title
 			}
-			return timeI > timeJ
+			return content.CompareDates(timeI, timeJ) > 0
 		}
 		sort.SliceStable(pinnedNotes, func(i, j int) bool { return sortByUpdated(i, j, pinnedNotes) })
 		sort.SliceStable(regularNotes, func(i, j int) bool { return sortByUpdated(i, j, regularNotes) })
@@ -655,6 +687,33 @@ func Build(options Options) (BuildResult, error) {
 			os.WriteFile(page1AliasPath, []byte(aliasHTML), 0644)
 		}
 
+		sort.SliceStable(memoCards, func(i, j int) bool {
+			if memoCards[i].Pinned != memoCards[j].Pinned {
+				return memoCards[i].Pinned
+			}
+			if cmp := content.CompareDates(memoCards[i].Date, memoCards[j].Date); cmp != 0 {
+				return cmp > 0
+			}
+			return memoCards[i].URL < memoCards[j].URL
+		})
+		memosURL := joinURL("/", langPrefix, "memos")
+		memosData := render.MemosData{
+			Site: siteData, Config: options.Config, PageTitle: i18n.T(lang, "nav.memos"),
+			PageKind: "memos", BodyClass: "memos-body page-body", Lang: lang,
+			AlternateURL: joinURL("/", altLangPrefix, "memos"), Assets: assets,
+			HasMath: memosHaveMath, Memos: memoCards,
+			Tags: collectTagLinksForLang(memoGroups, lang, tagRegistry),
+			SEO: seo.BuildForCollection(seo.BuilderArgs{
+				Config: options.Config, Lang: lang, Title: i18n.T(lang, "nav.memos"),
+				Description: i18n.T(lang, "seo.memos.description"), PageURL: memosURL,
+				Alternates: []seo.Alternate{{Lang: "zh_CN", URL: "/memos/"}, {Lang: "en_US", URL: "/en_US/memos/"}},
+			}),
+		}
+		if err := renderer.RenderMemos(filepath.Join(langPublicDir, "memos", "index.html"), memosData); err != nil {
+			return BuildResult{}, fmt.Errorf("生成短记页面: %w", err)
+		}
+		allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: memosURL})
+
 		archivePath := filepath.Join(langPublicDir, "archive", "index.html")
 		archiveAlternates := []seo.Alternate{{Lang: "zh_CN", URL: "/archive/"}, {Lang: "en_US", URL: "/en_US/archive/"}}
 		archiveSEOArgs := seo.BuilderArgs{
@@ -666,7 +725,13 @@ func Build(options Options) (BuildResult, error) {
 			Alternates:  archiveAlternates,
 		}
 
-		allArchiveRows := buildArchiveRows(noteLinks)
+		var archiveNotes []render.NoteLink
+		for _, link := range noteLinks {
+			if link.Section != "memos" {
+				archiveNotes = append(archiveNotes, link)
+			}
+		}
+		allArchiveRows := buildArchiveRows(archiveNotes)
 		var bootstrapRows []render.ArchiveRow
 		if len(allArchiveRows) > 8 {
 			bootstrapRows = allArchiveRows[:8]
@@ -683,9 +748,9 @@ func Build(options Options) (BuildResult, error) {
 			Lang:         lang,
 			AlternateURL: joinURL("/", altLangPrefix, "archive"),
 			Assets:       assets,
-			Total:        len(noteLinks),
+			Total:        len(archiveNotes),
 			Rows:         bootstrapRows,
-			Tags:         tagLinks,
+			Tags:         collectTagLinksForLang(noteGroups, lang, tagRegistry),
 			SEO:          seo.BuildForCollection(archiveSEOArgs),
 		}
 		if err := renderer.RenderArchive(archivePath, archiveData); err != nil {
@@ -699,7 +764,7 @@ func Build(options Options) (BuildResult, error) {
 			Rows    []render.ArchiveRow `json:"rows"`
 		}{
 			Version: 1,
-			Total:   len(noteLinks),
+			Total:   len(archiveNotes),
 			Rows:    allArchiveRows,
 		}
 
@@ -965,7 +1030,15 @@ func Build(options Options) (BuildResult, error) {
 	deduped := deduplicateDiagnostics(allDiagnostics)
 	printDiagnostics(deduped)
 
-	return BuildResult{Notes: allNotes, Skipped: skipped}, nil
+	result := BuildResult{Skipped: skipped}
+	for _, note := range allNotes {
+		if note.Section == "memos" {
+			result.Memos = append(result.Memos, note)
+		} else {
+			result.Notes = append(result.Notes, note)
+		}
+	}
+	return result, nil
 }
 
 func deduplicateDiagnostics(diags []obsidian.Diagnostic) []obsidian.Diagnostic {
@@ -1296,6 +1369,8 @@ func buildObsidianIndex(notes []content.Note, contentDir string, publicDir strin
 
 		targets = append(targets, obsidian.Target{
 			Title:      note.Title,
+			URL:        note.URL,
+			Section:    note.Section,
 			Slug:       note.Slug,
 			Summary:    note.Summary,
 			Content:    note.Body,
@@ -1450,7 +1525,11 @@ func Serve(publicDir, address string) error {
 		return fmt.Errorf("public directory not found; run `daybook build` first: %w", err)
 	}
 
-	fmt.Println("预览地址: http://localhost:1313")
+	previewAddress := address
+	if strings.HasPrefix(previewAddress, ":") {
+		previewAddress = "localhost" + previewAddress
+	}
+	fmt.Println("预览地址: http://" + previewAddress)
 	fileServer := previewHandler(publicDir)
 	mux := http.NewServeMux()
 	mux.Handle("/", fileServer)

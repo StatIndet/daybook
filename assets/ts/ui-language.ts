@@ -20,7 +20,7 @@
   }
 
   function isArticle(): boolean {
-    return document.body.dataset.pageKind === "note";
+    return document.body.dataset.pageKind === "note" || document.body.dataset.pageKind === "memo";
   }
 
   function applyLanguage(language: UILanguage): void {
@@ -51,7 +51,7 @@
 
     const prefix = language === "en_US" ? "/en_US" : "";
     document.querySelectorAll<HTMLAnchorElement>(
-      ".side-nav a:not(.lang-toggle), .site-nav a:not(.lang-toggle), .mobile-drawer-nav a:not(.lang-toggle), .side-avatar-link, .note-back-link, .tag-back-btn, .notes-tag-link, .note-tag-capsule",
+      ".side-nav a:not(.lang-toggle), .site-nav a:not(.lang-toggle), .mobile-drawer-nav a:not(.lang-toggle), .side-avatar-link, .note-back-link, .memo-detail-back, .tag-back-btn, .notes-tag-link, .note-tag-capsule",
     ).forEach(link => {
       const url = new URL(link.href, location.href);
       if (url.origin !== location.origin) return;

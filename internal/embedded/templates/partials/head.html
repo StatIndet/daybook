@@ -53,7 +53,7 @@
       } catch (e) {}
     })();
   </script>
-  {{if or (eq .PageKind "note") (eq .PageKind "about")}}
+  {{if or (eq .PageKind "note") (eq .PageKind "memo") (eq .PageKind "memos") (eq .PageKind "about")}}
   <script src="{{.Assets.Path "/js/code-copy.js"}}" data-daybook-page-script defer></script>
   <script src="{{.Assets.Path "/js/toc.js"}}" data-daybook-page-script defer></script>
   <script src="{{.Assets.Path "/js/mobile-toc.js"}}" data-daybook-page-script defer></script>
@@ -64,6 +64,7 @@
   <script src="{{.Assets.Path "/js/embeds.js"}}" data-daybook-page-script defer></script>
   <script src="{{.Assets.Path "/js/katex-loader.js"}}" data-daybook-page-script defer></script>
   {{end}}
+  {{if eq .PageKind "memos"}}<script src="{{.Assets.Path "/js/memos.js"}}" data-daybook-page-script defer></script>{{end}}
   <script src="{{.Assets.Path "/js/search-engine.js"}}" defer></script>
   <script src="{{.Assets.Path "/js/note-filters.js"}}" defer></script>
   {{if eq .PageKind "archive"}}

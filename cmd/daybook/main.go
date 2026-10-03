@@ -71,14 +71,17 @@ func run() error {
 
 	contentDir := filepath.Join(cwd, "vault")
 	notesDir := filepath.Join(cwd, "vault", "notes")
+	memosDir := filepath.Join(cwd, "vault", "memos")
 	publicDir := filepath.Join(cwd, "public")
 
 	if command == "build" {
 		if stat, err := os.Stat(contentDir); err != nil || !stat.IsDir() {
 			return fmt.Errorf("daybook: vault directory not found: ./vault")
 		}
-		if stat, err := os.Stat(notesDir); err != nil || !stat.IsDir() {
-			return fmt.Errorf("daybook: notes directory not found: ./vault/notes")
+		notesStat, notesErr := os.Stat(notesDir)
+		memosStat, memosErr := os.Stat(memosDir)
+		if (notesErr != nil || !notesStat.IsDir()) && (memosErr != nil || !memosStat.IsDir()) {
+			return fmt.Errorf("daybook: content directory not found: create ./vault/notes or ./vault/memos")
 		}
 	}
 
@@ -97,6 +100,7 @@ func run() error {
 		Config:     cfg,
 		ContentDir: contentDir,
 		NotesDir:   notesDir,
+		MemosDir:   memosDir,
 		PublicDir:  publicDir,
 		Reporter:   reporter,
 	}
@@ -117,7 +121,7 @@ func run() error {
 		}
 
 		if reporter != nil {
-			reporter.Done(fmt.Sprintf("Built %d notes to public/", len(result.Notes)))
+			reporter.Done(fmt.Sprintf("Built %d notes and %d memos to public/", len(result.Notes), len(result.Memos)))
 		}
 
 		for _, skipped := range result.Skipped {

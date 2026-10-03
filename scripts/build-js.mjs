@@ -22,6 +22,7 @@ const classicEntries = [
   'katex-loader',
   'lightbox',
   'mermaid-loader',
+  'memos',
   'mobile-drawer',
   'mobile-toc',
   'note-filters',

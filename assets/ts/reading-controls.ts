@@ -7,7 +7,7 @@ let viewportOffsetTicking = false;
 let lastReaderProgressVisualTop: number | null = null;
 
 export function initReadingControls() {
-  const isNotePage = document.querySelector('.note') !== null;
+  const isNotePage = document.body.dataset.pageKind !== 'memo' && document.querySelector('.note') !== null;
   
   if (!scrollListenerAdded) {
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -78,7 +78,7 @@ function onScroll() {
 }
 
 function updateReadingControls() {
-  const isNotePage = document.querySelector('.note') !== null;
+  const isNotePage = document.body.dataset.pageKind !== 'memo' && document.querySelector('.note') !== null;
   if (!isNotePage) return;
 
   const topBar = document.getElementById('mobile-top-bar');

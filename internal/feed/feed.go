@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/StatIndet/daybook/internal/config"
+	"github.com/StatIndet/daybook/internal/content"
 	"github.com/StatIndet/daybook/internal/render"
 )
 
@@ -74,7 +75,7 @@ func Write(path, lang string, cfg config.Config, notes []render.NoteLink) error 
 }
 
 func rssDate(date string) string {
-	parsed, err := time.Parse("2006-01-02", date)
+	parsed, err := content.ParseDate(date)
 	if err != nil {
 		return ""
 	}

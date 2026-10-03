@@ -62,6 +62,9 @@ func GroupNotes(notes []Note) ([]*ArticleGroup, error) {
 		if groupKey == "" {
 			groupKey = "single:" + note.Lang + ":" + note.Slug
 		}
+		if note.Section != "" {
+			groupKey = note.Section + ":" + groupKey
+		}
 
 		group, ok := groupsMap[groupKey]
 		if !ok {
@@ -94,10 +97,10 @@ func GroupNotes(notes []Note) ([]*ArticleGroup, error) {
 			return false
 		}
 
-		if noteI.Date == noteJ.Date {
+		if CompareDates(noteI.Date, noteJ.Date) == 0 {
 			return noteI.Title < noteJ.Title
 		}
-		return noteI.Date > noteJ.Date
+		return CompareDates(noteI.Date, noteJ.Date) > 0
 	})
 
 	return groups, nil

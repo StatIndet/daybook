@@ -27,7 +27,7 @@
       button.setAttribute("aria-expanded", String(button.dataset.mobileOverlayTarget === "tags" ? isTagsOpen : isSearchOpen));
     });
     const main = document.querySelector<HTMLElement>(".page-frame main");
-    if (main) main.inert = isTagsOpen && window.matchMedia("(min-width: 961px)").matches;
+    if (main) main.inert = isTagsOpen && (window.matchMedia("(min-width: 961px)").matches || document.body.dataset.pageKind === "memos");
 
     if (isDrawerOpen || isTagsOpen || isSearchOpen) {
       document.body.style.overflow = "hidden";
@@ -62,7 +62,19 @@
     updateScrollLock();
 
     if (overlayTarget === "tags") {
-      document.querySelector<HTMLElement>("#mobile-tags-overlay [data-overlay-close]")?.focus();
+      // Reduced-motion CSS gives even visibility a 1ms transition. The first
+      // frame can still be hidden, so focus only after the sheet is visible.
+      const focusVisibleSheet = () => {
+        if (!document.body.classList.contains("is-tags-overlay-open")) return;
+        const close = document.querySelector<HTMLElement>("#mobile-tags-overlay [data-overlay-close]");
+        if (!close) return;
+        if (getComputedStyle(close).visibility !== "visible") {
+          requestAnimationFrame(focusVisibleSheet);
+          return;
+        }
+        close.focus({ preventScroll: true });
+      };
+      requestAnimationFrame(focusVisibleSheet);
     }
     if (overlayTarget === "search") {
       var searchInput = document.getElementById("mobile-search-input");
@@ -77,11 +89,25 @@
   function closeOverlays() {
     document.body.classList.remove("is-tags-overlay-open", "is-search-overlay-open");
     updateScrollLock();
-    if (overlayOpener?.isConnected) overlayOpener.focus({ preventScroll: true });
+    if (overlayOpener?.isConnected) {
+      const returnTarget = document.body.dataset.pageKind === "memos" && overlayOpener.closest("#mobile-drawer") && !document.body.classList.contains("is-mobile-drawer-open") ? getDrawerToggle() : overlayOpener;
+      returnTarget?.focus({ preventScroll: true });
+    }
     overlayOpener = null;
   }
 
   document.addEventListener("keydown", function (event: KeyboardEvent) {
+    if (event.key === "Tab" && document.body.dataset.pageKind === "memos" && document.body.classList.contains("is-tags-overlay-open")) {
+      const panel = document.getElementById("mobile-tags-overlay");
+      const controls = Array.from(panel?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), [tabindex="0"]') || []).filter(el => el.getClientRects().length > 0);
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (first && last) {
+        if (event.shiftKey && (document.activeElement === first || !panel?.contains(document.activeElement))) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && (document.activeElement === last || !panel?.contains(document.activeElement))) { event.preventDefault(); first.focus(); }
+      }
+      return;
+    }
     if (event.key !== "Escape") return;
     
     if (document.body.classList.contains("is-tags-overlay-open") || document.body.classList.contains("is-search-overlay-open")) {

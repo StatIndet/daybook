@@ -54,7 +54,7 @@
                     }
                 }
                 if (kw) {
-                    const text = lower(item.title + " " + (item.summary || "") + " " + (item.tags || []).join(" "));
+                    const text = lower(item.title + " " + (item.summary || "") + " " + (item.date || "") + " " + (item.location || "") + " " + (item.tags || []).join(" "));
                     if (!text.includes(kw)) {
                         return false;
                     }

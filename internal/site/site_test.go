@@ -221,7 +221,7 @@ func TestShareRendering(t *testing.T) {
 
 	writeRequiredTemplateAssets(t, staticDir)
 	writeTestFile(t, contentDir, "pages/about.md", "---\ntitle: About\n---\n")
-	writeTestFile(t, contentDir, "notes/cjk.md", strings.Join([]string{
+	writeTestFile(t, contentDir, "notes/鲸歌.md", strings.Join([]string{
 		"---",
 		"title: 鲸歌",
 		"date: 2026-06-17",
@@ -233,7 +233,7 @@ func TestShareRendering(t *testing.T) {
 		"Testing CJK title.",
 	}, "\n"))
 
-	writeTestFile(t, contentDir, "notes/space.md", strings.Join([]string{
+	writeTestFile(t, contentDir, "notes/A Space Title.md", strings.Join([]string{
 		"---",
 		"title: A Space Title",
 		"date: 2026-06-18",
@@ -258,19 +258,19 @@ func TestShareRendering(t *testing.T) {
 		t.Fatalf("Build returned error: %v", err)
 	}
 
-	cjkHtml := readPublicAsset(t, publicDir, "/notes/cjk/index.html")
+	cjkHtml := readPublicAsset(t, publicDir, "/notes/鲸歌/index.html")
 	if !strings.Contains(cjkHtml, `data-share-title="鲸歌"`) {
 		t.Errorf("Expected CJK title to be preserved in data-share-title")
 	}
-	if !strings.Contains(cjkHtml, `data-share-link="https://daybook.page/notes/cjk/"`) {
+	if !strings.Contains(cjkHtml, `data-share-link="https://daybook.page/notes/鲸歌/"`) {
 		t.Errorf("Expected CJK ShareURL to be unencoded and correct: %s", cjkHtml)
 	}
 	if !strings.Contains(cjkHtml, `data-share-text="分享：&#34;鲸歌&#34;"`) {
 		t.Errorf("Expected CJK ShareText to have replaced Title and be html-escaped")
 	}
 
-	spaceHtml := readPublicAsset(t, publicDir, "/notes/space/index.html")
-	if !strings.Contains(spaceHtml, `data-share-link="https://daybook.page/notes/space/"`) {
+	spaceHtml := readPublicAsset(t, publicDir, "/notes/A Space Title/index.html")
+	if !strings.Contains(spaceHtml, `data-share-link="https://daybook.page/notes/A Space Title/"`) {
 		t.Errorf("Expected ASCII space ShareURL to be unencoded and correct")
 	}
 	if !strings.Contains(spaceHtml, `data-share-text="分享：&#34;A Space Title&#34;"`) {
@@ -386,13 +386,13 @@ func TestBuildListsAllLanguageVersionsAndKeepsArticleRoutes(t *testing.T) {
 		if strings.Count(list, "data-note-card") != 3 {
 			t.Fatalf("%s notes should list both versions", prefix)
 		}
-		for _, expected := range []string{`href="/notes/shared/"`, `href="/en_US/notes/shared/"`, "中文标题", "English title"} {
+		for _, expected := range []string{`href="/notes/shared/"`, `href="/en_US/notes/shared/"`, "shared"} {
 			if !strings.Contains(list, expected) {
 				t.Errorf("%s notes missing %s", prefix, expected)
 			}
 		}
 		archive := readPublicAsset(t, publicDir, prefix+"/archive/data.json")
-		if !strings.Contains(archive, `"total":3`) || !strings.Contains(archive, "English title") || !strings.Contains(archive, "中文标题") {
+		if !strings.Contains(archive, `"total":3`) || strings.Count(archive, `"title":"shared"`) != 2 {
 			t.Errorf("%s archive should include both versions: %s", prefix, archive)
 		}
 		for _, tag := range []string{"中文标签", "English-tag"} {

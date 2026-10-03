@@ -1,0 +1,17 @@
+{{define "memos_filters"}}
+<div class="memos-filters" data-memos-filters>
+  <section class="memos-calendar" aria-label="{{T .Lang "memos.calendar"}}" data-ui-aria="memos.calendar">
+    <div class="memos-calendar-heading">
+      <button type="button" data-memos-month="-1" aria-label="{{T .Lang "memos.previous_month"}}" data-ui-aria="memos.previous_month"><span class="material-symbol" aria-hidden="true">chevron_left</span></button>
+      <button type="button" data-memos-month-label data-memos-select-month aria-pressed="false"></button>
+      <button type="button" data-memos-month="1" aria-label="{{T .Lang "memos.next_month"}}" data-ui-aria="memos.next_month"><span class="material-symbol" aria-hidden="true">chevron_right</span></button>
+    </div>
+    <div class="memos-calendar-grid" data-memos-calendar></div>
+    <button class="memos-all-dates" type="button" data-memos-clear-date data-ui-text="memos.all_dates">{{T .Lang "memos.all_dates"}}</button>
+  </section>
+  <section class="memos-tag-filter" aria-label="{{T .Lang "action.tags"}}" data-ui-aria="action.tags">
+    <h2 data-ui-text="action.tags">{{T .Lang "action.tags"}}</h2>
+    <div class="memos-filter-tags" data-memos-tags></div>
+  </section>
+</div>
+{{end}}

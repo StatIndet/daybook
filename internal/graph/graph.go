@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"strings"
 	"os"
+	"strings"
 )
 
 type TagNode struct {
@@ -60,7 +60,7 @@ type InputNode struct {
 
 type InputLink struct {
 	Source string
-	Target string // The slug of the target
+	Target string // The canonical URL of a published target, or an unresolved identifier.
 	Exists bool
 }
 
@@ -68,24 +68,24 @@ func computeLayoutDiameter(nodeCount int, linkCount int, maxDegree int) float64 
 	if nodeCount <= 0 {
 		return 1.0
 	}
-	
+
 	diameter := math.Sqrt(float64(nodeCount))
-	
+
 	// Adjust slightly for density
 	avgDegree := 0.0
 	if nodeCount > 0 {
 		avgDegree = float64(linkCount*2) / float64(nodeCount)
 	}
-	
+
 	if avgDegree > 2.0 {
 		diameter *= 1.1 // Give a bit more space for dense graphs
 	}
-	
+
 	// Add some safety clamping
 	if diameter < 2.5 {
 		diameter = 2.5 // Minimum logical extent for very small graphs
 	}
-	
+
 	return diameter
 }
 
@@ -99,10 +99,10 @@ func BuildJSON(nodes []InputNode, links []InputLink, outputPath string) error {
 		if link.Source == link.Target {
 			continue // ignore self-link
 		}
-		
+
 		a := link.Source
 		b := link.Target
-		
+
 		if a > b {
 			a, b = b, a
 		}
@@ -128,7 +128,7 @@ func BuildJSON(nodes []InputNode, links []InputLink, outputPath string) error {
 
 	existsMap := make(map[string]bool)
 	seenIDs := make(map[string]bool)
-	
+
 	var finalNodes []Node
 	for _, node := range nodes {
 		if strings.TrimSpace(node.ID) == "" {
@@ -139,7 +139,7 @@ func BuildJSON(nodes []InputNode, links []InputLink, outputPath string) error {
 		}
 		seenIDs[node.ID] = true
 		existsMap[node.ID] = true
-		
+
 		finalNodes = append(finalNodes, Node{
 			ID:          node.ID,
 			Title:       node.Title,

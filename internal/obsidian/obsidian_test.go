@@ -44,6 +44,46 @@ func TestProcessWikilinks(t *testing.T) {
 	}
 }
 
+func TestProcessCrossSectionWikilinksUsesCanonicalURLs(t *testing.T) {
+	index := NewIndex([]Target{
+		{Title: "foo", Slug: "foo", Section: "notes", URL: "/notes/foo/", SourcePath: "/vault/notes/foo.md"},
+		{Title: "foo", Slug: "foo", Section: "memos", URL: "/en_US/memos/foo/", SourcePath: "/vault/memos/foo.md", Content: "Memo body", Headings: map[string]string{"detail": "detail"}},
+	}, nil, "/", "attachments", "shortest")
+	result := Process("[[notes/foo]] [[memos/foo#Detail|memo]] ![[memos/foo]]", index, "/vault/notes/source.md", 1)
+	for _, want := range []string{"[foo](/notes/foo/)", "[memo](/en_US/memos/foo/#detail)"} {
+		if !strings.Contains(result.Text, want) {
+			t.Fatalf("missing %q in %s", want, result.Text)
+		}
+	}
+	if len(result.Links) != 3 || result.Links[1].URL != "/en_US/memos/foo/" || result.Links[1].Section != "memos" {
+		t.Fatalf("cross-section links = %+v", result.Links)
+	}
+	if html := RestoreHTML(result.Text, result.HTML); !strings.Contains(html, `href="/en_US/memos/foo/"`) || !strings.Contains(html, "Memo body") {
+		t.Fatalf("memo embed lost its target URL or content: %s", html)
+	}
+}
+
+func TestAttachmentsResolveFromAbsoluteSourcePaths(t *testing.T) {
+	attachments := []Attachment{
+		{Name: "photo.png", RelPath: "notes/assets/photo.png", AbsPath: "/vault/notes/assets/photo.png", PublicURL: "/notes/assets/photo.png", MediaType: "image"},
+		{Name: "photo.png", RelPath: "memos/assets/photo.png", AbsPath: "/vault/memos/assets/photo.png", PublicURL: "/memos/assets/photo.png", MediaType: "image"},
+	}
+	index := NewIndex(nil, attachments, "/", "./assets", "relative")
+	result := Process("![memo](./assets/photo.png)\n\n![[../notes/assets/photo.png]]", index, "/vault/memos/walk.md", 1)
+	if len(result.Diagnostics) != 0 || len(result.Attachments) != 2 {
+		t.Fatalf("relative attachments failed: %+v", result)
+	}
+	if !strings.Contains(result.Text, "![memo](/memos/assets/photo.png)") {
+		t.Fatalf("memo attachment resolved to the wrong section: %s", result.Text)
+	}
+	if html := RestoreHTML(result.Text, result.HTML); !strings.Contains(html, `src="/notes/assets/photo.png"`) {
+		t.Fatalf("cross-section attachment embed failed: %s", html)
+	}
+	if att, ok, candidates := index.ResolveAttachment("photo.png", "/vault/memos/walk.md"); !ok || att.PublicURL != "/memos/assets/photo.png" || len(candidates) != 0 {
+		t.Fatalf("relative attachmentFolderPath failed: %+v, %v, %v", att, ok, candidates)
+	}
+}
+
 func TestProcessImages(t *testing.T) {
 	input := `![添加新连接](./assets/add-new-link.png)
 
@@ -132,7 +172,7 @@ func TestResolveAttachment(t *testing.T) {
 			}
 		})
 	}
-	
+
 	// Test ambiguity
 	t.Run("duplicate basename", func(t *testing.T) {
 		idx := NewIndex(nil, attachments, "/", "./", "shortest")

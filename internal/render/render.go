@@ -44,6 +44,7 @@ type Heading struct {
 }
 
 type NoteLink struct {
+	Section             string
 	Title               string
 	Date                string
 	Updated             string
@@ -55,7 +56,7 @@ type NoteLink struct {
 	TagIDs              []string
 	URL                 string
 	Slug                string
-	Pin                 bool
+	Pinned              bool
 	HasMusic            bool
 	HasTranslation      bool
 	TitleLayout         template.HTML
@@ -64,6 +65,10 @@ type NoteLink struct {
 }
 
 type NotePage struct {
+	UpdatedDisplay      string
+	Section             string
+	Location            string
+	DateDisplay         string
 	Lang                string
 	TranslationURL      string
 	Title               string
@@ -88,7 +93,7 @@ type NotePage struct {
 	TocEnabled          bool
 	CommentEnabled      bool
 	HasTranslation      bool
-	Pin                 bool
+	Pinned              bool
 	HasMusic            bool
 	TitleLayout         template.HTML
 	TitleTransitionName string
@@ -235,6 +240,33 @@ type MonthGroup struct {
 	Notes []NoteLink
 }
 
+// MemoCard shares the article renderer while presenting the body in a feed.
+type MemoCard struct {
+	UpdatedDisplay string
+	NoteLink
+	HTML        template.HTML
+	Location    string
+	DateDay     string
+	DateDisplay string
+	SearchText  string
+}
+
+type MemosData struct {
+	Site         SiteData
+	Config       config.Config
+	PageTitle    string
+	PageKind     string
+	BodyClass    string
+	Lang         string
+	AlternateURL string
+	Assets       Assets
+	HasMath      bool
+	Memos        []MemoCard
+	Tags         []TagLink
+	SEO          seo.SEOData
+	Pagination   PaginationData
+}
+
 type ArchiveRow struct {
 	Type         string   `json:"type"` // "year" or "note"
 	ID           string   `json:"id"`
@@ -348,6 +380,10 @@ func (r Renderer) RenderIndex(outputPath string, data IndexData) error {
 
 func (r Renderer) RenderNotes(outputPath string, data NotesData) error {
 	return r.render(outputPath, "notes.html", data)
+}
+
+func (r Renderer) RenderMemos(outputPath string, data MemosData) error {
+	return r.render(outputPath, "memos.html", data)
 }
 
 func (r Renderer) RenderArchive(outputPath string, data ArchiveData) error {

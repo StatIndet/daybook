@@ -1,0 +1,122 @@
+/* Memos inherit Daybook's fonts and all four theme palettes. */
+.memos-body .page-main {
+  padding-left: calc(var(--side-rail-width) + 24px);
+  padding-right: 40px;
+}
+.memos-page {
+  --memo-gutter: 24px;
+  --memo-header-height: 72px;
+  display: grid;
+  grid-template-columns: minmax(0, 44rem) 16rem;
+  align-items: stretch;
+  max-width: 60rem;
+  margin: 0 auto;
+  border: 1px solid var(--color-line);
+}
+.memos-feed { min-width: 0; }
+.memos-header { display: flex; align-items: stretch; justify-content: space-between; min-height: var(--memo-header-height); }
+.memos-heading { display: flex; align-items: baseline; align-self: center; gap: 10px; padding: 16px var(--memo-gutter); white-space: nowrap; }
+.memos-header h1 { font-family: var(--font-serif); font-size: var(--note-title-size); line-height: 1.2; margin: 0; }
+.memos-count { color: var(--color-muted); font-size: .78rem; font-variant-numeric: tabular-nums; }
+.memos-toolbar { display: flex; width: 55%; max-width: 22rem; min-width: 0; border-left: 1px solid var(--color-line); }
+.memos-search { display: flex; flex: 1; min-width: 0; align-items: center; gap: 10px; padding: 12px 20px; }
+.memos-search .material-symbol { font-size: 1.2rem; color: var(--color-muted); }
+.memos-search input { background: none; border: 0; outline: none; color: var(--color-text); width: 100%; min-width: 0; font: inherit; font-size: .9rem; }
+.memos-search:focus-within { box-shadow: inset 0 -2px var(--color-accent); }
+.memos-search input::placeholder { color: var(--color-muted); opacity: .8; }
+.memos-filter-toggle { display: none; }
+.memos-active-filters { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px var(--memo-gutter); border-top: 1px solid var(--color-line); color: var(--color-muted); font-size: .85rem; }
+.memos-active-filters [data-memos-active-label] { min-width: 0; overflow-wrap: anywhere; }
+.memos-active-filters button { flex-shrink: 0; }
+.memos-active-filters button, .memos-all-dates { border: 0; padding: 4px 0; background: none; color: var(--color-accent); font: inherit; cursor: pointer; }
+.memos-cards { display: flex; flex-direction: column; }
+.memo-card { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 14px; padding: 24px var(--memo-gutter) 26px; border-top: 1px solid var(--color-line); min-width: 0; }
+.memo-avatar-column { padding-top: 1px; }
+.memo-entry { min-width: 0; }
+.memo-entry-header { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; min-height: 28px; }
+.memo-author { display: flex; align-items: center; gap: 10px; color: var(--color-muted); font-size: .88rem; }
+.memo-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.memo-avatar-column .memo-avatar { display: block; width: 36px; height: 36px; }
+.memo-entry-header .memo-author { color: var(--color-text); font-weight: 600; }
+.memo-card .memo-content { margin: 4px 0 0; font-size: var(--note-text-size); overflow-wrap: anywhere; }
+.memo-card .memo-content > *, .memo-card .memo-content p { margin-bottom: 16px; }
+.memo-content > :first-child { margin-top: 0; }
+.memo-card .memo-content > :last-child, .memo-card .memo-content > :last-child > p:last-child { margin-bottom: 0; }
+.memo-content img { max-width: 100%; }
+.memos-page .memo-content .memo-photo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.memos-page .memo-content .memo-photo-grid > * { margin: 0; min-width: 0; }
+.memos-page .memo-content .memo-photo-grid img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; }
+.memo-content .memo-photo-grid figcaption { font-size: .8rem; }
+.memo-content .md-gallery { max-width: 100%; }
+.memo-more-photos { display: inline-flex; gap: 5px; margin-top: 12px; color: var(--color-accent); font-size: .85rem; text-decoration: none; }
+.memo-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-top: 18px; color: var(--color-muted); font-size: var(--note-text-size); line-height: 1.75; }
+.memo-labels { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.memo-location { display: inline-flex; align-items: center; gap: 3px; }
+.memo-location .material-symbol { font-size: 1em; }
+.memo-tag { padding: 0; background: none; border: 0; color: var(--color-accent); font: inherit; cursor: pointer; }
+.memo-dates { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; margin-left: auto; }
+.memo-updated { color: var(--color-muted); font-size: .75rem; }
+.memo-permalink { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; color: var(--color-muted); font-size: .75rem; font-variant-numeric: tabular-nums; text-decoration: none; white-space: nowrap; }
+.memo-permalink:hover { color: var(--color-accent); }
+.memo-permalink .material-symbol { font-size: .9rem; }
+.memos-aside { min-width: 0; border-left: 1px solid var(--color-line); }
+.memos-aside .memos-filters { position: sticky; top: 88px; }
+.memos-filters { color: var(--color-muted); font-size: .85rem; }
+.memos-calendar-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: var(--memo-header-height, 64px); padding: 12px 16px; border-bottom: 1px solid var(--color-line); color: var(--color-text); }
+.memos-calendar-heading button { display: flex; padding: 4px; border: 0; background: none; color: var(--color-muted); cursor: pointer; }
+.memos-calendar-heading button:disabled { opacity: .3; cursor: default; }
+.memos-calendar-heading button .material-symbol { font-size: 1.2rem; }
+.memos-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px 0; padding: 16px 16px 0; text-align: center; }
+.memos-calendar-grid > span { display: grid; place-items: center; min-height: 30px; font-size: .76rem; color: var(--color-faint); }
+.memos-calendar-grid > .memos-weekday { color: var(--color-muted); padding-bottom: 4px; }
+.memos-calendar-grid button { position: relative; min-width: 0; min-height: 30px; border: 0; border-radius: 6px; background: none; color: var(--color-text); font: inherit; font-variant-numeric: tabular-nums; cursor: pointer; }
+.memos-calendar-grid button::after { position: absolute; content: ""; width: 3px; height: 3px; bottom: 2px; left: calc(50% - 1.5px); background: var(--color-accent); border-radius: 50%; }
+.memos-calendar-grid button:hover { background: var(--color-accent-soft); }
+.memos-calendar-grid button[aria-pressed="true"] { background: var(--color-accent); color: var(--color-paper); }
+.memos-calendar-grid button[aria-pressed="true"]::after { background: currentColor; }
+.memos-all-dates { font-size: .8rem; margin: 12px 20px 20px; }
+.memos-tag-filter { border-top: 1px solid var(--color-line); border-bottom: 1px solid var(--color-line); }
+.memos-tag-filter h2 { color: var(--color-text); font: inherit; margin: 0; padding: 16px 20px; border-bottom: 1px solid var(--color-line); }
+.memos-filter-tags { font-size: var(--note-text-size); line-height: 1.75; display: flex; flex-wrap: wrap; gap: 8px 12px; padding: 16px 20px 20px; }
+.memos-filter-tags button { display: inline-flex; align-items: baseline; gap: 6px; font: inherit; border: 0; padding: 3px 0; background: none; color: var(--color-muted); cursor: pointer; }
+.memos-filter-tags button[aria-pressed="true"], .memos-filter-tags button:hover { color: var(--color-accent); }
+.memos-filter-tags small { font-size: .75rem; opacity: .65; }
+.memos-empty { color: var(--color-muted); margin: 0; padding: 28px var(--memo-gutter); border-top: 1px solid var(--color-line); }
+.memos-page [hidden], .memo-content [data-memo-overflow] { display: none !important; }
+.memos-page button:focus-visible, .memos-page a:focus-visible, .memos-filters button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+::highlight(memo-search) { background: var(--color-marker); color: var(--color-text); }
+.memo-search-highlight { background: var(--color-marker); color: inherit; }
+.memo-body .note-header { margin-bottom: 2rem; }
+.memo-detail-heading { position: relative; display: flex; align-items: center; gap: 14px; }
+.memo-detail-back { display: flex; align-items: center; color: var(--color-muted); text-decoration: none; }
+.memo-detail-label { font: inherit; color: var(--color-muted); margin: 0 0 0 auto; font-size: .85rem; }
+.memo-body .article-meta-rows { margin-top: 1rem; }
+@media (max-width: 1100px) and (min-width: 961px) {
+  .memos-body .page-main { padding-left: 210px; padding-right: 24px; }
+  .memos-page { grid-template-columns: minmax(0, 1fr) 13rem; --memo-gutter: 20px; }
+}
+@media (max-width: 960px) {
+  .memos-body .page-main { padding: 24px 20px 56px; }
+  .memos-page { display: block; max-width: var(--notes-content-width); }
+  .memos-aside { display: none; }
+  .memos-filter-toggle { display: grid; place-items: center; flex-shrink: 0; width: 44px; border: 0; border-left: 1px solid var(--color-line); color: var(--color-muted); background: none; cursor: pointer; }
+  .memos-filter-toggle .material-symbol { font-size: 1.15rem; }
+  .memos-toolbar { flex: 1; }
+  .memos-filters { max-width: 24rem; margin: 0 auto; font-size: .95rem; }
+  .memos-calendar-grid > span, .memos-calendar-grid button { min-height: 40px; }
+  .memos-filter-tags { gap: 10px 16px; }
+}
+@media (max-width: 600px) {
+  .memos-body .page-main { padding: 0 0 40px; }
+  .memos-page { --memo-gutter: 16px; --memo-header-height: 64px; border-top: 0; border-left: 0; border-right: 0; }
+  .memos-header h1 { font-size: 1.25rem; }
+  .memos-heading { gap: 8px; }
+  .memos-search { padding: 12px; gap: 6px; }
+  .memos-search input { font-size: .82rem; }
+  .memo-card { grid-template-columns: 30px minmax(0, 1fr); gap: 10px; padding-top: 20px; padding-bottom: 22px; }
+  .memo-avatar-column .memo-avatar { width: 30px; height: 30px; }
+  .memo-entry-header { gap: 4px 8px; }
+  .memo-permalink { font-size: .7rem; }
+}
+
+.memo-body .memo-location, .memo-body .note-tag-capsule { font-size: var(--note-text-size); line-height: 1.75; }

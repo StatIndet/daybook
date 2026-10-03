@@ -11,6 +11,10 @@
         <span class="material-symbol" aria-hidden="true">article</span>
         <span class="drawer-nav-label" data-ui-text="nav.notes">{{T .Lang "nav.notes"}}</span>
       </a>
+      <a class="drawer-nav-link" href="{{if eq .Lang "en_US"}}/en_US{{end}}/memos/">
+        <span class="material-symbol" aria-hidden="true">chat_bubble</span>
+        <span class="drawer-nav-label" data-ui-text="nav.memos">{{T .Lang "nav.memos"}}</span>
+      </a>
       <a class="drawer-nav-link" href="{{if eq .Lang "en_US"}}/en_US{{end}}/archive/">
         <span class="material-symbol" aria-hidden="true">archive</span>
         <span class="drawer-nav-label" data-ui-text="nav.archive">{{T .Lang "nav.archive"}}</span>

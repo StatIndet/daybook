@@ -7,6 +7,7 @@
     "arrow_back",
     "arrow_downward",
     "arrow_forward",
+    "arrow_outward",
     "arrow_upward",
     "article",
     "artist",
@@ -19,9 +20,12 @@
     "cancel",
     "category",
     "center_focus_strong",
+    "chat_bubble",
     "check",
     "check_circle",
     "checklist",
+    "chevron_left",
+    "chevron_right",
     "chrome_reader_mode",
     "circle",
     "close",
@@ -114,5 +118,5 @@
     }
   },
   "originalBytes": 5347060,
-  "subsetBytes": 13076
+  "subsetBytes": 13220
 }

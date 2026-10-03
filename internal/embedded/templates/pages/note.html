@@ -1,4 +1,5 @@
 {{define "content"}}
+{{if ne .PageKind "memo"}}
 <div class="mobile-reading-controls" id="mobile-reading-controls">
   <div class="rc-layer rc-base">
     <button class="mobile-reading-btn mobile-top-btn" type="button" aria-label="回到顶部">
@@ -20,10 +21,22 @@
   </div>
 </div>
 
+{{end}}
+
 <div class="notes-page note-detail-page{{if .Note.Headings}} has-toc{{end}}">
   <section class="note-detail article-stage" aria-label="文章详情">
     <article class="note" data-has-mermaid="{{if .Note.HasMermaid}}true{{else}}false{{end}}" data-has-math="{{if .Note.HasMath}}true{{else}}false{{end}}">
       <header class="note-header">
+        {{if eq .PageKind "memo"}}
+        <div class="memo-detail-heading">
+          <a class="memo-detail-back" href="{{if eq .Lang "en_US"}}/en_US{{end}}/memos/" aria-label="{{T .Lang "action.back"}}" data-ui-aria="action.back"><span class="material-symbol" aria-hidden="true">arrow_back</span></a>
+          <div class="memo-author">
+            {{if .Config.Profile.Author.Avatar}}<img class="memo-avatar" src="{{.Config.Profile.Author.Avatar}}" alt="" width="30" height="30">{{end}}
+            <span>{{if and (eq .Lang "en_US") .Config.Profile.Author.NameEn}}{{.Config.Profile.Author.NameEn}}{{else}}{{.Config.Profile.Author.Name}}{{end}}</span>
+          </div>
+          <h1 class="memo-detail-label" data-ui-text="memos.detail">{{T .Lang "memos.detail"}}</h1>
+        </div>
+        {{else}}
         <div class="note-title-wrapper">
           <a class="note-back-link" href="{{if eq .Lang "en_US"}}/en_US{{end}}/notes/" aria-label="{{T .Lang "action.back"}}" data-ui-aria="action.back">
             <span class="material-symbol" aria-hidden="true">arrow_back</span>
@@ -37,19 +50,21 @@
             <span class="material-symbol" aria-hidden="true">exit_to_app</span>
           </button>
         </div>
+        {{end}}
         <div class="article-meta-rows" data-transition-scope="{{.Note.URL}}">
           <div class="article-shared-meta">
-            {{if .Note.Pin}}<span class="notes-item-pin" aria-hidden="true" title="已固定" data-article-shared="pin"></span>{{end}}
+            {{if .Note.Pinned}}<span class="notes-item-pin" aria-hidden="true" title="已固定" data-article-shared="pin"></span>{{end}}
             {{if .Note.HasMusic}}<span class="material-symbol notes-item-music" aria-hidden="true" title="包含音乐" data-article-shared="music">music_note_2</span>{{end}}
             {{if .Note.HasTranslation}}<span class="material-symbol notes-item-bilingual" aria-hidden="true" title="双语" data-article-shared="bilingual">translate</span>{{end}}
-            <time datetime="{{.Note.Date}}" data-article-shared="published">{{.Note.Date}}</time>
-            <span class="reading-time" data-article-shared="reading">{{.Note.ReadingMinutes}} {{T .Lang "post.min_read"}}</span>
+            <time datetime="{{.Note.Date}}" data-article-shared="published">{{if eq .PageKind "memo"}}{{.Note.DateDisplay}}{{else}}{{.Note.Date}}{{end}}</time>
+            {{if eq .PageKind "memo"}}{{with .Note.Location}}<span class="memo-location"><span class="material-symbol" aria-hidden="true">location_on</span>{{.}}</span>{{end}}{{end}}
+            {{if ne .PageKind "memo"}}<span class="reading-time" data-article-shared="reading">{{.Note.ReadingMinutes}} {{T .Lang "post.min_read"}}</span>{{end}}
             {{if .Note.Updated}}
-              <span class="updated-time" data-article-shared="updated">&bull; updated <time datetime="{{.Note.Updated}}">{{.Note.Updated}}</time></span>
+              <span class="updated-time" data-article-shared="updated">&bull; {{if eq .PageKind "memo"}}<span data-ui-text="memos.updated">{{T .Lang "memos.updated"}}</span>{{else}}updated{{end}} <time datetime="{{.Note.Updated}}">{{.Note.UpdatedDisplay}}</time></span>
             {{end}}
           </div>
           <div class="article-stagger-meta">
-            <span class="meta-stagger-item">{{formatNum .Note.WordCount}} {{T .Lang "post.words"}}</span>
+            {{if ne .PageKind "memo"}}<span class="meta-stagger-item">{{formatNum .Note.WordCount}} {{T .Lang "post.words"}}</span>{{end}}
             {{if .Config.Stats.Enabled}}
             <span class="meta-stagger-item">
               <span data-page-views data-path="{{.Note.CanonicalPath}}">--</span>
@@ -67,11 +82,14 @@
               </button>
             </span>
             
+            {{if ne .PageKind "memo"}}
             <span class="meta-stagger-item reader-mode-entry">
               <button type="button" class="reader-mode-toggle" aria-label="{{T .Lang "action.reader"}}" data-ui-aria="action.reader" aria-pressed="false" data-tooltip="{{T .Lang "action.reader"}}" data-ui-tooltip="action.reader" data-reader-toggle>
                 <span class="material-symbol" aria-hidden="true">chrome_reader_mode</span>
               </button>
             </span>
+
+            {{end}}
 
             {{if .Note.HasTranslation}}
             <span class="meta-stagger-item note-bilingual-wrapper">
@@ -80,7 +98,7 @@
             {{end}}
           </div>
         </div>
-        {{with .Note.Summary}}<p class="note-summary">{{.}}</p>{{end}}
+        {{if ne .PageKind "memo"}}{{with .Note.Summary}}<p class="note-summary">{{.}}</p>{{end}}{{end}}
       </header>
 
       {{if .Note.TocEnabled}}
@@ -96,7 +114,7 @@
         <hr class="note-tags-divider">
         <div class="note-tags-list">
           {{range .Note.Tags}}
-          <a href="{{tagURL $.Lang .}}" class="note-tag-capsule">#{{.}}</a>
+          <a href="{{if eq $.PageKind "memo"}}{{if eq $.Lang "en_US"}}/en_US{{end}}/memos/?tag={{urlquery .}}{{else}}{{tagURL $.Lang .}}{{end}}" class="note-tag-capsule">#{{.}}</a>
           {{end}}
         </div>
       </section>

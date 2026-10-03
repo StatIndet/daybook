@@ -1,6 +1,6 @@
 (function () {
   function syncHeadingAnchors(root: Document | HTMLElement | null) {
-    (root || document).querySelectorAll(".post-content h1, .post-content h2, .post-content h3, .post-content h4").forEach(function (headingEl) {
+    (root || document).querySelectorAll(".post-content h1, .post-content h2, .post-content h3, .post-content h4, .memo-content h1, .memo-content h2, .memo-content h3, .memo-content h4").forEach(function (headingEl) {
       const heading = headingEl as HTMLElement;
       if (heading.dataset.headingAnchorReady === "true" || !heading.id) {
         return;

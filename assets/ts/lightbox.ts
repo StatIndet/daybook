@@ -268,7 +268,7 @@
       }
 
       const target = event.target as HTMLElement;
-      if (!target || target.tagName !== "IMG" || !target.closest(".post-content")) {
+      if (!target || target.tagName !== "IMG" || !target.closest(".post-content, .memo-content")) {
         return;
       }
       

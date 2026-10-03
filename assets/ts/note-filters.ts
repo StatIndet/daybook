@@ -52,12 +52,14 @@
     const summaryHtml = item.summary ? `<p class="notes-item-summary">${engine.highlightMatches(item.summary, keyword)}</p>` : '';
     
     let indicators = '';
-    if (item.pin) indicators += `<span class="notes-item-pin" aria-hidden="true" title="已固定" data-article-shared="pin"></span>`;
+    if (item.pinned) indicators += `<span class="notes-item-pin" aria-hidden="true" title="已固定" data-article-shared="pin"></span>`;
     if (item.hasMusic) indicators += `<span class="material-symbol notes-item-music" aria-hidden="true" title="包含音乐" data-article-shared="music">music_note_2</span>`;
     if (item.hasTranslation) indicators += `<span class="material-symbol notes-item-bilingual" aria-hidden="true" title="双语" data-article-shared="bilingual">translate</span>`;
 
-    let meta = `<time datetime="${item.date}" data-article-shared="published">${item.date}</time>
-      <span class="reading-time" data-article-shared="reading">${item.readingMinutes} min</span>`;
+    let meta = `<time datetime="${item.date}" data-article-shared="published">${item.date}</time>`;
+    if (item.section !== "memos") {
+      meta += ` <span class="reading-time" data-article-shared="reading">${item.readingMinutes} min</span>`;
+    }
     if (item.updated) {
         meta += ` <span class="updated-time" data-article-shared="updated">&bull; updated <time datetime="${item.updated}">${item.updated}</time></span>`;
     }
@@ -139,7 +141,8 @@
       setDesktopTool("search", false);
     }
     
-    const results = await engine.searchNotes(query, ctx.tagSlug);
+    const matches = await engine.searchNotes(query, ctx.tagSlug);
+    const results = ctx.kind === "notes" ? matches.filter((item: any) => item.section !== "memos") : matches;
     
     if (resultsContainer) {
       (resultsContainer as HTMLElement).hidden = false;
