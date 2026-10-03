@@ -41,8 +41,11 @@ The CLI runs inside your Vault and expects the following structure:
 ```
 my-vault/
 ├── daybook.yaml
-├── notes/
-└── attachments/
+└── vault/                  # Open this directory in Obsidian
+    ├── notes/              # Long-form articles
+    ├── memos/              # Short, title-free entries (optional)
+    ├── pages/              # About pages
+    └── attachments/
 ```
 
 ## Installation
@@ -97,8 +100,8 @@ This script installs npm dependencies, builds frontend assets, and installs the 
 
 Run these commands inside your Vault directory:
 
-* `daybook build`: Reads `daybook.yaml` and `notes/`, compiles your site, and outputs static HTML to `public/`.
-* `daybook serve`: Starts a local web server at `http://localhost:1313` to preview your site.
+* `daybook build`: Reads `daybook.yaml`, `vault/notes/` and `vault/memos/`, compiles your site, and outputs static HTML to `public/`. At least one of the two content directories must exist.
+* `daybook serve`: Starts a local web server at `http://localhost:1313` to preview your site. Use `daybook serve --addr 127.0.0.1:1415` to select another address or port.
 * `daybook version`: Prints the current CLI version.
 
 ## Development
@@ -156,9 +159,36 @@ For scheduled updates, use the external vault's Worker with a KV binding and a C
 
 ### Articles and interface language
 
-Every non-draft note is published in Notes, Archive, tags, search, RSS, the sitemap and the graph. Set `draft: true` to keep an unfinished note out of the build. There is no separate listing or discoverability setting.
+Every non-draft note is published in Notes, Archive, tags, search, RSS, the sitemap and the graph. Memos have their own timeline at `/memos/` and share RSS, links, search and the graph with notes, but do not appear in Archive. Set `draft: true` to keep unfinished content out of the build. There is no separate listing or discoverability setting.
+
+Notes and memos use the Markdown filename (without `.md`) as their title. The `title` frontmatter property is no longer used. Keep existing filenames when migrating to preserve published URLs. A valid `date` is required: use `YYYY-MM-DD`, or RFC 3339 when the time matters, for example `2026-10-02T18:30:00+08:00`. Entries with missing or invalid dates are skipped and reported during the build.
 
 Chinese and English article versions both appear in Notes, Archive, tags, search and the graph. Each article keeps its canonical URL and original text. The global language button changes the interface; on an article it uses `?ui=zh_CN` or `?ui=en_US`. The separate `translate` icon in article metadata opens the corresponding translation. Existing `/en_US/` URL paths remain unchanged; HTML language and `hreflang` values use BCP 47 (`zh-CN`, `en-US`).
+
+### Memos
+
+Create Markdown files in `vault/memos/`. The timeline displays each entry's body directly, with its date, optional tags and optional location. Search covers body text, filenames, dates, locations and tags, and combines with calendar and tag filters. The timeline shows the full text and up to four images; a link opens the detail page to view any additional images. Memos use the same Markdown, Obsidian links and attachment syntax as notes.
+
+For example, save `vault/memos/Evening walk.md`:
+
+```markdown
+---
+date: 2026-10-02T18:30:00+08:00
+tags: [daily, reading]
+location: Riverside
+pinned: false
+draft: false
+---
+An idea from today's walk: leave some room for unfinished thoughts.
+
+This connects to [[notes/My reading note|my reading note]].
+```
+
+Only `date` is required; a date without a time is also valid. `location` is a plain-text label. The filename provides the entry's search/link label and its stable detail URL (`/memos/Evening%20walk/` in this example), while the timeline does not add an article title. Prefix cross-collection Obsidian links with `notes/` or `memos/` when the filename is ambiguous.
+
+Set `pinned: true` to place a memo at the top of the timeline with a pin marker. Pinned and unpinned entries each remain newest first. Set `pinned: false` or omit it to unpin; rebuild the site to apply the change. Search, calendar and tag filters still apply to pinned entries.
+
+Memos support an optional `updated` property (a date or RFC 3339 timestamp), shown in the timeline and detail page without changing publication-date ordering. Memos do not calculate word counts or reading time, and their detail pages do not offer reader mode. The old `pin` frontmatter property has been renamed to `pinned` for both notes and memos; rename it in existing files.
 
 ### Asset builds
 
