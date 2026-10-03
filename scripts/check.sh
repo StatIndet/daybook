@@ -116,7 +116,9 @@ if find public -name "*.js.map" | grep -q .; then
 fi
 
 echo "==> Starting Daybook dev server"
-"$DAYBOOK_BIN" serve &
+DAYBOOK_TEST_PORT="${DAYBOOK_TEST_PORT:-$(node --input-type=module -e 'import { createServer } from "node:net"; const server = createServer(); server.listen(0, "127.0.0.1", () => { process.stdout.write(String(server.address().port)); server.close(); });')}"
+export DAYBOOK_TEST_URL="http://127.0.0.1:$DAYBOOK_TEST_PORT"
+"$DAYBOOK_BIN" serve --addr "127.0.0.1:$DAYBOOK_TEST_PORT" &
 SERVER_PID=$!
 
 max_attempts=20
@@ -125,12 +127,12 @@ ready=0
 while [ $attempt -le $max_attempts ]; do
   sleep 0.2
   if ! kill -0 "$SERVER_PID" 2>/dev/null; then
-    echo "ERROR: Daybook test server failed to start on port 1313."
-    echo "Make sure port 1313 is available before running ./scripts/check.sh."
+    echo "ERROR: Daybook test server failed to start on port $DAYBOOK_TEST_PORT."
+    echo "Choose an available DAYBOOK_TEST_PORT before running ./scripts/check.sh."
     exit 1
   fi
   
-  if curl -s -f http://localhost:1313/ > /dev/null; then
+  if curl -s -f "$DAYBOOK_TEST_URL/" > /dev/null; then
     ready=1
     break
   fi

@@ -1,7 +1,6 @@
 import { chromium } from 'playwright';
 
-const serverPort = 1313;
-const serverUrl = `http://localhost:${serverPort}`;
+const serverUrl = process.env.DAYBOOK_TEST_URL || 'http://localhost:1313';
 
 async function run() {
   console.log('Starting Playwright smoke test...');

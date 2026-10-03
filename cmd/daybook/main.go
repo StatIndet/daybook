@@ -1,13 +1,14 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/StatIndet/daybook/internal/config"
-	"github.com/StatIndet/daybook/internal/site"
 	"github.com/StatIndet/daybook/internal/progress"
+	"github.com/StatIndet/daybook/internal/site"
 )
 
 var Version = "daybook dev"
@@ -22,7 +23,7 @@ func main() {
 func printHelp() {
 	fmt.Println("Usage:")
 	fmt.Println("  daybook build    Build the current Daybook vault into ./public")
-	fmt.Println("  daybook serve    Serve the existing ./public directory locally")
+	fmt.Println("  daybook serve [--addr :1313]  Serve the existing ./public directory locally")
 	fmt.Println("  daybook version  Print Daybook version")
 }
 
@@ -42,6 +43,20 @@ func run() error {
 	if command != "build" && command != "serve" {
 		printHelp()
 		return fmt.Errorf("unknown command: %s", command)
+	}
+	serveAddr := ":1313"
+	if command == "serve" {
+		flags := flag.NewFlagSet("serve", flag.ContinueOnError)
+		flags.StringVar(&serveAddr, "addr", serveAddr, "HTTP listen address")
+		if err := flags.Parse(os.Args[2:]); err != nil {
+			if err == flag.ErrHelp {
+				return nil
+			}
+			return err
+		}
+		if flags.NArg() > 0 {
+			return fmt.Errorf("daybook serve: unexpected argument: %s", flags.Arg(0))
+		}
 	}
 
 	cfg, err := config.Load()
@@ -111,9 +126,7 @@ func run() error {
 	}
 
 	if command == "serve" {
-		
-		
-		return site.Serve(options.PublicDir, ":1313")
+		return site.Serve(options.PublicDir, serveAddr)
 	}
 
 	return nil
