@@ -1,0 +1,254 @@
+import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
+import { createServer } from 'node:http';
+import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
+import { chromium } from 'playwright';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const fixture = await mkdtemp(path.join(tmpdir(), 'daybook-memos-browser-'));
+const publicDir = path.join(fixture, 'public');
+const exec = promisify(execFile);
+let server;
+let browser;
+
+async function write(relative, text) {
+  const filename = path.join(fixture, relative);
+  await mkdir(path.dirname(filename), { recursive: true });
+  await writeFile(filename, text);
+}
+
+const contentTypes = {
+  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8', '.json': 'application/json',
+  '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.woff': 'font/woff',
+  '.png': 'image/png', '.ico': 'image/x-icon', '.webp': 'image/webp',
+};
+
+async function settled(page, kind) {
+  await page.waitForFunction(kind => document.body.dataset.pageKind === kind, kind);
+  await page.waitForFunction(() => !document.documentElement.classList.contains('is-transitioning'));
+}
+
+async function visibleCards(page, expected) {
+  await page.waitForFunction(expected => {
+    const actual = [...document.querySelectorAll('[data-memo-card]')]
+      .filter(card => !card.hidden)
+      .map(card => card.dataset.memoUrl).sort();
+    return JSON.stringify(actual) === JSON.stringify([...expected].sort());
+  }, expected);
+}
+
+const alpha = '/memos/alpha-record/';
+const beta = '/memos/beta-record/';
+const gamma = '/memos/gamma-record/';
+
+try {
+  await write('daybook.yaml', 'site:\n  url: https://example.com\nprofile:\n  author:\n    logoText: Memos Test\n');
+  await write('vault/pages/about.md', '---\ntitle: About\n---\nMemos browser fixture.\n');
+  await write('vault/notes/reference.md', '---\ndate: 2026-10-01\n---\nA reference note linking to [[memos/alpha-record]].\n');
+  await write('vault/memos/alpha-record.md', `---
+date: 2026-10-02T18:30:00+08:00
+updated: 2026-10-03T10:15:00+08:00
+tags: [reading, shared]
+location: Riverside
+---
+A **boldword** and *gentleword* with [anchorword](/notes/reference/).[^1]
+
+${Array.from({ length: 6 }, (_, index) => `![Photo ${index + 1}](/attachments/picture/${index + 1}.svg)`).join('\n\n')}
+
+[^1]: Alpha footnote text.
+`);
+  await write('vault/memos/beta-record.md', `---
+date: 2026-10-02T09:00:00+08:00
+tags: [walking, shared]
+location: Garden
+pinned: true
+---
+Morning steps and another footnote.[^1]
+
+[^1]: Beta footnote text.
+`);
+  await write('vault/memos/gamma-record.md', `---
+date: 2026-09-30
+tags: [reading]
+---
+Last month's library visit.
+`);
+  for (let i = 1; i <= 6; i++) {
+    await write(`vault/attachments/picture/${i}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="hsl(${i * 40} 40% 50%)"/><text x="40" y="80" font-size="40">Photo ${i}</text></svg>`);
+  }
+
+  const binary = path.join(fixture, process.platform === 'win32' ? 'daybook.exe' : 'daybook');
+  await exec('go', ['build', '-o', binary, './cmd/daybook'], { cwd: root, timeout: 120000 });
+  await exec(binary, ['build'], { cwd: fixture, timeout: 120000 });
+  server = createServer(async (request, response) => {
+    try {
+      let filename = path.resolve(publicDir, '.' + decodeURIComponent(new URL(request.url, 'http://localhost').pathname));
+      if (!filename.startsWith(publicDir + path.sep) && filename !== publicDir) {
+        response.writeHead(403).end();
+        return;
+      }
+      if ((await stat(filename)).isDirectory()) filename = path.join(filename, 'index.html');
+      response.setHeader('Content-Type', contentTypes[path.extname(filename)] || 'application/octet-stream');
+      response.end(await readFile(filename));
+    } catch {
+      response.writeHead(404).end('Not found');
+    }
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto(`${base}/notes/`, { waitUntil: 'networkidle' });
+  await page.evaluate(() => { window.__memosDocument = document; });
+  await page.locator('.side-nav a[href="/memos/"]').click();
+  await settled(page, 'memos');
+  await page.waitForSelector('.memos-aside [data-memos-calendar] button');
+  await visibleCards(page, [beta, alpha, gamma]);
+  assert(await page.evaluate(() => window.__memosDocument === document), 'Notes → memos uses the existing SPA document');
+
+  assert.equal(await page.locator(`[data-memo-url="${beta}"] [data-ui-aria="memos.pinned"]`).count(), 1, 'Pinned memo has a marker and precedes newer ordinary entries');
+
+  console.log('Checking memo search fields and safe highlights...');
+  const search = page.locator('[data-memos-search]');
+  const alphaCard = page.locator(`[data-memo-url="${alpha}"]`);
+  assert.equal(await alphaCard.locator('.memo-updated time').textContent(), '2026-10-03 10:15');
+  const typography = await alphaCard.evaluate(card => {
+    const body = getComputedStyle(card.querySelector('.memo-content'));
+    return [...card.querySelectorAll('.memo-tag, .memo-location')].every(node => {
+      const style = getComputedStyle(node);
+      return style.fontSize === body.fontSize && style.lineHeight === body.lineHeight;
+    });
+  });
+  assert(typography, 'Memo tags and location match body font size and line height');
+  await alphaCard.locator('em').evaluate(element => { window.__memoEm = element; });
+  await alphaCard.locator('a[href="/notes/reference/"]').evaluate(element => { window.__memoLink = element; });
+  for (const [query, expected] of [
+    ['gentleword', [alpha]], ['alpha-record', [alpha]], ['Riverside', [alpha]],
+    ['2026-09-30', [gamma]], ['walking', [beta]], ['unfindable-token', []],
+  ]) {
+    await search.fill(query);
+    await visibleCards(page, expected);
+    if (query === 'gentleword') {
+      assert.equal(await alphaCard.locator('em').textContent(), 'gentleword');
+      assert(await page.evaluate(() => Boolean(CSS.highlights?.get('memo-search')?.size) || Boolean(document.querySelector('.memo-search-highlight'))), 'Visible body matches are highlighted');
+    }
+  }
+  await search.fill('anchorword');
+  await visibleCards(page, [alpha]);
+  assert.equal(await alphaCard.locator('a[href="/notes/reference/"]').textContent(), 'anchorword');
+  assert(await page.evaluate(() => window.__memoEm.isConnected && window.__memoLink.isConnected), 'Search preserves emphasis and link nodes');
+  await search.fill('');
+  await visibleCards(page, [beta, alpha, gamma]);
+
+  console.log('Checking calendar and tag intersection, month navigation and reset...');
+  const sidebar = page.locator('.memos-aside');
+  await sidebar.locator('[data-memos-date="2026-10-02"]').click();
+  await visibleCards(page, [beta, alpha]);
+  await sidebar.locator('[data-memo-tag="reading"]').click();
+  await visibleCards(page, [alpha]);
+  await page.locator('[data-memos-reset]').click();
+  await visibleCards(page, [beta, alpha, gamma]);
+  assert.equal(await sidebar.locator('button[aria-pressed="true"]').count(), 0, 'Reset clears both calendar and tag state');
+  await sidebar.locator('[data-memos-month="-1"]').click();
+  await sidebar.locator('[data-memos-select-month]').click();
+  await visibleCards(page, [gamma]);
+  assert.equal(new URL(page.url()).searchParams.get('month'), '2026-09', 'The month filter has a shareable URL');
+  await page.locator('[data-memos-reset]').click();
+  await sidebar.locator('[data-memos-date="2026-09-30"]').click();
+  await visibleCards(page, [gamma]);
+  await page.locator('[data-memos-reset]').click();
+  await visibleCards(page, [beta, alpha, gamma]);
+
+  console.log('Checking independent footnote anchors across memo cards...');
+  const fragments = await page.locator('[data-memo-card] .memo-content').evaluateAll(contents => contents.flatMap(content =>
+    [...content.querySelectorAll('a[href^="#"]')].map(link => {
+      const id = decodeURIComponent(link.getAttribute('href').slice(1));
+      const target = document.getElementById(id);
+      return { id, local: Boolean(target && content.contains(target)), count: [...document.querySelectorAll('[id]')].filter(node => node.id === id).length };
+    })));
+  assert(fragments.length >= 4, 'Both repeated footnotes supply reference and return links');
+  assert(fragments.every(fragment => fragment.local && fragment.count === 1), 'Each footnote reference and return anchor stays inside its own memo');
+
+  console.log('Checking four-image preview and full detail through SPA navigation...');
+  const visibleImages = await alphaCard.locator('.memo-content img').evaluateAll(images => images.filter(image => getComputedStyle(image).display !== 'none' && image.getClientRects().length > 0).length);
+  assert.equal(visibleImages, 4, 'A memo preview displays at most four of its six images');
+  assert.equal(await alphaCard.locator('.memo-more-photos').count(), 1, 'Additional images have a link to the full memo');
+  await search.fill('gentleword');
+  await visibleCards(page, [alpha]);
+  await sidebar.locator('[data-memo-tag="reading"]').click();
+  assert.equal(new URL(page.url()).searchParams.get('q'), 'gentleword');
+  assert.equal(new URL(page.url()).searchParams.get('tag'), 'reading');
+  await alphaCard.locator('.memo-permalink').click();
+  await settled(page, 'memo');
+  assert.equal(new URL(page.url()).pathname, alpha);
+  assert.equal(await page.locator('[data-reader-toggle], [data-reader-exit], .reading-time, [data-mobile-progress-text]').count(), 0, 'Memo detail has no reader mode or reading-time controls');
+  assert.equal(await page.locator('.updated-time time').textContent(), '2026-10-03 10:15');
+  assert.equal(await page.locator('.post-content img').count(), 6, 'The detail page preserves all original images');
+  assert(await page.evaluate(() => window.__memosDocument === document), 'Memos → detail retains the SPA document');
+  await page.goBack();
+  await settled(page, 'memos');
+  await visibleCards(page, [alpha]);
+  assert.equal(await search.inputValue(), 'gentleword', 'Browser back restores the memo query');
+  assert.equal(await sidebar.locator('[data-memo-tag="reading"]').getAttribute('aria-pressed'), 'true', 'Browser back restores the tag filter');
+  assert(await page.evaluate(() => window.__memosDocument === document), 'Browser back restores memos within the SPA');
+  await page.locator('[data-memos-reset]').click();
+  await visibleCards(page, [beta, alpha, gamma]);
+
+  await alphaCard.locator('a[href="/notes/reference/"]').click();
+  await settled(page, 'note');
+  await page.locator('[data-reader-toggle]').click();
+  assert.equal(await page.locator('body').getAttribute('data-reader-mode'), 'immersive');
+  await page.locator('.post-content a').click();
+  await settled(page, 'memo');
+  assert.equal(await page.locator('body').getAttribute('data-reader-mode'), null, 'Entering a memo clears reader mode');
+  await page.locator('.memo-detail-back').click();
+  await settled(page, 'memos');
+  await visibleCards(page, [beta, alpha, gamma]);
+
+  console.log('Checking mobile shared overlay focus, close controls and filter state...');
+  await page.setViewportSize({ width: 390, height: 844 });
+  const opener = page.locator('.memos-filter-toggle');
+  const overlay = page.locator('#mobile-tags-overlay');
+  await opener.click();
+  await page.waitForFunction(() => document.body.classList.contains('is-tags-overlay-open'));
+  assert.equal(await page.locator('#mobile-overlay-container').getAttribute('aria-hidden'), 'false');
+  assert.equal(await opener.getAttribute('aria-expanded'), 'true');
+  await page.waitForFunction(() => document.activeElement === document.querySelector('#mobile-tags-overlay [data-overlay-close]'), null, { timeout: 2000 });
+  assert(await page.locator('.page-frame main').evaluate(element => element.inert), 'An open mobile memo overlay makes background content inert');
+  await page.keyboard.press('Shift+Tab');
+  assert(await overlay.evaluate(element => element.contains(document.activeElement) && document.activeElement !== element.querySelector('[data-overlay-close]')), 'Reverse Tab wraps to the last overlay control');
+  await page.keyboard.press('Tab');
+  assert(await overlay.locator('[data-overlay-close]').evaluate(element => document.activeElement === element), 'Tab wraps back to the first overlay control');
+  await overlay.locator('[data-memo-tag="walking"]').click();
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.body.classList.contains('is-tags-overlay-open'));
+  assert(await opener.evaluate(element => document.activeElement === element), 'Escape returns focus to the opener');
+  assert.equal(await page.locator('#mobile-overlay-container').getAttribute('aria-hidden'), 'true');
+  assert.equal(await opener.getAttribute('aria-expanded'), 'false');
+  await visibleCards(page, [beta]);
+  await opener.click();
+  assert.equal(await overlay.locator('[data-memo-tag="walking"]').getAttribute('aria-pressed'), 'true', 'Reopening preserves the selected filter');
+  await overlay.locator('[data-overlay-close]').click();
+  await page.waitForFunction(() => !document.body.classList.contains('is-tags-overlay-open'));
+  assert(await opener.evaluate(element => document.activeElement === element), 'The close button restores opener focus');
+  assert.equal(await page.evaluate(() => document.body.style.overflow), '', 'Closing unlocks page scrolling');
+  await page.locator('[data-memos-reset]').click();
+  await visibleCards(page, [beta, alpha, gamma]);
+  assert(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'Memos remain within the mobile viewport');
+
+  assert.deepEqual(errors, [], 'Memos interactions have no uncaught browser errors');
+  await context.close();
+  console.log('Memos browser tests passed: search, highlights, calendar, tags, images, footnotes, SPA and mobile overlays.');
+} finally {
+  await browser?.close();
+  if (server) await new Promise(resolve => server.close(resolve));
+  await rm(fixture, { recursive: true, force: true });
+}

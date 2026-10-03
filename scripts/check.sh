@@ -32,6 +32,7 @@ go build -o "$DAYBOOK_BIN" ./cmd/daybook
 echo "==> Phase C: Standalone Smoke Test"
 VAULT_DIR="$TEMP_DIR/vault"
 mkdir -p "$VAULT_DIR/vault/notes"
+mkdir -p "$VAULT_DIR/vault/memos"
 mkdir -p "$VAULT_DIR/vault/pages"
 
 cat << 'YAML' > "$VAULT_DIR/daybook.yaml"
@@ -50,12 +51,12 @@ ABOUT
 
 cat << 'MD' > "$VAULT_DIR/vault/notes/smoke-test.md"
 ---
-title: "Smoke Test Note"
 date: "2026-08-24"
-slug: "smoke-test"
 math: true
 ---
 Hello World from the smoke test!
+
+Related short entry: [[memos/smoke-memo]].
 
 ## Heading 1
 Line of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\nLine of text.\n\n
@@ -75,6 +76,33 @@ Even more text.\n\nEven more text.\n\nEven more text.\n\nEven more text.\n\nEven
 
 ## Heading 4
 End of document.
+MD
+
+cat << 'MD' > "$VAULT_DIR/vault/memos/smoke-memo.md"
+---
+date: "2026-10-02T18:30:00+08:00"
+tags: [smoke, daily]
+location: Riverside
+---
+A short memo from the smoke test, linked to [[notes/smoke-test]].
+
+- [x] Publish a short entry without a title property.
+- [ ] Keep writing.
+MD
+
+cat << 'MD' > "$VAULT_DIR/vault/memos/draft-memo.md"
+---
+date: "2026-10-02"
+draft: true
+---
+Unpublished memo body must stay private.
+MD
+
+cat << 'MD' > "$VAULT_DIR/vault/memos/invalid-memo.md"
+---
+date: "not-a-date"
+---
+Invalid memo body must not be published.
 MD
 
 cd "$VAULT_DIR"
@@ -97,6 +125,35 @@ for (const asset of [
 }
 if (JSON.stringify(manifest).toLowerCase().includes('waline') || existsSync('public/vendor/waline')) {
   throw new Error('Obsolete Waline assets were emitted');
+}
+for (const route of ['memos', 'en_US/memos', 'memos/smoke-memo']) {
+  if (!existsSync(`public/${route}/index.html`)) throw new Error(`Missing memos page: ${route}`);
+}
+const timeline = readFileSync('public/memos/index.html', 'utf8');
+if (!timeline.includes('A short memo from the smoke test') || !timeline.includes('Riverside')) {
+  throw new Error('Memos timeline is missing body or location');
+}
+const search = JSON.parse(readFileSync('public/search.json', 'utf8'));
+const versions = search.flatMap(item => Object.values(item.versions));
+for (const url of ['/notes/smoke-test/', '/memos/smoke-memo/']) {
+  if (!versions.some(item => item.url === url)) throw new Error(`Search index is missing ${url}`);
+}
+if (versions.find(item => item.url === '/notes/smoke-test/').title !== 'smoke-test') {
+  throw new Error('Note title was not derived from its filename');
+}
+const graph = JSON.parse(readFileSync('public/graph.json', 'utf8'));
+const note = graph.nodes.find(node => node.url === '/notes/smoke-test/');
+const memo = graph.nodes.find(node => node.url === '/memos/smoke-memo/');
+if (!note || !memo || !graph.links.some(link =>
+  (link.source === note.id && link.target === memo.id) ||
+  (link.source === memo.id && link.target === note.id))) {
+  throw new Error('Notes and memos are not connected in the shared graph');
+}
+for (const slug of ['draft-memo', 'invalid-memo']) {
+  if (existsSync(`public/memos/${slug}/index.html`) ||
+      JSON.stringify(search).includes(slug) || JSON.stringify(graph).includes(slug) || timeline.includes(slug)) {
+    throw new Error(`Excluded memo leaked into published output: ${slug}`);
+  }
 }
 JS
 if [ ! -f "public/vendor/katex/katex.js" ] || [ ! -f "public/vendor/katex/katex.min.css" ]; then
@@ -153,5 +210,6 @@ fi
 echo "==> Phase D: Browser Runtime Regression Test"
 cd - > /dev/null
 node scripts/browser-test.mjs
+node scripts/memos-browser-test.mjs
 
 echo "==> All checks passed successfully!"
