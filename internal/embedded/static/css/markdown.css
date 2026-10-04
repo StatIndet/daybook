@@ -469,7 +469,8 @@
   outline-offset: -3px;
 }
 
-.markdown .md-carousel-item figcaption {
+.markdown .md-carousel-item figcaption,
+.memos-page .memo-photo-tile figcaption {
   background: linear-gradient(transparent, rgb(0 0 0 / 0.7));
   bottom: 0;
   box-sizing: border-box;

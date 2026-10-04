@@ -281,7 +281,7 @@
       if (!container.isConnected) { controller.destroy(); controllers.delete(container); }
     });
     document.querySelectorAll<HTMLElement>(".md-gallery").forEach(container => {
-      if (container.closest(".memo-content")) return;
+      if (container.closest("[data-memo-card]")) return;
       if (controllers.has(container)) return;
       const items = Array.from(container.children).filter((item): item is HTMLElement =>
         item instanceof HTMLElement && item.matches("figure, p") && item.querySelectorAll("img").length === 1);

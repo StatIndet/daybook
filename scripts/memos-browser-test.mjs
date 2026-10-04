@@ -70,6 +70,11 @@ pinned: true
 ---
 Morning steps and another footnote.[^1]
 
+:::gallery
+![Garden one](/attachments/picture/1.svg)
+![Garden two](/attachments/picture/2.svg)
+:::
+
 [^1]: Beta footnote text.
 `);
   await write('vault/memos/gamma-record.md', `---
@@ -251,13 +256,22 @@ Last month's library visit.
   const visibleImages = await alphaCard.locator('.memo-content img').evaluateAll(images => images.filter(image => getComputedStyle(image).display !== 'none' && image.getClientRects().length > 0).length);
   assert.equal(visibleImages, 4, 'A memo preview displays at most four of its six images');
   assert.equal(await alphaCard.locator('.memo-more-photos').count(), 1, 'Additional images have a link to the full memo');
+  const morePhotos = alphaCard.locator('.memo-more-photos');
+  assert.equal(await morePhotos.locator('.memo-photo-count').textContent(), '+2');
+  assert.equal(await alphaCard.locator('.memo-photo-tile').nth(3).locator('.memo-more-photos').count(), 1, 'The extra-image badge belongs to the fourth image');
+  assert.equal(await alphaCard.locator('figcaption').first().evaluate(element => getComputedStyle(element).position), 'absolute', 'Feed captions overlay the image');
+  await morePhotos.focus();
+  assert.equal(await morePhotos.locator('.memo-photo-hint').evaluate(element => getComputedStyle(element).opacity), '1', 'Keyboard focus reveals the extra-image hint');
+  await morePhotos.evaluate(element => element.blur());
+  await alphaCard.locator('.memo-photo-tile').nth(3).hover();
+  assert.equal(await morePhotos.locator('.memo-photo-hint').evaluate(element => getComputedStyle(element).opacity), '1', 'Hover reveals the extra-image hint');
   await search.fill('gentleword');
   await visibleCards(page, [alpha]);
   await sidebar.locator('[data-memo-tag="reading"]').click();
   assert.equal(new URL(page.url()).searchParams.get('q'), 'gentleword');
   assert.equal(new URL(page.url()).searchParams.get('tag'), 'reading');
   const feedBounds = await alphaCard.boundingBox();
-  await alphaCard.locator('.memo-permalink').click();
+  await alphaCard.locator('.memo-more-photos').click();
   await settled(page, 'memo');
   assert.equal(new URL(page.url()).pathname, alpha);
   const detailBounds = await page.locator('.memo-detail-post').boundingBox();
@@ -268,6 +282,8 @@ Last month's library visit.
   assert.equal(await page.locator('.memo-detail-post .memo-actions > *').count(), 5);
   assert.equal(await page.locator('.memo-detail-page > #comments').count(), 1, 'Comments follow the shared post');
   assert.equal(await page.locator('.post-content img').count(), 6, 'The detail page preserves all original images');
+  assert.equal(await page.locator('.memo-photo-tile, .memo-more-photos').count(), 0, 'Feed image treatment does not leak into detail');
+  assert.equal(await page.locator('.post-content figcaption').first().evaluate(element => getComputedStyle(element).position), 'static', 'Detail captions use normal Markdown styling');
   assert(await page.evaluate(() => window.__memosDocument === document), 'Memos → detail retains the SPA document');
   await page.goBack();
   await settled(page, 'memos');
@@ -277,6 +293,15 @@ Last month's library visit.
   assert(await page.evaluate(() => window.__memosDocument === document), 'Browser back restores memos within the SPA');
   await page.locator('[data-memos-reset]').click();
   await visibleCards(page, [beta, alpha, gamma]);
+
+  const betaGallery = page.locator(`[data-memo-url="${beta}"] .md-gallery`);
+  assert.equal(await betaGallery.locator('.md-carousel-track').count(), 0, 'Authored galleries use the feed image grid');
+  await page.locator(`[data-memo-url="${beta}"] .memo-permalink`).click();
+  await settled(page, 'memo');
+  await page.waitForSelector('.md-gallery .md-carousel-track');
+  assert.equal(await page.locator('.memo-photo-grid').count(), 0, 'Detail restores the normal Markdown gallery');
+  await page.locator('.memo-detail-back').click();
+  await settled(page, 'memos');
 
   await alphaCard.locator('a[href="/notes/reference/"]').click();
   await settled(page, 'note');

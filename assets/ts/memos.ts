@@ -99,13 +99,6 @@ import { updateNumber } from "./number-flip";
     });
   }
 
-  function numberText(element: HTMLElement, value: string) {
-    element.replaceChildren(...value.split(/(\d+)/).filter(Boolean).map(part => {
-      if (!/^\d+$/.test(part)) return document.createTextNode(part);
-      const span = document.createElement('span'); span.className = 'memo-number'; span.textContent = part; return span;
-    }));
-  }
-
   function renderCalendar() {
     if (!calendarMonth) return;
     const date = monthDate(calendarMonth);
@@ -187,7 +180,9 @@ import { updateNumber } from "./number-flip";
     page.querySelectorAll<HTMLElement>('[data-memo-more-count]').forEach(link => {
       const count = link.dataset.memoMoreCount;
       const label = english() ? `View ${count} more photos` : `查看其余 ${count} 张图片`;
-      if (link.textContent !== label) numberText(link, label);
+      link.setAttribute('aria-label', label);
+      const hint = link.querySelector<HTMLElement>('.memo-photo-hint');
+      if (hint) hint.textContent = english() ? `View ${count} more` : `查看其余${count}张`;
     });
     renderCalendar(); renderTags(); highlightMatches();
     if (focusPanel && focusAttribute && focusValue) focusPanel.querySelector<HTMLElement>(`[${focusAttribute}="${CSS.escape(focusValue)}"]`)?.focus({ preventScroll: true });
@@ -206,6 +201,20 @@ import { updateNumber } from "./number-flip";
       target.setAttribute('data-memo-overflow', '');
       target.setAttribute('hidden', '');
     });
+    const tiles = images.slice(0, 4).map(image => {
+      const figure = image.closest<HTMLElement>('figure');
+      const paragraph = image.parentElement;
+      let tile = figure && figure.querySelectorAll('img').length === 1 ? figure
+        : paragraph?.tagName === 'P' && paragraph.querySelectorAll('img').length === 1 && !paragraph.textContent?.trim() ? paragraph : null;
+      if (!tile) {
+        const picture = image.closest('picture');
+        tile = document.createElement('span');
+        const media = image.closest('a') || picture || image;
+        media.before(tile); tile.append(media);
+      }
+      tile.classList.add('memo-photo-tile');
+      return tile;
+    });
     content.querySelectorAll<HTMLElement>('.md-gallery').forEach(gallery => gallery.classList.add('memo-photo-grid'));
     content.querySelectorAll<HTMLElement>('p').forEach(paragraph => {
       if (!paragraph.textContent?.trim() && paragraph.querySelectorAll('img').length > 1) paragraph.classList.add('memo-photo-grid');
@@ -222,9 +231,15 @@ import { updateNumber } from "./number-flip";
     });
     flush();
     if (images.length > 4) {
-      const link = document.createElement('a'); link.className = 'memo-more-photos'; link.href = memo.dataset.memoUrl || '#'; link.dataset.memoMoreCount = String(images.length - 4);
-      link.textContent = english() ? `View ${images.length - 4} more photos` : `查看其余 ${images.length - 4} 张图片`;
-      content.append(link);
+      const tile = tiles[3]!;
+      tile.classList.add('has-more-photos');
+      const link = document.createElement('a');
+      link.className = 'memo-more-photos'; link.href = memo.dataset.memoUrl || '#';
+      link.dataset.memoMoreCount = String(images.length - 4);
+      const count = document.createElement('span'); count.className = 'memo-photo-count memo-number'; count.textContent = `+${images.length - 4}`;
+      const hint = document.createElement('span'); hint.className = 'memo-photo-hint';
+      count.setAttribute('aria-hidden', 'true'); hint.setAttribute('aria-hidden', 'true');
+      link.append(count, hint); tile.append(link);
     }
   }
   function init() {
