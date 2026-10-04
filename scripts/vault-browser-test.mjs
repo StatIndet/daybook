@@ -261,6 +261,7 @@ if (fixtures) {
         assert.notEqual(colors.panel, 'rgba(0, 0, 0, 0)');
         assert.notEqual(colors.query, 'rgba(0, 0, 0, 0)');
       }
+      await page.locator('#graph-search-btn').click();
       await page.locator('#graph-search-input').fill('Markdown');
       assert.ok(await page.locator('#graph-search-input').isVisible());
       assert.deepEqual(errors, []);

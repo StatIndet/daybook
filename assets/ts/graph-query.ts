@@ -188,7 +188,7 @@ function needsIndex(expression: Expression, metadata = false): boolean {
 
 type MatchText = (value: string) => boolean;
 
-/** Compile once and reuse for every graph node, including every color group. */
+/** Compile once and reuse for every graph node. */
 export function compileQuery(input: string): CompiledQuery {
   if (input.length > 16_384) throw syntaxError('查询过长，请控制在 16384 个字符以内', 16_384);
   const expression = new Parser(tokenize(input)).parse();

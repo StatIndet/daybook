@@ -88,6 +88,17 @@ try {
   await page.waitForFunction(() => window.__graphSimulations[0].simulation.alpha() < 0.03);
   assert.equal(await page.locator('#graph-settings-panel').isHidden(), true, 'Settings start collapsed');
   assert.equal(data.indexRequests, 0, 'No content index fetch for an empty query');
+  assert.equal(await page.locator('#graph-settings-panel #graph-search-input, #graph-settings-panel .graph-help').count(), 0, 'Panel has no search field or query syntax');
+  assert.deepEqual(await page.locator('.graph-toolbar > button').evaluateAll(buttons => buttons.filter(button => !button.hidden).map(button => button.id)), ['graph-search-btn', 'graph-orphan-btn', 'graph-tags-btn', 'graph-attachments-btn', 'graph-reset', 'graph-settings-btn']);
+  await page.locator('#graph-search-btn').click();
+  assert.equal(await page.locator('#graph-search-input').isVisible(), true);
+  assert.equal(await page.locator('#graph-search-input').evaluate(input => input === document.activeElement), true);
+  await page.locator('.graph-help > summary').click();
+  assert.equal(await page.locator('.graph-help dt').count(), 6, 'Toolbar search keeps all query hints');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('#graph-local-search-panel').isHidden(), true);
+  assert.equal(await page.locator('#graph-search-btn').evaluate(button => button === document.activeElement), true);
+
   const initialTransform = await page.evaluate(() => ({ ...window.d3.zoomTransform(document.querySelector('#graph-container svg')) }));
 
   for (let cycle = 0; cycle < 4; cycle++) {
@@ -208,7 +219,7 @@ try {
   assert.equal(await page.locator('.graph-node.is-missing').count(), 1);
   await click(page, '#graph-defaults');
 
-  await page.locator('.graph-section > summary').nth(2).click();
+  await page.locator('.graph-section > summary').nth(1).click();
   await click(page, '#graph-arrows');
   const reciprocal = await page.locator('.graph-link').evaluateAll(links => links.map(element => ({
     source: element.__data__.source.id, target: element.__data__.target.id,
@@ -230,42 +241,6 @@ try {
   assert.deepEqual(appearance.after, appearance.before);
   assert.equal(await page.locator('.graph-link').first().getAttribute('stroke-width'), '2');
 
-  await page.locator('.graph-section > summary').nth(1).click();
-  await page.getByRole('button', { name: 'New color group', exact: true }).click();
-  await setValue(page, '.graph-group:nth-child(1) > .graph-query', 'file:.md');
-  await page.waitForFunction(() => document.querySelector('.graph-node').style.fill === 'rgb(224, 82, 82)');
-  await page.getByRole('button', { name: 'New color group', exact: true }).click();
-  await setValue(page, '.graph-group:nth-child(2) > .graph-query', 'file:.md');
-  await page.waitForTimeout(180);
-  assert.equal(await page.locator('.graph-node').first().evaluate(node => node.style.fill), 'rgb(224, 82, 82)', 'The first matching color group wins');
-  await page.locator('.graph-group').nth(1).getByRole('button', { name: 'Move up', exact: true }).click();
-  await page.waitForFunction(() => document.querySelector('.graph-node').style.fill === 'rgb(91, 141, 239)');
-  const firstGroup = page.locator('.graph-group').first();
-  await firstGroup.locator('.graph-swatch').click();
-  await firstGroup.getByRole('textbox', { name: 'HEX', exact: true }).fill('#00FF00');
-  await page.waitForFunction(() => document.querySelector('.graph-node').style.fill === 'rgb(0, 255, 0)');
-  await firstGroup.locator('.graph-color-format').selectOption('rgb');
-  assert.deepEqual(await firstGroup.locator('.graph-color-input').evaluateAll(inputs => inputs.map(input => input.value)), ['0', '255', '0']);
-  await firstGroup.locator('.graph-color-format').selectOption('hsl');
-  assert.deepEqual(await firstGroup.locator('.graph-color-input').evaluateAll(inputs => inputs.map(input => input.value)), ['120', '100', '50']);
-  await firstGroup.locator('.graph-color-format').selectOption('hex');
-  await firstGroup.getByRole('textbox', { name: 'HEX', exact: true }).fill('invalid');
-  assert.equal(await firstGroup.getByRole('textbox', { name: 'HEX', exact: true }).getAttribute('aria-invalid'), 'true');
-  assert.equal(await page.locator('.graph-node').first().evaluate(node => node.style.fill), 'rgb(0, 255, 0)', 'Invalid colors retain the last valid color');
-  await firstGroup.getByRole('textbox', { name: 'HEX', exact: true }).fill('#00FF00');
-  await firstGroup.locator('.graph-color-square').press('ArrowLeft');
-  await page.waitForTimeout(150);
-  assert.notEqual(await page.locator('.graph-node').first().evaluate(node => node.style.fill), 'rgb(0, 255, 0)', 'Color square works with a keyboard');
-  await page.evaluate(() => window.__graphSimulations[0].simulation.stop().alpha(.015));
-  await firstGroup.getByRole('textbox', { name: 'HEX', exact: true }).fill('#00FF00');
-  await page.waitForTimeout(150);
-  assert.equal(await page.evaluate(() => window.__graphSimulations[0].simulation.alpha()), .015, 'Color changes must not reheat the simulation');
-  await setValue(page, '.graph-group:nth-child(1) > .graph-query', 'task:unsupported');
-  await page.waitForFunction(() => document.querySelector('.graph-group > .graph-error').textContent.length > 0);
-  assert.equal(await page.locator('.graph-node').first().evaluate(node => node.style.fill), 'rgb(0, 255, 0)', 'An invalid group query retains its last valid match');
-  await firstGroup.getByRole('button', { name: 'Delete', exact: true }).click();
-  await page.waitForFunction(() => document.querySelector('.graph-node').style.fill === 'rgb(224, 82, 82)');
-
   await setQuery(page, 'file:"Note 00.md"');
   await waitIDs(page, ['note-0']);
   assert.equal(await page.evaluate(() => window.__graphSimulations.length), 1, 'All controls use the same simulation');
@@ -277,18 +252,16 @@ try {
   await page.evaluate(() => window.DaybookGraph.init(document));
   await waitIDs(page, ['note-0']);
   assert.equal(await page.locator('#graph-search-input').inputValue(), 'file:"Note 00.md"', 'Query persists across graph visits');
-  assert.equal(await page.locator('.graph-group').count(), 1, 'Color groups persist across graph visits');
   assert.equal(await page.locator('#graph-lineWidth').inputValue(), '2');
   assert.equal(await page.evaluate(() => window.__graphSimulations.length), 2);
   await click(page, '#graph-defaults');
   assert.equal(await page.locator('.graph-node').count(), 53);
   assert.equal(await page.locator('#graph-search-input').inputValue(), '');
-  assert.equal(await page.locator('.graph-group').count(), 0);
   assert.equal(await page.locator('#graph-lineWidth').inputValue(), '1');
   assert.equal(await page.locator('#graph-arrows').isChecked(), false);
   const storage = await page.evaluate(() => JSON.parse(localStorage.getItem('daybook:graph:/')));
   assert.equal(storage.settings.query, '');
-  assert.deepEqual(storage.settings.groups, []);
+  assert.equal('groups' in storage.settings, false);
   await page.evaluate(() => {
     history.pushState({}, '', '?node=note-0&depth=1');
     dispatchEvent(new PopStateEvent('popstate'));
@@ -302,7 +275,7 @@ try {
     document.documentElement.lang = 'zh-CN';
     document.dispatchEvent(new Event('daybook:lang-change'));
   });
-  assert.equal(await page.locator('#graph-settings-btn').textContent(), '图谱设置');
+  assert.equal(await page.locator('#graph-settings-btn').getAttribute('aria-label'), '图谱设置');
   assert.equal(await page.evaluate(() => window.__graphSimulations.length), 2, 'Language changes retain the simulation');
 
   // Leaving during an active drag must release D3's window-level pointer listeners.
@@ -315,7 +288,7 @@ try {
   await page.mouse.up();
   assert.equal(await page.locator('#graph-container svg').count(), 0);
   await page.close();
-  console.log(`Graph interaction regression passed: 12 filter changes, one simulation, drag error ${beforeZoom.toFixed(2)}px / ${afterZoom.toFixed(2)}px; filters, index retry, arrows, colors, and persistence verified.`);
+  console.log(`Graph interaction regression passed: 12 filter changes, one simulation, drag error ${beforeZoom.toFixed(2)}px / ${afterZoom.toFixed(2)}px; filters, index retry, arrows, and persistence verified.`);
 
   const animated = await openGraph(fixture(), { reducedMotion: 'reduce', clock: true });
   await click(animated, '#graph-existing-btn');
@@ -326,7 +299,7 @@ try {
   assert.equal(await animated.locator('#graph-play').textContent(), 'Pause');
   assert.deepEqual(await ids(animated), ['attachment-0', 'attachment-1', 'note-0', 'note-1', 'tag-0', 'tag-1']);
   const firstBatchPositions = await animated.evaluate(() => window.__graphNodes.data().map(({ id, x, y }) => [id, x, y]));
-  await animated.clock.runFor(4100);
+  await animated.clock.runFor(2800);
   assert.ok((await ids(animated)).includes('note-2'));
   assert.ok((await ids(animated)).includes('missing'), 'Undated placeholder appears with its first dated neighbor');
   assert.ok(!(await ids(animated)).includes('note-4'));
@@ -343,13 +316,13 @@ try {
   assert.deepEqual(await ids(animated), pausedIDs, 'Pause freezes the animation batch');
   assert.equal(await animated.locator('progress').getAttribute('value'), progress);
   await click(animated, '#graph-play');
-  await animated.clock.runFor(4100);
+  await animated.clock.runFor(2800);
   assert.ok((await ids(animated)).includes('note-4'));
   await click(animated, '#graph-stop');
   assert.deepEqual(await ids(animated), fullIDs, 'Stop restores the complete filtered graph');
   assert.equal(await animated.locator('#graph-stop').isDisabled(), true);
   await click(animated, '#graph-play');
-  await animated.clock.runFor(12_100);
+  await animated.clock.runFor(8_100);
   assert.equal(await animated.locator('#graph-play').textContent(), 'Animate');
   assert.equal(await animated.locator('progress').getAttribute('value'), '1');
   assert.deepEqual(await ids(animated), fullIDs);
@@ -379,9 +352,10 @@ try {
   const shellBox = await mobile.locator('.graph-shell').boundingBox();
   assert.ok(panelBox.width <= shellBox.width + 1, 'Mobile drawer stays inside graph width');
   assert.ok(Math.abs(panelBox.y + panelBox.height - shellBox.y - shellBox.height) < 2, 'Mobile drawer anchors to the bottom');
-  await mobile.locator('#graph-tags-btn').focus();
+  await mobile.locator('#graph-tags-switch').focus();
   await mobile.keyboard.press('Space');
-  assert.equal(await mobile.locator('#graph-tags-btn').isChecked(), true, 'Switch supports keyboard interaction without localStorage');
+  assert.equal(await mobile.locator('#graph-tags-switch').isChecked(), true, 'Switch supports keyboard interaction without localStorage');
+  assert.equal(await mobile.locator('#graph-tags-btn').getAttribute('aria-pressed'), 'true');
   await mobile.keyboard.press('Escape');
   assert.equal(await mobile.locator('#graph-settings-panel').isHidden(), true);
   assert.equal(await mobile.locator('#graph-settings-btn').evaluate(button => button === document.activeElement), true, 'Closing returns keyboard focus to Settings');

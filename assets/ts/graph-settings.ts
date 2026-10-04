@@ -1,9 +1,3 @@
-export interface GraphColorGroup {
-  id: string;
-  query: string;
-  color: string;
-}
-
 export interface GraphSettings {
   query: string;
   showTags: boolean;
@@ -18,7 +12,6 @@ export interface GraphSettings {
   repelForce: number;
   linkForce: number;
   linkDistance: number;
-  groups: GraphColorGroup[];
 }
 
 const SETTINGS_VERSION = 1;
@@ -38,7 +31,6 @@ export function defaultSettings(): GraphSettings {
     repelForce: 1,
     linkForce: 1,
     linkDistance: 120,
-    groups: [],
   };
 }
 
@@ -68,16 +60,6 @@ export function validateSettings(value: unknown): GraphSettings {
     const candidate = value[key];
     if (typeof candidate === 'number' && Number.isFinite(candidate)) {
       settings[key] = Math.min(ranges[key][1], Math.max(ranges[key][0], candidate));
-    }
-  }
-  const ids = new Set<string>();
-  if (Array.isArray(value.groups)) {
-    for (const group of value.groups) {
-      if (!isRecord(group) || typeof group.id !== 'string' || !group.id || ids.has(group.id)
-        || typeof group.query !== 'string' || typeof group.color !== 'string'
-        || !/^#[\da-f]{6}$/i.test(group.color)) continue;
-      ids.add(group.id);
-      settings.groups.push({ id: group.id, query: group.query, color: group.color.toUpperCase() });
     }
   }
   return settings;

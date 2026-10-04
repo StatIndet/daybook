@@ -1,5 +1,4 @@
 import type { GraphSettings } from "./graph-settings";
-import { createColorPicker } from "./graph-color";
 
 const words = {
   settings: ["图谱设置", "Graph settings"],
@@ -8,9 +7,9 @@ const words = {
   close: ["关闭", "Close"],
   reset: ["恢复默认", "Restore defaults"],
   filters: ["筛选", "Filters"],
-  groups: ["颜色组", "Color groups"],
   appearance: ["外观", "Display"],
   forces: ["力度", "Forces"],
+  search: ["搜索", "Search"],
   query: ["搜索文件或正文…", "Search files or content…"],
   tags: ["标签", "Tags"],
   attachments: ["附件", "Attachments"],
@@ -24,12 +23,6 @@ const words = {
   repelForce: ["节点排斥力", "Repel force"],
   linkForce: ["连接吸引力", "Link force"],
   linkDistance: ["连线长度", "Link distance"],
-  add: ["新建颜色组", "New color group"],
-  groupQuery: ["输入查询规则…", "Enter a query…"],
-  up: ["上移", "Move up"],
-  down: ["下移", "Move down"],
-  remove: ["删除", "Delete"],
-  color: ["颜色", "Color"],
   play: ["播放动画", "Animate"],
   pause: ["暂停", "Pause"],
   resume: ["继续", "Resume"],
@@ -48,8 +41,8 @@ const words = {
   graphError: ["图谱加载失败，请重试。", "Unable to load graph. Please retry."],
   help: ["查询语法", "Query syntax"],
   helpText: [
-    "空格：同时满足 · OR：任一满足 · -：排除 · 引号：短语。颜色组使用相同规则，靠前的组优先。",
-    "Space: AND · OR: either · -: exclude · quotes: phrase. Color groups use the same rules; first match wins.",
+    "空格：同时满足 · OR：任一满足 · -：排除 · 引号：短语。",
+    "Space: AND · OR: either · -: exclude · quotes: phrase.",
   ],
   pathHelp: ["路径", "Path"],
   fileHelp: ["文件名", "Filename"],
@@ -57,13 +50,9 @@ const words = {
   lineHelp: ["同一行", "Same line"],
   sectionHelp: ["同一章节", "Same section"],
   propertyHelp: ["公开属性", "Public property"],
-  colorHint: [
-    "空查询不着色；拖动滑块可实时预览。",
-    "Empty queries do not color nodes. Changes preview immediately.",
-  ],
   noDates: ["当前筛选没有可用于动画的日期", "No dated notes in this selection"],
   storage: ["设置保存在此浏览器中", "Settings saved in this browser"],
-  day: ["按笔记日期 · 12 秒", "By note date · 12 seconds"],
+  day: ["按笔记日期 · 8 秒", "By note date · 8 seconds"],
 } as const;
 export function graphText(key: keyof typeof words): string {
   return words[key][
@@ -107,15 +96,56 @@ export function createGraphPanel(
   panel.id = "graph-settings-panel";
   panel.hidden = true;
   panel.setAttribute("aria-label", graphText("settings"));
-  const toggle = button(graphText("settings"), () => setOpen(!!panel.hidden));
+  const iconButton = (
+    label: keyof typeof words,
+    icon: string,
+    action: () => void,
+  ) => {
+    const control = button("", action, "notes-action-button");
+    control.setAttribute("aria-label", graphText(label));
+    control.setAttribute("data-tooltip", graphText(label));
+    const symbol = el("span", "material-symbol", icon);
+    symbol.setAttribute("aria-hidden", "true");
+    control.append(symbol, el("span", "graph-action-text", graphText(label)));
+    return control;
+  };
+  const toggle = iconButton("settings", "tune", () => setOpen(!!panel.hidden));
   toggle.id = "graph-settings-btn";
   toggle.setAttribute("aria-controls", panel.id);
   toggle.setAttribute("aria-expanded", "false");
-  const center = button(graphText("center"), actions.center);
+  const center = iconButton("center", "center_focus_strong", actions.center);
   center.id = "graph-reset";
-  const full = button(graphText("full"), actions.full);
+  const full = iconButton("full", "zoom_out_map", actions.full);
   full.hidden = !new URLSearchParams(location.search).has("node");
-  toolbar.append(toggle, center, full);
+  const search = iconButton("search", "search", () =>
+    setSearchOpen(!!searchPanel.hidden),
+  );
+  search.id = "graph-search-btn";
+  search.setAttribute("aria-controls", "graph-local-search-panel");
+  search.setAttribute("aria-expanded", "false");
+  const shortcuts = new Map<
+    "showOrphans" | "showTags" | "showAttachments",
+    HTMLButtonElement
+  >();
+  toolbar.append(search);
+  for (const [key, label, icon, id] of [
+    ["showOrphans", "orphans", "scatter_plot", "graph-orphan-btn"],
+    ["showTags", "tags", "sell", "graph-tags-btn"],
+    ["showAttachments", "attachments", "attach_file", "graph-attachments-btn"],
+  ] as const) {
+    const shortcut = iconButton(label, icon, () => {
+      get()[key] = !get()[key];
+      syncToggles();
+      change(key);
+    });
+    shortcut.id = id;
+    shortcuts.set(key, shortcut);
+    toolbar.append(shortcut);
+  }
+  toolbar.append(center, toggle, full);
+  const searchPanel = el("div", "graph-search-panel");
+  searchPanel.id = "graph-local-search-panel";
+  searchPanel.hidden = true;
   const header = el("div", "graph-panel-header");
   header.append(
     el("strong", "", graphText("settings")),
@@ -127,7 +157,7 @@ export function createGraphPanel(
   );
   panel.append(header);
   const sections = new Map<string, HTMLElement>();
-  for (const name of ["filters", "groups", "appearance", "forces"] as const) {
+  for (const name of ["filters", "appearance", "forces"] as const) {
     const details = el("details", "graph-section");
     details.open = name === "filters";
     details.append(el("summary", "", graphText(name)));
@@ -166,13 +196,13 @@ export function createGraphPanel(
     helpList.append(el("dt", "", syntax), el("dd", "", graphText(key)));
   }
   help.append(helpList, el("p", "", graphText("helpText")));
-  filter.append(query, queryError, help);
+  searchPanel.append(query, queryError, help);
   const fields = new Map<keyof GraphSettings, HTMLInputElement[]>();
   for (const [key, label, id] of [
-    ["showTags", "tags", "graph-tags-btn"],
-    ["showAttachments", "attachments", "graph-attachments-btn"],
+    ["showTags", "tags", "graph-tags-switch"],
+    ["showAttachments", "attachments", "graph-attachments-switch"],
     ["existingOnly", "existing", "graph-existing-btn"],
-    ["showOrphans", "orphans", "graph-orphan-btn"],
+    ["showOrphans", "orphans", "graph-orphan-switch"],
     ["arrows", "arrows", "graph-arrows"],
   ] as const) {
     const row = el("label", "graph-switch-row");
@@ -182,6 +212,7 @@ export function createGraphPanel(
     input.setAttribute("role", "switch");
     input.onchange = () => {
       get()[key] = input.checked;
+      syncToggles();
       change(key);
     };
     row.append(el("span", "", graphText(label)), input);
@@ -236,104 +267,6 @@ export function createGraphPanel(
     ).append(row);
     fields.set(key, [range, number]);
   }
-  const groupHost = el("div", "graph-groups");
-  const groups = sections.get("groups")!;
-  groups.append(
-    el("p", "graph-hint", graphText("colorHint")),
-    groupHost,
-    button(graphText("add"), () => {
-      get().groups.push({
-        id: crypto.randomUUID?.() || `group-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        query: "",
-        color: ["#E05252", "#5B8DEF", "#4F9569", "#A270C8"][
-          get().groups.length % 4
-        ]!,
-      });
-      renderGroups();
-      change("groups");
-    }),
-  );
-  let pickers: (() => void)[] = [];
-  const groupErrors = new Map<string, HTMLElement>();
-  function renderGroups() {
-    pickers.forEach((d) => d());
-    pickers = [];
-    groupHost.replaceChildren();
-    groupErrors.clear();
-    get().groups.forEach((group, index) => {
-      const row = el("div", "graph-group");
-      row.dataset.groupId = group.id;
-      const input = el("input", "graph-query");
-      input.value = group.query;
-      input.placeholder = graphText("groupQuery");
-      input.setAttribute("aria-label", `${graphText("groups")} ${index + 1}`);
-      input.oninput = () => {
-        group.query = input.value;
-        change("groups");
-      };
-      const tools = el("div", "graph-group-tools");
-      const color = button(
-        `${graphText("color")} ${group.color}`,
-        () => {
-          pickerHost.hidden = !pickerHost.hidden;
-          color.setAttribute("aria-expanded", String(!pickerHost.hidden));
-        },
-        "graph-swatch",
-      );
-      color.style.setProperty("--swatch", group.color);
-      color.setAttribute("aria-expanded", "false");
-      const pickerHost = el("div");
-      pickerHost.hidden = true;
-      const picker = createColorPicker(pickerHost, group.color, (hex) => {
-        group.color = hex;
-        color.style.setProperty("--swatch", hex);
-        color.textContent = `${graphText("color")} ${hex}`;
-        change("groups");
-      });
-      pickers.push(() => picker.destroy());
-      const up = button("↑", () => move(-1));
-      up.setAttribute("aria-label", graphText("up"));
-      up.disabled = index === 0;
-      const down = button("↓", () => move(1));
-      down.setAttribute("aria-label", graphText("down"));
-      down.disabled = index === get().groups.length - 1;
-      function move(delta: number) {
-        const list = get().groups;
-        [list[index], list[index + delta]] = [
-          list[index + delta]!,
-          list[index]!,
-        ];
-        renderGroups();
-        change("groups");
-        groupHost.children[index + delta]
-          ?.querySelector<HTMLInputElement>(".graph-query")
-          ?.focus();
-      }
-      tools.append(
-        color,
-        up,
-        down,
-        button(graphText("remove"), () => {
-          get().groups.splice(index, 1);
-          renderGroups();
-          change("groups");
-          const adjacent =
-            groupHost.children[Math.min(index, get().groups.length - 1)];
-          (
-            adjacent?.querySelector<HTMLInputElement>(".graph-query") ||
-            groups.querySelector<HTMLButtonElement>(":scope > button")
-          )?.focus();
-        }),
-      );
-      const error = el("p", "graph-error");
-      error.id = `graph-group-error-${index}`;
-      error.setAttribute("role", "status");
-      input.setAttribute("aria-describedby", error.id);
-      groupErrors.set(group.id, error);
-      row.append(input, tools, pickerHost, error);
-      groupHost.append(row);
-    });
-  }
   const animation = el("div", "graph-animation");
   const play = button(graphText("play"), actions.play);
   play.id = "graph-play";
@@ -359,15 +292,32 @@ export function createGraphPanel(
   const retry = button(graphText("retry"), actions.retry);
   retry.hidden = true;
   status.append(count, error, retry);
+  toolbar.append(searchPanel);
   host.append(toolbar, panel, status);
   function setOpen(open: boolean) {
     panel.hidden = !open;
     toggle.setAttribute("aria-expanded", String(open));
-    if (open) panel.querySelector<HTMLButtonElement>("button")?.focus();
-    else toggle.focus();
+    if (open) {
+      searchPanel.hidden = true;
+      search.setAttribute("aria-expanded", "false");
+      panel.querySelector<HTMLButtonElement>("button")?.focus();
+    } else toggle.focus();
+  }
+  function setSearchOpen(open: boolean) {
+    searchPanel.hidden = !open;
+    search.setAttribute("aria-expanded", String(open));
+    if (open) {
+      panel.hidden = true;
+      toggle.setAttribute("aria-expanded", "false");
+      query.focus();
+    } else search.focus();
   }
   const escape = (event: KeyboardEvent) => {
-    if (event.key === "Escape" && !panel.hidden) {
+    if (event.key !== "Escape") return;
+    if (!searchPanel.hidden) {
+      event.stopPropagation();
+      setSearchOpen(false);
+    } else if (!panel.hidden) {
       event.stopPropagation();
       setOpen(false);
     }
@@ -389,7 +339,13 @@ export function createGraphPanel(
         }
       }
     }
-    renderGroups();
+    syncToggles();
+  }
+  function syncToggles() {
+    for (const [key, shortcut] of shortcuts) {
+      shortcut.setAttribute("aria-pressed", String(get()[key]));
+      for (const input of fields.get(key) || []) input.checked = get()[key];
+    }
   }
   sync();
   return {
@@ -406,15 +362,6 @@ export function createGraphPanel(
       queryError.textContent = message;
       query.setAttribute("aria-invalid", String(!!message));
     },
-    groupError(id: string, message: string) {
-      const e = groupErrors.get(id);
-      if (e) {
-        e.textContent = message;
-        e.parentElement
-          ?.querySelector("input")
-          ?.setAttribute("aria-invalid", String(!!message));
-      }
-    },
     animationAvailable(available: boolean) {
       play.disabled = !available;
       animationHint.textContent = graphText(available ? "day" : "noDates");
@@ -427,7 +374,6 @@ export function createGraphPanel(
       progress.value = value;
     },
     destroy() {
-      pickers.forEach((d) => d());
       disposers.forEach((d) => d());
       host.replaceChildren();
     },

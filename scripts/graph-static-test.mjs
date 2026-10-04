@@ -10,12 +10,13 @@ try {
   await page.waitForSelector('.graph-node');
   const count = await page.locator('.graph-node').count();
   assert.ok(count >= 2);
-  await page.locator('#graph-settings-btn').click();
+  await page.locator('#graph-search-btn').click();
   await page.locator('#graph-search-input').fill('line:"Hello World"');
   await page.waitForFunction(() => document.querySelectorAll('.graph-node').length === 1);
   assert.match(await page.locator('.graph-label').textContent(), /smoke-test/);
   await page.locator('#graph-search-input').fill('path:missing-no-match');
   await page.waitForFunction(() => document.querySelectorAll('.graph-node').length === 0);
+  await page.locator('#graph-settings-btn').click();
   await page.locator('#graph-defaults').click();
   await page.waitForFunction(count => document.querySelectorAll('.graph-node').length === count, count);
   await page.getByText('外观', { exact: true }).click();
@@ -24,19 +25,12 @@ try {
   await page.locator('#graph-play').click();
   await page.locator('#graph-play').click();
   await page.locator('#graph-stop').click();
-  await page.getByText('颜色组', { exact: true }).click();
-  await page.getByRole('button', { name: '新建颜色组', exact: true }).click();
-  await page.locator('.graph-group .graph-query').fill('file:smoke');
-  await page.locator('.graph-swatch').click();
-  await page.locator('.graph-color-input').fill('#0088AA');
-  await page.waitForFunction(() => [...document.querySelectorAll('.graph-node')].some(n => n.style.fill === 'rgb(0, 136, 170)'));
   await page.screenshot({ path: '/tmp/daybook-graph-desktop.png' });
   await page.locator('.graph-close').click();
   await page.reload();
   await page.waitForSelector('.graph-node');
   await page.locator('#graph-settings-btn').click();
   assert.equal(await page.locator('#graph-nodeSize').inputValue(), '2');
-  assert.equal(await page.locator('.graph-group .graph-query').inputValue(), 'file:smoke');
   await page.locator('#graph-defaults').click();
   await page.locator('.graph-close').click();
   // Exercise the actual router, hashed dependency loader and language route.
@@ -46,7 +40,7 @@ try {
   await page.evaluate(() => window.daybookNavigateTo('/en_US/graph/'));
   await page.waitForSelector('.graph-node');
   await page.waitForFunction(() => !document.documentElement.classList.contains('is-transitioning'));
-  assert.equal(await page.locator('#graph-settings-btn').textContent(), 'Graph settings');
+  assert.equal(await page.locator('#graph-settings-btn').getAttribute('aria-label'), 'Graph settings');
   await page.locator('#graph-settings-btn').click();
   await page.getByText('Display', { exact: true }).click();
   await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
@@ -58,5 +52,5 @@ try {
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#graph-settings-panel').isVisible(), false);
   assert.deepEqual(errors, []);
-  console.log('Graph static-vault regression passed (published index, settings, colors, animation, SPA, language and mobile).');
+  console.log('Graph static-vault regression passed (published index, toolbar, settings, animation, SPA, language and mobile).');
 } finally { await browser.close(); }

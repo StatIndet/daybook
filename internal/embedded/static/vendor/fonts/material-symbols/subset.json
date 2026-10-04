@@ -1,9 +1,7 @@
 {
   "icons": [
     "2d",
-    "360",
     "account_tree",
-    "add",
     "album",
     "archive",
     "arrow_back",
@@ -12,6 +10,7 @@
     "arrow_upward",
     "article",
     "artist",
+    "attach_file",
     "attachment",
     "autoplay",
     "bar_chart",
@@ -21,6 +20,7 @@
     "calendar_month",
     "cancel",
     "category",
+    "center_focus_strong",
     "chat_bubble",
     "check",
     "check_circle",
@@ -48,7 +48,6 @@
     "function",
     "gif",
     "group",
-    "groups",
     "height",
     "help",
     "highlight",
@@ -86,15 +85,14 @@
     "public",
     "radio",
     "refresh",
-    "remove",
     "report",
     "resize",
     "resume",
     "rss_feed",
+    "scatter_plot",
     "science",
     "script",
     "search",
-    "select",
     "sell",
     "settings",
     "share",
@@ -117,10 +115,12 @@
     "topic",
     "transform",
     "translate",
+    "tune",
     "variables",
     "warning",
     "zoom_in",
-    "zoom_out"
+    "zoom_out",
+    "zoom_out_map"
   ],
   "axes": {
     "FILL": {
@@ -131,5 +131,5 @@
     }
   },
   "originalBytes": 5347060,
-  "subsetBytes": 14976
+  "subsetBytes": 14760
 }

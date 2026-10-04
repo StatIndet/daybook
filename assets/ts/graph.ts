@@ -64,6 +64,7 @@ interface GraphData {
   links: RawLink[];
   meta?: { layoutDiameter?: number; nodeCount?: number; linkCount?: number };
 }
+const ANIMATION_DURATION_MS = 8000;
 const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
 
 (() => {
@@ -75,7 +76,6 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
     storageKey = "",
     basePath = "";
   let activeQuery: CompiledQuery = compileQuery("");
-  let groups = new Map<string, CompiledQuery>();
   let index: Map<string, SearchDocument> | null = null;
   let indexPromise: Promise<void> | null = null;
   let abort: AbortController | null = null,
@@ -139,7 +139,7 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
       play: toggleAnimation,
       stop: () => stopAnimation(true),
       retry: () => {
-        if (raw.nodes.length) void applyQueries();
+        if (raw.nodes.length) void applyQuery();
         else void init(root);
       },
     });
@@ -155,10 +155,9 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
         throw Error("graph");
       raw = data;
       activeQuery = compileQuery("");
-      groups.clear();
       panel?.setError("");
       recompute();
-      await applyQueries();
+      await applyQuery();
       if (epoch !== generation) return;
       resize = new ResizeObserver(() => {
         const { w, h } = dimensions();
@@ -217,7 +216,6 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
     currentLinks = [];
     index = null;
     indexPromise = null;
-    groups.clear();
     animation = "idle";
     elapsed = 0;
     days = [];
@@ -234,11 +232,11 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
       full: fullGraph,
       play: toggleAnimation,
       stop: () => stopAnimation(true),
-      retry: () => void applyQueries(),
+      retry: () => void applyQuery(),
     });
     panel.setCount(currentNodes.length);
-    panel.animation(animation, elapsed / 12000);
-    void applyQueries();
+    panel.animation(animation, elapsed / ANIMATION_DURATION_MS);
+    void applyQuery();
   }
   function routeChanged() {
     stopAnimation(false);
@@ -284,7 +282,6 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
     settings = defaultSettings();
     activeQuery = compileQuery("");
     appliedQuery = "";
-    groups.clear();
     saveSettings(storageKey, settings);
     panel?.sync();
     panel?.queryError("");
@@ -294,14 +291,11 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
   }
   function changed(key: keyof GraphSettings) {
     saveSettings(storageKey, settings);
-    if (key === "query" || key === "groups") {
+    if (key === "query") {
       queryRevision++;
-      if (key === "query") stopAnimation(true);
+      stopAnimation(true);
       window.clearTimeout(inputTimer);
-      inputTimer = window.setTimeout(
-        () => void applyQueries(),
-        key === "query" ? 180 : 100,
-      );
+      inputTimer = window.setTimeout(() => void applyQuery(), 180);
       return;
     }
     if (
@@ -346,62 +340,35 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
       if (epoch === generation) indexPromise = null;
     }
   }
-  async function applyQueries() {
+  async function applyQuery() {
     const revision = ++queryRevision,
       epoch = generation;
-    let query: CompiledQuery | null = null;
-    const nextGroups = new Map<string, CompiledQuery>();
+    let query: CompiledQuery;
     try {
       query = compileQuery(settings.query);
       panel?.queryError("");
-    } catch (e) {
-      panel?.queryError((e as Error).message);
+    } catch (error) {
+      panel?.queryError((error as Error).message);
+      return;
     }
-    for (const group of settings.groups) {
-      try {
-        if (group.query.trim())
-          nextGroups.set(group.id, compileQuery(group.query));
-        panel?.groupError(group.id, "");
-      } catch (e) {
-        panel?.groupError(group.id, (e as Error).message);
-        const old = groups.get(group.id);
-        if (old) nextGroups.set(group.id, old);
-      }
-    }
-    const needsIndex =
-      query?.needsIndex || [...nextGroups.values()].some((q) => q.needsIndex);
-    if (needsIndex && !index) {
+    if (query.needsIndex && !index) {
       panel?.setError(graphText("loading"));
       try {
         await loadIndex();
-      } catch (e) {
-        if (epoch !== generation || revision !== queryRevision) return;
-        panel?.setError(graphText("loadError"), true);
-        // Metadata-only queries and groups remain usable even when the content index fails.
-        if (query && !query.needsIndex && settings.query !== appliedQuery) {
-          activeQuery = query;
-          appliedQuery = settings.query;
-          stopAnimation(false);
-          recompute();
-        }
-        for (const [id, q] of nextGroups)
-          if (q.needsIndex) nextGroups.delete(id);
-        groups = nextGroups;
-        updateAppearance();
+      } catch {
+        if (epoch === generation && revision === queryRevision)
+          panel?.setError(graphText("loadError"), true);
         return;
       }
     }
     if (epoch !== generation || revision !== queryRevision) return;
     panel?.setError("");
-    const changedQuery = query !== null;
-    if (query) activeQuery = query;
-    groups = nextGroups;
-    // Group changes must not restart layout or an in-progress animation.
-    if (changedQuery && settings.query !== appliedQuery) {
+    activeQuery = query;
+    if (settings.query !== appliedQuery) {
       appliedQuery = settings.query;
       stopAnimation(false);
       recompute();
-    } else updateAppearance();
+    }
   }
   let appliedQuery = "";
   function localIDs(): Set<string> | null {
@@ -751,15 +718,7 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
   function updateAppearance() {
     if (!nodeSelection) return;
     for (const n of currentNodes) n.radius = radius(n.degree);
-    nodeSelection
-      .select("circle")
-      .attr("r", (n: GraphNode) => n.radius)
-      .style("fill", (n: GraphNode) => {
-        const doc = documentFor(n);
-        for (const group of settings.groups)
-          if (groups.get(group.id)?.matches(doc)) return group.color;
-        return null;
-      });
+    nodeSelection.select("circle").attr("r", (n: GraphNode) => n.radius);
     nodeSelection.select("text").attr("dy", (n: GraphNode) => n.radius + 12);
     linkSelection
       .attr("stroke-width", settings.lineWidth)
@@ -831,10 +790,10 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
   }
   function toggleAnimation() {
     if (animation === "playing") {
-      elapsed = Math.min(12000, performance.now() - started);
+      elapsed = Math.min(ANIMATION_DURATION_MS, performance.now() - started);
       animation = "paused";
       cancelAnimationFrame(frame);
-      panel?.animation(animation, elapsed / 12000);
+      panel?.animation(animation, elapsed / ANIMATION_DURATION_MS);
       return;
     }
     if (animation === "idle") {
@@ -853,10 +812,10 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
   }
   function animationFrame() {
     if (animation !== "playing") return;
-    elapsed = Math.min(12000, performance.now() - started);
+    elapsed = Math.min(ANIMATION_DURATION_MS, performance.now() - started);
     const batch = Math.min(
       days.length - 1,
-      Math.floor((elapsed / 12000) * days.length),
+      Math.floor((elapsed / ANIMATION_DURATION_MS) * days.length),
     );
     if (batch !== lastBatch) {
       lastBatch = batch;
@@ -879,8 +838,8 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
         fullLinks,
       );
     }
-    panel?.animation(animation, elapsed / 12000);
-    if (elapsed >= 12000) {
+    panel?.animation(animation, elapsed / ANIMATION_DURATION_MS);
+    if (elapsed >= ANIMATION_DURATION_MS) {
       animation = "idle";
       showGraph(fullNodes, fullLinks);
       panel?.animation("idle", 1);
