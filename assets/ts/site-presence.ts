@@ -26,7 +26,16 @@ let isStatsEnabled = true;
 function updatePresenceDOM(path: string, pageViewers: number, siteViewers: number) {
   const siteEls = document.querySelectorAll("[data-site-viewers]");
   siteEls.forEach(el => {
-    updateNumber(el, siteViewers.toLocaleString());
+    if (el.classList.contains('archive-stat-num')) {
+      if (!el.classList.contains('anim-done')) {
+        el.setAttribute('data-target', siteViewers.toString());
+        document.dispatchEvent(new CustomEvent('daybook:stats-loaded'));
+      } else {
+        el.textContent = siteViewers.toLocaleString();
+      }
+    } else {
+      updateNumber(el, siteViewers.toLocaleString());
+    }
   });
 
   const pageEls = document.querySelectorAll("[data-page-viewers]");
