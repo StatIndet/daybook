@@ -44,6 +44,6 @@ The UI/UX is considered stable. Do not modify the existing UI layout, View Trans
 Cloudflare deployment is a concern of the user's vault and output deployment workflow, not this source repository. There is no longer a Cloudflare Pages Functions architecture embedded within the Daybook source tree.
 
 ## Commit & PR Rules
-* Provide clean, logical commits.
+* Provide clean, logical commits. At the end of requested implementation work, commit completed changes in logical batches and leave the working tree clean; do not discard unrelated changes or push unless requested.
 * Make sure `npm ci && npm run typecheck && npm run build:js && npm run build:vendor` pass locally before pushing.
 * `check.sh` is the definitive gating script for PRs and local validation.
