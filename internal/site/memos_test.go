@@ -23,7 +23,7 @@ func TestMemoCardNamespacesFragments(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if first.DateDay != "2026-10-02" || first.DateDisplay != "2026-10-02 23:40" || second.DateDisplay != "2026-10-02" {
+	if first.DateDay != "2026-10-02" || first.DateDisplay != "2026-10-02" || second.DateDisplay != "2026-10-02" {
 		t.Fatalf("unexpected date display: %+v / %+v", first, second)
 	}
 	if !strings.Contains(first.SearchText, "A small thought") {

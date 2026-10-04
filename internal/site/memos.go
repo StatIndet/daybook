@@ -83,9 +83,6 @@ func buildMemoCard(link render.NoteLink, location, body string) (render.MemoCard
 		return render.MemoCard{}, err
 	}
 	dateDisplay := date.Format("2006-01-02")
-	if strings.Contains(link.Date, "T") {
-		dateDisplay = date.Format("2006-01-02 15:04")
-	}
 	updatedDisplay := ""
 	if link.Updated != "" {
 		updated, err := content.ParseDate(link.Updated)
@@ -93,9 +90,6 @@ func buildMemoCard(link render.NoteLink, location, body string) (render.MemoCard
 			return render.MemoCard{}, err
 		}
 		updatedDisplay = updated.Format("2006-01-02")
-		if strings.Contains(link.Updated, "T") {
-			updatedDisplay = updated.Format("2006-01-02 15:04")
-		}
 	}
 	return render.MemoCard{
 		UpdatedDisplay: updatedDisplay,

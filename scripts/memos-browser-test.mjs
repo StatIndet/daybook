@@ -146,7 +146,7 @@ Last month's library visit.
   console.log('Checking memo search fields and safe highlights...');
   const search = page.locator('[data-memos-search]');
   const alphaCard = page.locator(`[data-memo-url="${alpha}"]`);
-  assert.equal(await alphaCard.locator('.memo-updated time').textContent(), '2026-10-03 10:15');
+  assert.equal(await alphaCard.locator('.memo-updated time').textContent(), '2026-10-03');
   await page.waitForFunction(() => document.querySelector('[data-memo-url="/memos/alpha-record/"] [data-comment-count]')?.textContent === '5');
   assert.equal(await alphaCard.locator('.memo-actions > *').count(), 5, 'Five actions share the footer');
   assert.equal(await alphaCard.locator('.memo-permalink .material-symbol').count(), 0, 'Dates have no external-link icon');
@@ -263,7 +263,7 @@ Last month's library visit.
   const detailBounds = await page.locator('.memo-detail-post').boundingBox();
   assert(Math.abs(feedBounds.x - detailBounds.x) < 2 && Math.abs(feedBounds.width - detailBounds.width) < 2, 'Detail keeps the feed column position and width');
   assert.equal(await page.locator('[data-reader-toggle], [data-reader-exit], .reading-time, [data-mobile-progress-text]').count(), 0, 'Memo detail has no reader mode or reading-time controls');
-  assert.equal(await page.locator('.memo-updated time').textContent(), '2026-10-03 10:15');
+  assert.equal(await page.locator('.memo-updated time').textContent(), '2026-10-03');
   assert.equal(await page.locator('.article-meta-rows, .note-header').count(), 0, 'Memo detail has no article metadata section');
   assert.equal(await page.locator('.memo-detail-post .memo-actions > *').count(), 5);
   assert.equal(await page.locator('.memo-detail-page > #comments').count(), 1, 'Comments follow the shared post');
