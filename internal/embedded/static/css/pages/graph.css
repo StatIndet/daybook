@@ -223,10 +223,7 @@
 .graph-slider-row {
   display: flex;
   flex-direction: column;
-  gap: 0;
-}
-.graph-slider-row > label {
-  padding-right: 64px;
+  gap: 8px;
 }
 /* Geometry and motion follow Clavis's MaterialSlider: 16px split track,
    18px handle gap, 44px handle, and an animated value indicator. */
@@ -296,8 +293,9 @@
 }
 .graph-slider-value {
   position: absolute;
-  bottom: calc(100% + 2px);
-  right: 0;
+  bottom: calc(100% + 6px);
+  left: var(--graph-progress);
+  z-index: 1;
   display: grid;
   place-items: center;
   min-width: 40px;
@@ -309,8 +307,9 @@
   color: var(--color-paper);
   font: 500 12px/1 var(--font-ui);
   font-variant-numeric: tabular-nums;
+  box-shadow: 0 3px 8px rgb(0 0 0 / 0.14);
   opacity: 0;
-  transform: translateY(6px) scale(0.82);
+  transform: translate(-50%, 6px) scale(0.82);
   transform-origin: bottom center;
   transition:
     opacity var(--graph-slider-duration) var(--graph-slider-easing),
@@ -318,7 +317,7 @@
 }
 .graph-slider:is(:hover, .is-dragging, :has(input:focus-visible)) .graph-slider-value {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: translate(-50%, 0) scale(1);
 }
 .graph-slider:has(input:focus-visible) .graph-slider-visual {
   outline: 2px solid var(--color-accent);
