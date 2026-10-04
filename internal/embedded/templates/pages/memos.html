@@ -23,30 +23,7 @@
     <div class="memos-cards">
       {{range .Memos}}
       <article class="memo-card" data-memo-card data-memo-date="{{.DateDay}}" data-memo-search="{{.Title}} {{.SearchText}} {{.Date}} {{.DateDisplay}} {{.Location}} {{range .Tags}}{{.}} {{end}}" data-memo-url="{{.URL}}">
-        <div class="memo-avatar-column" aria-hidden="true">
-          {{if $.Config.Profile.Author.Avatar}}<img class="memo-avatar" src="{{$.Config.Profile.Author.Avatar}}" alt="" width="36" height="36" loading="lazy">{{end}}
-        </div>
-        <div class="memo-entry">
-          <header class="memo-entry-header">
-            <div class="memo-author">
-              <span>{{if and (eq $.Lang "en_US") $.Config.Profile.Author.NameEn}}{{$.Config.Profile.Author.NameEn}}{{else}}{{$.Config.Profile.Author.Name}}{{end}}</span>
-              {{if .Pinned}}<span class="notes-item-pin" role="img" aria-label="{{T $.Lang "memos.pinned"}}" data-ui-aria="memos.pinned"></span>{{end}}
-            </div>
-            <div class="memo-dates">
-              <a class="memo-permalink" href="{{.URL}}" aria-label="{{T $.Lang "memos.open"}}: {{.DateDisplay}}"><time datetime="{{.Date}}">{{.DateDisplay}}</time><span class="material-symbol" aria-hidden="true">arrow_outward</span></a>
-              {{if .Updated}}<span class="memo-updated"><span data-ui-text="memos.updated">{{T $.Lang "memos.updated"}}</span> <time datetime="{{.Updated}}">{{.UpdatedDisplay}}</time></span>{{end}}
-            </div>
-          </header>
-          <div class="markdown memo-content" lang="{{if eq .Lang "en_US"}}en-US{{else}}zh-CN{{end}}">{{.HTML}}</div>
-          {{if or .Tags .Location}}
-          <footer class="memo-footer">
-            {{if .Tags}}<div class="memo-labels">
-              {{range .Tags}}<button class="memo-tag" type="button" data-memo-tag="{{.}}">#{{.}}</button>{{end}}
-            </div>{{end}}
-            {{if .Location}}<span class="memo-location"><span class="material-symbol" aria-hidden="true">location_on</span><span>{{.Location}}</span></span>{{end}}
-          </footer>
-          {{end}}
-        </div>
+        {{template "memo_post" dict "Item" . "Config" $.Config "Lang" $.Lang "Detail" false}}
       </article>
       {{else}}
       <p class="memos-empty" data-ui-text="memos.empty">{{T .Lang "memos.empty"}}</p>

@@ -11,6 +11,21 @@ func JSON() string {
 
 var dictionary = map[string]map[string]string{
 	"zh_CN": {
+		"memos.comments":          "评论",
+		"memos.comments_disabled": "评论已关闭",
+		"memos.views":             "浏览量",
+
+		"likes.like":        "喜欢",
+		"likes.unlike":      "取消喜欢",
+		"likes.unavailable": "喜欢暂时不可用，点击重试",
+		"likes.failed":      "未能更新喜欢，请重试。",
+		"rss.subscribe":     "订阅本站更新（RSS）",
+		"rss.description":   "在 RSS 阅读器中添加此地址，订阅本站新发布的笔记与随记。",
+		"rss.address":       "RSS 订阅地址",
+		"rss.open":          "打开订阅源",
+		"rss.copy":          "复制地址",
+		"rss.copy_fallback": "复制失败，地址已选中，请手动复制。",
+
 		"nav.memos":                "随记",
 		"memos.search_placeholder": "搜索随记…",
 		"memos.search":             "搜索随记：正文 / 日期 / 地点 / 标签",
@@ -91,6 +106,21 @@ var dictionary = map[string]map[string]string{
 		"action.copied":            "已复制",
 	},
 	"en_US": {
+		"memos.comments":          "Comments",
+		"memos.comments_disabled": "Comments are disabled",
+		"memos.views":             "Views",
+
+		"likes.like":        "Like",
+		"likes.unlike":      "Unlike",
+		"likes.unavailable": "Likes unavailable. Click to retry.",
+		"likes.failed":      "Could not update your like. Please retry.",
+		"rss.subscribe":     "Subscribe to this site (RSS)",
+		"rss.description":   "Add this address to your RSS reader to follow new notes and memos from this site.",
+		"rss.address":       "RSS feed address",
+		"rss.open":          "Open feed",
+		"rss.copy":          "Copy address",
+		"rss.copy_fallback": "Copy failed. The address is selected; please copy it manually.",
+
 		"nav.memos":                "Memos",
 		"memos.search_placeholder": "Search memos…",
 		"memos.search":             "Search memos: text / date / location / tags",

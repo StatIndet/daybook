@@ -39,7 +39,11 @@ async function hitPath(path: string): Promise<StatsResponse | null> {
   }
   lastHitPath = normalized;
 
+  const previousHit = hitPromise;
   hitPromise = (async () => {
+    // Serialize visitor bootstrap across rapid SPA navigation so an older
+    // response cannot replace the Cookie used by likes on the next page.
+    await previousHit;
     try {
       const res = await fetch(`${apiBase}/hit`, {
         method: "POST",

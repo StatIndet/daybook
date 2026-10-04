@@ -47,7 +47,7 @@ const beta = '/memos/beta-record/';
 const gamma = '/memos/gamma-record/';
 
 try {
-  await write('daybook.yaml', 'site:\n  url: https://example.com\nprofile:\n  author:\n    logoText: Memos Test\n');
+  await write('daybook.yaml', 'site:\n  url: https://example.com\nprofile:\n  author:\n    logoText: Memos Test\n    avatar: /attachments/picture/1.svg\nstats:\n  enabled: true\ncomment:\n  enabled: true\n  provider: giscus\n  giscus:\n    repo: Test/comments\n    repoId: R_test\n    category: Announcements\n    categoryId: DIC_test\n');
   await write('vault/pages/about.md', '---\ntitle: About\n---\nMemos browser fixture.\n');
   await write('vault/notes/reference.md', '---\ndate: 2026-10-01\n---\nA reference note linking to [[memos/alpha-record]].\n');
   await write('vault/memos/alpha-record.md', `---
@@ -105,6 +105,33 @@ Last month's library visit.
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
   const page = await context.newPage();
   const errors = [];
+  const hits = [];
+  const commentRequests = [];
+  await context.route('**/api/hit', async route => {
+    const { path } = route.request().postDataJSON();
+    hits.push(path);
+    await route.fulfill({ json: { path, pageViews: 43, totalViews: 100, visitors: 5 } });
+  });
+  await context.route('**/api/stats?*', async route => {
+    await route.fulfill({ json: { path: new URL(route.request().url()).searchParams.get('path'), pageViews: 42 } });
+  });
+  await context.route('**/api/likes?*', async route => {
+    const paths = new URL(route.request().url()).searchParams.getAll('path');
+    await route.fulfill({ json: { items: paths.map(path => ({ path, count: 7, liked: false })) } });
+  });
+  await context.route('https://giscus.app/**', async route => {
+    const url = new URL(route.request().url());
+    if (url.pathname === '/api/discussions') {
+      commentRequests.push(url.searchParams.get('term'));
+      assert.equal(url.searchParams.get('strict'), 'true');
+      assert.equal(url.searchParams.get('session'), null, 'Public counts never forward login credentials');
+      if (url.searchParams.get('term') === beta) await route.fulfill({ status: 404, json: { error: 'Discussion not found' } });
+      else if (url.searchParams.get('term') === gamma) await route.fulfill({ status: 503, json: { error: 'Unavailable' } });
+      else await route.fulfill({ json: { discussion: { totalCommentCount: 2, totalReplyCount: 3 } } });
+    } else {
+      await route.fulfill({ contentType: 'text/html', body: `<script>parent.postMessage({giscus:{resizeHeight:320}},'*')</script>Mock comments` });
+    }
+  });
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(`${base}/notes/`, { waitUntil: 'networkidle' });
   await page.evaluate(() => { window.__memosDocument = document; });
@@ -120,6 +147,18 @@ Last month's library visit.
   const search = page.locator('[data-memos-search]');
   const alphaCard = page.locator(`[data-memo-url="${alpha}"]`);
   assert.equal(await alphaCard.locator('.memo-updated time').textContent(), '2026-10-03 10:15');
+  await page.waitForFunction(() => document.querySelector('[data-memo-url="/memos/alpha-record/"] [data-comment-count]')?.textContent === '5');
+  assert.equal(await alphaCard.locator('.memo-actions > *').count(), 5, 'Five actions share the footer');
+  assert.equal(await alphaCard.locator('.memo-permalink .material-symbol').count(), 0, 'Dates have no external-link icon');
+  assert.equal(await alphaCard.locator('[data-memo-views]').textContent(), '42');
+  assert.equal(await page.locator(`[data-memo-url="${beta}"] [data-comment-count]`).textContent(), '0', 'An absent discussion has zero comments');
+  assert(!hits.some(path => path.startsWith('/memos/') && path !== '/memos/'), 'Reading the feed does not record a visit to each memo');
+  assert.equal(await alphaCard.evaluate(el => getComputedStyle(el).cursor), 'pointer');
+  assert.equal(await alphaCard.locator('.memo-avatar').evaluate(el => getComputedStyle(el).borderRadius), '8px');
+  assert(await alphaCard.locator('.memo-number, [data-like-count]').evaluateAll(nodes => nodes.every(node => {
+    const style = getComputedStyle(node);
+    return style.fontFamily.includes('Cormorant Garamond') && style.fontStyle === 'italic';
+  })), 'All post dates and counters use italic Cormorant Garamond');
   const typography = await alphaCard.evaluate(card => {
     const body = getComputedStyle(card.querySelector('.memo-content'));
     return [...card.querySelectorAll('.memo-tag, .memo-location')].every(node => {
@@ -190,7 +229,10 @@ Last month's library visit.
   await settled(page, 'memo');
   assert.equal(new URL(page.url()).pathname, alpha);
   assert.equal(await page.locator('[data-reader-toggle], [data-reader-exit], .reading-time, [data-mobile-progress-text]').count(), 0, 'Memo detail has no reader mode or reading-time controls');
-  assert.equal(await page.locator('.updated-time time').textContent(), '2026-10-03 10:15');
+  assert.equal(await page.locator('.memo-updated time').textContent(), '2026-10-03 10:15');
+  assert.equal(await page.locator('.article-meta-rows, .note-header').count(), 0, 'Memo detail has no article metadata section');
+  assert.equal(await page.locator('.memo-detail-post .memo-actions > *').count(), 5);
+  assert.equal(await page.locator('.memo-detail-page > #comments').count(), 1, 'Comments follow the shared post');
   assert.equal(await page.locator('.post-content img').count(), 6, 'The detail page preserves all original images');
   assert(await page.evaluate(() => window.__memosDocument === document), 'Memos → detail retains the SPA document');
   await page.goBack();
@@ -212,6 +254,22 @@ Last month's library visit.
   await page.locator('.memo-detail-back').click();
   await settled(page, 'memos');
   await visibleCards(page, [beta, alpha, gamma]);
+
+  await alphaCard.locator('.memo-content > p').first().click({ position: { x: 2, y: 2 } });
+  await settled(page, 'memo');
+  assert.equal(new URL(page.url()).pathname, alpha, 'Clicking ordinary post content opens its detail');
+  await page.locator('.memo-comment-action').click();
+  await page.waitForFunction(() => location.hash === '#comments');
+  await page.waitForSelector('#giscus iframe');
+  const widget = page.frames().find(frame => frame.url().startsWith('https://giscus.app/'));
+  assert.equal(new URL(widget.url()).searchParams.get('emitMetadata'), '1');
+  await widget.evaluate(() => parent.postMessage({ giscus: { discussion: { totalCommentCount: 3, totalReplyCount: 4 } } }, '*'));
+  await page.waitForFunction(() => document.querySelector('[data-comment-count]')?.textContent === '7');
+  await page.locator('.memo-detail-back').click();
+  await settled(page, 'memos');
+  await page.locator(`[data-memo-url="${gamma}"]`).scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => document.querySelector('[data-memo-url="/memos/gamma-record/"] [data-memo-views]')?.textContent === '42');
+  assert.equal(await page.locator(`[data-memo-url="${gamma}"] [data-comment-count]`).textContent(), '—', 'Failed comment counts stay unknown');
 
   console.log('Checking mobile shared overlay focus, close controls and filter state...');
   await page.setViewportSize({ width: 390, height: 844 });
@@ -244,6 +302,14 @@ Last month's library visit.
   await visibleCards(page, [beta, alpha, gamma]);
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'Memos remain within the mobile viewport');
 
+  assert(await alphaCard.locator('.memo-actions').evaluate(el => el.scrollWidth <= el.clientWidth + 1), 'The five actions fit on mobile');
+  const requestCount = commentRequests.length;
+  await page.evaluate(() => {
+    document.documentElement.dataset.commentsDisabled = 'true';
+    document.dispatchEvent(new CustomEvent('daybook:settings-change', { detail: { useSystemCursor: true } }));
+  });
+  await page.waitForTimeout(150);
+  assert.equal(commentRequests.length, requestCount, 'Disabling comments stops count requests');
   assert.deepEqual(errors, [], 'Memos interactions have no uncaught browser errors');
   await context.close();
   console.log('Memos browser tests passed: search, highlights, calendar, tags, images, footnotes, SPA and mobile overlays.');

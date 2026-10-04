@@ -5,7 +5,7 @@ const GISCUS_ORIGIN = 'https://giscus.app';
 const SESSION_KEY = 'giscus-session';
 
 type Appearance = { theme: string; lang: 'en' | 'zh-CN' };
-type GiscusMessage = { resizeHeight?: unknown; signOut?: unknown; error?: unknown };
+type GiscusMessage = { resizeHeight?: unknown; signOut?: unknown; error?: unknown; discussion?: unknown };
 
 function clearSavedSession(): void {
   try { localStorage.removeItem(SESSION_KEY); } catch {}
@@ -107,7 +107,7 @@ class GiscusController {
       term: data.path || '',
       strict: '1',
       reactionsEnabled: '0',
-      emitMetadata: '0',
+      emitMetadata: data.commentCounts === 'true' ? '1' : '0',
       inputPosition: 'top',
       theme,
       description: document.querySelector<HTMLMetaElement>('meta[name="description"]')?.content || '',
@@ -180,6 +180,16 @@ class GiscusController {
         this.acknowledged = true;
         this.loaded = true;
         this.syncAppearance(true);
+      }
+    }
+    if (message.discussion && typeof message.discussion === 'object') {
+      const discussion = message.discussion as { totalCommentCount?: unknown; totalReplyCount?: unknown };
+      const { totalCommentCount: count, totalReplyCount: replies } = discussion;
+      if (typeof count === 'number' && Number.isSafeInteger(count) && count >= 0 &&
+          typeof replies === 'number' && Number.isSafeInteger(replies) && replies >= 0) {
+        document.dispatchEvent(new CustomEvent('daybook:comments-loaded', {
+          detail: { path: this.container.dataset.path, count: count + replies },
+        }));
       }
     }
     if (message.signOut === true) {

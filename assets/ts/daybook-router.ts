@@ -1,3 +1,5 @@
+import { initMemoEngagement } from "./memo-engagement";
+import { initLikes } from "./article-actions";
 import { initSiteStats, initSiteUptime } from "./site-stats";
 import { initSitePresence } from "./site-presence";
 import { initHomeTooltips } from "./home-tooltips";
@@ -83,6 +85,8 @@ interface DaybookTransitionFinishedDetail {
       setTimeout(() => {
         emitPageLoad("initial", location.href, location.href);
         const hitPromise = initSiteStats();
+        initLikes(hitPromise);
+        initMemoEngagement();
         if (hitPromise) {
           hitPromise.finally(() => initSitePresence());
         } else {
@@ -314,6 +318,8 @@ interface DaybookTransitionFinishedDetail {
         currentRouterUrl = targetUrl.href;
         emitPageLoad(isTraverse ? "traverse" : "push", oldUrl, targetUrl.href);
         const hitPromise = initSiteStats();
+        initLikes(hitPromise);
+        initMemoEngagement();
         if (hitPromise) {
           hitPromise.finally(() => initSitePresence());
         } else {

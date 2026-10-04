@@ -140,7 +140,7 @@
       return;
     }
 
-    if (evTarget.closest(".drawer-nav-link[href], .drawer-footer-row a")) {
+    if (evTarget.closest(".drawer-nav-link[href]:not([data-rss-open]), .drawer-footer-row a")) {
       setDrawerOpen(false);
       return;
     }

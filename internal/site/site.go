@@ -382,6 +382,9 @@ func Build(options Options) (BuildResult, error) {
 					if err != nil {
 						return BuildResult{}, fmt.Errorf("处理短记卡片 %s: %w", note.SourcePath, err)
 					}
+					card.CommentEnabled = options.Config.Comment.Available() && (note.Comment == nil || *note.Comment)
+					card.ShareURL = strings.TrimSuffix(options.Config.Site.URL, "/") + note.URL
+					card.ShareText = strings.ReplaceAll(options.Config.Share.Text, "{Title}", note.Title)
 					memoCards = append(memoCards, card)
 					dateDisplay = card.DateDisplay
 					updatedDisplay = card.UpdatedDisplay

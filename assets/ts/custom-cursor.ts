@@ -18,7 +18,7 @@ let lastMoveY = mouseY;
 const BREAK_SPEED = 3.0;
 
 const selectors = {
-  hover: 'a, button, [role="button"], summary, .note-card, .nav-link, .theme-toggle, .mobile-drawer-button, .graph-toolbar button, .copy-button',
+  hover: 'a, button, [role="button"], summary, .note-card, .memo-card[data-memo-card], .nav-link, .theme-toggle, .mobile-drawer-button, .graph-toolbar button, .copy-button',
   text: 'p, li, blockquote, .post-content, input, textarea, select, [contenteditable="true"], pre, code, .search-input',
   zoom: '.post-content img:not(.no-lightbox):not([data-no-lightbox="true"]), .gallery-image, .zoom-img'
 };

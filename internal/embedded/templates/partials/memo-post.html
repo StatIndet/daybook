@@ -1,0 +1,54 @@
+{{define "memo_post"}}
+{{$path := .Item.URL}}{{if .Detail}}{{$path = .Item.CanonicalPath}}{{end}}
+<div class="memo-avatar-column" aria-hidden="true">
+  {{if .Config.Profile.Author.Avatar}}<img class="memo-avatar" src="{{.Config.Profile.Author.Avatar}}" alt="" width="36" height="36" {{if not .Detail}}loading="lazy"{{end}}>{{end}}
+</div>
+<div class="memo-entry">
+  <header class="memo-entry-header">
+    <div class="memo-author">
+      <span>{{if and (eq .Lang "en_US") .Config.Profile.Author.NameEn}}{{.Config.Profile.Author.NameEn}}{{else}}{{.Config.Profile.Author.Name}}{{end}}</span>
+      {{if .Item.Pinned}}<span class="notes-item-pin" role="img" aria-label="{{T .Lang "memos.pinned"}}" data-ui-aria="memos.pinned"></span>{{end}}
+    </div>
+    <div class="memo-dates">
+      <a class="memo-permalink" href="{{.Item.URL}}" aria-label="{{T .Lang "memos.open"}}: {{.Item.DateDisplay}}"><time class="memo-number" datetime="{{.Item.Date}}">{{.Item.DateDisplay}}</time></a>
+      {{if .Item.Updated}}<span class="memo-updated"><span data-ui-text="memos.updated">{{T .Lang "memos.updated"}}</span> <time class="memo-number" datetime="{{.Item.Updated}}">{{.Item.UpdatedDisplay}}</time></span>{{end}}
+    </div>
+  </header>
+  <div class="markdown memo-content{{if .Detail}} post-content{{end}}" lang="{{if eq .Item.Lang "en_US"}}en-US{{else}}zh-CN{{end}}">{{.Item.HTML}}</div>
+  {{if or .Item.Tags .Item.Location}}
+  <div class="memo-footer">
+    {{if .Item.Tags}}<div class="memo-labels">
+      {{range .Item.Tags}}
+        {{if $.Detail}}<a class="memo-tag" href="{{if eq $.Lang "en_US"}}/en_US{{end}}/memos/?tag={{urlquery .}}">#{{.}}</a>{{else}}<button class="memo-tag" type="button" data-memo-tag="{{.}}">#{{.}}</button>{{end}}
+      {{end}}
+    </div>{{end}}
+    {{if .Item.Location}}<span class="memo-location"><span class="material-symbol" aria-hidden="true">location_on</span><span>{{.Item.Location}}</span></span>{{end}}
+  </div>
+  {{end}}
+  <footer class="memo-actions" data-memo-actions>
+    {{if .Item.CommentEnabled}}
+    <a class="article-action memo-comment-action" href="{{.Item.URL}}#comments" aria-label="{{T .Lang "memos.comments"}}" data-ui-aria="memos.comments" data-tooltip="{{T .Lang "memos.comments"}}" data-ui-tooltip="memos.comments" data-comment-path="{{$path}}" data-comment-repo="{{.Config.Comment.Giscus.Repo}}" data-comment-category="{{.Config.Comment.Giscus.Category}}">
+      <span class="material-symbol" aria-hidden="true">chat_bubble</span><span class="memo-number" data-comment-count>—</span>
+    </a>
+    {{else}}<span class="article-action is-unavailable" aria-label="{{T .Lang "memos.comments_disabled"}}" data-ui-aria="memos.comments_disabled" data-tooltip="{{T .Lang "memos.comments_disabled"}}" data-ui-tooltip="memos.comments_disabled"><span class="material-symbol" aria-hidden="true">chat_bubble</span><span class="memo-number">—</span></span>{{end}}
+    {{if .Config.Stats.Enabled}}{{template "like_button" dict "Lang" .Lang "Path" $path}}{{else}}<span class="article-action is-unavailable" aria-label="{{T .Lang "likes.unavailable"}}"><span class="material-symbol" aria-hidden="true">favorite</span><span class="memo-number">—</span></span>{{end}}
+    <span class="article-action memo-view-action" aria-label="{{T .Lang "memos.views"}}" data-ui-aria="memos.views" data-tooltip="{{T .Lang "memos.views"}}" data-ui-tooltip="memos.views"><span class="material-symbol" aria-hidden="true">bar_chart</span><span class="memo-number" {{if .Config.Stats.Enabled}}data-memo-views data-page-views data-path="{{$path}}"{{end}}>—</span></span>
+    <button type="button" class="article-action" aria-label="{{T .Lang "action.share"}}" data-ui-aria="action.share" data-tooltip="{{T .Lang "action.share"}}" data-ui-tooltip="action.share" data-share-open data-share-title="{{.Item.Title}}" data-share-link="{{.Item.ShareURL}}" data-share-text="{{.Item.ShareText}}"><span class="material-symbol" aria-hidden="true">share</span></button>
+    {{template "rss_button" dict "Lang" .Lang "Class" "article-action"}}
+  </footer>
+</div>
+{{end}}
+
+{{define "memo_detail"}}
+<div class="memo-detail-page">
+  <header class="memo-detail-toolbar">
+    <a class="memo-detail-back" href="{{if eq .Lang "en_US"}}/en_US{{end}}/memos/" aria-label="{{T .Lang "action.back"}}" data-ui-aria="action.back"><span class="material-symbol" aria-hidden="true">arrow_back</span></a>
+    <h1 data-ui-text="memos.detail">{{T .Lang "memos.detail"}}</h1>
+    {{if .Note.HasTranslation}}{{template "bilingual_toggle" dict "Lang" .Lang "URL" .Note.TranslationURL}}{{end}}
+  </header>
+  <article class="memo-card memo-detail-post" data-has-mermaid="{{if .Note.HasMermaid}}true{{else}}false{{end}}" data-has-math="{{if .Note.HasMath}}true{{else}}false{{end}}">
+    {{template "memo_post" dict "Item" .Note "Config" .Config "Lang" .Lang "Detail" true}}
+  </article>
+  {{template "comments" .}}
+</div>
+{{end}}

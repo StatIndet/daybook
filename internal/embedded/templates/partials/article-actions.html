@@ -1,0 +1,31 @@
+{{define "like_button"}}
+<span class="like-entry" data-like-entry>
+  <button type="button" class="article-action like-button" data-like-path="{{.Path}}" aria-pressed="false" aria-label="{{T .Lang "likes.like"}}" data-ui-aria="likes.like" data-tooltip="{{T .Lang "likes.like"}}" data-ui-tooltip="likes.like" disabled>
+    <span class="material-symbol" aria-hidden="true">favorite</span>
+    <span data-like-count>—</span>
+  </button>
+</span>
+{{end}}
+
+{{define "rss_button"}}
+<a class="{{.Class}} rss-button" href="/rss.xml" data-rss-open data-daybook-reload aria-haspopup="dialog" aria-controls="rss-dialog" aria-label="{{T .Lang "rss.subscribe"}}" data-ui-aria="rss.subscribe" data-tooltip="{{T .Lang "rss.subscribe"}}" data-ui-tooltip="rss.subscribe">
+  <span class="material-symbol" aria-hidden="true">rss_feed</span>
+  {{if .Label}}<span class="drawer-nav-label" data-ui-text="action.rss">{{T .Lang "action.rss"}}</span>{{end}}
+</a>
+{{end}}
+
+{{define "rss_dialog"}}
+<dialog id="rss-dialog" class="rss-dialog" aria-labelledby="rss-title" aria-describedby="rss-description">
+  <header class="rss-dialog-header">
+    <h2 id="rss-title" data-ui-text="rss.subscribe">{{T .Lang "rss.subscribe"}}</h2>
+    <form method="dialog"><button class="notes-action-button" aria-label="{{T .Lang "action.close"}}" data-ui-aria="action.close" autofocus><span class="material-symbol" aria-hidden="true">close</span></button></form>
+  </header>
+  <p id="rss-description" data-ui-text="rss.description">{{T .Lang "rss.description"}}</p>
+  <input data-rss-address readonly aria-label="{{T .Lang "rss.address"}}" data-ui-aria="rss.address">
+  <div class="rss-dialog-actions">
+    <a href="/rss.xml" data-rss-feed data-daybook-reload target="_blank" rel="noopener" data-ui-text="rss.open">{{T .Lang "rss.open"}}</a>
+    <button type="button" data-rss-copy data-ui-text="rss.copy">{{T .Lang "rss.copy"}}</button>
+  </div>
+  <p class="rss-status" role="status"></p>
+</dialog>
+{{end}}

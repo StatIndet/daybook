@@ -95,6 +95,13 @@
     });
   }
 
+  function numberText(element: HTMLElement, value: string) {
+    element.replaceChildren(...value.split(/(\d+)/).filter(Boolean).map(part => {
+      if (!/^\d+$/.test(part)) return document.createTextNode(part);
+      const span = document.createElement('span'); span.className = 'memo-number'; span.textContent = part; return span;
+    }));
+  }
+
   function renderCalendar() {
     if (!calendarMonth) return;
     const date = monthDate(calendarMonth);
@@ -106,7 +113,7 @@
     document.querySelectorAll<HTMLElement>('[data-memos-filters]').forEach(panel => {
       const label = panel.querySelector<HTMLElement>('[data-memos-month-label]');
       if (label) {
-        label.textContent = date.toLocaleDateString(english() ? 'en-US' : 'zh-CN', { year: 'numeric', month: 'long' });
+        numberText(label, date.toLocaleDateString(english() ? 'en-US' : 'zh-CN', { year: 'numeric', month: 'long' }));
         label.setAttribute('aria-pressed', String(filters.month === calendarMonth));
       }
       panel.querySelectorAll<HTMLButtonElement>('[data-memos-month]').forEach(button => {
@@ -124,6 +131,7 @@
         const count = counts.get(key) || 0;
         const el = document.createElement(count ? 'button' : 'span');
         el.textContent = String(day);
+        el.classList.add("memo-number");
         if (el instanceof HTMLButtonElement) {
           el.type = 'button';
           el.dataset.memosDate = key;
@@ -145,7 +153,7 @@
         const button = document.createElement('button');
         button.type = 'button'; button.dataset.memoTag = tag; button.setAttribute('aria-pressed', String(filters.tag === tag));
         const label = document.createElement('span'); label.textContent = `#${tag}`;
-        const number = document.createElement('small'); number.textContent = String(count);
+        const number = document.createElement('small'); number.className = 'memo-number'; number.textContent = String(count);
         button.append(label, number); container.append(button);
       });
     });
@@ -159,7 +167,7 @@
     let visible = 0;
     memos.forEach(memo => { memo.element.hidden = !matches(memo); if (!memo.element.hidden) visible++; });
     const count = page.querySelector<HTMLElement>('[data-memos-count]');
-    if (count) count.textContent = english() ? `${visible} memos` : `${visible} 条`;
+    if (count) numberText(count, english() ? `${visible} memos` : `${visible} 条`);
     const empty = page.querySelector<HTMLElement>('[data-memos-empty]');
     if (empty) empty.hidden = visible > 0 || memos.length === 0;
     const active = page.querySelector<HTMLElement>('[data-memos-active]');
@@ -171,7 +179,7 @@
     page.querySelectorAll<HTMLElement>('[data-memo-more-count]').forEach(link => {
       const count = link.dataset.memoMoreCount;
       const label = english() ? `View ${count} more photos` : `查看其余 ${count} 张图片`;
-      if (link.textContent !== label) link.textContent = label;
+      if (link.textContent !== label) numberText(link, label);
     });
     renderCalendar(); renderTags(); highlightMatches();
     if (focusPanel && focusAttribute && focusValue) focusPanel.querySelector<HTMLElement>(`[${focusAttribute}="${CSS.escape(focusValue)}"]`)?.focus({ preventScroll: true });
@@ -254,7 +262,7 @@
     else if (target.closest('[data-memos-reset]')) { filters = { q: '', tag: '', date: '', month: '' }; applyFilters(); }
     else {
       const card = target.closest<HTMLElement>('[data-memo-card]');
-      if (card && !target.closest('a, button, input, label, summary, audio, video, iframe, img, .mermaid-block, .music-custom-player, .media-embed') && !window.getSelection()?.toString() && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
+      if (card && event.button === 0 && !target.closest('a, button, input, textarea, select, label, summary, audio, video, iframe, img, [contenteditable], [role="button"], .memo-actions, .mermaid-block, .music-custom-player, .media-embed') && !window.getSelection()?.toString() && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
         const url = card.dataset.memoUrl;
         if (url) window.daybookNavigateTo ? window.daybookNavigateTo(url) : location.assign(url);
       }

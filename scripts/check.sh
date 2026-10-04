@@ -211,5 +211,6 @@ echo "==> Phase D: Browser Runtime Regression Test"
 cd - > /dev/null
 node scripts/browser-test.mjs
 node scripts/memos-browser-test.mjs
+node scripts/article-actions-browser-test.mjs
 
 echo "==> All checks passed successfully!"

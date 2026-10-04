@@ -188,6 +188,8 @@ Only `date` is required; a date without a time is also valid. `location` is a pl
 
 Set `pinned: true` to place a memo at the top of the timeline with a pin marker. Pinned and unpinned entries each remain newest first. Set `pinned: false` or omit it to unpin; rebuild the site to apply the change. Search, calendar and tag filters still apply to pinned entries.
 
+Memos use a shared post layout in the timeline and detail view, with comment, like, view, share and site-wide RSS actions. Comment counts include replies and are read lazily from giscus; likes remain independent. View counts in the timeline are read without recording visits to each memo. Unavailable counts display a dash.
+
 Memos support an optional `updated` property (a date or RFC 3339 timestamp), shown in the timeline and detail page without changing publication-date ordering. Memos do not calculate word counts or reading time, and their detail pages do not offer reader mode. The old `pin` frontmatter property has been renamed to `pinned` for both notes and memos; rename it in existing files.
 
 ### Asset builds
@@ -228,3 +230,9 @@ In the comments repository's default branch, add `giscus.json` to allow your pro
 The four giscus themes are generated from `tokens.css`, existing font declarations and `components/giscus-theme.css` by `npm run build:css`. Palette, light/dark mode and interface language update the existing iframe. Theme and font URLs use the current build's asset manifest and the current page's origin, so local previews do not request unpublished hashes from production. Generated `_headers` and `daybook serve` allow cross-origin requests for the public theme and font assets.
 
 For local review, build the updated CLI, run it in your vault, and start `daybook serve`. Open an article at `http://localhost:1313`, scroll to comments, and test the language and palette controls. Preview comments are real GitHub Discussions: use a dedicated test article for posting. Browsers may request permission for the giscus iframe to fetch local theme resources. If local network access is blocked, review the same build through a public HTTPS preview; do not substitute production theme URLs with new local hashes. See the [official advanced configuration](https://github.com/giscus/giscus/blob/main/ADVANCED-USAGE.md) for the origin, theme and runtime configuration protocol.
+
+### 喜欢与 RSS 入口
+
+开启 `stats.enabled` 后，文章与随记详情、随记时间线会显示匿名喜欢按钮。前端对接模板仓库的 Worker `/api/likes`，支持取消、回访恢复及失败重试；不使用 giscus 计数，也不增加 Markdown 笔记属性。模板仓库需先应用 `0002_likes.sql` 迁移。同一浏览器由一年有效期的 Cookie 识别，清除 Cookie 或换设备会成为新访客。
+
+右上角工具栏、手机导航抽屉和文章 metadata 提供「订阅本站更新（RSS）」入口，可打开或复制 `/rss.xml`。所有入口都订阅已发布的 notes 与 memos；当前 feed 提供标题、链接、日期和可选摘要，不提供逐篇修改或评论通知。纯静态部署可使用 RSS；喜欢功能需模板仓库的 Worker 与 D1。交互回归包含在 `scripts/check.sh` 中。

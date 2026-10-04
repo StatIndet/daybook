@@ -7,12 +7,12 @@
     "arrow_back",
     "arrow_downward",
     "arrow_forward",
-    "arrow_outward",
     "arrow_upward",
     "article",
     "artist",
     "attach_file",
     "autoplay",
+    "bar_chart",
     "block",
     "book",
     "bug_report",
@@ -40,6 +40,7 @@
     "draft",
     "error",
     "exit_to_app",
+    "favorite",
     "fork_right",
     "format_list_bulleted",
     "format_quote",
@@ -84,6 +85,7 @@
     "refresh",
     "report",
     "resize",
+    "rss_feed",
     "scatter_plot",
     "science",
     "script",
@@ -118,5 +120,5 @@
     }
   },
   "originalBytes": 5347060,
-  "subsetBytes": 13220
+  "subsetBytes": 13564
 }

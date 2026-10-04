@@ -175,7 +175,7 @@
   position: fixed;
   top: 20px;
   right: 32px;
-  width: 208px;
+  width: 232px;
   z-index: 950;
 }
 body[data-reader-mode="immersive"] .site-tools { display: none; }

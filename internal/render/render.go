@@ -242,6 +242,9 @@ type MonthGroup struct {
 
 // MemoCard shares the article renderer while presenting the body in a feed.
 type MemoCard struct {
+	CommentEnabled bool
+	ShareURL       string
+	ShareText      string
 	UpdatedDisplay string
 	NoteLink
 	HTML        template.HTML

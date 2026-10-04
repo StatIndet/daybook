@@ -33,6 +33,7 @@
   <button class="notes-action-button" type="button" aria-label="{{T .Lang "action.tags"}}" data-ui-aria="action.tags" aria-expanded="false" aria-controls="mobile-tags-overlay" data-tooltip="{{T .Lang "tooltip.tags"}}" data-ui-tooltip="tooltip.tags" data-mobile-overlay-target="tags">
     <span class="material-symbol" aria-hidden="true">sell</span>
   </button>
+  {{template "rss_button" dict "Lang" .Lang "Class" "notes-action-button"}}
   {{template "theme_toggle_action" .}}
 </div>
 {{end}}
