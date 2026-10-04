@@ -167,6 +167,7 @@ Last month's library visit.
   const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId });
   assert(fonts.some(font => font.isCustomFont && /CormorantGaramond.*Italic/i.test(font.postScriptName)), 'Dates render the actual Cormorant Garamond italic font file');
   assert.equal(await alphaCard.locator('.memo-updated > span').textContent(), 'updated');
+  assert(await alphaCard.locator('.memo-updated > span').evaluate(el => { const style = getComputedStyle(el); return style.fontFamily.includes('Cormorant Garamond') && style.fontStyle === 'italic' && parseFloat(style.fontSize) >= 16; }), 'Updated uses the enlarged italic metadata face');
   const background = await alphaCard.evaluate(el => getComputedStyle(el).backgroundColor);
   await alphaCard.hover();
   assert.equal(await alphaCard.evaluate(el => getComputedStyle(el).backgroundColor), background, 'Hover does not highlight the post');

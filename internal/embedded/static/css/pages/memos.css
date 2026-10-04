@@ -121,6 +121,7 @@
 .memo-card[data-memo-card] { cursor: pointer; }
 .memo-card .memo-avatar { border-radius: 8px; }
 .memo-card .memo-tag { text-decoration: none; }
+.memo-card .memo-updated,
 .memo-card .memo-number,
 .memo-card [data-like-count],
 .memos-count .memo-number {
@@ -129,8 +130,7 @@
   font-weight: 600;
   font-synthesis: none;
 }
-.memo-permalink { font-size: .9rem; }
-.memo-updated { font-size: .8rem; }
+.memo-permalink, .memo-updated, .memos-count .memo-number { font-size: clamp(1rem, 1.3vw, 1.12rem); }
 .memo-actions {
   display: flex;
   align-items: center;
@@ -139,7 +139,7 @@
   margin-top: 18px;
   color: var(--color-muted);
 }
-.memo-actions .article-action { min-width: 32px; min-height: 32px; gap: 6px; font-size: 1rem; }
+.memo-actions .article-action { min-width: 32px; min-height: 32px; gap: 6px; font-size: clamp(1rem, 1.3vw, 1.12rem); }
 .memo-actions .material-symbol { font-size: 1.15rem; }
 .memo-actions > :last-child::after { left: auto; right: 0; transform: none; }
 .memo-actions .memo-view-action, .memo-actions .is-unavailable { cursor: default; }
@@ -160,7 +160,7 @@
   .memo-body .page-main { padding: 0 0 40px; }
   .memo-detail-page { --memo-gutter: 16px; border: 0; }
   .memo-actions { gap: 4px; }
-  .memo-permalink { font-size: .85rem; }
+  .memo-permalink, .memo-updated { font-size: 1rem; }
 }
 
 .memos-filters [data-memo-tag], .memos-filters [data-memos-date], .memo-labels button { touch-action: manipulation; user-select: none; -webkit-touch-callout: none; }
