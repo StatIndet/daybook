@@ -369,13 +369,17 @@ class NoteTocController {
   private readonly handleStageClick = (event: MouseEvent): void => {
     const target = event.target as HTMLElement;
 
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     const currentLink = target.closest<HTMLAnchorElement>("[data-reading-toc-rail-link]");
-
-
-
+    const outlineLink = target.closest<HTMLAnchorElement>('.note-toc-panel a[href^="#"]');
     if (currentLink) {
       event.preventDefault();
       this.jumpToHeading(this.activeIndex);
+    } else if (outlineLink) {
+      let id = outlineLink.hash.slice(1);
+      try { id = decodeURIComponent(id); } catch { /* Keep malformed fragments literal. */ }
+      const index = this.headings.findIndex(heading => heading.id === id);
+      if (index >= 0) { event.preventDefault(); this.jumpToHeading(index); }
     }
   };
 
@@ -392,11 +396,12 @@ class NoteTocController {
 
     const url = new URL(window.location.href);
     url.hash = encodeURIComponent(heading.id);
-    const state = history.state;
-    const nextState = state && typeof state === "object"
-      ? { ...state, url: url.href }
-      : state;
-    history.replaceState(nextState, "", `${url.pathname}${url.search}${url.hash}`);
+    if (window.daybookReplaceURL) window.daybookReplaceURL(url.href);
+    else {
+      const state = history.state;
+      const nextState = state && typeof state === "object" ? { ...state, url: url.href } : state;
+      history.replaceState(nextState, "", `${url.pathname}${url.search}${url.hash}`);
+    }
   }
 
   private motionDisabled(): boolean {

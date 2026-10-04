@@ -40,7 +40,7 @@ function syncReaderControls() {
 }
 
 function handleKeyDown(e: KeyboardEvent) {
-  if (e.key === "Escape" && document.body.dataset.readerMode === "immersive") {
+  if (e.key === "Escape" && !e.defaultPrevented && !document.querySelector(".mobile-toc-sheet.is-open") && document.body.dataset.readerMode === "immersive") {
     e.preventDefault();
     setReaderMode(false);
   }

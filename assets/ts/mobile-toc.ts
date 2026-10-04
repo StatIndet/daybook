@@ -102,7 +102,7 @@ class MobileTocController {
     document.addEventListener("touchmove", this.handleTouchMove, { passive: false, signal });
     document.addEventListener("touchend", this.handleTouchEnd, { signal });
     document.addEventListener("keydown", event => {
-      if (event.key === "Escape" && this.isOpen) this.closeSheet();
+      if (event.key === "Escape" && this.isOpen) { event.preventDefault(); this.closeSheet(); }
     }, { signal });
     
     // Scroll event for FAB

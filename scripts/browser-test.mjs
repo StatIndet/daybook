@@ -111,6 +111,25 @@ async function run() {
       throw new Error('TOC SVG path did not animate after scrolling (spring physics inactive).');
     }
     
+    console.log('Checking the outline in immersive reading mode...');
+    await page.locator('[data-reader-toggle]').first().click();
+    await page.waitForFunction(() => document.body.dataset.readerMode === 'immersive' && !document.querySelector('[data-note-toc-stage]').classList.contains('has-reading-rail'));
+    const outline = page.locator('[data-note-toc]');
+    if (!await outline.isVisible() || await outline.evaluate(node => node.inert)) throw new Error('Immersive outline is hidden or inert');
+    const bodyBox = await page.locator('.post-content').boundingBox();
+    const tocBox = await outline.boundingBox();
+    if (tocBox.x < bodyBox.x + bodyBox.width || tocBox.x + tocBox.width > 2560) throw new Error('Immersive outline overlaps the article or viewport');
+    await outline.locator('a[href^="#"]').nth(1).click();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator('[data-mobile-toc-fab]').click();
+    await page.waitForSelector('.mobile-toc-sheet.is-open');
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('.mobile-toc-sheet.is-open'));
+    if (await page.locator('body').getAttribute('data-reader-mode') !== 'immersive') throw new Error('Closing the outline also exited reader mode');
+    await page.keyboard.press('Escape');
+    await page.setViewportSize({ width: 2560, height: 1440 });
+    await page.waitForFunction(() => !document.body.dataset.readerMode);
+
     console.log('Testing custom cursor regression...');
     await page.evaluate(() => {
       const enterEvent = new MouseEvent('mouseenter', { bubbles: true });
