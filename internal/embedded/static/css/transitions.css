@@ -485,6 +485,10 @@ html:not(.article-transition) body.page-exiting .side-nav:not(.transition-stable
   animation-delay: 112ms;
 }
 
+html:not(.article-transition) body.page-exiting .side-nav:not(.transition-stable) .nav-link:nth-child(6) {
+  animation-delay: 140ms;
+}
+
 html:not(.article-transition) body.page-exiting .notes-aside:not(.transition-stable) .notes-footer-actions .notes-action-button,
 html:not(.article-transition) body.page-exiting .notes-aside:not(.transition-stable) .notes-footer-links,
 html:not(.article-transition) body.page-exiting .notes-aside:not(.transition-stable) .notes-footer > p {
@@ -555,6 +559,10 @@ html:not(.article-transition) body.page-entering.page-body .side-nav:not(.transi
 
 html:not(.article-transition) body.page-entering.page-body .side-nav:not(.transition-stable) .nav-link:nth-child(5) {
   animation-delay: 208ms;
+}
+
+html:not(.article-transition) body.page-entering.page-body .side-nav:not(.transition-stable) .nav-link:nth-child(6) {
+  animation-delay: 240ms;
 }
 
 html:not(.article-transition) body.page-entering .notes-aside:not(.transition-stable) .notes-footer-actions .notes-action-button {

@@ -63,6 +63,20 @@ async function run() {
     await page.waitForSelector('#settings-overlay.is-open', { state: 'hidden' });
 
     console.log('Navigating home → notes...');
+    await page.evaluate(() => {
+      // Capture the actual entry animation, including every rendered nav item.
+      const observer = new MutationObserver(() => {
+        if (!document.body.classList.contains('page-entering')) return;
+        const links = [...document.querySelectorAll('.side-nav:not(.transition-stable) .nav-link')];
+        if (!links.length) return;
+        window.__sideNavEntry = links.map(link => {
+          const style = getComputedStyle(link);
+          return { label: link.textContent.trim(), name: style.animationName, delay: parseFloat(style.animationDelay) };
+        });
+      });
+      observer.observe(document.body, { attributes: true, attributeFilter: ['class'], childList: true, subtree: true });
+      window.__sideNavEntryObserver = observer;
+    });
     await page.locator('.site-nav a[href="/notes/"]').click();
     await page.waitForSelector('.notes-list', { state: 'attached', timeout: 5000 });
     if (await page.locator('link[rel="stylesheet"][href*="/css/bundles/pages."]').count() !== 1) {
@@ -72,6 +86,14 @@ async function run() {
     if (errors.length > 0) throw new Error(errors.join('\n'));
 
     await settled(page);
+    const navEntry = await page.evaluate(() => {
+      window.__sideNavEntryObserver.disconnect();
+      return window.__sideNavEntry;
+    });
+    if (!navEntry?.length || navEntry.some((item, index) =>
+      item.name !== 'side-nav-enter' || (index > 0 && item.delay <= navEntry[index - 1].delay))) {
+      throw new Error(`Side navigation must enter in top-to-bottom order: ${JSON.stringify(navEntry)}`);
+    }
     console.log('Navigating to article...');
     const articleLink = page.locator('h1.notes-item-title a').first();
     await articleLink.click();
