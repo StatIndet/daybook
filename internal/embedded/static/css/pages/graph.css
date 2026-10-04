@@ -420,8 +420,9 @@
   stroke-opacity: 0.06;
 }
 .graph-node.is-hovered {
-  stroke: var(--color-accent);
-  stroke-width: 3px;
+  fill: var(--color-accent);
+  stroke: none;
+  stroke-width: 0;
 }
 .graph-link.is-highlight {
   stroke: var(--color-accent);
