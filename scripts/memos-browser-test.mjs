@@ -433,6 +433,8 @@ A portrait between paragraphs.
   assert.deepEqual(new URL(page.url()).searchParams.getAll('date'), ['2026-10-02', '2026-09-30'], 'Repeated date filters survive reload');
   for (const width of [1024, 390]) {
     await page.setViewportSize({ width, height: 1000 });
+    // Resize-driven layout updates settle on the next frames before measuring.
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const before = await alphaCard.boundingBox();
     await alphaCard.locator('.memo-permalink').click();
     await settled(page, 'memo');
