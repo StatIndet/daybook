@@ -500,7 +500,7 @@
 
 .markdown .mermaid-block {
   background: color-mix(in srgb, var(--color-paper) 72%, transparent);
-  border: 1px solid var(--color-line);
+  border: 0;
   border-radius: 6px;
   margin: 32px 0;
   max-width: 100%;
@@ -509,13 +509,12 @@
   scrollbar-color: color-mix(in srgb, var(--color-muted) 42%, transparent) transparent;
   scrollbar-width: thin;
   transition:
-    background-color 350ms ease,
-    border-color 350ms ease;
+    background-color 350ms ease;
 }
 
 .markdown .mermaid-source {
   background: var(--color-code-bg);
-  border: 1px solid var(--color-code-border);
+  border: 0;
   border-radius: 4px;
   color: var(--syntax-text);
   margin: 0;
@@ -545,10 +544,6 @@
   display: none;
 }
 
-.markdown .mermaid-block.is-error {
-  border-color: color-mix(in srgb, #9b392f 42%, var(--color-line));
-}
-
 .markdown .mermaid-error {
   color: #9b392f;
   font-size: 0.92rem;
@@ -562,7 +557,7 @@
 
 .markdown .embed-card {
   background: color-mix(in srgb, var(--color-paper) 72%, transparent);
-  border: 1px solid var(--color-line);
+  border: 0;
   border-radius: 6px;
   color: var(--color-text);
   margin: 28px 0;
@@ -571,7 +566,6 @@
   overflow: hidden;
   transition:
     background-color 180ms ease,
-    border-color 180ms ease,
     color 180ms ease;
 }
 
@@ -584,7 +578,6 @@
 .markdown a.embed-card:hover,
 .markdown a.embed-card:focus-visible {
   background: color-mix(in srgb, var(--color-accent) 8%, var(--color-paper));
-  border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-line));
   color: var(--color-hover-text);
 }
 
@@ -670,7 +663,7 @@
 
 .markdown :not(pre) > code {
   background: var(--color-code-inline-bg);
-  border: 1px solid var(--color-code-border);
+  border: 0;
   border-radius: 3px;
   color: var(--color-muted);
   font-family: var(--font-mono);
@@ -679,21 +672,19 @@
   font-size: 0.9em;
   padding: 1px 6px;
   transition:
-    background-color 350ms ease,
-    border-color 350ms ease;
+    background-color 350ms ease;
 }
 
 :root[data-palette="warm"] .markdown :not(pre) > code {
   background: var(--color-paper);
-  border-color: var(--color-line);
   color: var(--color-muted);
 }
 
 .markdown pre {
   background: var(--color-code-bg);
-  border: 1px solid var(--color-code-border);
+  border: 0;
   border-radius: 4px;
-  box-shadow: var(--shadow-code);
+  box-shadow: none;
   color: var(--syntax-text);
   font-family: var(--font-mono);
   font-variant-ligatures: contextual common-ligatures;
@@ -705,8 +696,7 @@
   overflow-x: auto;
   padding: 16px;
   transition:
-    background-color 350ms ease,
-    border-color 350ms ease;
+    background-color 350ms ease;
 }
 
 .markdown pre code {
@@ -732,10 +722,18 @@
   padding: 0;
 }
 
+/* Reset native frames as well as Daybook's media wrappers. */
+.markdown iframe,
+.markdown object,
+.markdown embed,
+.markdown audio {
+  border: 0;
+}
+
 .markdown img,
 .markdown video {
   background: var(--color-paper);
-  border: 1px solid var(--color-line);
+  border: 0;
   display: block;
   height: auto;
   max-width: 100%;
@@ -793,16 +791,15 @@
 }
 
 .markdown .highlight {
-  border: 1px solid var(--color-code-border);
+  border: 0;
   border-radius: 4px;
-  box-shadow: var(--shadow-code);
+  box-shadow: none;
   margin: 28px 0;
   max-width: 100%;
   overflow-x: auto;
   position: relative;
   transition:
-    background-color 350ms ease,
-    border-color 350ms ease;
+    background-color 350ms ease;
 }
 
 .markdown .highlight pre {
@@ -1393,7 +1390,7 @@
   border-radius: 12px;
   color: var(--color-text-subdued);
   text-align: center;
-  border: 1px solid var(--color-border);
+  border: 0;
 }
 
 @media (max-width: 960px) {
@@ -1614,7 +1611,7 @@
 .markdown .media-pdf iframe {
   width: 100%;
   height: 600px;
-  border: 1px solid var(--color-line);
+  border: 0;
   border-radius: 6px;
   background: var(--color-paper);
 }
@@ -1635,14 +1632,14 @@
 
 .markdown .media-audio audio {
   width: 100%;
-  border: 1px solid var(--color-line);
+  border: 0;
   border-radius: 6px;
   background: var(--color-paper);
 }
 
 .markdown .media-video video {
   max-width: 100%;
-  border: 1px solid var(--color-line);
+  border: 0;
   border-radius: 6px;
   background: var(--color-paper);
 }
