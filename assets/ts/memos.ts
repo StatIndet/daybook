@@ -179,10 +179,10 @@ import { updateNumber } from "./number-flip";
     document.querySelectorAll<HTMLButtonElement>('.memo-card [data-memo-tag]').forEach(button => button.setAttribute('aria-pressed', String(filters.tag.includes(button.dataset.memoTag || ''))));
     page.querySelectorAll<HTMLElement>('[data-memo-more-count]').forEach(link => {
       const count = link.dataset.memoMoreCount;
-      const label = english() ? `View ${count} more photos` : `查看其余 ${count} 张图片`;
+      const label = english() ? `View ${count} more photos` : `查看剩余 ${count} 张图片`;
       link.setAttribute('aria-label', label);
       const hint = link.querySelector<HTMLElement>('.memo-photo-hint');
-      if (hint) hint.textContent = english() ? `View ${count} more` : `查看其余${count}张`;
+      if (hint) hint.textContent = english() ? `View ${count} more` : `查看剩余${count}张`;
     });
     renderCalendar(); renderTags(); highlightMatches();
     if (focusPanel && focusAttribute && focusValue) focusPanel.querySelector<HTMLElement>(`[${focusAttribute}="${CSS.escape(focusValue)}"]`)?.focus({ preventScroll: true });

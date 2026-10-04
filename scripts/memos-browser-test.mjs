@@ -82,7 +82,14 @@ date: 2026-09-30
 tags: [reading]
 ---
 Last month's library visit.
+
+![A single landscape](/attachments/picture/1.svg)
+
+A portrait between paragraphs.
+
+![A single portrait](/attachments/picture/portrait.svg)
 `);
+  await write('vault/attachments/picture/portrait.svg', '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="600"><rect width="100" height="600" fill="gray"/></svg>');
   for (let i = 1; i <= 6; i++) {
     await write(`vault/attachments/picture/${i}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="hsl(${i * 40} 40% 50%)"/><text x="40" y="80" font-size="40">Photo ${i}</text></svg>`);
   }
@@ -258,6 +265,25 @@ Last month's library visit.
   assert.equal(await alphaCard.locator('.memo-more-photos').count(), 1, 'Additional images have a link to the full memo');
   const morePhotos = alphaCard.locator('.memo-more-photos');
   assert.equal(await morePhotos.locator('.memo-photo-count').textContent(), '+2');
+  const photoBounds = await alphaCard.locator('.has-more-photos').boundingBox();
+  const badgeBounds = await morePhotos.boundingBox();
+  assert(Math.abs(badgeBounds.y - photoBounds.y - 8) < 1 && Math.abs(photoBounds.x + photoBounds.width - badgeBounds.x - badgeBounds.width - 8) < 1, 'The badge stays in the top-right corner');
+  async function checkSingleImageLimits() {
+    await page.locator(`[data-memo-url="${gamma}"] .memo-content img`).evaluateAll(images => Promise.all(images.map(image => {
+      image.loading = 'eager';
+      return image.decode();
+    })));
+    const sizes = await page.locator(`[data-memo-url="${gamma}"] .memo-content`).evaluate(content => {
+      const width = (content.getBoundingClientRect().width - 8) / 2;
+      return [...content.querySelectorAll('img')].map(image => {
+        const bounds = image.getBoundingClientRect();
+        return { width: bounds.width, height: bounds.height, maxWidth: width, maxHeight: width * .75 };
+      });
+    });
+    assert.equal(sizes.length, 2);
+    assert(sizes.every(size => size.width > 0 && size.width <= size.maxWidth + 1 && size.height > 0 && size.height <= size.maxHeight + 1), `Standalone images must fit within one grid cell: ${JSON.stringify(sizes)}`);
+  }
+  await checkSingleImageLimits();
   assert.equal(await alphaCard.locator('.memo-photo-tile').nth(3).locator('.memo-more-photos').count(), 1, 'The extra-image badge belongs to the fourth image');
   assert.equal(await alphaCard.locator('figcaption').first().evaluate(element => getComputedStyle(element).position), 'absolute', 'Feed captions overlay the image');
   await morePhotos.focus();
@@ -332,6 +358,9 @@ Last month's library visit.
 
   console.log('Checking mobile shared overlay focus, close controls and filter state...');
   await page.setViewportSize({ width: 390, height: 844 });
+  // Let the responsive grid and its container-query units settle after resize.
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await checkSingleImageLimits();
   const opener = page.locator('.memos-filter-toggle');
   const overlay = page.locator('#mobile-tags-overlay');
   await opener.click();

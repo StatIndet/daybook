@@ -43,25 +43,28 @@
 .memo-content > :first-child { margin-top: 0; }
 .memo-card .memo-content > :last-child, .memo-card .memo-content > :last-child > p:last-child { margin-bottom: 0; }
 .memo-content img { max-width: 100%; }
+/* The content width is the reference for a single 4:3 preview cell. */
+.memos-page .memo-content { container-type: inline-size; }
 .memos-page .memo-content .memo-photo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .memos-page .memo-content .memo-photo-grid > * { margin: 0; min-width: 0; }
 .memos-page .memo-content .memo-photo-grid img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; }
 .memo-content .md-gallery { max-width: 100%; }
-.memos-page .memo-photo-tile { position: relative; overflow: hidden; border-radius: 6px; }
-.memos-page span.memo-photo-tile { display: inline-block; max-width: 100%; vertical-align: middle; }
-.memos-page .memo-photo-tile img { display: block; margin: 0; transition: transform 180ms ease, filter 180ms ease; }
-.memos-page .memo-content .has-more-photos figcaption { padding-bottom: 46px; }
+.memos-page .memo-photo-tile { position: relative; width: fit-content; max-width: calc(50cqw - 4px); overflow: hidden; border-radius: 6px; }
+.memos-page span.memo-photo-tile { display: inline-block; vertical-align: middle; }
+.memos-page .memo-photo-grid .memo-photo-tile { width: auto; max-width: 100%; }
+.memos-page .memo-photo-tile img { display: block; width: auto; max-height: calc((100cqw - 8px) * .375); margin: 0; transition: transform 220ms cubic-bezier(.22, .61, .36, 1), filter 220ms cubic-bezier(.22, .61, .36, 1); }
 .memos-page .memo-content .memo-more-photos {
-  position: absolute; right: 8px; bottom: 8px; z-index: 1;
+  position: absolute; right: 8px; top: 8px; z-index: 1;
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 32px; min-height: 28px; padding: 2px 10px;
   border-radius: 999px; background: rgb(0 0 0 / .72); color: white;
   font-family: var(--font-ui); font-size: .78rem; line-height: 1.4; text-decoration: none;
 }
-.memo-photo-count, .memo-photo-hint { overflow: hidden; white-space: nowrap; transition: max-width 180ms ease, opacity 180ms ease; }
-.memo-photo-count { max-width: 4em; font-size: 1.1rem; opacity: 1; }
-.memo-photo-hint { max-width: 0; opacity: 0; }
-.memo-photo-tile:hover .memo-photo-count, .memo-photo-tile:focus-within .memo-photo-count { max-width: 0; opacity: 0; }
+.memo-photo-count, .memo-photo-hint { overflow: hidden; white-space: nowrap; transition: opacity 220ms cubic-bezier(.22, .61, .36, 1); }
+/* Only the hint changes width; crossfading the overlaid count avoids a width overshoot. */
+.memo-photo-count { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; opacity: 1; }
+.memo-photo-hint { max-width: 0; opacity: 0; transition: max-width 220ms cubic-bezier(.22, .61, .36, 1), opacity 220ms cubic-bezier(.22, .61, .36, 1); }
+.memo-photo-tile:hover .memo-photo-count, .memo-photo-tile:focus-within .memo-photo-count { opacity: 0; }
 .memo-photo-tile:hover .memo-photo-hint, .memo-photo-tile:focus-within .memo-photo-hint { max-width: 16em; opacity: 1; }
 .memos-page .has-more-photos:hover img, .memos-page .has-more-photos:focus-within img { transform: scale(1.025); filter: brightness(.9); }
 @media (prefers-reduced-motion: reduce) {
