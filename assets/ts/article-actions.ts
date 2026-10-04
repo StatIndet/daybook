@@ -1,4 +1,5 @@
 import { updateNumber } from "./number-flip";
+import { privacyReady } from "./privacy-store";
 type LikeState = { path: string; count: number; liked: boolean };
 
 function text(key: string): string {
@@ -52,6 +53,7 @@ function feedback(path: string, result: 'success' | 'error'): void {
 }
 
 async function requestLikes(paths: string[], desired?: boolean): Promise<LikeState[]> {
+  if (!await privacyReady()) throw new Error('Privacy API unavailable');
   const query = new URLSearchParams();
   for (const path of paths) query.append('path', path);
   const response = await fetch(desired === undefined ? `/api/likes?${query}` : '/api/likes', {
@@ -71,8 +73,8 @@ async function requestLikes(paths: string[], desired?: boolean): Promise<LikeSta
   return data.items;
 }
 
-// Serialize requests so a first visit establishes its Cookie before another
-// batch or click. Mutation requests finish even when SPA navigation replaces UI.
+// Serialize mutations so the first like establishes its functional Cookie.
+// Reading counts never creates an identity.
 let queue: Promise<unknown> = Promise.resolve();
 function enqueue(work: () => Promise<void>): void {
   queue = queue.then(work).catch(() => {});
@@ -94,7 +96,7 @@ export function initLikes(visitorReady: Promise<unknown> | null): void {
   if (!buttons.length || document.body.dataset.statsEnabled !== 'true') return;
   const paths = [...new Set(buttons.map(button => button.dataset.likePath!))];
   enqueue(async () => {
-    // The existing page-view request may be creating the same visitor Cookie.
+    // Wait for initial privacy synchronization and legacy cookie migration.
     await visitorReady?.catch(() => {});
     if (!buttons.some(button => button.isConnected)) return;
     for (let i = 0; i < paths.length; i += 10) {

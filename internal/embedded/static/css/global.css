@@ -5,6 +5,7 @@
 @import url("components.css");
 @import url("components/settings-overlay.css");
 @import url("components/share-overlay.css");
+@import url("components/privacy-overlay.css");
 @import url("components/embed-skeleton.css");
 @import url("components/custom-cursor.css");
 @import url("components/media-manager.css");
@@ -23,5 +24,4 @@
 html[data-theme="dark"] {
   color-scheme: dark;
 }
-
 

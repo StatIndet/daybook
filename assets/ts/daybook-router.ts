@@ -2,6 +2,7 @@ import { initMemoEngagement } from "./memo-engagement";
 import { initLikes } from "./article-actions";
 import { initSiteStats, initSiteUptime } from "./site-stats";
 import { initSitePresence } from "./site-presence";
+import { initPrivacyOverlay } from "./privacy-overlay";
 import { initHomeTooltips } from "./home-tooltips";
 
 interface RouterState {
@@ -83,6 +84,7 @@ interface DaybookTransitionFinishedDetail {
 
     const triggerInitialLoad = () => {
       setTimeout(() => {
+        initPrivacyOverlay();
         emitPageLoad("initial", location.href, location.href);
         const hitPromise = initSiteStats();
         initLikes(hitPromise);

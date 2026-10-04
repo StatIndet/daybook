@@ -115,6 +115,8 @@ A portrait between paragraphs.
   const base = `http://127.0.0.1:${server.address().port}`;
   browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, hasTouch: true, reducedMotion: 'reduce' });
+  await context.addInitScript(() => localStorage.setItem('daybook:privacy:v1', JSON.stringify({ analytics: false })));
+  await context.route('**/api/privacy', route => route.fulfill({ json: { version: 1, analytics: false } }));
   const page = await context.newPage();
   const errors = [];
   const hits = [];

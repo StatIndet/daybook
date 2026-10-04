@@ -290,6 +290,14 @@ For local review, build the updated CLI, run it in your vault, and start `dayboo
 
 ### 喜欢与 RSS 入口
 
-开启 `stats.enabled` 后，文章与随记详情、随记时间线会显示匿名喜欢按钮。前端对接模板仓库的 Worker `/api/likes`，支持取消、回访恢复及失败重试；不使用 giscus 计数，也不增加 Markdown 笔记属性。模板仓库需先应用 `0002_likes.sql` 迁移。同一浏览器由一年有效期的 Cookie 识别，清除 Cookie 或换设备会成为新访客。
+开启 `stats.enabled` 后，文章与随记详情、随记时间线会显示匿名喜欢按钮。前端对接模板仓库的 Worker `/api/likes`，支持取消、回访恢复及失败重试；不使用 giscus 计数，也不增加 Markdown 笔记属性。模板仓库需先应用 `0002_likes.sql` 迁移。首次点赞才建立一年有效期的 `daybook_engagement` Cookie，仅用于恢复或取消点赞；清除 Cookie 或换设备会成为新的点赞身份。
 
 右上角工具栏、手机导航抽屉和文章 metadata 提供「订阅本站更新（RSS）」入口，可打开或复制 `/rss.xml`。所有入口都订阅已发布的 notes 与 memos；当前 feed 提供标题、链接、日期和可选摘要，不提供逐篇修改或评论通知。纯静态部署可使用 RSS；喜欢功能需模板仓库的 Worker 与 D1。交互回归包含在 `scripts/check.sh` 中。
+
+### 隐私设置
+
+启用统计的站点首次访问时显示隐私纸张面板，复用设置/分享的裂口纸张和 Checkbox 动画。匿名统计默认关闭；关闭按钮、Escape 和背景关闭均不授予同意。选择保存在 `daybook:privacy:v1`，可从站点 Logo → 设置 → 隐私重新修改。存储被禁用时，选择在当前页面及 SPA 导航中仍生效。纯静态、未启用统计的站点不主动弹出。
+
+页面浏览量不依赖持久身份；仅用户允许时建立 `daybook_analytics` Cookie 统计独立访客和回访。撤回时由后端删除 HttpOnly Cookie，历史计数保留，修改选择不重复累计浏览量。点赞使用独立功能 Cookie，在线人数只标记当前连接。外观偏好和 giscus 的按需加载/禁用评论设置不受影响。
+
+**需要同时更新 vault Worker。** 前端先通过 `PUT /api/privacy` 发送 `{ "analytics": false }` 或用户已保存的选择，等待 `{ "version": 1, "analytics": false }`（对应所选值）及 Cookie 清理完成，再启用运行时 API。旧版或不可用的 Worker 会使统计、点赞及在线人数暂停，页面仍可阅读；保存面板显示可重试状态，不会回退到旧版自动建立身份的接口。`POST /api/hit` 发送显式 `analytics` 和 `countView` 标志，撤回或授权刷新使用 `countView: false`。部署模板中的新 Worker 已实现该协议及旧点赞迁移，无需新增数据库迁移。静态 `daybook serve` 只预览 UI，完整验证应使用 vault 的本地 Worker。

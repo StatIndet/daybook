@@ -15,6 +15,9 @@ const exec = promisify(execFile);
 let server, browser;
 const likes = new Map();
 let writes = 0, failNext = false;
+const hits = [];
+let privacyWrites = 0;
+let visitorCount = 0;
 async function write(file, contents) {
   const dest = path.join(fixture, file);
   await mkdir(path.dirname(dest), { recursive: true });
@@ -41,17 +44,29 @@ try {
   server = createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
     if (url.pathname.startsWith('/api/')) {
-      let token = /daybook_visitor=([^;]+)/.exec(req.headers.cookie || '')?.[1];
+      let token = /daybook_engagement=([^;]+)/.exec(req.headers.cookie || '')?.[1];
       res.setHeader('Content-Type', 'application/json');
+      if (url.pathname === '/api/privacy') {
+        let body = '';
+        for await (const chunk of req) body += chunk;
+        const { analytics } = JSON.parse(body);
+        privacyWrites++;
+        res.setHeader('Set-Cookie', analytics
+          ? `daybook_analytics=${crypto.randomUUID()}; Path=/; HttpOnly; SameSite=Lax`
+          : 'daybook_analytics=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
+        res.end(JSON.stringify({ version: 1, analytics }));
+        return;
+      }
       if (url.pathname === '/api/hit') {
-        // Make sure likes waits for the existing statistics identity bootstrap.
-        await new Promise(resolve => setTimeout(resolve, 40));
-        if (!token) res.setHeader('Set-Cookie', `daybook_visitor=${crypto.randomUUID()}; Path=/; HttpOnly; SameSite=Lax`);
-        res.end(JSON.stringify({ path: '/notes/example/', pageViews: 1, totalViews: 1, visitors: 1 }));
+        let body = '';
+        for await (const chunk of req) body += chunk;
+        const input = JSON.parse(body);
+        hits.push({ ...input, cookie: req.headers.cookie || '' });
+        if (input.analytics) visitorCount = 1;
+        res.end(JSON.stringify({ path: input.path, pageViews: 1, totalViews: 1, visitors: visitorCount }));
         return;
       }
       if (url.pathname !== '/api/likes') { res.writeHead(404).end('{}'); return; }
-      assert(token, 'Likes requests wait for the visitor Cookie');
       let paths = url.searchParams.getAll('path');
       if (req.method === 'PUT') {
         writes++;
@@ -60,6 +75,10 @@ try {
         for await (const chunk of req) body += chunk;
         const input = JSON.parse(body);
         paths = [input.path];
+        if (!token && input.liked) {
+          token = crypto.randomUUID();
+          res.setHeader('Set-Cookie', `daybook_engagement=${token}; Path=/; HttpOnly; SameSite=Lax`);
+        }
         const records = likes.get(input.path) || new Set();
         if (input.liked) records.add(token); else records.delete(token);
         likes.set(input.path, records);
@@ -85,10 +104,55 @@ try {
   await context.routeWebSocket(/\/api\/presence\?/, socket => { presenceSocket = socket; });
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(base + '/notes/example/');
+  const privacy = page.locator('#privacy-overlay');
+  await page.waitForFunction(() => document.querySelector('#privacy-overlay').open);
+  assert.equal(await page.locator('#privacy-analytics').isChecked(), false);
+  await page.waitForFunction(() => document.querySelector('[data-like-path]').dataset.likeReady === 'true');
+  assert.equal((await context.cookies()).length, 0, 'No identity before consent or first like');
+  assert.equal(hits[0].analytics, false);
+  assert.equal(hits[0].cookie, '');
+  await page.screenshot({ path: '/tmp/daybook-privacy-desktop.png' });
+  await page.keyboard.press('Escape');
+  assert.equal(await page.evaluate(() => localStorage.getItem('daybook:privacy:v1')), null, 'Escape does not consent');
+  await page.reload();
+  await page.waitForFunction(() => document.querySelector('#privacy-overlay').open);
+  await privacy.locator('[data-privacy-necessary]').click();
+  await page.waitForFunction(() => !document.querySelector('#privacy-overlay').open);
+  assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('daybook:privacy:v1'))), { analytics: false });
+  await page.reload();
+  await page.waitForFunction(() => document.querySelector('[data-like-path]').dataset.likeReady === 'true');
+  assert.equal(await privacy.evaluate(dialog => dialog.open), false, 'Saved choices suppress the first-visit prompt');
+  await page.locator('.persistent-logo').click();
+  await page.locator('[data-privacy-open]').click();
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.locator('#privacy-analytics').check();
+  assert.equal(await privacy.locator('polyline').evaluate(el => getComputedStyle(el).animationName), 'dash');
+  await privacy.locator('[data-privacy-save]').click();
+  await page.waitForFunction(() => !document.querySelector('#privacy-overlay').open);
+  assert((await context.cookies()).some(cookie => cookie.name === 'daybook_analytics'));
+  await page.waitForTimeout(80);
+  assert.equal(hits.at(-1).analytics, true);
+  assert.equal(hits.at(-1).countView, false, 'Granting consent does not add another page view');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   const like = page.locator('[data-like-path]');
   await ready(like, false, 0);
   await like.click();
   await ready(like, true, 1);
+  const secondTab = await context.newPage();
+  await secondTab.goto(base + '/notes/example/');
+  await ready(secondTab.locator('[data-like-path]'), true, 1);
+  await page.locator('.persistent-logo').click();
+  await page.locator('[data-privacy-open]').click();
+  assert.equal(await page.locator('#privacy-analytics').isChecked(), true);
+  await privacy.locator('[data-privacy-necessary]').click();
+  await page.waitForFunction(() => !document.querySelector('#privacy-overlay').open);
+  await secondTab.waitForFunction(() => JSON.parse(localStorage.getItem('daybook:privacy:v1')).analytics === false);
+  await page.waitForTimeout(100);
+  assert(!(await context.cookies()).some(cookie => cookie.name === 'daybook_analytics'));
+  assert((await context.cookies()).some(cookie => cookie.name === 'daybook_engagement'));
+  assert.equal(hits.at(-1).analytics, false);
+  assert.equal(hits.at(-1).cookie, '', 'Aggregate hits do not transmit the engagement Cookie');
+  await secondTab.close();
   await page.reload();
   await ready(like, true, 1);
   assert.equal(writes, 1, 'Revisiting never adds a like');
@@ -133,6 +197,7 @@ try {
   await settled(page, 'memos');
   await ready(like, false, 0);
   const otherContext = await browser.newContext();
+  await otherContext.addInitScript(() => localStorage.setItem('daybook:privacy:v1', JSON.stringify({ analytics: false })));
   const other = await otherContext.newPage();
   await other.goto(base + '/notes/example/');
   await ready(other.locator('[data-like-path]'), false, 1);
@@ -251,7 +316,67 @@ try {
   }
   assert.deepEqual(errors, []);
   await context.close();
-  console.log('Article actions passed: identity bootstrap, likes, retries, revisits, memos, SPA, RSS, clipboard, language and mobile.');
+
+  const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce', colorScheme: 'dark' });
+  await mobile.routeWebSocket(/\/api\/presence\?/, () => {});
+  const phone = await mobile.newPage();
+  await phone.goto(base + '/en_US/notes/example/');
+  await phone.waitForFunction(() => document.querySelector('#privacy-overlay').open);
+  assert.equal(await phone.locator('#privacy-title').innerText(), 'Privacy');
+  await phone.screenshot({ path: '/tmp/daybook-privacy-mobile.png' });
+  await phone.locator('#privacy-analytics').check();
+  assert.equal(await phone.locator('#privacy-overlay polyline').evaluate(el => getComputedStyle(el).animationName), 'none');
+  await phone.locator('#privacy-overlay summary').click();
+  await phone.setViewportSize({ width: 320, height: 568 });
+  await phone.locator('[data-privacy-save]').scrollIntoViewIfNeeded();
+  const paper = await phone.locator('.privacy-paper').boundingBox();
+  assert(paper.x >= 0 && paper.y >= 0 && paper.x + paper.width <= 320 && paper.y + paper.height <= 568, 'Expanded mobile paper fits the viewport');
+  await phone.screenshot({ path: '/tmp/daybook-privacy-mobile-details.png' });
+  await phone.locator('[data-privacy-close]').last().click();
+  assert.equal(await phone.evaluate(() => localStorage.getItem('daybook:privacy:v1')), null, 'Closing a checked draft never grants consent');
+  assert(!(await mobile.cookies()).some(cookie => cookie.name === 'daybook_analytics'));
+  await phone.locator('.persistent-logo').click();
+  await phone.locator('[data-privacy-open]').click();
+  assert.equal(await phone.locator('#privacy-analytics').isChecked(), false, 'Reopening discards an unsaved draft');
+  await phone.keyboard.press('Tab');
+  assert(await phone.evaluate(() => document.querySelector('#privacy-overlay').contains(document.activeElement)), 'Keyboard focus remains in the modal');
+  await phone.keyboard.press('Escape');
+  assert(await phone.locator('.persistent-logo').evaluate(el => document.activeElement === el), 'Closing restores focus to Settings');
+  await mobile.close();
+
+  const unavailable = await browser.newContext();
+  await unavailable.route('**/api/privacy', route => route.fulfill({ status: 404, body: '{}' }));
+  let unsafeRequests = 0;
+  unavailable.on('request', req => { if (/\/api\/(hit|likes|presence)/.test(req.url())) unsafeRequests++; });
+  const offline = await unavailable.newPage();
+  await offline.goto(base + '/notes/example/');
+  await offline.waitForFunction(() => document.querySelector('#privacy-overlay').open);
+  await offline.locator('[data-privacy-necessary]').click();
+  await offline.waitForFunction(() => document.querySelector('.privacy-status').textContent.length > 0);
+  assert.equal(unsafeRequests, 0, 'Old or unavailable backends cannot create identities');
+  await offline.keyboard.press('Escape');
+  await offline.locator('.side-nav a[href="/memos/"]').click();
+  await settled(offline, 'memos');
+  assert.equal(unsafeRequests, 0, 'Browsing remains usable with runtime APIs paused');
+  await unavailable.close();
+
+  const noStorage = await browser.newContext();
+  await noStorage.addInitScript(() => {
+    Storage.prototype.getItem = () => { throw new Error('Storage disabled'); };
+    Storage.prototype.setItem = () => { throw new Error('Storage disabled'); };
+  });
+  await noStorage.routeWebSocket(/\/api\/presence\?/, () => {});
+  const temporary = await noStorage.newPage();
+  await temporary.goto(base + '/notes/example/');
+  await temporary.waitForFunction(() => document.querySelector('#privacy-overlay').open);
+  await temporary.locator('[data-privacy-necessary]').click();
+  await temporary.waitForFunction(() => !document.querySelector('#privacy-overlay').open);
+  await temporary.locator('.side-nav a[href="/memos/"]').click();
+  await settled(temporary, 'memos');
+  assert.equal(await temporary.locator('#privacy-overlay').evaluate(el => el.open), false, 'In-memory choice survives SPA navigation with storage blocked');
+  await noStorage.close();
+  assert(privacyWrites > 0);
+  console.log('Article actions and privacy passed: consent, withdrawal, cross-tab sync, storage failures, backend compatibility, likes, SPA, RSS, keyboard, language and mobile.');
 } finally {
   await browser?.close();
   if (server) await new Promise(resolve => server.close(resolve));

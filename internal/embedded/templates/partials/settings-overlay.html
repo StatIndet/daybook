@@ -64,6 +64,9 @@
           {{if eq .Lang "en_US"}}Reduce Motion{{else}}减少动画{{end}}
         </span>
       </label>
+      {{if .Config.Stats.Enabled}}
+      <button type="button" class="settings-privacy-btn" data-privacy-open data-i18n-en="Privacy" data-i18n-zh="隐私">{{if eq .Lang "en_US"}}Privacy{{else}}隐私{{end}}</button>
+      {{end}}
     </div>
   </div>
 </div>

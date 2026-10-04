@@ -102,6 +102,7 @@
     "stars",
     "start",
     "stop",
+    "storage",
     "style",
     "subject",
     "switch",
@@ -131,5 +132,5 @@
     }
   },
   "originalBytes": 5347060,
-  "subsetBytes": 14984
+  "subsetBytes": 15032
 }

@@ -1,0 +1,39 @@
+{{define "privacy_overlay"}}
+<dialog id="privacy-overlay" class="settings-overlay privacy-overlay" aria-labelledby="privacy-title" aria-describedby="privacy-intro">
+  <div class="settings-backdrop" data-privacy-close></div>
+  <div class="settings-paper privacy-paper">
+    <button class="settings-close-btn" type="button" data-privacy-close aria-label="{{if eq .Lang "en_US"}}Close privacy settings{{else}}关闭隐私设置{{end}}" data-i18n-aria-en="Close privacy settings" data-i18n-aria-zh="关闭隐私设置">
+      <span class="material-symbol" aria-hidden="true">close</span>
+    </button>
+    <div class="privacy-content">
+      <h2 id="privacy-title" class="settings-title" tabindex="-1" autofocus data-i18n-en="Privacy" data-i18n-zh="隐私">{{if eq .Lang "en_US"}}Privacy{{else}}隐私{{end}}</h2>
+      <p id="privacy-intro" data-i18n-en="This site remembers your appearance and preferences on this device. You can also allow anonymous visitor statistics." data-i18n-zh="本站会在此设备上记住外观与偏好设置。你也可以选择允许匿名访客统计。">{{if eq .Lang "en_US"}}This site remembers your appearance and preferences on this device. You can also allow anonymous visitor statistics.{{else}}本站会在此设备上记住外观与偏好设置。你也可以选择允许匿名访客统计。{{end}}</p>
+      <p class="privacy-necessary" data-i18n-en="Local preferences · Always available" data-i18n-zh="本地偏好设置 · 始终可用">{{if eq .Lang "en_US"}}Local preferences · Always available{{else}}本地偏好设置 · 始终可用{{end}}</p>
+      <label class="settings-checkbox-label privacy-option">
+        <input type="checkbox" id="privacy-analytics" class="settings-checkbox-input" aria-describedby="privacy-analytics-description" />
+        <svg viewBox="0 0 24 24" class="settings-checkbox-svg" aria-hidden="true">
+          <polyline points="5,15 10,19 19,5"></polyline>
+          <line x1="0" y1="0" x2="24" y2="0"></line>
+          <line x1="24" y1="0" x2="24" y2="24"></line>
+          <line x1="0" y1="24" x2="24" y2="24"></line>
+          <line x1="0" y1="0" x2="0" y2="24"></line>
+        </svg>
+        <span class="settings-checkbox-text" data-i18n-en="Anonymous statistics" data-i18n-zh="匿名统计">{{if eq .Lang "en_US"}}Anonymous statistics{{else}}匿名统计{{end}}</span>
+      </label>
+      <p id="privacy-analytics-description" class="privacy-description" data-i18n-en="Allow a browser identifier to count unique and returning visitors. Your choice does not affect reading or likes." data-i18n-zh="允许使用浏览器匿名标识符统计独立访客与回访。你的选择不影响阅读或点赞。">{{if eq .Lang "en_US"}}Allow a browser identifier to count unique and returning visitors. Your choice does not affect reading or likes.{{else}}允许使用浏览器匿名标识符统计独立访客与回访。你的选择不影响阅读或点赞。{{end}}</p>
+      <details class="privacy-details">
+        <summary data-i18n-en="Details" data-i18n-zh="详细信息">{{if eq .Lang "en_US"}}Details{{else}}详细信息{{end}}</summary>
+        <p data-i18n-en="The statistics Cookie lasts up to one year. Turning this option off removes it and stops future visitor identification; existing counts remain. Page views are counted without a persistent identifier; online presence uses a temporary connection ID." data-i18n-zh="统计 Cookie 最长保留一年。取消勾选后将删除它并停止后续访客识别，已有计数会保留。页面浏览量不依赖持久标识符，在线人数使用临时连接标识。">{{if eq .Lang "en_US"}}The statistics Cookie lasts up to one year. Turning this option off removes it and stops future visitor identification; existing counts remain. Page views are counted without a persistent identifier; online presence uses a temporary connection ID.{{else}}统计 Cookie 最长保留一年。取消勾选后将删除它并停止后续访客识别，已有计数会保留。页面浏览量不依赖持久标识符，在线人数使用临时连接标识。{{end}}</p>
+        <p data-i18n-en="Liking a post creates a separate Cookie, lasting up to one year, to remember and undo likes. It is not used for visitor statistics." data-i18n-zh="首次点赞时会建立独立 Cookie，最长保留一年，用于记住和取消点赞，不用于访客统计。">{{if eq .Lang "en_US"}}Liking a post creates a separate Cookie, lasting up to one year, to remember and undo likes. It is not used for visitor statistics.{{else}}首次点赞时会建立独立 Cookie，最长保留一年，用于记住和取消点赞，不用于访客统计。{{end}}</p>
+        <p data-i18n-en="When enabled, comments are provided by giscus / GitHub and load near the comment section. Signing in is optional. You can disable comments in Settings." data-i18n-zh="若站点启用了评论，评论由 giscus / GitHub 提供，接近评论区时才加载，登录由你选择。你可以在设置中禁用评论。">{{if eq .Lang "en_US"}}When enabled, comments are provided by giscus / GitHub and load near the comment section. Signing in is optional. You can disable comments in Settings.{{else}}若站点启用了评论，评论由 giscus / GitHub 提供，接近评论区时才加载，登录由你选择。你可以在设置中禁用评论。{{end}}</p>
+      </details>
+      <div class="privacy-actions">
+        <button type="button" data-privacy-necessary data-i18n-en="Necessary only" data-i18n-zh="仅必要功能">{{if eq .Lang "en_US"}}Necessary only{{else}}仅必要功能{{end}}</button>
+        <button type="button" data-privacy-save>{{if eq .Lang "en_US"}}Save selection{{else}}保存选择{{end}}</button>
+      </div>
+      <p class="privacy-status" role="status" aria-live="polite"></p>
+      <p class="privacy-footnote" data-i18n-en="Change your choice anytime in Settings → Privacy." data-i18n-zh="随时可在「设置 → 隐私」中修改选择。">{{if eq .Lang "en_US"}}Change your choice anytime in Settings → Privacy.{{else}}随时可在「设置 → 隐私」中修改选择。{{end}}</p>
+    </div>
+  </div>
+</dialog>
+{{end}}

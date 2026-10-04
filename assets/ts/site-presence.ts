@@ -1,4 +1,5 @@
 import { updateNumber } from "./number-flip";
+import { privacyReady } from "./privacy-store";
 function normalizePath(p: string): string {
   try {
     const url = new URL(p, window.location.origin);
@@ -102,11 +103,12 @@ function scheduleReconnect() {
   }, delay);
 }
 
-export function initSitePresence() {
+export async function initSitePresence() {
   const statsEnabledAttr = document.body.dataset.statsEnabled;
-  isStatsEnabled = statsEnabledAttr === "true";
+  isStatsEnabled = statsEnabledAttr === "true" && await privacyReady();
 
   if (!isStatsEnabled) {
+    clearTimeout(reconnectTimer);
     if (ws) {
       ws.close();
       ws = null;
@@ -129,3 +131,5 @@ export function initSitePresence() {
     currentPresencePath = newPath;
   }
 }
+
+document.addEventListener('daybook:privacy-change', () => { void initSitePresence(); });

@@ -27,6 +27,13 @@ export function initSettingsOverlay() {
     const overlay = document.getElementById('settings-overlay');
     if (!overlay || !overlay.classList.contains('is-open')) return;
 
+    if (target.closest('[data-privacy-open]')) {
+      closeOverlay(overlay);
+      (persistentLogo as HTMLElement).focus();
+      document.dispatchEvent(new CustomEvent('daybook:privacy-open'));
+      return;
+    }
+
     if (target.closest('[data-settings-close]')) {
       closeOverlay(overlay);
     }

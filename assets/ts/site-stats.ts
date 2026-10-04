@@ -1,4 +1,5 @@
 import { updateNumber } from "./number-flip";
+import { analyticsAllowed, privacyReady } from "./privacy-store";
 interface StatsResponse {
   path: string;
   pageViews: number;
@@ -25,7 +26,7 @@ function normalizePath(p: string): string {
 let hitPromise: Promise<StatsResponse | null> | null = null;
 let lastHitPath = "";
 
-async function hitPath(path: string): Promise<StatsResponse | null> {
+async function hitPath(path: string, countView: boolean): Promise<StatsResponse | null> {
   const normalized = normalizePath(path);
 
   const statsEnabled = document.body.dataset.statsEnabled === "true";
@@ -35,23 +36,25 @@ async function hitPath(path: string): Promise<StatsResponse | null> {
   const apiBase = "/api";
 
   // Prevent multiple simultaneous hits for the same navigation (e.g. strict mode or duplicate events)
-  if (hitPromise && lastHitPath === normalized) {
+  if (countView && hitPromise && lastHitPath === normalized) {
     return hitPromise;
   }
   lastHitPath = normalized;
 
   const previousHit = hitPromise;
   hitPromise = (async () => {
-    // Serialize visitor bootstrap across rapid SPA navigation so an older
-    // response cannot replace the Cookie used by likes on the next page.
     await previousHit;
+    if (!await privacyReady()) return null;
     try {
       const res = await fetch(`${apiBase}/hit`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ path: normalized })
+        // Omit cookies entirely for aggregate-only visits.
+        credentials: analyticsAllowed() ? 'same-origin' : 'omit',
+        body: JSON.stringify({ path: normalized, analytics: analyticsAllowed(), countView }),
+        signal: AbortSignal.timeout(12000),
       });
       if (res.ok) {
         return (await res.json()) as StatsResponse;
@@ -65,8 +68,8 @@ async function hitPath(path: string): Promise<StatsResponse | null> {
   return hitPromise;
 }
 
-export function initSiteStats(root: Document | HTMLElement = document): Promise<StatsResponse | null> | null {
-  const promise = hitPath(window.location.pathname);
+export function initSiteStats(root: Document | HTMLElement = document, countView = true): Promise<StatsResponse | null> | null {
+  const promise = hitPath(window.location.pathname, countView);
   if (!promise) return null;
 
   promise.then(stats => {
@@ -123,6 +126,9 @@ export function initSiteStats(root: Document | HTMLElement = document): Promise<
 
   return promise;
 }
+
+// Apply consent to this page without counting a second view.
+document.addEventListener('daybook:privacy-change', () => { void initSiteStats(document, false); });
 
 export function initSiteUptime(root: Document | HTMLElement = document) {
   const uptimeEls = root.querySelectorAll("[data-site-uptime]");
