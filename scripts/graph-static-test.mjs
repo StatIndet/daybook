@@ -19,7 +19,9 @@ try {
   await page.locator('#graph-settings-btn').click();
   await page.locator('#graph-defaults').click();
   await page.waitForFunction(count => document.querySelectorAll('.graph-node').length === count, count);
-  await page.getByText('外观', { exact: true }).click();
+  assert.deepEqual(await page.locator('.graph-section-title').allTextContents(), ['外观', '力度']);
+  assert.equal(await page.locator('#graph-settings-panel details, #graph-settings-panel summary').count(), 0);
+  assert.equal(await page.locator('#graph-linkDistance').isVisible(), true);
   await page.locator('#graph-nodeSize').fill('2');
   await page.locator('#graph-arrows').check();
   await page.locator('#graph-play').click();
@@ -42,7 +44,7 @@ try {
   await page.waitForFunction(() => !document.documentElement.classList.contains('is-transitioning'));
   assert.equal(await page.locator('#graph-settings-btn').getAttribute('aria-label'), 'Graph settings');
   await page.locator('#graph-settings-btn').click();
-  await page.getByText('Display', { exact: true }).click();
+  assert.deepEqual(await page.locator('.graph-section-title').allTextContents(), ['Display', 'Forces']);
   await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
   await page.evaluate(() => document.documentElement.dataset.theme = 'dark');
   await page.setViewportSize({ width: 390, height: 844 });
@@ -51,6 +53,19 @@ try {
   assert.ok(bounds.width <= 390 && bounds.x >= 0, 'Drawer must fit mobile viewport');
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#graph-settings-panel').isVisible(), false);
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    // Include the additional local-graph action in the narrowest toolbar layout.
+    await page.locator('.graph-toolbar button').last().evaluate(button => { button.hidden = false; });
+    const buttons = await page.locator('.graph-toolbar > button:visible').all();
+    const shell = await page.locator('.graph-shell').boundingBox();
+    const boxes = await Promise.all(buttons.map(button => button.boundingBox()));
+    assert.equal(boxes.length, 8);
+    // Compare layout positions; the focused action intentionally lifts by 2px.
+    const tops = await page.locator('.graph-toolbar > button:visible').evaluateAll(buttons => buttons.map(button => button.offsetTop));
+    assert.ok(tops.every(top => top === tops[0]), 'Toolbar stays on one row');
+    assert.ok(boxes.every(box => box.x >= shell.x && box.x + box.width <= shell.x + shell.width + 1), 'All toolbar actions fit the graph');
+  }
   assert.deepEqual(errors, []);
   console.log('Graph static-vault regression passed (published index, toolbar, settings, animation, SPA, language and mobile).');
 } finally { await browser.close(); }

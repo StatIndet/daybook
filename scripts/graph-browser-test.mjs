@@ -89,7 +89,7 @@ try {
   assert.equal(await page.locator('#graph-settings-panel').isHidden(), true, 'Settings start collapsed');
   assert.equal(data.indexRequests, 0, 'No content index fetch for an empty query');
   assert.equal(await page.locator('#graph-settings-panel #graph-search-input, #graph-settings-panel .graph-help').count(), 0, 'Panel has no search field or query syntax');
-  assert.deepEqual(await page.locator('.graph-toolbar > button').evaluateAll(buttons => buttons.filter(button => !button.hidden).map(button => button.id)), ['graph-search-btn', 'graph-orphan-btn', 'graph-tags-btn', 'graph-attachments-btn', 'graph-reset', 'graph-settings-btn']);
+  assert.deepEqual(await page.locator('.graph-toolbar > button').evaluateAll(buttons => buttons.filter(button => !button.hidden).map(button => button.id)), ['graph-search-btn', 'graph-orphan-btn', 'graph-tags-btn', 'graph-attachments-btn', 'graph-existing-btn', 'graph-reset', 'graph-settings-btn']);
   await page.locator('#graph-search-btn').click();
   assert.equal(await page.locator('#graph-search-input').isVisible(), true);
   assert.equal(await page.locator('#graph-search-input').evaluate(input => input === document.activeElement), true);
@@ -164,6 +164,8 @@ try {
       }, pointer));
     }
     await page.mouse.up();
+    // Let D3 remove its temporary post-drag click suppression before toolbar clicks.
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(resolve)));
     assert.ok(Math.max(...distances) < 4, `Dragged node must follow the pointer: ${JSON.stringify(distances)}`);
     assert.equal(await page.evaluate(() => window.__graphSimulations[0].simulation.alphaTarget()), 0);
     return Math.max(...distances);
@@ -219,7 +221,6 @@ try {
   assert.equal(await page.locator('.graph-node.is-missing').count(), 1);
   await click(page, '#graph-defaults');
 
-  await page.locator('.graph-section > summary').nth(1).click();
   await click(page, '#graph-arrows');
   const reciprocal = await page.locator('.graph-link').evaluateAll(links => links.map(element => ({
     source: element.__data__.source.id, target: element.__data__.target.id,
@@ -352,13 +353,16 @@ try {
   const shellBox = await mobile.locator('.graph-shell').boundingBox();
   assert.ok(panelBox.width <= shellBox.width + 1, 'Mobile drawer stays inside graph width');
   assert.ok(Math.abs(panelBox.y + panelBox.height - shellBox.y - shellBox.height) < 2, 'Mobile drawer anchors to the bottom');
-  await mobile.locator('#graph-tags-switch').focus();
+  await mobile.locator('#graph-arrows').focus();
   await mobile.keyboard.press('Space');
-  assert.equal(await mobile.locator('#graph-tags-switch').isChecked(), true, 'Switch supports keyboard interaction without localStorage');
-  assert.equal(await mobile.locator('#graph-tags-btn').getAttribute('aria-pressed'), 'true');
+  assert.equal(await mobile.locator('#graph-arrows').isChecked(), true, 'Switch supports keyboard interaction without localStorage');
   await mobile.keyboard.press('Escape');
   assert.equal(await mobile.locator('#graph-settings-panel').isHidden(), true);
   assert.equal(await mobile.locator('#graph-settings-btn').evaluate(button => button === document.activeElement), true, 'Closing returns keyboard focus to Settings');
+  await mobile.locator('#graph-existing-btn').focus();
+  await mobile.keyboard.press('Space');
+  assert.equal(await mobile.locator('#graph-existing-btn').getAttribute('aria-pressed'), 'false');
+  assert.ok((await ids(mobile)).includes('missing'), 'Existing-note toolbar toggle supports keyboard interaction');
   await mobile.close();
 
   const timings = [];

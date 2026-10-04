@@ -6,7 +6,6 @@ const words = {
   full: ["返回完整图谱", "Full graph"],
   close: ["关闭", "Close"],
   reset: ["恢复默认", "Restore defaults"],
-  filters: ["筛选", "Filters"],
   appearance: ["外观", "Display"],
   forces: ["力度", "Forces"],
   search: ["搜索", "Search"],
@@ -124,7 +123,7 @@ export function createGraphPanel(
   search.setAttribute("aria-controls", "graph-local-search-panel");
   search.setAttribute("aria-expanded", "false");
   const shortcuts = new Map<
-    "showOrphans" | "showTags" | "showAttachments",
+    "showOrphans" | "showTags" | "showAttachments" | "existingOnly",
     HTMLButtonElement
   >();
   toolbar.append(search);
@@ -132,6 +131,7 @@ export function createGraphPanel(
     ["showOrphans", "orphans", "scatter_plot", "graph-orphan-btn"],
     ["showTags", "tags", "sell", "graph-tags-btn"],
     ["showAttachments", "attachments", "attach_file", "graph-attachments-btn"],
+    ["existingOnly", "existing", "description", "graph-existing-btn"],
   ] as const) {
     const shortcut = iconButton(label, icon, () => {
       get()[key] = !get()[key];
@@ -157,16 +157,16 @@ export function createGraphPanel(
   );
   panel.append(header);
   const sections = new Map<string, HTMLElement>();
-  for (const name of ["filters", "appearance", "forces"] as const) {
-    const details = el("details", "graph-section");
-    details.open = name === "filters";
-    details.append(el("summary", "", graphText(name)));
+  for (const name of ["appearance", "forces"] as const) {
+    const section = el("section", "graph-section");
+    const title = el("h2", "graph-section-title", graphText(name));
+    title.id = `graph-${name}-title`;
+    section.setAttribute("aria-labelledby", title.id);
     const body = el("div", "graph-section-body");
-    details.append(body);
-    panel.append(details);
+    section.append(title, body);
+    panel.append(section);
     sections.set(name, body);
   }
-  const filter = sections.get("filters")!;
   const query = el("input", "graph-query");
   query.id = "graph-search-input";
   query.type = "search";
@@ -198,27 +198,18 @@ export function createGraphPanel(
   help.append(helpList, el("p", "", graphText("helpText")));
   searchPanel.append(query, queryError, help);
   const fields = new Map<keyof GraphSettings, HTMLInputElement[]>();
-  for (const [key, label, id] of [
-    ["showTags", "tags", "graph-tags-switch"],
-    ["showAttachments", "attachments", "graph-attachments-switch"],
-    ["existingOnly", "existing", "graph-existing-btn"],
-    ["showOrphans", "orphans", "graph-orphan-switch"],
-    ["arrows", "arrows", "graph-arrows"],
-  ] as const) {
-    const row = el("label", "graph-switch-row");
-    const input = el("input", "graph-switch");
-    input.type = "checkbox";
-    input.id = id;
-    input.setAttribute("role", "switch");
-    input.onchange = () => {
-      get()[key] = input.checked;
-      syncToggles();
-      change(key);
-    };
-    row.append(el("span", "", graphText(label)), input);
-    (key === "arrows" ? sections.get("appearance")! : filter).append(row);
-    fields.set(key, [input]);
-  }
+  const arrowRow = el("label", "graph-switch-row");
+  const arrows = el("input", "graph-switch");
+  arrows.type = "checkbox";
+  arrows.id = "graph-arrows";
+  arrows.setAttribute("role", "switch");
+  arrows.onchange = () => {
+    get().arrows = arrows.checked;
+    change("arrows");
+  };
+  arrowRow.append(el("span", "", graphText("arrows")), arrows);
+  sections.get("appearance")!.append(arrowRow);
+  fields.set("arrows", [arrows]);
   for (const [key, min, max, step] of [
     ["textFade", -1, 1, 0.05],
     ["nodeSize", 0.25, 3, 0.05],
@@ -344,7 +335,6 @@ export function createGraphPanel(
   function syncToggles() {
     for (const [key, shortcut] of shortcuts) {
       shortcut.setAttribute("aria-pressed", String(get()[key]));
-      for (const input of fields.get(key) || []) input.checked = get()[key];
     }
   }
   sync();
