@@ -45,9 +45,10 @@ type Options struct {
 }
 
 type BuildResult struct {
-	Notes   []content.Note
-	Memos   []content.Note
-	Skipped []string
+	Notes       []content.Note
+	Memos       []content.Note
+	Skipped     []string
+	SocialCards int
 }
 
 func joinURL(parts ...string) string {
@@ -59,6 +60,15 @@ func joinURL(parts ...string) string {
 }
 
 func Build(options Options) (BuildResult, error) {
+	r := options.Reporter
+	if r == nil {
+		r = progress.NewReporter(BuildStages(options.Config))
+		defer r.Close()
+	}
+	if options.Config.GitHub.Username != "" {
+		r.SetStage(stageGitHub, 0)
+		r.Detail(options.Config.GitHub.Username + " · waiting for response")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 35*time.Second)
 	defer cancel()
 	githubProfile, warnings, err := github.Sync(ctx, options.Config.GitHub, filepath.Join(filepath.Dir(options.PublicDir), ".daybook-cache", "github"))
@@ -66,28 +76,33 @@ func Build(options Options) (BuildResult, error) {
 		return BuildResult{}, fmt.Errorf("sync GitHub profile: %w", err)
 	}
 	for _, warning := range warnings {
-		fmt.Printf("[github] warning: %s\n", warning)
+		r.Warnf("%s", warning)
 	}
 	if githubProfile != nil {
 		applyGitHubProfile(&options.Config, githubProfile)
 	}
-	if options.Reporter != nil {
-		options.Reporter.SetStage(0, 0) // No total known for scanning
+	r.SetStage(stageScan, 0)
+	foundNotes, foundMemos := 0, 0
+	scanFile := func(filename string) {
+		r.Detail(fmt.Sprintf("%d notes · %d memos found · %s", foundNotes, foundMemos, relativeSource(options.ContentDir, filename)))
 	}
-	groups, skipped, err := content.LoadNotes(options.NotesDir)
+	groups, skipped, err := content.LoadNotesWithProgress(options.NotesDir, func(filename string, found int) { foundNotes = found; scanFile(filename) })
 	if err != nil {
 		return BuildResult{}, err
 	}
 	if options.MemosDir == "" {
 		options.MemosDir = filepath.Join(filepath.Dir(options.NotesDir), "memos")
 	}
-	memoGroups, memoSkipped, err := content.LoadMemos(options.MemosDir)
+	memoGroups, memoSkipped, err := content.LoadMemosWithProgress(options.MemosDir, func(filename string, found int) { foundMemos = found; scanFile(filename) })
 	if err != nil {
 		return BuildResult{}, err
 	}
 	noteGroups := groups
 	groups = append(groups, memoGroups...)
 	skipped = append(skipped, memoSkipped...)
+	for _, item := range skipped {
+		r.Warnf("Skipped invalid content: %s", item)
+	}
 
 	var allNotes []content.Note
 	canonicalArticleRoutes := make(map[string]bool)
@@ -100,6 +115,9 @@ func Build(options Options) (BuildResult, error) {
 		}
 	}
 
+	r.Detail(fmt.Sprintf("%d notes · %d memos found", publishedCount(noteGroups), publishedCount(memoGroups)))
+	r.SetStage(stageAssets, 0)
+	r.Detail("cleaning public/")
 	if err := os.RemoveAll(options.PublicDir); err != nil {
 		return BuildResult{}, fmt.Errorf("清理 public 目录: %w", err)
 	}
@@ -107,9 +125,11 @@ func Build(options Options) (BuildResult, error) {
 		return BuildResult{}, fmt.Errorf("创建 public 目录: %w", err)
 	}
 
+	r.Task("Copying static assets", "fonts, styles, scripts and images")
 	if err := copyStaticDir("static", options.PublicDir); err != nil {
 		return BuildResult{}, err
 	}
+	r.Task("Preparing static assets", "fingerprinting styles and scripts")
 	assets, err := buildAssets("static", options.PublicDir)
 	if err != nil {
 		return BuildResult{}, err
@@ -123,7 +143,8 @@ func Build(options Options) (BuildResult, error) {
 			return BuildResult{}, fmt.Errorf("write GitHub profile: %w", err)
 		}
 	}
-	if err := copyAttachments(options.ContentDir, options.PublicDir); err != nil {
+	r.Task("Copying attachments", "local media")
+	if err := copyAttachments(options.ContentDir, options.PublicDir, r.Detail); err != nil {
 		return BuildResult{}, err
 	}
 
@@ -161,16 +182,14 @@ func Build(options Options) (BuildResult, error) {
 		for u := range musicUrls {
 			musicUrlsList = append(musicUrlsList, u)
 		}
-		if options.Reporter != nil {
-			options.Reporter.SetStage(1, len(musicUrlsList))
-		}
+		sort.Strings(musicUrlsList)
+		r.SetStage(stageMusic, len(musicUrlsList))
 		for i, u := range musicUrlsList {
+			r.Detail(u + " · waiting for response")
 			meta, err := media.FetchMusicMetadata(u, options.PublicDir)
-			if options.Reporter != nil {
-				options.Reporter.Advance(i + 1)
-			}
+			r.Advance(i + 1)
 			if err != nil {
-				fmt.Printf("[music] warning: failed to fetch metadata for %s: %v\n", u, err)
+				r.Warnf("%s · music metadata unavailable; continuing without metadata: %v", u, err)
 				continue
 			}
 			musicMetadataMap[u] = meta
@@ -195,14 +214,10 @@ func Build(options Options) (BuildResult, error) {
 		TotalWordCount: totalWordCount,
 	}
 
-	if options.Reporter != nil {
-		options.Reporter.SetStage(2, len(allNotes))
-	}
+	r.SetStage(stageLinks, len(allNotes))
 	obsidianIndex, err := buildObsidianIndex(allNotes, options.ContentDir, options.PublicDir, "/", func(current, total int) {
-		if options.Reporter != nil {
-			options.Reporter.Advance(current)
-		}
-	})
+		r.Advance(current)
+	}, r.Warnf)
 	if err != nil {
 		return BuildResult{}, err
 	}
@@ -213,13 +228,9 @@ func Build(options Options) (BuildResult, error) {
 	}
 
 	searchJSONPath := filepath.Join(options.PublicDir, "search.json")
-	if options.Reporter != nil {
-		options.Reporter.SetStage(3, len(groups))
-	}
+	r.SetStage(stageSearch, len(groups))
 	if err := search.BuildIndex(groups, estimateReadingTime, tagRegistry, searchJSONPath, func(current, total int) {
-		if options.Reporter != nil {
-			options.Reporter.Advance(current)
-		}
+		r.Advance(current)
 	}); err != nil {
 		return BuildResult{}, fmt.Errorf("生成 search.json: %w", err)
 	}
@@ -228,16 +239,15 @@ func Build(options Options) (BuildResult, error) {
 
 	var allSiteURLs []sitemap.URL
 	var ogCards []og.Card
+	ogSources := make(map[string]string)
 
-	var allDiagnostics []obsidian.Diagnostic
+	seenDiagnostics := make(map[string]bool)
 
 	langs := []string{"zh_CN", "en_US"}
-	totalItems := len(allNotes) * len(langs)
 	processedItems := 0
-
-	if options.Reporter != nil {
-		options.Reporter.SetStage(4, totalItems)
-	}
+	r.SetStage(stagePages, pageCount(groups, langs, tagRegistry, canonicalArticleRoutes))
+	startPage := func(filename string) { r.Task("Rendering pages", relativeSource(options.PublicDir, filename)) }
+	finishPage := func() { processedItems++; r.Advance(processedItems) }
 
 	for _, lang := range langs {
 		langPrefix := ""
@@ -265,13 +275,10 @@ func Build(options Options) (BuildResult, error) {
 
 		for _, group := range groups {
 			for _, note := range group.PublishedVersions() {
-				processedItems++
-				if options.Reporter != nil {
-					options.Reporter.Advance(processedItems)
-				}
+				r.Task("Rendering pages", relativeSource(options.ContentDir, note.SourcePath)+" · "+lang)
 
 				processed := obsidian.Process(note.Body, obsidianIndex, note.SourcePath, note.BodyStartLine)
-				allDiagnostics = append(allDiagnostics, processed.Diagnostics...)
+				reportDiagnostics(r, options.ContentDir, processed.Diagnostics, seenDiagnostics)
 				document, err := markdown.ToHTMLWithHeadings(processed.Text)
 				if err != nil {
 					return BuildResult{}, fmt.Errorf("处理笔记 %s: %w", note.SourcePath, err)
@@ -407,12 +414,14 @@ func Build(options Options) (BuildResult, error) {
 						target := note.URL + "?ui=" + lang
 						alias := fmt.Sprintf(`<!doctype html><html><head><meta charset="utf-8"><meta name="robots" content="noindex"><link rel="canonical" href="%s"><meta http-equiv="refresh" content="0; url=%s"></head><body><a href="%s">Continue</a></body></html>`, template.HTMLEscapeString(strings.TrimSuffix(options.Config.Site.URL, "/")+note.URL), template.HTMLEscapeString(target), template.HTMLEscapeString(target))
 						aliasPath := filepath.Join(langPublicDir, note.Section, note.Slug, "index.html")
+						startPage(aliasPath)
 						if err := os.MkdirAll(filepath.Dir(aliasPath), 0755); err != nil {
 							return BuildResult{}, err
 						}
 						if err := os.WriteFile(aliasPath, []byte(alias), 0644); err != nil {
 							return BuildResult{}, fmt.Errorf("生成文章语言界面重定向: %w", err)
 						}
+						finishPage()
 					}
 					continue
 				}
@@ -461,6 +470,7 @@ func Build(options Options) (BuildResult, error) {
 					return BuildResult{}, fmt.Errorf("准备分享图片 %s: %w", note.SourcePath, err)
 				}
 				ogCards = append(ogCards, ogCard)
+				ogSources[ogCard.PageURL] = relativeSource(options.ContentDir, note.SourcePath)
 				noteSEOArgs := seo.BuilderArgs{
 					Config:      options.Config,
 					Lang:        lang,
@@ -538,9 +548,11 @@ func Build(options Options) (BuildResult, error) {
 					},
 				}
 
+				startPage(outputPath)
 				if err := renderer.RenderNote(outputPath, notePageData); err != nil {
 					return BuildResult{}, fmt.Errorf("生成笔记页面 %s: %w", note.SourcePath, err)
 				}
+				finishPage()
 
 			}
 		}
@@ -582,9 +594,11 @@ func Build(options Options) (BuildResult, error) {
 			Tags:         tagLinks,
 			SEO:          seo.BuildForHome(homeSEOArgs),
 		}
+		startPage(indexPath)
 		if err := renderer.RenderIndex(indexPath, indexData); err != nil {
 			return BuildResult{}, fmt.Errorf("生成首页: %w", err)
 		}
+		finishPage()
 
 		var pinnedNotes []render.NoteLink
 		var regularNotes []render.NoteLink
@@ -698,17 +712,26 @@ func Build(options Options) (BuildResult, error) {
 				Pagination:   paginationData,
 			}
 
+			startPage(pagePath)
 			if err := renderer.RenderNotes(pagePath, notesData); err != nil {
 				return BuildResult{}, fmt.Errorf("生成文章页: %w", err)
 			}
+			finishPage()
 			allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: pageURL})
 		}
 
 		// Create alias redirect for page 1
 		page1AliasPath := filepath.Join(langPublicDir, "notes", "page", "1", "index.html")
-		if err := os.MkdirAll(filepath.Dir(page1AliasPath), 0755); err == nil {
+		startPage(page1AliasPath)
+		if err := os.MkdirAll(filepath.Dir(page1AliasPath), 0755); err != nil {
+			return BuildResult{}, err
+		}
+		{
 			aliasHTML := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="robots" content="noindex"><link rel="canonical" href="%s"><meta http-equiv="refresh" content="0; url=%s"></head><body></body></html>`, baseNotesPath, baseNotesPath)
-			os.WriteFile(page1AliasPath, []byte(aliasHTML), 0644)
+			if err := os.WriteFile(page1AliasPath, []byte(aliasHTML), 0644); err != nil {
+				return BuildResult{}, err
+			}
+			finishPage()
 		}
 
 		sort.SliceStable(memoCards, func(i, j int) bool {
@@ -733,9 +756,11 @@ func Build(options Options) (BuildResult, error) {
 				Alternates: []seo.Alternate{{Lang: "zh_CN", URL: "/memos/"}, {Lang: "en_US", URL: "/en_US/memos/"}},
 			}),
 		}
+		startPage(filepath.Join(langPublicDir, "memos", "index.html"))
 		if err := renderer.RenderMemos(filepath.Join(langPublicDir, "memos", "index.html"), memosData); err != nil {
 			return BuildResult{}, fmt.Errorf("生成短记页面: %w", err)
 		}
+		finishPage()
 		allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: memosURL})
 
 		archivePath := filepath.Join(langPublicDir, "archive", "index.html")
@@ -777,9 +802,11 @@ func Build(options Options) (BuildResult, error) {
 			Tags:         collectTagLinksForLang(noteGroups, lang, tagRegistry),
 			SEO:          seo.BuildForCollection(archiveSEOArgs),
 		}
+		startPage(archivePath)
 		if err := renderer.RenderArchive(archivePath, archiveData); err != nil {
 			return BuildResult{}, fmt.Errorf("生成归档页: %w", err)
 		}
+		finishPage()
 
 		// Write all data to data.json
 		archiveDataJSON := struct {
@@ -809,12 +836,13 @@ func Build(options Options) (BuildResult, error) {
 			}
 		}
 
+		r.Task("Rendering pages", "pages/"+aboutFile+" · "+lang)
 		aboutPage, err := content.ParsePageFile(filepath.Join(filepath.Dir(options.NotesDir), "pages", aboutFile))
 		if err != nil {
 			return BuildResult{}, fmt.Errorf("读取关于页: %w", err)
 		}
 		aboutProcessed := obsidian.Process(aboutPage.Body, obsidianIndex, aboutPage.SourcePath, aboutPage.BodyStartLine)
-		allDiagnostics = append(allDiagnostics, aboutProcessed.Diagnostics...)
+		reportDiagnostics(r, options.ContentDir, aboutProcessed.Diagnostics, seenDiagnostics)
 		aboutDocument, err := markdown.ToHTMLWithHeadings(aboutProcessed.Text)
 		if err != nil {
 			return BuildResult{}, fmt.Errorf("处理关于页: %w", err)
@@ -870,10 +898,13 @@ func Build(options Options) (BuildResult, error) {
 			Tags:           tagLinks,
 			SEO:            seo.BuildForAbout(aboutSEOArgs),
 		}
+		startPage(aboutPath)
 		if err := renderer.RenderAbout(aboutPath, aboutData); err != nil {
 			return BuildResult{}, fmt.Errorf("生成关于页: %w", err)
 		}
+		finishPage()
 
+		r.Task("Writing graph data", lang)
 		graphJSONPath := filepath.Join(langPublicDir, "graph.json")
 		if err := graph.BuildJSON(graphNodes, graphLinks, graphJSONPath); err != nil {
 			return BuildResult{}, fmt.Errorf("生成 graph.json: %w", err)
@@ -905,10 +936,13 @@ func Build(options Options) (BuildResult, error) {
 			Tags:         tagLinks,
 			SEO:          seo.BuildForGraph(graphSEOArgs),
 		}
+		startPage(graphPath)
 		if err := renderer.RenderGraph(graphPath, graphData); err != nil {
 			return BuildResult{}, fmt.Errorf("生成图谱页: %w", err)
 		}
+		finishPage()
 
+		r.Task("Writing feed", lang+"/rss.xml")
 		if err := feed.Write(filepath.Join(langPublicDir, "rss.xml"), lang, options.Config, noteLinks); err != nil {
 			return BuildResult{}, err
 		}
@@ -1003,9 +1037,11 @@ func Build(options Options) (BuildResult, error) {
 					Pagination:   paginationData,
 				}
 
+				startPage(pagePath)
 				if err := renderer.RenderTag(pagePath, tagData); err != nil {
 					return BuildResult{}, fmt.Errorf("生成标签页: %w", err)
 				}
+				finishPage()
 
 				// Add to sitemap
 				allSiteURLs = append(allSiteURLs, sitemap.URL{Loc: pageURL})
@@ -1013,9 +1049,16 @@ func Build(options Options) (BuildResult, error) {
 
 			// Create alias redirect for page 1
 			page1AliasPath := filepath.Join(langPublicDir, "tags", seo.TagSlug(tagLink.Name), "page", "1", "index.html")
-			if err := os.MkdirAll(filepath.Dir(page1AliasPath), 0755); err == nil {
+			startPage(page1AliasPath)
+			if err := os.MkdirAll(filepath.Dir(page1AliasPath), 0755); err != nil {
+				return BuildResult{}, err
+			}
+			{
 				aliasHTML := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="robots" content="noindex"><link rel="canonical" href="%s"><meta http-equiv="refresh" content="0; url=%s"></head><body></body></html>`, baseTagPath, baseTagPath)
-				os.WriteFile(page1AliasPath, []byte(aliasHTML), 0644)
+				if err := os.WriteFile(page1AliasPath, []byte(aliasHTML), 0644); err != nil {
+					return BuildResult{}, err
+				}
+				finishPage()
 			}
 		}
 
@@ -1044,8 +1087,14 @@ func Build(options Options) (BuildResult, error) {
 	for _, u := range allSiteURLs {
 		routePaths = append(routePaths, u.Loc)
 	}
-	routeBytes, _ := json.Marshal(routePaths)
-	os.WriteFile(filepath.Join(options.PublicDir, "routes.json"), routeBytes, 0644)
+	r.Task("Writing site metadata", "routes.json, sitemap.xml, robots.txt")
+	routeBytes, err := json.Marshal(routePaths)
+	if err != nil {
+		return BuildResult{}, err
+	}
+	if err := os.WriteFile(filepath.Join(options.PublicDir, "routes.json"), routeBytes, 0644); err != nil {
+		return BuildResult{}, err
+	}
 
 	if err := sitemap.WriteSitemap(filepath.Join(options.PublicDir, "sitemap.xml"), options.Config, allSiteURLs); err != nil {
 		return BuildResult{}, err
@@ -1054,20 +1103,23 @@ func Build(options Options) (BuildResult, error) {
 		return BuildResult{}, err
 	}
 
-	if options.Reporter != nil {
-		options.Reporter.SetStage(5, len(ogCards))
-	}
-	if err := og.Generate(options.PublicDir, ogCards); err != nil {
-		return BuildResult{}, fmt.Errorf("生成静态分享图片: %w", err)
-	}
-	if options.Reporter != nil {
-		options.Reporter.Advance(len(ogCards))
+	if len(ogCards) > 0 {
+		r.SetStage(stageOGPrepare, 0)
+		if err := og.Generate(options.PublicDir, ogCards, func(event og.Progress) {
+			switch event.Phase {
+			case "rendering":
+				r.SetStage(stageOGRender, event.Total)
+			case "validating":
+				r.SetStage(stageOGValidate, event.Total)
+			}
+			r.Detail(ogSources[event.PageURL])
+			r.Advance(event.Completed)
+		}); err != nil {
+			return BuildResult{}, fmt.Errorf("生成静态分享图片: %w", err)
+		}
 	}
 
-	deduped := deduplicateDiagnostics(allDiagnostics)
-	printDiagnostics(deduped)
-
-	result := BuildResult{Skipped: skipped}
+	result := BuildResult{Skipped: skipped, SocialCards: len(ogCards)}
 	for _, note := range allNotes {
 		if note.Section == "memos" {
 			result.Memos = append(result.Memos, note)
@@ -1076,62 +1128,6 @@ func Build(options Options) (BuildResult, error) {
 		}
 	}
 	return result, nil
-}
-
-func deduplicateDiagnostics(diags []obsidian.Diagnostic) []obsidian.Diagnostic {
-	seen := make(map[string]bool)
-	var result []obsidian.Diagnostic
-	for _, d := range diags {
-		key := fmt.Sprintf("%s|%s|%d|%d|%s", d.Code, d.SourcePath, d.Line, d.Column, d.Message)
-		if !seen[key] {
-			seen[key] = true
-			result = append(result, d)
-		}
-	}
-	return result
-}
-
-func printDiagnostics(diags []obsidian.Diagnostic) {
-	if len(diags) == 0 {
-		fmt.Println("[daybook] build completed with no content warnings")
-		return
-	}
-
-	summary := make(map[string]int)
-	for _, d := range diags {
-		summary[d.Code]++
-
-		fmt.Printf("\n%s[%s]: %s\n", d.Severity, d.Code, d.Message)
-		fmt.Printf("  --> %s:%d:%d\n", d.SourcePath, d.Line, d.Column)
-		if d.Snippet != "" {
-			fmt.Printf("   |\n")
-			fmt.Printf("%-2d | %s\n", d.Line, d.Snippet)
-
-			// simple underline
-			indent := "   | "
-			for i := 0; i < d.Column-1; i++ {
-				indent += " "
-			}
-			fmt.Printf("%s^~~~~~\n", indent)
-		}
-
-		if len(d.Candidates) > 0 {
-			fmt.Printf("\n  candidates:\n")
-			for _, c := range d.Candidates {
-				fmt.Printf("    %s\n", c)
-			}
-		}
-	}
-
-	fmt.Printf("\n[daybook] build completed with %d warnings:\n", len(diags))
-	for code, count := range summary {
-		name := strings.TrimPrefix(code, "obsidian/")
-		name = strings.ReplaceAll(name, "-", " ")
-		if count > 1 {
-			name += "s"
-		}
-		fmt.Printf("  %d %s\n", count, name)
-	}
 }
 
 func estimateReadingTime(text string) string {
@@ -1372,12 +1368,9 @@ func renderHeadings(headings []markdown.Heading) []render.Heading {
 	return result
 }
 
-func buildObsidianIndex(notes []content.Note, contentDir string, publicDir string, publicPath string, onProgress func(current, total int)) (obsidian.Index, error) {
+func buildObsidianIndex(notes []content.Note, contentDir string, publicDir string, publicPath string, onProgress func(current, total int), warn ...func(string, ...any)) (obsidian.Index, error) {
 	targets := make([]obsidian.Target, 0, len(notes))
 	for i, note := range notes {
-		if onProgress != nil {
-			onProgress(i+1, len(notes))
-		}
 		document, err := markdown.ToHTMLWithHeadings(note.Body)
 		if err != nil {
 			return obsidian.Index{}, fmt.Errorf("收集笔记标题 %s: %w", note.SourcePath, err)
@@ -1415,6 +1408,9 @@ func buildObsidianIndex(notes []content.Note, contentDir string, publicDir strin
 			Headings:   headings,
 			Blocks:     blocks,
 		})
+		if onProgress != nil {
+			onProgress(i+1, len(notes))
+		}
 	}
 
 	var attachments []obsidian.Attachment
@@ -1458,7 +1454,9 @@ func buildObsidianIndex(notes []content.Note, contentDir string, publicDir strin
 			pubURL := publicPath + escapeURLPath(relPath)
 			info, err := d.Info()
 			if err == nil && info.Size() > 25*1024*1024 {
-				fmt.Printf("[obsidian] local attachment may exceed Pages single-file limit: %s\n", d.Name())
+				for _, report := range warn {
+					report("%s · attachment exceeds 25 MiB; some static hosts may reject it", relPath)
+				}
 			}
 
 			attachments = append(attachments, obsidian.Attachment{
@@ -1537,7 +1535,7 @@ func shouldSkipVaultDir(contentDir, relativePath, publicDir string) bool {
 	return false
 }
 
-func copyAttachments(contentDir, publicDir string) error {
+func copyAttachments(contentDir, publicDir string, onFile ...func(string)) error {
 	err := copyDirFiltered(contentDir, publicDir, func(relativePath string, entry os.DirEntry) bool {
 		if entry.IsDir() {
 			if shouldSkipVaultDir(contentDir, relativePath, publicDir) {
@@ -1551,6 +1549,9 @@ func copyAttachments(contentDir, publicDir string) error {
 			return true // Skip unsupported (md, etc)
 		}
 
+		for _, report := range onFile {
+			report(filepath.ToSlash(relativePath))
+		}
 		return false // Copy local media files
 	})
 

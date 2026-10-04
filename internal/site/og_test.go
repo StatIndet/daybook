@@ -2,16 +2,21 @@ package site
 
 import (
 	"bytes"
+	"fmt"
 	"image"
 	"image/color"
 	"image/png"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/StatIndet/daybook/internal/config"
 	"github.com/StatIndet/daybook/internal/og"
+	"github.com/StatIndet/daybook/internal/progress"
 	"golang.org/x/net/html"
 )
 
@@ -80,9 +85,37 @@ func TestBuildStaticOpenGraph(t *testing.T) {
 			Name: "史帙", NameEn: "Shizhi", Avatar: "/attachments/窗%20边.png", LogoText: "Daybook",
 		}},
 	}
-	result, err := Build(Options{Config: cfg, ContentDir: vault, NotesDir: filepath.Join(vault, "notes"), PublicDir: publicDir})
+	var log bytes.Buffer
+	reporter := progress.NewReporter(BuildStages(cfg), progress.Options{Writer: &log})
+	defer reporter.Close()
+	result, err := Build(Options{Config: cfg, ContentDir: vault, NotesDir: filepath.Join(vault, "notes"), PublicDir: publicDir, Reporter: reporter})
 	if err != nil {
 		t.Fatal(err)
+	}
+	reporter.Done("Built site", fmt.Sprintf("%d social cards", result.SocialCards))
+	pages := 0
+	if err := filepath.WalkDir(publicDir, func(filename string, entry fs.DirEntry, err error) error {
+		if err == nil && entry.IsDir() && filename == filepath.Join(publicDir, "vendor") {
+			return filepath.SkipDir
+		}
+		if err == nil && !entry.IsDir() && strings.HasSuffix(filename, ".html") {
+			pages++
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	match := regexp.MustCompile(`END  Rendering pages · (\d+)/(\d+)`).FindStringSubmatch(log.String())
+	if len(match) != 3 {
+		t.Fatal("missing page completion log", log.String())
+	}
+	completed, _ := strconv.Atoi(match[1])
+	total, _ := strconv.Atoi(match[2])
+	if completed != pages || total != pages {
+		t.Fatalf("reported %d/%d pages, wrote %d", completed, total, pages)
+	}
+	if result.SocialCards != 8 || !strings.Contains(log.String(), "END  Validating generated images · 8/8") || !strings.Contains(log.String(), "8 social cards · 1 warnings") || strings.ContainsAny(log.String(), "\x1b\r") {
+		t.Fatal("unexpected build feedback", log.String())
 	}
 	if len(result.Notes) != 2 || len(result.Memos) != 6 || len(result.Skipped) != 1 {
 		t.Fatalf("unexpected published entries: %+v", result)

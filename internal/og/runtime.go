@@ -34,9 +34,17 @@ type renderManifest struct {
 	Cards     []Card `json:"cards"`
 }
 
+// Progress is emitted by the renderer after it is ready, before each card, and
+// after each successful write/validation. Completed never counts started work.
+type Progress struct {
+	Phase            string
+	Completed, Total int
+	PageURL          string
+}
+
 // Generate renders one batch with a single local Chromium instance. It never
 // installs dependencies or starts a server; setup is an explicit CLI command.
-func Generate(publicDir string, cards []Card) error {
+func Generate(publicDir string, cards []Card, onProgress ...func(Progress)) error {
 	if len(cards) == 0 {
 		return nil
 	}
@@ -95,7 +103,14 @@ func Generate(publicDir string, cards []Card) error {
 	defer cancel()
 	cmd := exec.CommandContext(ctx, node, runnerPath, manifestPath)
 	var diagnostics bytes.Buffer
-	cmd.Stderr = io.MultiWriter(os.Stderr, &diagnostics)
+	cmd.Stderr = &diagnostics
+	report := func(phase string, completed int, pageURL string) {
+		for _, callback := range onProgress {
+			callback(Progress{Phase: phase, Completed: completed, Total: len(cards), PageURL: pageURL})
+		}
+	}
+	events := &renderEvents{cards: cards, report: report}
+	cmd.Stdout = events
 	cmd.WaitDelay = 3 * time.Second
 	if err := cmd.Run(); err != nil {
 		if ctx.Err() != nil {
@@ -103,13 +118,64 @@ func Generate(publicDir string, cards []Card) error {
 		}
 		return fmt.Errorf("OG rendering failed: %w\n%s", err, strings.TrimSpace(diagnostics.String()))
 	}
-	for _, card := range cards {
+	if !events.ready || events.completed != len(cards) || len(events.pending) != 0 {
+		return fmt.Errorf("OG renderer ended with incomplete progress (%d/%d cards)", events.completed, len(cards))
+	}
+	for i, card := range cards {
+		report("validating", i, card.PageURL)
 		filename := filepath.Join(publicDir, filepath.FromSlash(strings.TrimPrefix(card.OutputPath, "/")))
 		if err := verifyPNG(filename); err != nil {
 			return fmt.Errorf("OG %q (%s): %w", card.PageURL, card.OutputPath, err)
 		}
+		report("validating", i+1, card.PageURL)
 	}
 	return nil
+}
+
+// Stdout is a small NDJSON protocol, separate from stderr diagnostics. os/exec
+// drains it while the process runs and joins the writer before Run returns.
+type renderEvents struct {
+	cards          []Card
+	report         func(string, int, string)
+	pending        []byte
+	ready, started bool
+	completed      int
+}
+
+func (w *renderEvents) Write(p []byte) (int, error) {
+	w.pending = append(w.pending, p...)
+	for {
+		i := bytes.IndexByte(w.pending, '\n')
+		if i < 0 {
+			break
+		}
+		var event struct {
+			Event string `json:"event"`
+			Index int    `json:"index"`
+		}
+		if err := json.Unmarshal(w.pending[:i], &event); err != nil {
+			return 0, fmt.Errorf("invalid OG progress event: %w", err)
+		}
+		w.pending = w.pending[i+1:]
+		switch {
+		case event.Event == "ready" && !w.ready:
+			w.ready = true
+			w.report("rendering", 0, "")
+		case event.Event == "start" && w.ready && !w.started && event.Index == w.completed && event.Index < len(w.cards):
+			w.started = true
+			w.report("rendering", w.completed, w.cards[event.Index].PageURL)
+		case event.Event == "done" && w.started && event.Index == w.completed:
+			w.started = false
+			w.completed++
+			w.report("rendering", w.completed, w.cards[event.Index].PageURL)
+		default:
+			return 0, fmt.Errorf("unexpected OG progress event %q at card %d", event.Event, event.Index)
+		}
+	}
+	if len(w.pending) > 4096 {
+		return 0, fmt.Errorf("OG progress event exceeds size limit")
+	}
+	return len(p), nil
 }
 
 func validateCard(card Card) error {

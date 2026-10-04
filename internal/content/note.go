@@ -61,13 +61,21 @@ func LoadNotes(dir string) ([]*ArticleGroup, []string, error) {
 	return loadSection(dir, "notes")
 }
 
+func LoadNotesWithProgress(dir string, onFile func(string, int)) ([]*ArticleGroup, []string, error) {
+	return loadSection(dir, "notes", onFile)
+}
+
 // LoadMemos loads the optional memos directory with the same publishing rules
 // as notes. Existing vaults without memos continue to build unchanged.
 func LoadMemos(dir string) ([]*ArticleGroup, []string, error) {
 	return loadSection(dir, "memos")
 }
 
-func loadSection(dir, section string) ([]*ArticleGroup, []string, error) {
+func LoadMemosWithProgress(dir string, onFile func(string, int)) ([]*ArticleGroup, []string, error) {
+	return loadSection(dir, "memos", onFile)
+}
+
+func loadSection(dir, section string, onFile ...func(string, int)) ([]*ArticleGroup, []string, error) {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		return nil, nil, nil
 	}
@@ -95,6 +103,11 @@ func loadSection(dir, section string) ([]*ArticleGroup, []string, error) {
 			return fmt.Errorf("\"page\" is reserved for Daybook pagination. Conflict: %s", path)
 		}
 
+		for _, report := range onFile {
+			if report != nil {
+				report(path, len(notes))
+			}
+		}
 		note, err := parseSectionFile(path, slug, section)
 		if err != nil {
 			skipped = append(skipped, fmt.Sprintf("%s (%v)", path, err))
@@ -111,6 +124,11 @@ func loadSection(dir, section string) ([]*ArticleGroup, []string, error) {
 		seenSlugs[key] = path
 
 		notes = append(notes, note)
+		for _, report := range onFile {
+			if report != nil {
+				report(path, len(notes))
+			}
+		}
 		return nil
 	})
 	if err != nil {

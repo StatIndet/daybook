@@ -38,9 +38,6 @@ func BuildIndex(groups []*content.ArticleGroup, estimateReadingTime func(string)
 	var items []IndexItem
 
 	for i, group := range groups {
-		if onProgress != nil {
-			onProgress(i+1, len(groups))
-		}
 		versions := make(map[string]IndexVersion)
 		hasTranslation := len(group.PublishedVersions()) > 1
 
@@ -89,14 +86,15 @@ func BuildIndex(groups []*content.ArticleGroup, estimateReadingTime func(string)
 			}
 		}
 
-		if len(versions) == 0 {
-			continue
+		if len(versions) > 0 {
+			items = append(items, IndexItem{
+				I18nKey:  group.I18nKey,
+				Versions: versions,
+			})
 		}
-
-		items = append(items, IndexItem{
-			I18nKey:  group.I18nKey,
-			Versions: versions,
-		})
+		if onProgress != nil {
+			onProgress(i+1, len(groups))
+		}
 	}
 
 	data, err := json.Marshal(items)

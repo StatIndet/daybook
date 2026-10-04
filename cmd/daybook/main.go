@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -16,16 +17,21 @@ import (
 
 var Version = "daybook dev"
 
+type reportedError struct{ error }
+
 func main() {
 	if err := run(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		var reported *reportedError
+		if !errors.As(err, &reported) {
+			fmt.Fprintln(os.Stderr, err)
+		}
 		os.Exit(1)
 	}
 }
 
 func printHelp() {
 	fmt.Println("Usage:")
-	fmt.Println("  daybook build    Build the current Daybook vault into ./public")
+	fmt.Println("  daybook build [--verbose]  Build the current Daybook vault into ./public")
 	fmt.Println("  daybook setup-og Install local Playwright and Chromium for static social cards")
 	fmt.Println("  daybook serve [--addr :1313]  Serve the existing ./public directory locally")
 	fmt.Println("  daybook version  Print Daybook version")
@@ -57,6 +63,20 @@ func run() error {
 		return fmt.Errorf("unknown command: %s", command)
 	}
 	serveAddr := ":1313"
+	verbose := false
+	if command == "build" {
+		flags := flag.NewFlagSet("build", flag.ContinueOnError)
+		flags.BoolVar(&verbose, "verbose", false, "Print stage timings and file details without animation")
+		if err := flags.Parse(os.Args[2:]); err != nil {
+			if err == flag.ErrHelp {
+				return nil
+			}
+			return err
+		}
+		if flags.NArg() > 0 {
+			return fmt.Errorf("daybook build: unexpected argument: %s", flags.Arg(0))
+		}
+	}
 	if command == "serve" {
 		flags := flag.NewFlagSet("serve", flag.ContinueOnError)
 		flags.StringVar(&serveAddr, "addr", serveAddr, "HTTP listen address")
@@ -71,7 +91,8 @@ func run() error {
 		}
 	}
 
-	cfg, err := config.Load()
+	var configWarnings []string
+	cfg, err := config.LoadWithWarnings(func(message string) { configWarnings = append(configWarnings, message) })
 	if err != nil {
 		return err
 	}
@@ -99,14 +120,11 @@ func run() error {
 
 	var reporter *progress.Reporter
 	if command == "build" {
-		reporter = progress.NewReporter([]progress.Stage{
-			{Name: "扫描及解析文章", Weight: 0.10},
-			{Name: "抓取音乐元数据", Weight: 0.15},
-			{Name: "构建双向链接索引", Weight: 0.25},
-			{Name: "构建全局搜索索引", Weight: 0.15},
-			{Name: "写入静态构建产物", Weight: 0.20},
-			{Name: "生成静态分享图片", Weight: 0.15},
-		})
+		reporter = progress.NewReporter(site.BuildStages(cfg), progress.Options{Verbose: verbose})
+		defer reporter.Close()
+		for _, warning := range configWarnings {
+			reporter.Warnf("%s", warning)
+		}
 	}
 
 	options := site.Options{
@@ -119,30 +137,21 @@ func run() error {
 	}
 
 	if command == "build" {
-		if cfg.Stats.Enabled {
-			fmt.Println("[daybook] stats: enabled=true")
-		} else {
-			fmt.Println("[daybook] stats: disabled")
-		}
+		reporter.Verbosef("stats: enabled=%t", cfg.Stats.Enabled)
 
 		result, err := site.Build(options)
 		if err != nil {
-			if reporter != nil {
-				reporter.Fail(err)
-			}
-			return err
+			reporter.Fail(err)
+			return &reportedError{err}
 		}
 
-		if reporter != nil {
-			reporter.Done(fmt.Sprintf("Built %d notes and %d memos to public/", len(result.Notes), len(result.Memos)))
-		}
-
-		for _, skipped := range result.Skipped {
-			fmt.Fprintf(os.Stderr, "跳过无效笔记: %s\n", skipped)
-		}
+		reporter.Done(fmt.Sprintf("Built %d notes and %d memos → public/", len(result.Notes), len(result.Memos)), fmt.Sprintf("%d social cards", result.SocialCards))
 	}
 
 	if command == "serve" {
+		for _, warning := range configWarnings {
+			fmt.Fprintln(os.Stderr, "WARN  "+warning)
+		}
 		return site.Serve(options.PublicDir, serveAddr)
 	}
 

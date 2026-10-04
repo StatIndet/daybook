@@ -183,6 +183,11 @@ func parseSocialLinks(configs []SocialLinkConfig) []SocialLink {
 }
 
 func Load() (Config, error) {
+	return LoadWithWarnings(func(message string) { fmt.Println("WARN  " + message) })
+}
+
+// LoadWithWarnings lets the CLI coordinate configuration warnings with build output.
+func LoadWithWarnings(warn func(string)) (Config, error) {
 	data, err := os.ReadFile("daybook.yaml")
 	if err != nil {
 		return Config{}, fmt.Errorf("config error: daybook.yaml not found: %w", err)
@@ -219,9 +224,13 @@ func Load() (Config, error) {
 	cfg.Comment.Giscus.CategoryID = strings.TrimSpace(cfg.Comment.Giscus.CategoryID)
 	if cfg.Comment.Enabled && !cfg.Comment.Available() {
 		if cfg.Comment.Provider != "giscus" {
-			fmt.Printf("[daybook] warning: unsupported comment provider %q; use giscus, disabling comments.\n", cfg.Comment.Provider)
+			if warn != nil {
+				warn(fmt.Sprintf("unsupported comment provider %q; use giscus, disabling comments", cfg.Comment.Provider))
+			}
 		} else {
-			fmt.Println("[daybook] warning: giscus requires repo, repoId, category and categoryId, disabling comments.")
+			if warn != nil {
+				warn("giscus requires repo, repoId, category and categoryId, disabling comments")
+			}
 		}
 		cfg.Comment.Enabled = false
 	}

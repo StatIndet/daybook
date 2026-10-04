@@ -142,9 +142,11 @@ async function main() {
   }
   try {
     const assets = new Map();
+    process.stdout.write(`${JSON.stringify({ event: 'ready' })}\n`);
     for (const [index, card] of manifest.cards.entries()) {
-      process.stderr.write(`OG [${index + 1}/${manifest.cards.length}] ${card.pageURL}\n`);
+      process.stdout.write(`${JSON.stringify({ event: 'start', index })}\n`);
       await renderCard(browser, root, card, assets);
+      process.stdout.write(`${JSON.stringify({ event: 'done', index })}\n`);
     }
   } finally {
     await browser.close();

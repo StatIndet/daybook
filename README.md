@@ -103,9 +103,14 @@ This script installs npm dependencies, builds frontend assets, and installs the 
 Run these commands inside your Vault directory:
 
 * `daybook build`: Reads `daybook.yaml`, `vault/notes/` and `vault/memos/`, compiles your site, and outputs static HTML to `public/`. At least one of the two content directories must exist.
+* `daybook build --verbose`: Prints timestamped stages, completed files and stage durations without animation.
 * `daybook setup-og`: Installs the pinned Playwright package and Chromium in the current user's caches. Requires Node.js (>=24), npm and network access. Run once before the first build, and again when a CLI update changes the bundled Playwright version. This command can run outside a vault.
 * `daybook serve`: Starts a local web server at `http://localhost:1313` to preview your site. Use `daybook serve --addr 127.0.0.1:1415` to select another address or port.
 * `daybook version`: Prints the current CLI version.
+
+Interactive builds keep two live lines: the current task, completed count and elapsed time above a terminal-width Pac-Man bar. Its mouth animates while waiting; its position moves only when work completes. The percentage is weighted overall work, not an estimate of remaining time. Social cards report each completed image and then validate the generated PNGs. Warnings remain in terminal history; the final summary includes content, social-card and warning counts.
+
+Redirected output, CI (`CI=true`) and unsupported terminals (`TERM=dumb` or unset) use plain stage start/end logs with no cursor controls. `NO_COLOR=1` disables color while keeping interactive progress. Use `--verbose` to diagnose an individual file or compare stage timings.
 
 ## Development
 

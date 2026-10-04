@@ -214,7 +214,13 @@ func TestGenerateReportsMissingAsset(t *testing.T) {
 		Section: "notes", PageURL: "/notes/missing-asset/", OutputPath: "/generated/og/notes/missing.png",
 		HTML: `<!doctype html><html><body><img src="/missing.png"></body></html>`,
 	}
-	err := Generate(t.TempDir(), []Card{card})
+	var events []Progress
+	err := Generate(t.TempDir(), []Card{card}, func(event Progress) { events = append(events, event) })
+	for _, event := range events {
+		if event.Completed != 0 || event.Phase == "validating" {
+			t.Fatalf("failed image was counted as complete: %+v", events)
+		}
+	}
 	if err == nil || !strings.Contains(err.Error(), "/notes/missing-asset/") || !strings.Contains(err.Error(), "/missing.png") {
 		t.Fatalf("expected page and failed asset in error, got %v", err)
 	}
@@ -241,8 +247,20 @@ func TestGenerateCachesRemoteImagesAcrossCards(t *testing.T) {
 		cards[i].HTML = fmt.Sprintf(`<!doctype html><html><body><img src="%s/avatar.png"></body></html>`, server.URL)
 	}
 	dir := t.TempDir()
-	if err := Generate(dir, cards); err != nil {
+	var events []Progress
+	if err := Generate(dir, cards, func(event Progress) {
+		events = append(events, event)
+		if event.Completed > 0 && event.PageURL == cards[event.Completed-1].PageURL {
+			filename := filepath.Join(dir, filepath.FromSlash(strings.TrimPrefix(cards[event.Completed-1].OutputPath, "/")))
+			if err := verifyPNG(filename); err != nil {
+				t.Errorf("completion reported before image exists: %v", err)
+			}
+		}
+	}); err != nil {
 		t.Fatal(err)
+	}
+	if len(events) != 9 || events[1].Completed != 0 || events[2].Completed != 1 || events[3].Completed != 1 || events[4].Completed != 2 || events[5].Phase != "validating" || events[8].Completed != 2 {
+		t.Fatalf("unexpected renderer lifecycle: %+v", events)
 	}
 	if actual := requests.Load(); actual != 1 {
 		t.Fatalf("remote avatar fetched %d times, want once per batch", actual)
@@ -250,6 +268,46 @@ func TestGenerateCachesRemoteImagesAcrossCards(t *testing.T) {
 	for _, card := range cards {
 		if err := verifyPNG(filepath.Join(dir, filepath.FromSlash(strings.TrimPrefix(card.OutputPath, "/")))); err != nil {
 			t.Fatal(err)
+		}
+	}
+}
+
+func TestRenderEventsReportCompletedWrites(t *testing.T) {
+	var received []Progress
+	cards := []Card{{PageURL: "/notes/first/"}, {PageURL: "/memos/second/"}}
+	writer := &renderEvents{cards: cards, report: func(phase string, completed int, page string) {
+		received = append(received, Progress{Phase: phase, Completed: completed, Total: 2, PageURL: page})
+	}}
+	// os/exec may split a JSON event anywhere, or deliver multiple lines together.
+	input := "{\"event\":\"ready\"}\n{\"event\":\"start\",\"index\":0}\n{\"event\":\"done\",\"index\":0}\n{\"event\":\"start\",\"index\":1}\n{\"event\":\"done\",\"index\":1}\n"
+	for _, b := range []byte(input) {
+		if _, err := writer.Write([]byte{b}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if len(received) != 5 {
+		t.Fatalf("events: %+v", received)
+	}
+	for i, want := range []int{0, 0, 1, 1, 2} {
+		if received[i].Completed != want {
+			t.Fatalf("event %d: %+v, want %d completed", i, received[i], want)
+		}
+	}
+	if received[3].PageURL != cards[1].PageURL {
+		t.Fatal(received)
+	}
+	if _, err := writer.Write([]byte("{\"event\":\"done\",\"index\":1}\n")); err == nil {
+		t.Fatal("accepted duplicate completion")
+	}
+	for _, input := range []string{
+		"not JSON\n", "{\"event\":\"done\",\"index\":0}\n",
+		"{\"event\":\"ready\"}\n{\"event\":\"start\",\"index\":-1}\n",
+		"{\"event\":\"ready\"}\n{\"event\":\"start\",\"index\":2}\n",
+		strings.Repeat("x", 4097),
+	} {
+		writer := &renderEvents{cards: cards, report: func(string, int, string) {}}
+		if _, err := writer.Write([]byte(input)); err == nil {
+			t.Fatalf("accepted invalid protocol: %.80q", input)
 		}
 	}
 }
