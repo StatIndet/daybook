@@ -364,6 +364,9 @@
 .graph-link {
   stroke: var(--color-line);
   stroke-opacity: 0.55;
+  transition:
+    stroke-opacity var(--duration-fast, 240ms),
+    stroke var(--duration-fast, 240ms);
 }
 .graph-arrow {
   fill: var(--color-muted);
@@ -372,6 +375,11 @@
   fill: var(--color-text);
   stroke: var(--color-paper);
   stroke-width: 1.5px;
+  transition:
+    fill var(--duration-fast, 240ms),
+    opacity var(--duration-fast, 240ms),
+    stroke var(--duration-fast, 240ms),
+    stroke-width var(--duration-fast, 240ms);
   cursor: pointer;
 }
 .graph-node.is-tag {
@@ -398,6 +406,9 @@
   stroke: var(--color-paper);
   stroke-width: 3px;
   stroke-linejoin: round;
+  transition:
+    opacity var(--duration-fast, 240ms),
+    fill var(--duration-fast, 240ms);
 }
 .graph-dimmed .graph-node:not(.is-highlight) {
   opacity: 0.18;

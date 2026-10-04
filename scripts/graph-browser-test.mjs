@@ -101,6 +101,66 @@ try {
 
   const initialTransform = await page.evaluate(() => ({ ...window.d3.zoomTransform(document.querySelector('#graph-container svg')) }));
 
+  const hoverMotion = await page.evaluate(async () => {
+    window.__graphSimulations[0].simulation.stop();
+    const node = document.querySelector('.graph-node');
+    const label = node.parentElement.querySelector('text');
+    const unrelated = [...document.querySelectorAll('.graph-node')].find(n => n.__data__.id === 'note-52');
+    const links = [...document.querySelectorAll('.graph-link')];
+    const connected = links.find(link => link.__data__.source.id === node.__data__.id);
+    const disconnected = links.find(link => ![link.__data__.source.id, link.__data__.target.id].includes(node.__data__.id));
+    const read = () => ({
+      radius: +node.getAttribute('r'), labelY: +label.getAttribute('dy'),
+      nodeOpacity: +getComputedStyle(unrelated).opacity,
+      linkOpacity: +getComputedStyle(connected).strokeOpacity,
+      dimLinkOpacity: +getComputedStyle(disconnected).strokeOpacity,
+      stroke: getComputedStyle(connected).stroke,
+    });
+    const sample = async type => {
+      const samples = [read()];
+      node.dispatchEvent(new MouseEvent(type, { bubbles: true }));
+      const start = performance.now();
+      do {
+        await new Promise(requestAnimationFrame);
+        samples.push(read());
+      } while (performance.now() - start < 350);
+      return samples;
+    };
+    const enter = await sample('mouseover');
+    const leave = await sample('mouseout');
+    // Reverse an in-flight transition, then reenter before it has completed.
+    node.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    await new Promise(requestAnimationFrame);
+    node.dispatchEvent(new MouseEvent('mouseout', { bubbles: true }));
+    const reenter = await sample('mouseover');
+    await sample('mouseout');
+    return { radius: node.__data__.radius, enter, leave, reenter };
+  });
+  for (const samples of [hoverMotion.enter, hoverMotion.leave]) {
+    assert.ok(samples.some(s => s.radius > hoverMotion.radius && s.radius < hoverMotion.radius * 1.5), 'Hover radius changes gradually in both directions');
+    assert.ok(samples.some(s => s.nodeOpacity > .18 && s.nodeOpacity < 1), 'Unrelated nodes fade gradually');
+    assert.ok(samples.some(s => s.linkOpacity > .55 && s.linkOpacity < .9), 'Connected links brighten gradually');
+    assert.ok(samples.some(s => s.dimLinkOpacity > .06 && s.dimLinkOpacity < .55), 'Unrelated links fade gradually');
+    assert.ok(new Set(samples.map(s => s.stroke)).size > 2, 'Link color interpolates instead of jumping');
+  }
+  assert.equal(hoverMotion.enter.at(-1).radius, hoverMotion.radius * 1.5);
+  assert.equal(hoverMotion.enter.at(-1).labelY, hoverMotion.radius * 1.5 + 15);
+  assert.equal(hoverMotion.leave.at(-1).radius, hoverMotion.radius);
+  assert.equal(hoverMotion.leave.at(-1).labelY, hoverMotion.radius + 12);
+  assert.equal(hoverMotion.reenter.at(-1).radius, hoverMotion.radius * 1.5, 'Rapid pointer changes converge to the latest hover state');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const reducedHover = await page.evaluate(() => {
+    const node = document.querySelector('.graph-node');
+    node.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    const enlarged = +node.getAttribute('r') === node.__data__.radius * 1.5;
+    const transitions = [...document.querySelectorAll('.graph-node, .graph-label, .graph-link')].map(n => getComputedStyle(n).transitionDuration);
+    node.dispatchEvent(new MouseEvent('mouseout', { bubbles: true }));
+    return { enlarged, restored: +node.getAttribute('r') === node.__data__.radius, transitions };
+  });
+  assert.equal(reducedHover.enlarged && reducedHover.restored, true, 'Reduced motion applies hover size immediately');
+  assert.ok(reducedHover.transitions.every(duration => duration === '0s'), 'Reduced motion disables hover fades');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+
   for (let cycle = 0; cycle < 4; cycle++) {
     for (const button of ['graph-orphan-btn', 'graph-tags-btn', 'graph-attachments-btn']) {
       const state = await page.evaluate(button => {

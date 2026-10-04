@@ -196,7 +196,7 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
       window.d3.dragEnable(window);
     }
     svg?.interrupt();
-    svg?.selectAll("*").interrupt();
+    svg?.selectAll("*").interrupt().interrupt("hover");
     if (container) {
       container.replaceChildren();
       container.classList.remove("graph-dimmed");
@@ -603,7 +603,10 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
           return node;
         },
         (update: any) => update,
-        (exit: any) => exit.remove(),
+        (exit: any) => {
+          exit.selectAll("*").interrupt("hover");
+          return exit.remove();
+        },
       )
       .on("mouseover", (_: any, n: GraphNode) => hover(n.id))
       .on("mouseout", () => hover(null))
@@ -718,8 +721,7 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
   function updateAppearance() {
     if (!nodeSelection) return;
     for (const n of currentNodes) n.radius = radius(n.degree);
-    nodeSelection.select("circle").attr("r", (n: GraphNode) => n.radius);
-    nodeSelection.select("text").attr("dy", (n: GraphNode) => n.radius + 12);
+    updateNodeSize(nodeSelection);
     linkSelection
       .attr("stroke-width", settings.lineWidth)
       .attr("marker-end", (l: GraphLink) =>
@@ -757,6 +759,21 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
             : 0;
       });
   }
+  function updateNodeSize(selection: any, animate = false) {
+    for (const [tag, attribute] of [["circle", "r"], ["text", "dy"]]) {
+      let elements = selection.select(tag).interrupt("hover");
+      if (animate && !reduce())
+        elements = elements
+          .transition("hover")
+          .duration(250)
+          .ease(window.d3.easeCubicOut);
+      elements.attr(attribute, function (this: Element, n: GraphNode) {
+        const hovered = this.classList.contains("is-hovered");
+        const size = n.radius * (hovered ? 1.5 : 1);
+        return tag === "circle" ? size : size + (hovered ? 15 : 12);
+      });
+    }
+  }
   function hover(id: string | null) {
     if (!nodeSelection) return;
     container?.classList.toggle("graph-dimmed", id !== null);
@@ -768,6 +785,9 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
         if (endpoint(l.target) === id) neighbors.add(endpoint(l.source));
       }
     }
+    const resized = nodeSelection.filter(function (this: Element, n: GraphNode) {
+      return n.id === id || !!this.querySelector(".is-hovered");
+    });
     nodeSelection
       .selectAll("circle,text")
       .classed("is-highlight", (n: GraphNode) => neighbors.has(n.id))
@@ -776,6 +796,7 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
       "is-highlight",
       (l: GraphLink) => endpoint(l.source) === id || endpoint(l.target) === id,
     );
+    updateNodeSize(resized, true);
     updateLabels();
   }
   function stopAnimation(restoreGraph: boolean) {
