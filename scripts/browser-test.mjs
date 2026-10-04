@@ -2,6 +2,12 @@ import { chromium } from 'playwright';
 
 const serverUrl = process.env.DAYBOOK_TEST_URL || 'http://localhost:1313';
 
+// A swapped DOM can appear before its View Transition finishes. Wait before
+// starting the next navigation so this smoke test does not cancel animations.
+async function settled(page) {
+  await page.waitForFunction(() => !document.documentElement.classList.contains('is-transitioning'));
+}
+
 async function run() {
   console.log('Starting Playwright smoke test...');
   const browser = await chromium.launch({ headless: true });
@@ -65,6 +71,7 @@ async function run() {
     
     if (errors.length > 0) throw new Error(errors.join('\n'));
 
+    await settled(page);
     console.log('Navigating to article...');
     const articleLink = page.locator('h1.notes-item-title a').first();
     await articleLink.click();
@@ -121,15 +128,18 @@ async function run() {
     
     if (errors.length > 0) throw new Error(errors.join('\n'));
 
+    await settled(page);
     console.log('Testing browser forward...');
     await page.goForward();
     await page.waitForSelector('div.post-content', { state: 'attached', timeout: 5000 });
     await page.waitForSelector('.katex', { state: 'attached', timeout: 5000 });
 
+    await settled(page);
     console.log('Testing graph navigation...');
     await page.locator('.side-nav a[href="/graph/"]').click();
     await page.waitForSelector('#graph-container svg', { state: 'attached', timeout: 10000 });
 
+    await settled(page);
     console.log('Testing homepage return...');
     await page.evaluate(() => window.daybookNavigateTo('/'));
     await page.waitForSelector('[data-github-home]', { state: 'attached', timeout: 5000 });
