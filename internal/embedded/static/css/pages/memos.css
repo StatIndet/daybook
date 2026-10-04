@@ -53,12 +53,17 @@
 .memos-page span.memo-photo-tile { display: inline-block; vertical-align: middle; }
 .memos-page .memo-photo-grid .memo-photo-tile { width: auto; max-width: 100%; }
 .memos-page .memo-photo-tile img { display: block; width: auto; max-height: calc((100cqw - 8px) * .375); margin: 0; transition: transform 220ms cubic-bezier(.22, .61, .36, 1), filter 220ms cubic-bezier(.22, .61, .36, 1); }
+.memos-page .has-more-photos::before {
+  content: "";
+  position: absolute; inset: 0 0 auto; height: 72px; max-height: 50%; z-index: 1;
+  background: linear-gradient(to bottom, rgb(0 0 0 / .7), transparent);
+  pointer-events: none;
+}
 .memos-page .memo-content .memo-more-photos {
   position: absolute; right: 8px; top: 8px; z-index: 1;
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 32px; min-height: 28px; padding: 2px 10px;
   background: none; color: white;
-  text-shadow: 0 1px 3px rgb(0 0 0 / .8), 0 0 8px rgb(0 0 0 / .45);
   font-family: var(--font-ui); font-size: .78rem; line-height: 1.4; text-decoration: none;
 }
 .memo-photo-count, .memo-photo-hint { overflow: hidden; white-space: nowrap; transition: opacity 220ms cubic-bezier(.22, .61, .36, 1); }
