@@ -1454,9 +1454,8 @@ body.is-search-overlay-open .mobile-search-overlay {
   width: max-content;
   padding: 4px;
   gap: 4px;
-  border: 2px solid var(--color-muted);
   border-radius: 999px;
-  background: var(--color-paper);
+  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-page));
 }
 
 .theme-selector-indicator {
