@@ -199,7 +199,7 @@ export function createGraphPanel(
   }
   help.append(helpList, el("p", "", graphText("helpText")));
   searchPanel.append(query, queryError, help);
-  const fields = new Map<keyof GraphSettings, HTMLInputElement[]>();
+  const fields = new Map<keyof GraphSettings, HTMLInputElement>();
   const arrowRow = el("label", "graph-switch-row");
   const arrows = button("", () => {
     get().arrows = !get().arrows;
@@ -269,35 +269,21 @@ export function createGraphPanel(
     range.onpointercancel = releaseSlider;
     range.onlostpointercapture = releaseSlider;
     range.onblur = releaseSlider;
-    const number = el("input", "graph-number");
-    number.type = "number";
-    number.setAttribute("aria-label", graphText(key));
-    for (const input of [range, number]) {
-      input.min = String(min);
-      input.max = String(max);
-      input.step = String(step);
-      input.dataset.setting = key;
-      input.oninput = () => {
-        if (input.value === "" || !Number.isFinite(input.valueAsNumber)) return;
-        const value = Math.max(min, Math.min(max, input.valueAsNumber));
-        get()[key] = value;
-        range.value = String(value);
-        updateSlider(range);
-        if (input !== number) number.value = String(value);
-        change(key);
-      };
-      input.onchange = () => {
-        input.value = String(get()[key]);
-      };
-    }
-    const top = el("div", "graph-slider-label");
-    top.append(label, number);
-    row.append(top, slider);
+    range.min = String(min);
+    range.max = String(max);
+    range.step = String(step);
+    range.dataset.setting = key;
+    range.oninput = () => {
+      get()[key] = range.valueAsNumber;
+      updateSlider(range);
+      change(key);
+    };
+    row.append(label, slider);
     (key.endsWith("Force") || key === "linkDistance"
       ? sections.get("forces")!
       : sections.get("appearance")!
     ).append(row);
-    fields.set(key, [range, number]);
+    fields.set(key, range);
   }
   const footer = el("div", "graph-panel-footer");
   const reset = button(graphText("reset"), actions.reset);
@@ -346,11 +332,9 @@ export function createGraphPanel(
   function sync() {
     query.value = get().query;
     arrows.setAttribute("aria-checked", String(get().arrows));
-    for (const [key, inputs] of fields) {
-      for (const input of inputs) {
-        input.value = String(get()[key]);
-        if (input.type === "range") updateSlider(input);
-      }
+    for (const [key, range] of fields) {
+      range.value = String(get()[key]);
+      updateSlider(range);
     }
     syncToggles();
   }
