@@ -5,10 +5,10 @@
     search: string;
     tags: string[];
   }
-  interface Filters { q: string; tag: string; date: string; month: string; }
+  interface Filters { q: string; tag: string[]; date: string[]; month: string; }
   let page: HTMLElement | null = null;
   let memos: Memo[] = [];
-  let filters: Filters = { q: '', tag: '', date: '', month: '' };
+  let filters: Filters = { q: '', tag: [], date: [], month: '' };
   let calendarMonth = '';
   let inputTimer = 0;
   const english = () => document.documentElement.lang.startsWith('en');
@@ -20,11 +20,14 @@
 
   function readFilters(): Filters {
     const params = new URLSearchParams(location.search);
-    return { q: params.get('q') || '', tag: params.get('tag') || '', date: params.get('date') || '', month: params.get('month') || '' };
+    return { q: params.get('q') || '', tag: [...new Set(params.getAll('tag').filter(Boolean))], date: [...new Set(params.getAll('date').filter(Boolean))], month: params.get('month') || '' };
   }
   function saveFilters() {
     const url = new URL(location.href);
-    Object.entries(filters).forEach(([key, value]) => value ? url.searchParams.set(key, value) : url.searchParams.delete(key));
+    Object.entries(filters).forEach(([key, value]) => {
+      url.searchParams.delete(key);
+      (Array.isArray(value) ? value : [value]).filter(Boolean).forEach(item => url.searchParams.append(key, item));
+    });
     if (window.daybookReplaceURL) window.daybookReplaceURL(url.href);
     else history.replaceState(history.state, '', url);
     try { sessionStorage.setItem(storageKey(), JSON.stringify({ ...filters, calendarMonth })); } catch { /* Storage may be unavailable. */ }
@@ -33,8 +36,8 @@
     return !filters.q || memo.search.includes(normalize(filters.q.trim()));
   }
   function matches(memo: Memo, includeDate = true) {
-    return includesQuery(memo) && (!filters.tag || memo.tags.includes(filters.tag)) &&
-      (!includeDate || ((!filters.date || memo.date === filters.date) && (!filters.month || monthOf(memo.date) === filters.month)));
+    return includesQuery(memo) && (!filters.tag.length || filters.tag.some(tag => memo.tags.includes(tag))) &&
+      (!includeDate || ((!filters.date.length || filters.date.includes(memo.date)) && (!filters.month || monthOf(memo.date) === filters.month)));
   }
 
   // Ranges highlight text in place, preserving embeds, links, and Markdown DOM.
@@ -113,7 +116,7 @@
     document.querySelectorAll<HTMLElement>('[data-memos-filters]').forEach(panel => {
       const label = panel.querySelector<HTMLElement>('[data-memos-month-label]');
       if (label) {
-        numberText(label, date.toLocaleDateString(english() ? 'en-US' : 'zh-CN', { year: 'numeric', month: 'long' }));
+        label.textContent = date.toLocaleDateString(english() ? 'en-US' : 'zh-CN', { year: 'numeric', month: 'long' });
         label.setAttribute('aria-pressed', String(filters.month === calendarMonth));
       }
       panel.querySelectorAll<HTMLButtonElement>('[data-memos-month]').forEach(button => {
@@ -131,11 +134,10 @@
         const count = counts.get(key) || 0;
         const el = document.createElement(count ? 'button' : 'span');
         el.textContent = String(day);
-        el.classList.add("memo-number");
         if (el instanceof HTMLButtonElement) {
           el.type = 'button';
           el.dataset.memosDate = key;
-          el.setAttribute('aria-pressed', String(filters.date === key));
+          el.setAttribute('aria-pressed', String(filters.date.includes(key)));
           el.setAttribute('aria-label', english() ? `${key}, ${count} memos` : `${key}，${count} 条随记`);
           el.title = el.getAttribute('aria-label') || '';
         }
@@ -151,9 +153,9 @@
       if (!counts.size) { container.textContent = english() ? 'No tags' : '暂无标签'; return; }
       [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).forEach(([tag, count]) => {
         const button = document.createElement('button');
-        button.type = 'button'; button.dataset.memoTag = tag; button.setAttribute('aria-pressed', String(filters.tag === tag));
+        button.type = 'button'; button.dataset.memoTag = tag; button.setAttribute('aria-pressed', String(filters.tag.includes(tag)));
         const label = document.createElement('span'); label.textContent = `#${tag}`;
-        const number = document.createElement('small'); number.className = 'memo-number'; number.textContent = String(count);
+        const number = document.createElement('small'); number.textContent = String(count);
         button.append(label, number); container.append(button);
       });
     });
@@ -171,11 +173,11 @@
     const empty = page.querySelector<HTMLElement>('[data-memos-empty]');
     if (empty) empty.hidden = visible > 0 || memos.length === 0;
     const active = page.querySelector<HTMLElement>('[data-memos-active]');
-    if (active) active.hidden = !Object.values(filters).some(Boolean);
+    if (active) active.hidden = !(filters.q || filters.tag.length || filters.date.length || filters.month);
     const label = page.querySelector<HTMLElement>('[data-memos-active-label]');
-    if (label) label.textContent = [filters.q ? `“${filters.q}”` : '', filters.tag ? `#${filters.tag}` : '', filters.date || filters.month].filter(Boolean).join(' / ');
+    if (label) label.textContent = [filters.q ? `“${filters.q}”` : '', ...filters.tag.map(tag => `#${tag}`), ...filters.date, filters.month].filter(Boolean).join(' / ');
     page.querySelectorAll<HTMLInputElement>('[data-memos-search]').forEach(input => { if (input.value !== filters.q) input.value = filters.q; });
-    document.querySelectorAll<HTMLButtonElement>('.memo-card [data-memo-tag]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.memoTag === filters.tag)));
+    document.querySelectorAll<HTMLButtonElement>('.memo-card [data-memo-tag]').forEach(button => button.setAttribute('aria-pressed', String(filters.tag.includes(button.dataset.memoTag || ''))));
     page.querySelectorAll<HTMLElement>('[data-memo-more-count]').forEach(link => {
       const count = link.dataset.memoMoreCount;
       const label = english() ? `View ${count} more photos` : `查看其余 ${count} 张图片`;
@@ -228,12 +230,13 @@
       return { element, date: element.dataset.memoDate || '', search: normalize(element.dataset.memoSearch || ''), tags: Array.from(element.querySelectorAll<HTMLElement>('[data-memo-tag]')).map(tag => tag.dataset.memoTag || '') };
     });
     filters = readFilters();
-    calendarMonth = filters.month || monthOf(filters.date) || memos.map(memo => monthOf(memo.date)).filter(Boolean).sort().pop() || monthString(new Date());
+    calendarMonth = filters.month || monthOf(filters.date[0] || '') || memos.map(memo => monthOf(memo.date)).filter(Boolean).sort().pop() || monthString(new Date());
     if (!location.search) {
       try {
         const cached = JSON.parse(sessionStorage.getItem(storageKey()) || 'null');
-        if (cached && ['q', 'tag', 'date', 'month'].every(key => typeof cached[key] === 'string')) {
-          filters = { q: cached.q, tag: cached.tag, date: cached.date, month: cached.month };
+        if (cached && typeof cached.q === 'string' && typeof cached.month === 'string') {
+          const list = (value: unknown): string[] => Array.isArray(value) ? [...new Set(value.filter((item): item is string => typeof item === 'string' && !!item))] : typeof value === 'string' && value ? [value] : [];
+          filters = { q: cached.q, tag: list(cached.tag), date: list(cached.date), month: cached.month };
           if (/^\d{4}-\d{2}$/.test(cached.calendarMonth)) calendarMonth = cached.calendarMonth;
         }
       } catch { /* Invalid or unavailable persisted filters are ignored. */ }
@@ -241,6 +244,43 @@
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(calendarMonth)) calendarMonth = monthString(new Date());
     applyFilters();
   }
+  function selectFilter(target: HTMLElement, additive: boolean) {
+    const type = target.hasAttribute('data-memo-tag') ? 'tag' : 'date';
+    const value = type === 'tag' ? target.dataset.memoTag! : target.dataset.memosDate!;
+    const selected = filters[type];
+    filters[type] = additive
+      ? selected.includes(value) ? selected.filter(item => item !== value) : [...selected, value]
+      : selected.length === 1 && selected[0] === value ? [] : [value];
+    if (type === 'date') filters.month = '';
+    applyFilters();
+  }
+
+  let hold: { id: number; x: number; y: number; timer: number; target: HTMLElement } | null = null;
+  let suppressTouchClickUntil = 0;
+  const cancelHold = () => { if (hold) clearTimeout(hold.timer); hold = null; };
+  document.addEventListener('pointerdown', event => {
+    cancelHold();
+    suppressTouchClickUntil = 0;
+    if (!page || event.pointerType !== 'touch' || !event.isPrimary) return;
+    const target = (event.target as Element).closest<HTMLElement>('button[data-memo-tag], button[data-memos-date]');
+    if (!target) return;
+    hold = { id: event.pointerId, x: event.clientX, y: event.clientY, target, timer: window.setTimeout(() => {
+      suppressTouchClickUntil = Date.now() + 60000;
+      selectFilter(target, true);
+    }, 500) };
+  });
+  document.addEventListener('pointermove', event => {
+    if (hold?.id === event.pointerId && Math.hypot(event.clientX - hold.x, event.clientY - hold.y) > 10) cancelHold();
+  }, { passive: true });
+  document.addEventListener('pointerup', () => {
+    if (suppressTouchClickUntil) suppressTouchClickUntil = Date.now() + 800;
+    cancelHold();
+  });
+  document.addEventListener('pointercancel', cancelHold);
+  document.addEventListener('contextmenu', event => {
+    if (hold || Date.now() < suppressTouchClickUntil) event.preventDefault();
+  });
+  document.addEventListener('daybook:before-swap', () => { cancelHold(); suppressTouchClickUntil = 0; });
   document.addEventListener('input', event => {
     const target = event.target;
     if (!(target instanceof HTMLInputElement) || !target.matches('[data-memos-search]')) return;
@@ -249,17 +289,17 @@
   });
   document.addEventListener('click', event => {
     if (!page) return;
+    if (Date.now() < suppressTouchClickUntil) { event.preventDefault(); return; }
     const target = event.target instanceof Element ? event.target : null;
     if (!target) return;
     const tag = target.closest<HTMLElement>('[data-memo-tag]');
     const day = target.closest<HTMLElement>('[data-memos-date]');
     const month = target.closest<HTMLElement>('[data-memos-month]');
-    if (tag) { filters.tag = filters.tag === tag.dataset.memoTag ? '' : tag.dataset.memoTag || ''; applyFilters(); }
-    else if (day) { filters.date = filters.date === day.dataset.memosDate ? '' : day.dataset.memosDate || ''; filters.month = ''; applyFilters(); }
+    if (tag || day) { event.preventDefault(); selectFilter((tag || day)!, event.ctrlKey || event.metaKey); }
     else if (month) { const date = monthDate(calendarMonth); date.setMonth(date.getMonth() + Number(month.dataset.memosMonth)); calendarMonth = monthString(date); renderCalendar(); saveFilters(); }
-    else if (target.closest('[data-memos-select-month]')) { filters.month = filters.month === calendarMonth ? '' : calendarMonth; filters.date = ''; applyFilters(); }
-    else if (target.closest('[data-memos-clear-date]')) { filters.date = ''; filters.month = ''; applyFilters(); }
-    else if (target.closest('[data-memos-reset]')) { filters = { q: '', tag: '', date: '', month: '' }; applyFilters(); }
+    else if (target.closest('[data-memos-select-month]')) { filters.month = filters.month === calendarMonth ? '' : calendarMonth; filters.date = []; applyFilters(); }
+    else if (target.closest('[data-memos-clear-date]')) { filters.date = []; filters.month = ''; applyFilters(); }
+    else if (target.closest('[data-memos-reset]')) { filters = { q: '', tag: [], date: [], month: '' }; applyFilters(); }
     else {
       const card = target.closest<HTMLElement>('[data-memo-card]');
       if (card && event.button === 0 && !target.closest('a, button, input, textarea, select, label, summary, audio, video, iframe, img, [contenteditable], [role="button"], .memo-actions, .mermaid-block, .music-custom-player, .media-embed') && !window.getSelection()?.toString() && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
@@ -268,7 +308,7 @@
       }
     }
   });
-  window.addEventListener('popstate', () => { if (page) { filters = readFilters(); calendarMonth = filters.month || monthOf(filters.date) || calendarMonth; applyFilters(false); } });
+  window.addEventListener('popstate', () => { if (page) { filters = readFilters(); calendarMonth = filters.month || monthOf(filters.date[0] || '') || calendarMonth; applyFilters(false); } });
   document.addEventListener('daybook:page-load', init);
   document.addEventListener('daybook:lang-change', () => { if (page) applyFilters(false); });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();

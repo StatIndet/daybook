@@ -102,7 +102,7 @@ Last month's library visit.
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
   browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, hasTouch: true, reducedMotion: 'reduce' });
   const page = await context.newPage();
   const errors = [];
   const hits = [];
@@ -159,6 +159,18 @@ Last month's library visit.
     const style = getComputedStyle(node);
     return style.fontFamily.includes('Cormorant Garamond') && style.fontStyle === 'italic';
   })), 'All post dates and counters use italic Cormorant Garamond');
+  await page.evaluate(() => document.fonts.ready);
+  const cdp = await context.newCDPSession(page);
+  await cdp.send('DOM.enable'); await cdp.send('CSS.enable');
+  const { root: fontRoot } = await cdp.send('DOM.getDocument');
+  const { nodeId } = await cdp.send('DOM.querySelector', { nodeId: fontRoot.nodeId, selector: '.memo-permalink time' });
+  const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId });
+  assert(fonts.some(font => font.isCustomFont && /CormorantGaramond.*Italic/i.test(font.postScriptName)), 'Dates render the actual Cormorant Garamond italic font file');
+  assert.equal(await alphaCard.locator('.memo-updated > span').textContent(), 'updated');
+  const background = await alphaCard.evaluate(el => getComputedStyle(el).backgroundColor);
+  await alphaCard.hover();
+  assert.equal(await alphaCard.evaluate(el => getComputedStyle(el).backgroundColor), background, 'Hover does not highlight the post');
+  assert(await page.locator('.memos-aside [data-memos-calendar] button, .memos-aside [data-memos-tags] small').evaluateAll(nodes => nodes.every(node => getComputedStyle(node).fontStyle === 'normal')), 'Calendar and tag counts keep normal type');
   const typography = await alphaCard.evaluate(card => {
     const body = getComputedStyle(card.querySelector('.memo-content'));
     return [...card.querySelectorAll('.memo-tag, .memo-location')].every(node => {
@@ -206,6 +218,24 @@ Last month's library visit.
   await page.locator('[data-memos-reset]').click();
   await visibleCards(page, [beta, alpha, gamma]);
 
+  console.log('Checking multiple tags and dates...');
+  await sidebar.locator('[data-memo-tag="reading"]').click();
+  await sidebar.locator('[data-memo-tag="walking"]').click({ modifiers: ['Control'] });
+  await visibleCards(page, [alpha, beta, gamma]);
+  assert.deepEqual(new URL(page.url()).searchParams.getAll('tag'), ['reading', 'walking']);
+  await sidebar.locator('[data-memos-month="1"]').click();
+  await sidebar.locator('[data-memos-date="2026-10-02"]').click();
+  await sidebar.locator('[data-memos-month="-1"]').click();
+  await sidebar.locator('[data-memos-date="2026-09-30"]').click({ modifiers: ['Control'] });
+  await visibleCards(page, [alpha, beta, gamma]);
+  assert.deepEqual(new URL(page.url()).searchParams.getAll('date'), ['2026-10-02', '2026-09-30']);
+  await sidebar.locator('[data-memo-tag="walking"]').click({ modifiers: ['Control'] });
+  await visibleCards(page, [alpha, gamma]);
+  await sidebar.locator('[data-memos-date="2026-09-30"]').click({ modifiers: ['Control'] });
+  await visibleCards(page, [alpha]);
+  await page.locator('[data-memos-reset]').click();
+  await visibleCards(page, [alpha, beta, gamma]);
+
   console.log('Checking independent footnote anchors across memo cards...');
   const fragments = await page.locator('[data-memo-card] .memo-content').evaluateAll(contents => contents.flatMap(content =>
     [...content.querySelectorAll('a[href^="#"]')].map(link => {
@@ -225,9 +255,12 @@ Last month's library visit.
   await sidebar.locator('[data-memo-tag="reading"]').click();
   assert.equal(new URL(page.url()).searchParams.get('q'), 'gentleword');
   assert.equal(new URL(page.url()).searchParams.get('tag'), 'reading');
+  const feedBounds = await alphaCard.boundingBox();
   await alphaCard.locator('.memo-permalink').click();
   await settled(page, 'memo');
   assert.equal(new URL(page.url()).pathname, alpha);
+  const detailBounds = await page.locator('.memo-detail-post').boundingBox();
+  assert(Math.abs(feedBounds.x - detailBounds.x) < 2 && Math.abs(feedBounds.width - detailBounds.width) < 2, 'Detail keeps the feed column position and width');
   assert.equal(await page.locator('[data-reader-toggle], [data-reader-exit], .reading-time, [data-mobile-progress-text]').count(), 0, 'Memo detail has no reader mode or reading-time controls');
   assert.equal(await page.locator('.memo-updated time').textContent(), '2026-10-03 10:15');
   assert.equal(await page.locator('.article-meta-rows, .note-header').count(), 0, 'Memo detail has no article metadata section');
@@ -310,6 +343,49 @@ Last month's library visit.
   });
   await page.waitForTimeout(150);
   assert.equal(commentRequests.length, requestCount, 'Disabling comments stops count requests');
+  console.log('Checking touch long-press selection and URL restoration...');
+  await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true });
+  await opener.click();
+  const longPress = async locator => {
+    const box = await locator.boundingBox();
+    const touchPoints = [{ x: box.x + box.width / 2, y: box.y + box.height / 2 }];
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints });
+    await page.waitForTimeout(600);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  };
+  await overlay.locator('[data-memo-tag="reading"]').tap();
+  await longPress(overlay.locator('[data-memo-tag="walking"]'));
+  assert.deepEqual(new URL(page.url()).searchParams.getAll('tag'), ['reading', 'walking']);
+  // Move to October, then select another date in September using a long press.
+  if (!(await overlay.locator('[data-memos-date="2026-10-02"]').count())) await overlay.locator('[data-memos-month="1"]').tap();
+  await overlay.locator('[data-memos-date="2026-10-02"]').tap();
+  await overlay.locator('[data-memos-month="-1"]').tap();
+  await longPress(overlay.locator('[data-memos-date="2026-09-30"]'));
+  assert.deepEqual(new URL(page.url()).searchParams.getAll('date'), ['2026-10-02', '2026-09-30']);
+  await longPress(overlay.locator('[data-memo-tag="walking"]'));
+  assert.deepEqual(new URL(page.url()).searchParams.getAll('tag'), ['reading']);
+  const movingTag = await overlay.locator('[data-memo-tag="walking"]').boundingBox();
+  const point = { x: movingTag.x + movingTag.width / 2, y: movingTag.y + movingTag.height / 2 };
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: point.x + 30, y: point.y }] });
+  await page.waitForTimeout(600);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  assert.deepEqual(new URL(page.url()).searchParams.getAll('tag'), ['reading'], 'Dragging cancels a pending long press');
+  await overlay.locator('[data-overlay-close]').tap();
+  await visibleCards(page, [alpha, gamma]);
+  await page.reload({ waitUntil: 'networkidle' });
+  await visibleCards(page, [alpha, gamma]);
+  assert.deepEqual(new URL(page.url()).searchParams.getAll('date'), ['2026-10-02', '2026-09-30'], 'Repeated date filters survive reload');
+  for (const width of [1024, 390]) {
+    await page.setViewportSize({ width, height: 1000 });
+    const before = await alphaCard.boundingBox();
+    await alphaCard.locator('.memo-permalink').click();
+    await settled(page, 'memo');
+    const after = await page.locator('.memo-detail-post').boundingBox();
+    assert(Math.abs(before.x - after.x) < 2 && Math.abs(before.width - after.width) < 2, `Detail preserves the feed column at ${width}px`);
+    await page.locator('.memo-detail-back').click();
+    await settled(page, 'memos');
+  }
   assert.deepEqual(errors, [], 'Memos interactions have no uncaught browser errors');
   await context.close();
   console.log('Memos browser tests passed: search, highlights, calendar, tags, images, footnotes, SPA and mobile overlays.');
