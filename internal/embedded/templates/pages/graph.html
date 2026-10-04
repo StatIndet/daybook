@@ -1,45 +1,8 @@
 {{define "content"}}
 <div class="graph-page">
-
   <div class="graph-shell">
-    <div class="graph-toolbar">
-      <div class="graph-toolbar-inner">
-        
-        <div class="graph-actions-horizontal" data-notes-tools>
-          <button class="notes-action-button" type="button" aria-label="{{T .Lang "action.search"}}" data-ui-aria="action.search" aria-expanded="false" aria-controls="graph-local-search-panel" data-tooltip="{{T .Lang "tooltip.search"}}" data-ui-tooltip="tooltip.search" id="graph-search-btn">
-            <span class="material-symbol" aria-hidden="true">search</span>
-            <span class="notes-action-text" data-ui-text="action.search">{{T .Lang "action.search"}}</span>
-          </button>
-          
-          <button class="notes-action-button" type="button" aria-label="{{T .Lang "graph.orphans"}}" data-ui-aria="graph.orphans" aria-expanded="true" data-tooltip="{{T .Lang "graph.orphans"}}" data-ui-tooltip="graph.orphans" id="graph-orphan-btn">
-            <span class="material-symbol" aria-hidden="true">scatter_plot</span>
-            <span class="notes-action-text" data-ui-text="graph.orphans">{{T .Lang "graph.orphans"}}</span>
-          </button>
-
-          <button class="notes-action-button" type="button" aria-label="{{T .Lang "action.tags"}}" data-ui-aria="action.tags" aria-expanded="false" data-tooltip="{{T .Lang "tooltip.tags"}}" data-ui-tooltip="tooltip.tags" id="graph-tags-btn">
-            <span class="material-symbol" aria-hidden="true">sell</span>
-            <span class="notes-action-text" data-ui-text="action.tags">{{T .Lang "action.tags"}}</span>
-          </button>
-
-          <button class="notes-action-button" type="button" aria-label="{{T .Lang "action.attachments"}}" data-ui-aria="action.attachments" aria-expanded="false" data-tooltip="{{T .Lang "tooltip.attachments"}}" data-ui-tooltip="tooltip.attachments" id="graph-attachments-btn">
-            <span class="material-symbol" aria-hidden="true">attach_file</span>
-            <span class="notes-action-text" data-ui-text="action.attachments">{{T .Lang "action.attachments"}}</span>
-          </button>
-          
-          
-          <button id="graph-reset" class="notes-action-button" type="button" aria-label="{{T .Lang "graph.reset"}}" data-ui-aria="graph.reset" data-tooltip="{{T .Lang "graph.reset"}}" data-ui-tooltip="graph.reset">
-            <span class="material-symbol" aria-hidden="true">center_focus_strong</span>
-            <span class="notes-action-text" data-ui-text="graph.reset">{{T .Lang "graph.reset"}}</span>
-          </button>
-
-          <div class="notes-tool-panel notes-search-panel" id="graph-local-search-panel" aria-hidden="true">
-            <input class="notes-search-input" type="search" id="graph-search-input" placeholder="{{T .Lang "graph.search"}}" data-ui-placeholder="graph.search" autocomplete="off" spellcheck="false" aria-label="{{T .Lang "graph.search"}}" data-ui-aria="graph.search">
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <div id="graph-container"></div>
+    <div id="graph-controls"></div>
+    <div id="graph-container" aria-label="{{T .Lang "graph.title"}}"></div>
   </div>
 </div>
 {{end}}

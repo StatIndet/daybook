@@ -165,6 +165,31 @@ Notes and memos use the Markdown filename (without `.md`) as their title. The `t
 
 Chinese and English article versions both appear in Notes, Archive, tags, search and the graph. Each article keeps its canonical URL and original text. The global language button changes the interface; on an article it uses `?ui=zh_CN` or `?ui=en_US`. The separate `translate` icon in article metadata opens the corresponding translation. Existing `/en_US/` URL paths remain unchanged; HTML language and `hreflang` values use BCP 47 (`zh-CN`, `en-US`).
 
+### Interactive graph
+
+Open **Graph settings** on `/graph/` to filter nodes, create ordered color groups, adjust display and forces, or animate the graph. Settings stay in the current browser and are shared across interface languages; they do not change the vault or other visitors’ settings. Recenter only moves the camera. Restore defaults clears queries, colors and tuning while keeping a local graph’s scope; use Full graph to leave that scope.
+
+Queries support `path:"notes/项目"`, `file:.md`, `tag:work`, `line:(甲 乙)`, `section:(甲 乙)`, `[status]`, and `[status:done]`. Plain words match filenames/titles or published body text. Space means AND, `OR` matches either side, `-` excludes, parentheses group conditions, and double quotes preserve a phrase. Matching ignores case. Parent tags include descendants; line and section conditions must match within the same line or heading section. Regular expressions, numeric comparisons, task and block operators are not supported. Errors keep the previous valid result. If the content index cannot load, `path:`, `file:` and `tag:` remain available.
+
+Color groups use the same query language. The first matching group wins; an empty group is inactive. Move groups with the arrow buttons and edit colors with the saturation/brightness square, hue slider or RGB/HSL/HEX fields. A screen eyedropper appears only in supporting browsers on secure origins.
+
+Tags and attachments are added for matching notes; attachments can also match filename/path queries directly. Orphans are determined after filtering, using the currently visible links. Missing-note placeholders can be displayed but cannot create files. Arrows preserve both citation directions while reciprocal citations contribute only one physical link.
+
+Animation reveals notes in `date` order, grouping the authored calendar day, over 12 seconds. Tags, attachments and missing targets appear with related notes. Pause/Resume preserves progress; Stop restores all filtered nodes. Changing a filter stops playback. Colors and forces can change during playback. Reduced-motion preferences replace moving layouts with settled batches. Force values are multipliers of Daybook’s defaults; link distance is measured in graph coordinates. SVG is retained for this first version and is not intended as a guarantee of smooth graphs with tens of thousands of nodes.
+
+### Graph search data
+
+The static build publishes a versioned `graph.json` with vault-relative paths and directed citations, plus an independently loaded `graph-search.json` beside it in each interface language. Search text comes from the published article HTML: hidden comments, frontmatter, scripts and generated controls are excluded, while visible code remains searchable. Lines and heading sections are retained; a `#` inside a code fence does not start a section. Draft notes are excluded. Both language routes contain all published note and memo versions, matching the graph.
+
+Public note metadata (`title`, `date`, `updated`, `tags`, `summary`, `lang`, `slug`, `pinned`, `section`, `location`, `url`, `i18n_key`) is searchable by default. To publish additional custom frontmatter values for property queries, opt in explicitly in the **external vault's** `daybook.yaml`:
+
+```yaml
+graph:
+  searchProperties: [status, aliases] # Default: []
+```
+
+Only the named properties are added to the public JSON. Supported values are strings, numbers, booleans, null, timestamps and lists of these scalars; nested objects and nested lists are omitted. The canonical filename-derived title takes precedence over obsolete `title` frontmatter. File metadata exposes only vault-relative paths, never the build machine's absolute paths. Treat allowlisted values as published content; browser filtering does not make indexed data private.
+
 ### Reading and image viewing
 
 Notes retain their outline in reader mode: a desktop sidebar or a compact-screen TOC drawer. The image viewer groups photos from the current article or memo, with previous/next buttons and a position counter. Use Left/Right or Home/End to navigate, the wheel or +/- to zoom, 0 to fit, and Escape to close. Double-click to toggle zoom, drag to pan an enlarged photo, or swipe horizontally on touch to change photos. Linked images and images marked `no-lightbox` keep their authored behavior.

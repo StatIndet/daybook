@@ -1,658 +1,891 @@
-interface GraphMeta {
-  layoutDiameter?: number;
-  nodeCount?: number;
-  linkCount?: number;
-  maxDegree?: number;
-}
+import {
+  compileQuery,
+  type CompiledQuery,
+  type SearchDocument,
+} from "./graph-query";
+import {
+  defaultSettings,
+  loadSettings,
+  saveSettings,
+  settingsStorageKey,
+  type GraphSettings,
+} from "./graph-settings";
+import { createGraphPanel, graphText, type Panel } from "./graph-panel";
 
 export interface TagNode {
   id: string;
   title: string;
 }
-
 export interface AttachmentNode {
   id: string;
   title: string;
   url: string;
+  path?: string;
+  file?: string;
 }
-
 interface RawNode {
   id: string;
   title: string;
   url?: string;
-  exists: boolean;
-  degree: number;
-  tags?: TagNode[];
-  attachments?: AttachmentNode[];
-}
-
-interface GraphNode {
-  id: string;
-  x?: number;
-  y?: number;
-  vx?: number;
-  vy?: number;
-  fx?: number | null;
-  fy?: number | null;
-  title: string;
-  url?: string;
+  path?: string;
+  file?: string;
+  date?: string;
   exists: boolean;
   degree: number;
   tags?: TagNode[];
   attachments?: AttachmentNode[];
   isTag?: boolean;
   isAttachment?: boolean;
+}
+interface GraphNode extends RawNode {
+  x?: number;
+  y?: number;
+  vx?: number;
+  vy?: number;
+  fx?: number | null;
+  fy?: number | null;
   radius: number;
 }
-
 interface RawLink {
   source: string;
   target: string;
+  type?: string;
 }
-
 interface GraphLink {
   source: string | GraphNode;
   target: string | GraphNode;
+  forward: boolean;
+  reverse: boolean;
+  type?: string;
 }
-
 interface GraphData {
-  meta?: GraphMeta;
-  nodes?: RawNode[];
-  links?: RawLink[];
+  version?: number;
+  nodes: RawNode[];
+  links: RawLink[];
+  meta?: { layoutDiameter?: number; nodeCount?: number; linkCount?: number };
 }
+const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
 
-(function() {
-  let container: HTMLElement | null = null;
-  let searchInput: HTMLInputElement | null = null;
-  let searchBtn: HTMLElement | null = null;
-  let actionsHorizontal: HTMLElement | null = null;
-  let orphanBtn: HTMLElement | null = null;
-  let resetBtn: HTMLElement | null = null;
-  let tagsBtn: HTMLElement | null = null;
-  let attachmentsBtn: HTMLElement | null = null;
-  
-  let showTags = false;
-  let showAttachments = false;
-  let showOrphans = true;
+(() => {
+  let container: HTMLElement | null = null,
+    controls: HTMLElement | null = null,
+    panel: Panel | null = null;
+  let raw: GraphData = { nodes: [], links: [] };
+  let settings = defaultSettings(),
+    storageKey = "",
+    basePath = "";
+  let activeQuery: CompiledQuery = compileQuery("");
+  let groups = new Map<string, CompiledQuery>();
+  let index: Map<string, SearchDocument> | null = null;
+  let indexPromise: Promise<void> | null = null;
+  let abort: AbortController | null = null,
+    generation = 0,
+    queryRevision = 0;
+  let svg: any = null,
+    g: any = null,
+    simulation: any = null,
+    zoom: any = null,
+    nodeSelection: any = null,
+    linkSelection: any = null;
+  let resize: ResizeObserver | null = null,
+    inputTimer = 0;
+  const cache = new Map<string, GraphNode>();
+  let fullNodes: RawNode[] = [],
+    fullLinks: GraphLink[] = [],
+    currentNodes: GraphNode[] = [],
+    currentLinks: GraphLink[] = [];
+  let animation: "idle" | "playing" | "paused" = "idle",
+    frame = 0,
+    elapsed = 0,
+    started = 0,
+    days: string[] = [],
+    lastBatch = -1;
+  const reduce = () =>
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const radius = (degree: number) =>
+    (5 + Math.sqrt(degree) * 1.5) * settings.nodeSize;
+  const dimensions = () => ({
+    w: container?.clientWidth || 800,
+    h: container?.clientHeight || 600,
+  });
+  const documentFor = (n: RawNode): SearchDocument => ({
+    ...index?.get(n.id),
+    id: n.id,
+    title: n.title,
+    file: n.file || n.title,
+    path: n.path || n.id,
+    tags: n.isTag ? [n.title.replace(/^#/, "")] : n.tags?.map((t) => t.title),
+  });
 
-  let rawNodes: RawNode[] = [];
-  let rawLinks: RawLink[] = [];
-  let graphMeta: GraphMeta | null = null;
-  let adjacencyMap = new Map<string, Set<string>>();
-  let simulation: any | null = null;
-  let zoomBehavior: any | null = null;
-  let svg: any | null = null;
-  let g: any | null = null;
-  let isDragging = false;
-  const nodeCache = new Map<string, GraphNode>();
-
-  async function init(root?: Document | HTMLElement) {
-    if (!root) root = document;
-    container = root.querySelector('#graph-container');
-    searchInput = root.querySelector('#graph-search-input');
-    searchBtn = root.querySelector('#graph-search-btn');
-    tagsBtn = root.querySelector('#graph-tags-btn');
-    attachmentsBtn = root.querySelector('#graph-attachments-btn');
-    actionsHorizontal = root.querySelector('.graph-actions-horizontal');
-    orphanBtn = root.querySelector('#graph-orphan-btn');
-    resetBtn = root.querySelector('#graph-reset');
-
+  async function init(root: Document | HTMLElement = document) {
+    destroy();
+    container = root.querySelector("#graph-container");
     if (!container) return;
-
+    controls = root.querySelector("#graph-controls");
+    if (!controls) {
+      controls = document.createElement("div");
+      controls.id = "graph-controls";
+      container.before(controls);
+    }
+    const epoch = generation;
+    abort = new AbortController();
+    basePath = location.pathname.replace(/\/graph\/?$/, "");
+    storageKey = settingsStorageKey(location.pathname);
+    settings = loadSettings(storageKey);
+    panel = createGraphPanel(controls, () => settings, changed, {
+      center: recenter,
+      reset: restore,
+      full: fullGraph,
+      play: toggleAnimation,
+      stop: () => stopAnimation(true),
+      retry: () => {
+        if (raw.nodes.length) void applyQueries();
+        else void init(root);
+      },
+    });
+    panel.setError(graphText("loading"));
     try {
-      const basePath = window.location.pathname.replace(/\/graph\/?$/, '');
-      const res = await fetch(`${basePath}/graph.json`);
-      const data: GraphData = await res.json();
-      rawNodes = data.nodes || [];
-      rawLinks = data.links || [];
-      graphMeta = data.meta || null;
-
-      buildAdjacencyMap(rawNodes, rawLinks);
-
-      render();
-      setupEventListeners();
-    } catch (err) {
-      console.error('Failed to load graph data:', err);
+      const response = await fetch(`${basePath}/graph.json`, {
+        signal: abort.signal,
+      });
+      if (!response.ok) throw Error("graph");
+      const data = (await response.json()) as GraphData;
+      if (epoch !== generation) return;
+      if (!Array.isArray(data.nodes) || !Array.isArray(data.links))
+        throw Error("graph");
+      raw = data;
+      activeQuery = compileQuery("");
+      groups.clear();
+      panel?.setError("");
+      recompute();
+      await applyQueries();
+      if (epoch !== generation) return;
+      resize = new ResizeObserver(() => {
+        const { w, h } = dimensions();
+        svg?.attr("viewBox", [0, 0, w, h]);
+        if (simulation) {
+          simulation.force("x").x(w / 2);
+          simulation.force("y").y(h / 2);
+        }
+      });
+      resize.observe(container!);
+      window.addEventListener("popstate", routeChanged);
+      document.addEventListener("daybook:lang-change", languageChanged);
+    } catch (error) {
+      if (epoch === generation && (error as Error).name !== "AbortError")
+        panel?.setError(graphText("graphError"), true);
     }
   }
-
   function destroy() {
-    if (simulation) {
-      simulation.on('tick', null).stop();
-      simulation = null;
-    }
-    if (container) {
-      container.innerHTML = '';
+    generation++;
+    queryRevision++;
+    abort?.abort();
+    abort = null;
+    window.clearTimeout(inputTimer);
+    cancelAnimationFrame(frame);
+    frame = 0;
+    window.removeEventListener("popstate", routeChanged);
+    document.removeEventListener("daybook:lang-change", languageChanged);
+    resize?.disconnect();
+    resize = null;
+    panel?.destroy();
+    panel = null;
+    simulation?.on("tick", null).stop();
+    simulation = null;
+    if (svg) {
+      window.d3.select(window).on(".drag", null).on(".zoom", null);
+      window.d3.dragEnable(window);
     }
     svg?.interrupt();
-    svg?.selectAll('*').interrupt();
+    svg?.selectAll("*").interrupt();
+    if (container) {
+      container.replaceChildren();
+      container.classList.remove("graph-dimmed");
+    }
+    container = null;
+    controls = null;
     svg = null;
     g = null;
-    zoomBehavior = null;
-    isDragging = false;
-    nodeCache.clear();
-    rawNodes = [];
-    rawLinks = [];
-    graphMeta = null;
-    adjacencyMap.clear();
+    zoom = null;
+    nodeSelection = null;
+    linkSelection = null;
+    cache.clear();
+    raw = { nodes: [], links: [] };
+    fullNodes = [];
+    fullLinks = [];
+    currentNodes = [];
+    currentLinks = [];
+    index = null;
+    indexPromise = null;
+    groups.clear();
+    animation = "idle";
+    elapsed = 0;
+    days = [];
+    lastBatch = -1;
+    appliedQuery = "";
     (window as any).__graphNodes = null;
   }
-
-  function buildAdjacencyMap(nodes: RawNode[], links: RawLink[]) {
-    adjacencyMap.clear();
-    nodes.forEach(n => {
-      adjacencyMap.set(n.id, new Set());
+  function languageChanged() {
+    if (!controls) return;
+    panel?.destroy();
+    panel = createGraphPanel(controls, () => settings, changed, {
+      center: recenter,
+      reset: restore,
+      full: fullGraph,
+      play: toggleAnimation,
+      stop: () => stopAnimation(true),
+      retry: () => void applyQueries(),
     });
-    links.forEach(l => {
-      if (adjacencyMap.has(l.source) && adjacencyMap.has(l.target)) {
-        adjacencyMap.get(l.source)!.add(l.target);
-        adjacencyMap.get(l.target)!.add(l.source);
-      }
-    });
+    panel.setCount(currentNodes.length);
+    panel.animation(animation, elapsed / 12000);
+    void applyQueries();
   }
-
-  function getLocalGraph(centerNodeId: string, depth: number): Set<string> {
-    const visited = new Set<string>();
-    const queue = [{ id: centerNodeId, d: 0 }];
-    
-    while (queue.length > 0) {
-      const current = queue.shift()!;
-      if (visited.has(current.id)) continue;
-      
-      visited.add(current.id);
-      if (current.d < depth) {
-        const neighbors = adjacencyMap.get(current.id) || new Set();
-        for (const n of Array.from(neighbors)) {
-          if (!visited.has(n)) {
-            queue.push({ id: n, d: current.d + 1 });
+  function routeChanged() {
+    stopAnimation(false);
+    recompute();
+    if (panel)
+      panel.fullButton.hidden = !new URLSearchParams(location.search).has(
+        "node",
+      );
+  }
+  function fullGraph() {
+    const url = new URL(location.href);
+    url.searchParams.delete("node");
+    url.searchParams.delete("depth");
+    history.pushState({}, "", url);
+    routeChanged();
+    recenter();
+  }
+  function recenter() {
+    if (!svg || !zoom) return;
+    svg.interrupt();
+    if (reduce()) svg.call(zoom.transform, defaultTransform());
+    else
+      svg.transition().duration(500).call(zoom.transform, defaultTransform());
+  }
+  function defaultTransform() {
+    const { w, h } = dimensions();
+    const scale = Math.max(
+      0.1,
+      Math.min(
+        1.8,
+        (Math.min(w, h) * 0.82) / ((raw.meta?.layoutDiameter || 10) * 120),
+      ),
+    );
+    return window.d3.zoomIdentity
+      .translate(w / 2, h / 2)
+      .scale(scale)
+      .translate(-w / 2, -h / 2);
+  }
+  function restore() {
+    stopAnimation(false);
+    window.clearTimeout(inputTimer);
+    queryRevision++;
+    settings = defaultSettings();
+    activeQuery = compileQuery("");
+    appliedQuery = "";
+    groups.clear();
+    saveSettings(storageKey, settings);
+    panel?.sync();
+    panel?.queryError("");
+    panel?.setError("");
+    recompute();
+    recenter();
+  }
+  function changed(key: keyof GraphSettings) {
+    saveSettings(storageKey, settings);
+    if (key === "query" || key === "groups") {
+      queryRevision++;
+      if (key === "query") stopAnimation(true);
+      window.clearTimeout(inputTimer);
+      inputTimer = window.setTimeout(
+        () => void applyQueries(),
+        key === "query" ? 180 : 100,
+      );
+      return;
+    }
+    if (
+      ["showTags", "showAttachments", "showOrphans", "existingOnly"].includes(
+        key,
+      )
+    ) {
+      stopAnimation(false);
+      recompute();
+      return;
+    }
+    if (
+      ["centerForce", "repelForce", "linkForce", "linkDistance"].includes(key)
+    ) {
+      updateForces();
+      return;
+    }
+    updateAppearance();
+    if (key === "nodeSize") {
+      simulation?.force("collide").radius((n: GraphNode) => n.radius + 6);
+      reheat(0.12);
+    }
+  }
+  async function loadIndex() {
+    if (index) return;
+    if (indexPromise) return indexPromise;
+    const epoch = generation;
+    const signal = abort?.signal;
+    const promise = (async () => {
+      const res = await fetch(`${basePath}/graph-search.json`, { signal });
+      if (!res.ok) throw Error("index");
+      const data = await res.json();
+      if (data.version !== 1 || !Array.isArray(data.documents))
+        throw Error("index");
+      if (epoch === generation)
+        index = new Map(data.documents.map((d: SearchDocument) => [d.id, d]));
+    })();
+    indexPromise = promise;
+    try {
+      await promise;
+    } finally {
+      if (epoch === generation) indexPromise = null;
+    }
+  }
+  async function applyQueries() {
+    const revision = ++queryRevision,
+      epoch = generation;
+    let query: CompiledQuery | null = null;
+    const nextGroups = new Map<string, CompiledQuery>();
+    try {
+      query = compileQuery(settings.query);
+      panel?.queryError("");
+    } catch (e) {
+      panel?.queryError((e as Error).message);
+    }
+    for (const group of settings.groups) {
+      try {
+        if (group.query.trim())
+          nextGroups.set(group.id, compileQuery(group.query));
+        panel?.groupError(group.id, "");
+      } catch (e) {
+        panel?.groupError(group.id, (e as Error).message);
+        const old = groups.get(group.id);
+        if (old) nextGroups.set(group.id, old);
+      }
+    }
+    const needsIndex =
+      query?.needsIndex || [...nextGroups.values()].some((q) => q.needsIndex);
+    if (needsIndex && !index) {
+      panel?.setError(graphText("loading"));
+      try {
+        await loadIndex();
+      } catch (e) {
+        if (epoch !== generation || revision !== queryRevision) return;
+        panel?.setError(graphText("loadError"), true);
+        // Metadata-only queries and groups remain usable even when the content index fails.
+        if (query && !query.needsIndex && settings.query !== appliedQuery) {
+          activeQuery = query;
+          appliedQuery = settings.query;
+          stopAnimation(false);
+          recompute();
+        }
+        for (const [id, q] of nextGroups)
+          if (q.needsIndex) nextGroups.delete(id);
+        groups = nextGroups;
+        updateAppearance();
+        return;
+      }
+    }
+    if (epoch !== generation || revision !== queryRevision) return;
+    panel?.setError("");
+    const changedQuery = query !== null;
+    if (query) activeQuery = query;
+    groups = nextGroups;
+    // Group changes must not restart layout or an in-progress animation.
+    if (changedQuery && settings.query !== appliedQuery) {
+      appliedQuery = settings.query;
+      stopAnimation(false);
+      recompute();
+    } else updateAppearance();
+  }
+  let appliedQuery = "";
+  function localIDs(): Set<string> | null {
+    const params = new URLSearchParams(location.search),
+      center = params.get("node");
+    if (!center || !raw.nodes.some((n) => n.id === center)) return null;
+    const depth = Math.max(
+      1,
+      Math.min(
+        raw.nodes.length,
+        Number.parseInt(params.get("depth") || "1", 10) || 1,
+      ),
+    );
+    const adj = new Map<string, Set<string>>();
+    for (const l of raw.links) {
+      if (!adj.has(l.source)) adj.set(l.source, new Set());
+      if (!adj.has(l.target)) adj.set(l.target, new Set());
+      adj.get(l.source)!.add(l.target);
+      adj.get(l.target)!.add(l.source);
+    }
+    const ids = new Set([center]);
+    let frontier = [center];
+    for (let i = 0; i < depth; i++) {
+      const next: string[] = [];
+      for (const id of frontier)
+        for (const neighbor of adj.get(id) || [])
+          if (!ids.has(neighbor)) {
+            ids.add(neighbor);
+            next.push(neighbor);
           }
-        }
-      }
+      frontier = next;
+      if (!next.length) break;
     }
-
-    return visited;
+    return ids;
   }
-
-  function getRadius(degree: number): number {
-    const baseR = 5;
-    // Absolute scaling: size depends only on the node's own connections.
-    // Square root makes the area scale linearly with the degree.
-    return baseR + Math.sqrt(degree) * 1.5;
-  }
-
-  function getDefaultGraphTransform(width: number, height: number): { transform: any, scale: number } {
-    const d3 = window.d3;
-    let logicalDiameter = 10;
-    if (graphMeta && graphMeta.layoutDiameter) {
-      logicalDiameter = graphMeta.layoutDiameter;
-    }
-    
-    // Convert logical diameter to a base visual size.
-    // Assuming each logical unit represents roughly 120 pixels of graph space.
-    const logicalPixels = logicalDiameter * 120;
-    
-    const GRAPH_VIEW_PADDING = 0.18; // 18% padding to ensure edge labels aren't cut off
-    const paddingMultiplier = 1 - GRAPH_VIEW_PADDING;
-    const availableSize = Math.min(width, height) * paddingMultiplier;
-    
-    let fitScale = availableSize / logicalPixels;
-    // Clamp the scale to prevent extreme zooming
-    if (fitScale > 1.8) fitScale = 1.8;
-    if (fitScale < 0.1) fitScale = 0.1;
-
-    return {
-      transform: d3.zoomIdentity.translate(width / 2, height / 2).scale(fitScale).translate(-width / 2, -height / 2),
-      scale: fitScale
-    };
-  }
-
-  function render(initialAlpha = 1) {
-    const urlParams = new URLSearchParams(window.location.search);
-    const centerNodeId = urlParams.get('node');
-    let depth = parseInt(urlParams.get('depth') || '1', 10);
-    if (isNaN(depth) || depth < 1) depth = 1;
-
-    let filteredNodeIds: Set<string> | null = null;
-    if (centerNodeId && adjacencyMap.has(centerNodeId)) {
-      filteredNodeIds = getLocalGraph(centerNodeId, depth);
-    }
-
-    const cx = (container!.clientWidth || 800) / 2;
-    const cy = (container!.clientHeight || 600) / 2;
-
-    let filteredNodes = rawNodes
-      .filter(n => n.exists)
-      .filter(n => showOrphans || n.degree > 0)
-      .filter(n => !filteredNodeIds || filteredNodeIds.has(n.id));
-
-    const initialRadius = Math.max(50, Math.sqrt(filteredNodes.length) * 15);
-
-    let nodes: GraphNode[] = filteredNodes.map((n, i) => {
-      const existing = nodeCache.get(n.id);
-      if (existing && existing.x !== undefined && existing.y !== undefined) {
-        return Object.assign(existing, n, { radius: getRadius(n.degree) });
-      }
-      const angle = i * Math.PI * 2 / filteredNodes.length;
-      const r = initialRadius * (0.5 + Math.random() * 0.5);
-      const node = {
-        ...n,
-        radius: getRadius(n.degree),
-        x: cx + Math.cos(angle) * r,
-        y: cy + Math.sin(angle) * r
-      };
-      nodeCache.set(n.id, node);
-      return node;
-    });
-
-    const nodeMap = new Map(nodes.map(n => [n.id, n]));
-
-    let links: GraphLink[] = rawLinks
-      .filter(l => nodeMap.has(l.source) && nodeMap.has(l.target))
-      .map(l => ({ ...l }));
-
-    if (showTags) {
-      const tagNodesMap = new Map<string, GraphNode>();
-      const newLinks: GraphLink[] = [];
-      
-      nodes.forEach(n => {
-        if (n.tags && n.tags.length > 0) {
-          n.tags.forEach(tagObj => {
-            const tagId = tagObj.id;
-            if (!tagNodesMap.has(tagId)) {
-              // Add a slight random offset to prevent near-zero distance singularity physics explosion
-              const angle = Math.random() * Math.PI * 2;
-              const offset = 20;
-              const cached = nodeCache.get(tagId);
-              const tagNode = Object.assign(cached || {}, {
-                id: tagId,
-                title: '#' + tagObj.title,
-                isTag: true,
-                exists: true,
-                degree: 1,
-                radius: getRadius(1),
-                x: cached?.x ?? (n.x ?? cx) + Math.cos(angle) * offset,
-                y: cached?.y ?? (n.y ?? cy) + Math.sin(angle) * offset
-              });
-              nodeCache.set(tagId, tagNode);
-              tagNodesMap.set(tagId, tagNode);
-            } else {
-              const tagNode = tagNodesMap.get(tagId)!;
-              tagNode.degree++;
-              tagNode.radius = getRadius(tagNode.degree);
-            }
-            newLinks.push({ source: n.id, target: tagId });
+  function recompute() {
+    const local = localIDs();
+    const eligible = raw.nodes.filter(
+      (n) =>
+        (!settings.existingOnly || n.exists) && (!local || local.has(n.id)),
+    );
+    const visible = new Map<string, RawNode>();
+    for (const n of eligible)
+      if (activeQuery.matches(documentFor(n))) visible.set(n.id, n);
+    const extra: RawLink[] = [];
+    for (const n of eligible) {
+      const matched = visible.has(n.id);
+      if (settings.showTags && matched)
+        for (const t of n.tags || []) {
+          visible.set(t.id, {
+            ...t,
+            title: "#" + t.title,
+            exists: true,
+            degree: 0,
+            isTag: true,
           });
+          extra.push({ source: n.id, target: t.id, type: "tag" });
         }
-      });
-      
-      nodes = nodes.concat(Array.from(tagNodesMap.values()));
-      links = links.concat(newLinks);
-    }
-
-    if (showAttachments) {
-      const attNodesMap = new Map<string, GraphNode>();
-      const newLinks: GraphLink[] = [];
-      
-      nodes.forEach(n => {
-        if (n.attachments && n.attachments.length > 0) {
-          n.attachments.forEach(attObj => {
-            const attId = attObj.id;
-            if (!attNodesMap.has(attId)) {
-              const angle = Math.random() * Math.PI * 2;
-              const offset = 20;
-              const cached = nodeCache.get(attId);
-              const attachmentNode = Object.assign(cached || {}, {
-                id: attId,
-                title: attObj.title,
-                url: attObj.url,
-                isAttachment: true,
-                exists: true,
-                degree: 1,
-                radius: getRadius(1),
-                x: cached?.x ?? (n.x ?? cx) + Math.cos(angle) * offset,
-                y: cached?.y ?? (n.y ?? cy) + Math.sin(angle) * offset
-              });
-              nodeCache.set(attId, attachmentNode);
-              attNodesMap.set(attId, attachmentNode);
-            } else {
-              const attNode = attNodesMap.get(attId)!;
-              attNode.degree++;
-              attNode.radius = getRadius(attNode.degree);
-            }
-            newLinks.push({ source: n.id, target: attId });
-          });
+      if (settings.showAttachments)
+        for (const a of n.attachments || []) {
+          const att: RawNode = {
+            ...a,
+            exists: true,
+            degree: 0,
+            isAttachment: true,
+          };
+          if (matched || activeQuery.matches(documentFor(att)))
+            visible.set(a.id, att);
+          if (matched)
+            extra.push({ source: n.id, target: a.id, type: "attachment" });
         }
-      });
-      
-      nodes = nodes.concat(Array.from(attNodesMap.values()));
-      links = links.concat(newLinks);
     }
-
-    const activeIds = new Set(nodes.map(node => node.id));
-    // Hidden nodes keep their last position, but should not return with stale momentum.
-    nodeCache.forEach(node => {
-      if (!activeIds.has(node.id)) {
-        node.vx = 0;
-        node.vy = 0;
-        node.fx = null;
-        node.fy = null;
+    const pairs = new Map<string, GraphLink>();
+    for (const l of [...raw.links, ...extra]) {
+      if (
+        l.source === l.target ||
+        !visible.has(l.source) ||
+        !visible.has(l.target)
+      )
+        continue;
+      const [a, b] = [l.source, l.target].sort() as [string, string];
+      const key = JSON.stringify([a, b]);
+      let edge = pairs.get(key);
+      if (!edge) {
+        edge = {
+          source: a,
+          target: b,
+          forward: false,
+          reverse: false,
+          type: l.type || "wikilink",
+        };
+        pairs.set(key, edge);
       }
-    });
-    drawGraph(nodes, links, centerNodeId, initialAlpha);
+      if (l.source === a) edge.forward = true;
+      else edge.reverse = true;
+    }
+    const degrees = new Map<string, number>();
+    for (const l of pairs.values()) {
+      degrees.set(
+        endpoint(l.source),
+        (degrees.get(endpoint(l.source)) || 0) + 1,
+      );
+      degrees.set(
+        endpoint(l.target),
+        (degrees.get(endpoint(l.target)) || 0) + 1,
+      );
+    }
+    fullNodes = [...visible.values()]
+      .filter((n) => settings.showOrphans || (degrees.get(n.id) || 0) > 0)
+      .map((n) => ({ ...n, degree: degrees.get(n.id) || 0 }));
+    fullLinks = [...pairs.values()];
+    panel?.animationAvailable(fullNodes.some((n) => !!n.date));
+    showGraph(fullNodes, fullLinks, 0.12);
   }
-
-  function drawGraph(nodes: GraphNode[], links: GraphLink[], centerNodeId: string | null, initialAlpha = 1) {
+  function showGraph(rawNodes: RawNode[], links: GraphLink[], alpha = 0.12) {
     if (!container) return;
-    // Add flex: 1 style so it definitely takes height if parent is flex
-    container.style.flex = "1";
-
-    const width = container.clientWidth || 800;
-    const height = container.clientHeight || 600;
+    const { w, h } = dimensions();
+    const initialRadius = Math.max(50, Math.sqrt(rawNodes.length) * 15);
+    currentNodes = rawNodes.map((n, i) => {
+      let cached = cache.get(n.id);
+      if (!cached) {
+        const angle = (i * Math.PI * 2) / Math.max(1, rawNodes.length);
+        cached = {
+          ...n,
+          radius: radius(n.degree),
+          x: w / 2 + Math.cos(angle) * initialRadius,
+          y: h / 2 + Math.sin(angle) * initialRadius,
+        };
+        cache.set(n.id, cached);
+      }
+      Object.assign(cached, n, { radius: radius(n.degree) });
+      return cached;
+    });
+    const ids = new Set(currentNodes.map((n) => n.id));
+    currentLinks = links
+      .filter((l) => ids.has(endpoint(l.source)) && ids.has(endpoint(l.target)))
+      .map((l) => ({
+        ...l,
+        source: endpoint(l.source),
+        target: endpoint(l.target),
+      }));
+    for (const [id, n] of cache)
+      if (!ids.has(id)) {
+        n.vx = 0;
+        n.vy = 0;
+        n.fx = null;
+        n.fy = null;
+      }
+    draw(alpha);
+    panel?.setCount(currentNodes.length);
+  }
+  function draw(alpha: number) {
     const d3 = window.d3;
-
+    const { w, h } = dimensions();
     if (!svg) {
-      svg = d3.select(container)
-        .append('svg')
-        .attr('width', '100%')
-        .attr('height', '100%')
-        .attr('viewBox', [0, 0, width, height]);
-      g = svg.append('g');
-      g.append('g').attr('class', 'graph-links');
-      g.append('g').attr('class', 'graph-nodes');
-
-      zoomBehavior = d3.zoom()
-        .scaleExtent([0.2, 5])
-        .on('zoom', (event: any) => {
-          g.attr('transform', event.transform);
-          updateLabelVisibility(event.transform.k);
+      svg = d3
+        .select(container)
+        .append("svg")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .attr("viewBox", [0, 0, w, h]);
+      const defs = svg.append("defs");
+      for (const [id, path, ref] of [
+        ["end", "M0,-3L6,0L0,3", 6],
+        ["start", "M6,-3L0,0L6,3", 0],
+      ])
+        defs
+          .append("marker")
+          .attr("id", `graph-arrow-${id}`)
+          .attr("viewBox", "0 -4 8 8")
+          .attr("markerWidth", 8)
+          .attr("markerHeight", 8)
+          .attr("refX", ref)
+          .attr("refY", 0)
+          .attr("orient", "auto")
+          .attr("markerUnits", "userSpaceOnUse")
+          .append("path")
+          .attr("d", path)
+          .attr("class", "graph-arrow");
+      g = svg.append("g");
+      g.append("g").attr("class", "graph-links");
+      g.append("g").attr("class", "graph-nodes");
+      zoom = d3
+        .zoom()
+        .scaleExtent([0.1, 5])
+        .on("zoom", (e: any) => {
+          g.attr("transform", e.transform);
+          updateLabels();
         });
-      svg.call(zoomBehavior);
-      svg.call(zoomBehavior.transform, getDefaultGraphTransform(width, height).transform);
+      svg.call(zoom);
+      svg.call(zoom.transform, defaultTransform());
     }
-
+    container?.classList.remove("graph-dimmed");
+    const initialLayout = !simulation;
     if (!simulation) {
-      simulation = d3.forceSimulation(nodes)
-        .alpha(initialAlpha)
-        .force('link', d3.forceLink(links).id((d: GraphNode) => d.id).distance(120))
-        .force('charge', d3.forceManyBody().strength(-280))
-        .force('x', d3.forceX(width / 2).strength(0.05))
-        .force('y', d3.forceY(height / 2).strength(0.05))
-        .force('collide', d3.forceCollide().radius((d: GraphNode) => d.radius + 6));
-    } else {
-      // Clear old endpoints before changing the active nodes; D3 mutates link objects.
-      const linkForce = simulation.force('link');
-      linkForce.links([]);
-      simulation.nodes(nodes);
-      linkForce.links(links);
-      simulation.alpha(Math.max(simulation.alpha(), initialAlpha)).restart();
+      simulation = d3
+        .forceSimulation(currentNodes)
+        .alpha(1)
+        .force(
+          "link",
+          d3.forceLink([]).id((n: GraphNode) => n.id),
+        )
+        .force("charge", d3.forceManyBody())
+        .force("x", d3.forceX(w / 2))
+        .force("y", d3.forceY(h / 2))
+        .force(
+          "collide",
+          d3.forceCollide().radius((n: GraphNode) => n.radius + 6),
+        );
     }
-
-    const link = g!.select('.graph-links')
-      .selectAll('line')
-      .data(links, (d: GraphLink) => {
-        const source = typeof d.source === 'string' ? d.source : d.source.id;
-        const target = typeof d.target === 'string' ? d.target : d.target.id;
-        return JSON.stringify([source, target]);
-      })
-      .join('line')
-      .attr('class', 'graph-link');
-
-    const nodeGroup = g!.select('.graph-nodes')
-      .selectAll('g')
-      .data(nodes, (d: GraphNode) => d.id)
+    simulation.force("link").links([]);
+    simulation.nodes(currentNodes);
+    simulation.force("link").links(currentLinks);
+    updateForces(false);
+    linkSelection = g
+      .select(".graph-links")
+      .selectAll("line")
+      .data(currentLinks, (l: GraphLink) =>
+        JSON.stringify([endpoint(l.source), endpoint(l.target)]),
+      )
+      .join("line")
+      .attr("class", "graph-link");
+    nodeSelection = g
+      .select(".graph-nodes")
+      .selectAll("g")
+      .data(currentNodes, (n: GraphNode) => n.id)
       .join(
         (enter: any) => {
-          const group = enter.append('g');
-          group.append('circle');
-          group.append('text');
-          return group;
+          const node = enter.append("g");
+          node.append("circle");
+          node.append("text");
+          return node;
         },
         (update: any) => update,
-        (exit: any) => {
-          exit.selectAll('*').interrupt();
-          return exit.remove();
-        },
+        (exit: any) => exit.remove(),
       )
-      .on('mouseover', handleMouseOver)
-      .on('mouseout', handleMouseOut)
-      .on('click', (event: any, d: GraphNode) => {
-        if (d.url) {
-          if (d.isAttachment) {
-            window.open(d.url, '_blank');
-          } else if (window.daybookNavigateTo) {
-            window.daybookNavigateTo(d.url);
-          } else {
-            window.location.href = d.url;
-          }
-        }
+      .on("mouseover", (_: any, n: GraphNode) => hover(n.id))
+      .on("mouseout", () => hover(null))
+      .on("click", (e: any, n: GraphNode) => {
+        if (e.defaultPrevented || !n.url) return;
+        if (n.isAttachment) window.open(n.url, "_blank", "noopener");
+        else if (window.daybookNavigateTo) window.daybookNavigateTo(n.url);
+        else location.href = n.url;
       })
-      .call(drag(simulation));
-
-    nodeGroup.select('circle')
-      .attr('class', (d: GraphNode) => {
-        let cls = 'graph-node';
-        if (d.id === centerNodeId) cls += ' is-center';
-        if (d.isTag) cls += ' is-tag';
-        if (d.isAttachment) cls += ' is-attachment';
-        if (!d.exists && !d.isTag && !d.isAttachment) cls += ' is-missing';
-        return cls;
-      })
-      .attr('r', (d: GraphNode) => d.radius);
-
-    nodeGroup.select('text')
-      .attr('class', (d: GraphNode) => {
-        if (d.isTag) return 'graph-label is-tag';
-        if (d.isAttachment) return 'graph-label is-attachment';
-        return 'graph-label';
-      })
-      .attr('dy', (d: GraphNode) => d.radius + 12)
-      .attr('text-anchor', 'middle')
-      .text((d: GraphNode) => d.title);
-
-    const ticked = () => {
-      link
-        .attr('x1', (d: any) => d.source.x)
-        .attr('y1', (d: any) => d.source.y)
-        .attr('x2', (d: any) => d.target.x)
-        .attr('y2', (d: any) => d.target.y);
-
-      nodeGroup.attr('transform', (d: GraphNode) => `translate(${d.x},${d.y})`);
-    };
-    simulation.on('tick', ticked);
-    ticked();
-
-    function handleMouseOver(event: any, d: GraphNode) {
-      if (!container) return;
-      const connectedNodeIds = new Set<string>();
-      connectedNodeIds.add(d.id);
-
-      links.forEach(l => {
-        const sourceId = (typeof l.source === 'string') ? l.source : (l.source as GraphNode).id;
-        const targetId = (typeof l.target === 'string') ? l.target : (l.target as GraphNode).id;
-        if (sourceId === d.id) connectedNodeIds.add(targetId);
-        if (targetId === d.id) connectedNodeIds.add(sourceId);
+      .call(
+        d3
+          .drag()
+          .on("start", (e: any, n: GraphNode) => {
+            if (!simulation) return;
+            if (!e.active && !reduce()) simulation.alphaTarget(0.3).restart();
+            n.fx = n.x;
+            n.fy = n.y;
+          })
+          .on("drag", (e: any, n: GraphNode) => {
+            if (!simulation) return;
+            n.x = n.fx = e.x;
+            n.y = n.fy = e.y;
+            tick();
+          })
+          .on("end", (e: any, n: GraphNode) => {
+            if (!simulation) return;
+            if (!e.active) simulation.alphaTarget(0);
+            n.fx = null;
+            n.fy = null;
+            hover(null);
+          }),
+      );
+    const center = new URLSearchParams(location.search).get("node");
+    nodeSelection
+      .select("circle")
+      .attr(
+        "class",
+        (n: GraphNode) =>
+          `graph-node${n.isTag ? " is-tag" : ""}${n.isAttachment ? " is-attachment" : ""}${!n.exists ? " is-missing" : ""}${n.id === center ? " is-center" : ""}`,
+      );
+    nodeSelection
+      .select("text")
+      .attr("class", "graph-label")
+      .attr("text-anchor", "middle")
+      .text((n: GraphNode) => n.title);
+    (window as any).__graphNodes = nodeSelection;
+    simulation.on("tick", tick);
+    updateAppearance();
+    if (reduce()) {
+      simulation.stop();
+      if (initialLayout) simulation.alpha(1).tick(100);
+      tick();
+    } else reheat(alpha);
+  }
+  function tick() {
+    if (!linkSelection) return;
+    linkSelection.each(function (this: SVGLineElement, l: GraphLink) {
+      const s = l.source as GraphNode,
+        t = l.target as GraphNode;
+      const dx = (t.x || 0) - (s.x || 0),
+        dy = (t.y || 0) - (s.y || 0),
+        length = Math.hypot(dx, dy) || 1;
+      const a = Math.min(length / 2, s.radius + 2),
+        b = Math.min(length / 2, t.radius + 2);
+      this.setAttribute("x1", String((s.x || 0) + (dx * a) / length));
+      this.setAttribute("y1", String((s.y || 0) + (dy * a) / length));
+      this.setAttribute("x2", String((t.x || 0) - (dx * b) / length));
+      this.setAttribute("y2", String((t.y || 0) - (dy * b) / length));
+    });
+    nodeSelection.attr(
+      "transform",
+      (n: GraphNode) => `translate(${n.fx ?? n.x},${n.fy ?? n.y})`,
+    );
+  }
+  function reheat(alpha: number) {
+    if (!simulation) return;
+    if (reduce()) {
+      simulation.stop();
+      tick();
+    } else simulation.alpha(Math.max(simulation.alpha(), alpha)).restart();
+  }
+  function updateForces(restart = true) {
+    if (!simulation) return;
+    const counts = new Map<string, number>();
+    for (const l of currentLinks)
+      for (const n of [l.source, l.target])
+        counts.set(endpoint(n), (counts.get(endpoint(n)) || 0) + 1);
+    simulation
+      .force("link")
+      .distance(settings.linkDistance)
+      .strength(
+        (l: GraphLink) =>
+          settings.linkForce /
+          Math.max(
+            1,
+            Math.min(
+              counts.get(endpoint(l.source)) || 1,
+              counts.get(endpoint(l.target)) || 1,
+            ),
+          ),
+      );
+    simulation.force("charge").strength(-280 * settings.repelForce);
+    simulation.force("x").strength(0.05 * settings.centerForce);
+    simulation.force("y").strength(0.05 * settings.centerForce);
+    if (restart) {
+      if (reduce()) {
+        simulation.alpha(1).stop().tick(100);
+        tick();
+      } else reheat(0.3);
+    }
+  }
+  function updateAppearance() {
+    if (!nodeSelection) return;
+    for (const n of currentNodes) n.radius = radius(n.degree);
+    nodeSelection
+      .select("circle")
+      .attr("r", (n: GraphNode) => n.radius)
+      .style("fill", (n: GraphNode) => {
+        const doc = documentFor(n);
+        for (const group of settings.groups)
+          if (groups.get(group.id)?.matches(doc)) return group.color;
+        return null;
       });
-
-      container.classList.add('graph-dimmed');
-
-      nodeGroup.selectAll('.graph-node')
-        .classed('is-highlight', (n: any) => connectedNodeIds.has(n.id))
-        .classed('is-hovered', (n: any) => n.id === d.id);
-      
-      nodeGroup.selectAll('.graph-label')
-        .classed('is-highlight', (n: any) => connectedNodeIds.has(n.id))
-        .classed('is-hovered', (n: any) => n.id === d.id);
-
-      link.classed('is-highlight', (l: any) => l.source.id === d.id || l.target.id === d.id);
-
-      // Hover animation on current node
-      const currentGroup = window.d3.select(event.currentTarget);
-      currentGroup.select('.graph-node')
-        .transition().duration(250).ease(window.d3.easeCubicOut).attr('r', d.radius * 1.5);
-      currentGroup.select('.graph-label')
-        .transition().duration(250).ease(window.d3.easeCubicOut).attr('dy', d.radius * 1.5 + 15);
-    }
-
-    function handleMouseOut(event: any, d: GraphNode) {
-      if (!container) return;
-      if (isDragging) return;
-      container.classList.remove('graph-dimmed');
-      nodeGroup.selectAll('.graph-node').classed('is-highlight is-hovered', false);
-      nodeGroup.selectAll('.graph-label').classed('is-highlight is-hovered', false);
-      link.classed('is-highlight', false);
-
-      // Revert hover animation
-      const currentGroup = window.window.d3.select(event.currentTarget);
-      currentGroup.select('.graph-node')
-        .transition().duration(250).ease(window.window.d3.easeCubicOut).attr('r', d.radius);
-      currentGroup.select('.graph-label')
-        .transition().duration(250).ease(window.window.d3.easeCubicOut).attr('dy', d.radius + 12);
-    }
-    
-    // Expose for search
-    (window as any).__graphNodes = nodeGroup;
-    
-    // Sync initial LOD state
-    if (svg && svg.node()) {
-      updateLabelVisibility(window.d3.zoomTransform(svg.node()!).k);
-    }
+    nodeSelection.select("text").attr("dy", (n: GraphNode) => n.radius + 12);
+    linkSelection
+      .attr("stroke-width", settings.lineWidth)
+      .attr("marker-end", (l: GraphLink) =>
+        settings.arrows && l.type === "wikilink" && l.forward
+          ? "url(#graph-arrow-end)"
+          : null,
+      )
+      .attr("marker-start", (l: GraphLink) =>
+        settings.arrows && l.type === "wikilink" && l.reverse
+          ? "url(#graph-arrow-start)"
+          : null,
+      );
+    updateLabels();
+    tick();
   }
-
-  function updateLabelVisibility(scale: number) {
-    if (!(window as any).__graphNodes) return;
-    
-    const w = container?.clientWidth || 800;
-    const h = container?.clientHeight || 600;
-    const defaultFit = getDefaultGraphTransform(w, h);
-    const fitScale = defaultFit.scale;
-    
-    const relativeScale = scale / fitScale;
-    
-    const avgDegree = (graphMeta && graphMeta.linkCount && graphMeta.nodeCount) 
-                      ? (graphMeta.linkCount * 2 / graphMeta.nodeCount) 
-                      : 2;
-    const importantThreshold = Math.max(3, avgDegree * 1.5);
-    
-    const LABEL_ALL_MIN_RELATIVE_SCALE = 0.80;
-    const LABEL_IMPORTANT_MIN_RELATIVE_SCALE = 0.55;
-    
-    (window as any).__graphNodes.selectAll('.graph-label')
-      .style('opacity', function(this: Element, d: GraphNode) {
-        if (this.classList.contains('is-match') || this.classList.contains('is-highlight')) return 1;
-        
-        if (relativeScale >= LABEL_ALL_MIN_RELATIVE_SCALE) return 1; // Show all labels
-        if (relativeScale >= LABEL_IMPORTANT_MIN_RELATIVE_SCALE) { // Show important labels only
-          return d.degree >= importantThreshold ? 1 : 0;
-        }
-        
-        // Far zoomed out: no normal labels
-        return 0;
+  function updateLabels() {
+    if (!svg || !nodeSelection) return;
+    const relative =
+      window.d3.zoomTransform(svg.node()).k / defaultTransform().k;
+    const threshold = 0.8 + settings.textFade * 0.6;
+    const important = Math.max(
+      3,
+      (((raw.meta?.linkCount || 1) * 2) /
+        Math.max(1, raw.meta?.nodeCount || 1)) *
+        1.5,
+    );
+    nodeSelection
+      .select("text")
+      .style("opacity", function (this: Element, n: GraphNode) {
+        if (this.classList.contains("is-highlight")) return 1;
+        return relative >= threshold
+          ? 1
+          : relative >= threshold * 0.6875 && n.degree >= important
+            ? 1
+            : 0;
       });
   }
-
-  function drag(simulation: any) {
-    function dragstarted(event: any, d: GraphNode) {
-      if (!event.active) simulation.alphaTarget(0.3).restart();
-      isDragging = true;
-      d.fx = d.x;
-      d.fy = d.y;
+  function hover(id: string | null) {
+    if (!nodeSelection) return;
+    container?.classList.toggle("graph-dimmed", id !== null);
+    const neighbors = new Set<string>();
+    if (id) {
+      neighbors.add(id);
+      for (const l of currentLinks) {
+        if (endpoint(l.source) === id) neighbors.add(endpoint(l.target));
+        if (endpoint(l.target) === id) neighbors.add(endpoint(l.source));
+      }
     }
-    function dragged(event: any, d: GraphNode) {
-      d.fx = event.x;
-      d.fy = event.y;
-    }
-    function dragended(event: any, d: GraphNode) {
-      if (!event.active) simulation.alphaTarget(0);
-      isDragging = false;
-      d.fx = null;
-      d.fy = null;
-    }
-    return window.window.d3.drag()
-      .on('start', dragstarted)
-      .on('drag', dragged)
-      .on('end', dragended);
+    nodeSelection
+      .selectAll("circle,text")
+      .classed("is-highlight", (n: GraphNode) => neighbors.has(n.id))
+      .classed("is-hovered", (n: GraphNode) => n.id === id);
+    linkSelection.classed(
+      "is-highlight",
+      (l: GraphLink) => endpoint(l.source) === id || endpoint(l.target) === id,
+    );
+    updateLabels();
   }
-
-  function setupEventListeners() {
-    if (orphanBtn) {
-      orphanBtn.onclick = () => {
-        showOrphans = !showOrphans;
-        orphanBtn!.setAttribute('aria-expanded', String(showOrphans));
-        render(0.12);
-      };
-    }
-
-    if (resetBtn) {
-      resetBtn.onclick = () => {
-        const url = new URL(window.location.href);
-        if (url.searchParams.has('node')) {
-          url.searchParams.delete('node');
-          url.searchParams.delete('depth');
-          window.history.pushState({}, '', url);
-          render();
-        } else if (svg && zoomBehavior && container) {
-          const w = container.clientWidth || 800;
-          const h = container.clientHeight || 600;
-          const defaultFit = getDefaultGraphTransform(w, h);
-          svg.transition().duration(750).call(
-            zoomBehavior.transform as any,
-            defaultFit.transform
-          );
-        }
-      };
-    }
-
-    if (searchBtn && actionsHorizontal) {
-      searchBtn.onclick = () => {
-        const isOpen = actionsHorizontal!.classList.toggle('is-search-open');
-        if (isOpen && searchInput) searchInput.focus();
-      };
-    }
-
-    if (tagsBtn) {
-      tagsBtn.onclick = () => {
-        showTags = !showTags;
-        tagsBtn!.setAttribute('aria-expanded', String(showTags));
-        render(0.12);
-      };
-    }
-
-    if (attachmentsBtn) {
-      attachmentsBtn.onclick = () => {
-        showAttachments = !showAttachments;
-        attachmentsBtn!.setAttribute('aria-expanded', String(showAttachments));
-        render(0.12);
-      };
-    }
-
-    if (searchInput) {
-      searchInput.oninput = (e: Event) => {
-        const val = (e.target as HTMLInputElement).value.trim().toLowerCase();
-        const graphNodes = (window as any).__graphNodes;
-        if (!graphNodes) return;
-        
-        if (!val) {
-          if (container) container.classList.remove('graph-dimmed');
-          graphNodes.selectAll('.graph-node, .graph-label').classed('is-highlight is-match', false);
-          if (svg && svg.node()) updateLabelVisibility(window.window.d3.zoomTransform(svg.node()!).k);
-          return;
-        }
-
-        if (container) container.classList.add('graph-dimmed');
-        
-        let hasMatch = false;
-        const d3 = window.d3;
-        graphNodes.each(function(this: Element, d: GraphNode) {
-          const match = d.title.toLowerCase().includes(val);
-          if (match) hasMatch = true;
-          window.d3.select(this).select('.graph-node').classed('is-highlight', match);
-          window.d3.select(this).select('.graph-label').classed('is-highlight is-match', match);
-        });
-        
-        if (svg && svg.node()) updateLabelVisibility(window.d3.zoomTransform(svg.node()!).k);
-      };
-    }
+  function stopAnimation(restoreGraph: boolean) {
+    const wasActive = animation !== "idle";
+    cancelAnimationFrame(frame);
+    frame = 0;
+    animation = "idle";
+    elapsed = 0;
+    lastBatch = -1;
+    panel?.animation("idle", 0);
+    if (restoreGraph && wasActive) showGraph(fullNodes, fullLinks);
   }
-
+  function toggleAnimation() {
+    if (animation === "playing") {
+      elapsed = Math.min(12000, performance.now() - started);
+      animation = "paused";
+      cancelAnimationFrame(frame);
+      panel?.animation(animation, elapsed / 12000);
+      return;
+    }
+    if (animation === "idle") {
+      days = [
+        ...new Set(
+          fullNodes.filter((n) => n.date).map((n) => n.date!.slice(0, 10)),
+        ),
+      ].sort();
+      if (!days.length) return;
+      elapsed = 0;
+      lastBatch = -1;
+    }
+    animation = "playing";
+    started = performance.now() - elapsed;
+    animationFrame();
+  }
+  function animationFrame() {
+    if (animation !== "playing") return;
+    elapsed = Math.min(12000, performance.now() - started);
+    const batch = Math.min(
+      days.length - 1,
+      Math.floor((elapsed / 12000) * days.length),
+    );
+    if (batch !== lastBatch) {
+      lastBatch = batch;
+      const day = days[batch]!;
+      const ids = new Set(
+        fullNodes
+          .filter((n) => n.date && n.date.slice(0, 10) <= day)
+          .map((n) => n.id),
+      );
+      const dated = new Set(ids);
+      const byID = new Map(fullNodes.map((n) => [n.id, n]));
+      for (const l of fullLinks) {
+        const a = endpoint(l.source),
+          b = endpoint(l.target);
+        if (dated.has(a) && !byID.get(b)?.date) ids.add(b);
+        if (dated.has(b) && !byID.get(a)?.date) ids.add(a);
+      }
+      showGraph(
+        fullNodes.filter((n) => ids.has(n.id)),
+        fullLinks,
+      );
+    }
+    panel?.animation(animation, elapsed / 12000);
+    if (elapsed >= 12000) {
+      animation = "idle";
+      showGraph(fullNodes, fullLinks);
+      panel?.animation("idle", 1);
+      frame = 0;
+    } else frame = requestAnimationFrame(animationFrame);
+  }
   window.DaybookGraph = { init, destroy };
 })();

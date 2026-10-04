@@ -96,21 +96,27 @@
       return;
     }
 
-    if (graphShell.dataset['graphInitialized'] === "true") {
+    if (graphShell.dataset['graphInitialized'] === "true" || graphShell.dataset['graphInitializing'] === "true") {
       return;
     }
 
-    Promise.all([loadD3(), loadGraph()]).then(function () {
+    graphShell.dataset['graphInitializing'] = "true";
+    const revision = navigationRevision;
+    Promise.all([loadD3(), loadGraph()]).then(async function () {
+      if (revision !== navigationRevision || !graphShell.isConnected || document.querySelector(".graph-shell") !== graphShell) return;
       if (window.DaybookGraph && typeof window.DaybookGraph.init === "function") {
-        window.DaybookGraph.init(document);
+        await window.DaybookGraph.init(document);
         graphShell.dataset['graphInitialized'] = "true";
       }
     }).catch(function (error) {
       console.error("Failed to load graph dependencies", error);
+    }).finally(function () {
+      delete graphShell.dataset['graphInitializing'];
     });
   }
 
   let initTimer = 0;
+  let navigationRevision = 0;
   function scheduleCheck() {
     if (initTimer) window.clearTimeout(initTimer);
     initTimer = window.setTimeout(function () {
@@ -122,6 +128,10 @@
   document.addEventListener("daybook:page-load", scheduleCheck);
 
   document.addEventListener("daybook:before-swap", function () {
+    navigationRevision++;
+    window.clearTimeout(initTimer);
+    const shell = document.querySelector<HTMLElement>(".graph-shell");
+    if (shell) { delete shell.dataset['graphInitialized']; delete shell.dataset['graphInitializing']; }
     if (window.DaybookGraph && typeof window.DaybookGraph.destroy === "function") {
       window.DaybookGraph.destroy();
     }

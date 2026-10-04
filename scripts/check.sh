@@ -5,6 +5,8 @@ echo "==> Phase A: Dependency and Frontend Validation"
 if [ -z "${CI:-}" ]; then npm ci; fi
 npm run typecheck
 npm run test:reading-rail
+node scripts/graph-query-test.mjs
+node --test test/graph-controls.test.mjs
 npm run build:js
 npm run build:vendor
 npm run test:giscus
@@ -142,6 +144,10 @@ if (versions.find(item => item.url === '/notes/smoke-test/').title !== 'smoke-te
   throw new Error('Note title was not derived from its filename');
 }
 const graph = JSON.parse(readFileSync('public/graph.json', 'utf8'));
+const graphSearch = JSON.parse(readFileSync('public/graph-search.json', 'utf8'));
+if (graph.version !== 1 || graphSearch.version !== 1 || !graphSearch.documents.some(doc => doc.id === '/notes/smoke-test/' && doc.text.includes('Hello World'))) {
+  throw new Error('Graph search data is missing published note text or its version');
+}
 const note = graph.nodes.find(node => node.url === '/notes/smoke-test/');
 const memo = graph.nodes.find(node => node.url === '/memos/smoke-memo/');
 if (!note || !memo || !graph.links.some(link =>
@@ -151,7 +157,7 @@ if (!note || !memo || !graph.links.some(link =>
 }
 for (const slug of ['draft-memo', 'invalid-memo']) {
   if (existsSync(`public/memos/${slug}/index.html`) ||
-      JSON.stringify(search).includes(slug) || JSON.stringify(graph).includes(slug) || timeline.includes(slug)) {
+      JSON.stringify(search).includes(slug) || JSON.stringify(graph).includes(slug) || JSON.stringify(graphSearch).includes(slug) || timeline.includes(slug)) {
     throw new Error(`Excluded memo leaked into published output: ${slug}`);
   }
 }
@@ -212,5 +218,6 @@ cd - > /dev/null
 node scripts/browser-test.mjs
 node scripts/memos-browser-test.mjs
 node scripts/article-actions-browser-test.mjs
+node scripts/graph-static-test.mjs
 
 echo "==> All checks passed successfully!"

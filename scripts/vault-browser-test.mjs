@@ -230,22 +230,41 @@ if (fixtures) {
     } finally { await context.close(); }
   });
 
-  await run('graph: local node search has the same opaque background as article search', async () => {
+  await run('graph: settings and query use opaque theme surfaces', async () => {
     const { page, context, errors } = await createPage({ width: 1440, height: 1000 });
     try {
       await page.goto(`${baseURL}/graph/`, { waitUntil: 'networkidle' });
-      await page.locator('#graph-search-btn').click();
-      await page.waitForFunction(() => document.querySelector('.graph-actions-horizontal').classList.contains('is-search-open'));
-      const backgrounds = await page.evaluate(() => ({
-        node: getComputedStyle(document.querySelector('#graph-local-search-panel')).backgroundColor,
-        article: getComputedStyle(document.querySelector('.site-tools .notes-search-panel')).backgroundColor,
-      }));
-      assert.equal(backgrounds.node, backgrounds.article);
-      assert.notEqual(backgrounds.node, 'rgba(0, 0, 0, 0)');
+      await page.locator('#graph-settings-btn').click();
+      await page.waitForFunction(() => !document.querySelector('.graph-panel').hidden);
+      const backgrounds = await page.evaluate(() => {
+        const originalTheme = document.documentElement.dataset.theme;
+        const probe = document.createElement('div');
+        probe.hidden = true;
+        document.body.append(probe);
+        const colors = ['light', 'dark'].map(theme => {
+          document.documentElement.dataset.theme = theme;
+          probe.style.backgroundColor = 'var(--color-paper)';
+          const paper = getComputedStyle(probe).backgroundColor;
+          probe.style.backgroundColor = 'var(--color-page)';
+          return { theme, paper, page: getComputedStyle(probe).backgroundColor,
+            panel: getComputedStyle(document.querySelector('.graph-panel')).backgroundColor,
+            query: getComputedStyle(document.querySelector('#graph-search-input')).backgroundColor };
+        });
+        probe.remove();
+        if (originalTheme === undefined) delete document.documentElement.dataset.theme;
+        else document.documentElement.dataset.theme = originalTheme;
+        return colors;
+      });
+      for (const colors of backgrounds) {
+        assert.equal(colors.panel, colors.paper, `${colors.theme}: settings use the paper surface`);
+        assert.equal(colors.query, colors.page, `${colors.theme}: query uses the page surface`);
+        assert.notEqual(colors.panel, 'rgba(0, 0, 0, 0)');
+        assert.notEqual(colors.query, 'rgba(0, 0, 0, 0)');
+      }
       await page.locator('#graph-search-input').fill('Markdown');
       assert.ok(await page.locator('#graph-search-input').isVisible());
       assert.deepEqual(errors, []);
-      return backgrounds;
+      return { backgrounds };
     } finally { await context.close(); }
   });
 
