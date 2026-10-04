@@ -504,15 +504,16 @@ html.has-custom-cursor .graph-panel:modal :is(button, input[type="range"]) {
   }
   .graph-panel {
     position: fixed;
-    inset: 0;
+    inset: var(--mobile-topbar-height, 64px) 0 0;
     width: 100vw;
-    height: 100dvh;
+    height: calc(100dvh - var(--mobile-topbar-height, 64px));
     max-width: none;
     max-height: none;
     border-radius: 0;
     box-shadow: none;
   }
   .graph-panel::backdrop {
+    top: var(--mobile-topbar-height, 64px);
     background: var(--color-paper);
   }
   .graph-panel-header {

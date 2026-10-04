@@ -52,7 +52,7 @@ try {
   await page.waitForFunction(() => document.querySelector('#graph-settings-panel').matches(':modal'));
   await page.screenshot({ path: '/tmp/daybook-graph-mobile.png' });
   const bounds = await page.locator('.graph-panel').boundingBox();
-  assert.deepEqual(bounds, {x: 0, y: 0, width: 390, height: 844}, 'Settings cover the full mobile viewport');
+  assert.deepEqual(bounds, {x: 0, y: 64, width: 390, height: 780}, 'Settings fill the mobile viewport below the top bar');
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#graph-settings-panel').isVisible(), false);
   for (const width of [390, 320, 800]) {
