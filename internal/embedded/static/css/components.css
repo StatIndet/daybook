@@ -862,7 +862,7 @@ html[data-reduced-motion="true"] [data-reading-toc-rail-dot]::before {
   height: 44px;
   padding: 0;
   border: 0;
-  border-radius: 50%;
+  border-radius: 10px;
   background: color-mix(in srgb, var(--color-page) 88%, transparent);
   color: var(--color-text);
   cursor: pointer;

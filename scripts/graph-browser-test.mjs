@@ -402,7 +402,7 @@ try {
   const mobile = await openGraph(fixture(), { viewport: { width: 390, height: 844 }, reducedMotion: 'reduce', storageUnavailable: true });
   await mobile.locator('#graph-settings-btn').click();
   const panelBox = await mobile.locator('#graph-settings-panel').boundingBox();
-  assert.deepEqual(panelBox, { x: 0, y: 64, width: 390, height: 780 }, 'Mobile settings fill the viewport below the top bar');
+  assert.deepEqual(panelBox, { x: 0, y: 0, width: 390, height: 844 }, 'Mobile settings cover the viewport');
   assert.equal(await mobile.locator('#graph-settings-panel').evaluate(panel => panel.matches(':modal')), true, 'Mobile settings use a modal layer');
   await mobile.locator('#graph-arrows').focus();
   await mobile.keyboard.press('Space');

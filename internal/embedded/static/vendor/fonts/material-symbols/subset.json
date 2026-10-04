@@ -88,6 +88,7 @@
     "refresh",
     "report",
     "resize",
+    "restart_alt",
     "rss_feed",
     "scatter_plot",
     "science",
@@ -130,5 +131,5 @@
     }
   },
   "originalBytes": 5347060,
-  "subsetBytes": 14860
+  "subsetBytes": 14984
 }

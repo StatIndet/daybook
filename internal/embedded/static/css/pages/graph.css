@@ -147,12 +147,32 @@
   font-size: 16px;
   font-weight: 600;
 }
-.graph-shell .graph-close {
-  border: 0;
-  color: var(--color-muted);
+.graph-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
-.graph-section {
-  border-bottom: 1px solid var(--color-line);
+.graph-shell .graph-panel-action {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+.graph-panel-action .material-symbol {
+  font-size: 22px;
+}
+.graph-shell .graph-panel-action:hover,
+.graph-shell .graph-panel-action:focus-visible {
+  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-paper));
+  color: var(--color-accent);
 }
 .graph-section-title {
   display: flex;
@@ -371,13 +391,6 @@
 .graph-error:empty {
   display: none;
 }
-.graph-panel-footer {
-  padding: 12px 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-}
 .graph-status {
   position: absolute;
   bottom: 12px;
@@ -504,22 +517,21 @@ html.has-custom-cursor .graph-panel:modal :is(button, input[type="range"]) {
   }
   .graph-panel {
     position: fixed;
-    inset: var(--mobile-topbar-height, 64px) 0 0;
+    inset: 0;
     width: 100vw;
-    height: calc(100dvh - var(--mobile-topbar-height, 64px));
+    height: 100dvh;
     max-width: none;
     max-height: none;
     border-radius: 0;
     box-shadow: none;
   }
   .graph-panel::backdrop {
-    top: var(--mobile-topbar-height, 64px);
     background: var(--color-paper);
   }
   .graph-panel-header {
     padding-top: max(12px, env(safe-area-inset-top));
   }
-  .graph-panel-footer {
+  .graph-panel .graph-section:last-child .graph-section-body {
     padding-bottom: max(16px, env(safe-area-inset-bottom));
   }
   .graph-shell .graph-toolbar {

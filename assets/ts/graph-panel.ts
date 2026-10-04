@@ -145,14 +145,17 @@ export function createGraphPanel(
   searchPanel.id = "graph-local-search-panel";
   searchPanel.hidden = true;
   const header = el("div", "graph-panel-header");
-  header.append(
-    el("strong", "", graphText("settings")),
-    button(
-      graphText("close"),
-      () => setOpen(false),
-      "graph-button graph-close",
-    ),
-  );
+  const headerActions = el("div", "graph-panel-actions");
+  const reset = iconButton("reset", "restart_alt", actions.reset);
+  reset.id = "graph-defaults";
+  const closeButton = iconButton("close", "close", () => setOpen(false));
+  for (const control of [reset, closeButton]) {
+    control.className = "graph-panel-action";
+    control.querySelector(".graph-action-text")?.remove();
+  }
+  closeButton.classList.add("graph-close");
+  headerActions.append(reset, closeButton);
+  header.append(el("strong", "", graphText("settings")), headerActions);
   panel.append(header);
   const sections = new Map<string, HTMLElement>();
   for (const name of ["appearance", "forces"] as const) {
@@ -284,11 +287,6 @@ export function createGraphPanel(
     ).append(row);
     fields.set(key, range);
   }
-  const footer = el("div", "graph-panel-footer");
-  const reset = button(graphText("reset"), actions.reset);
-  reset.id = "graph-defaults";
-  footer.append(reset);
-  panel.append(footer);
   const status = el("div", "graph-status");
   status.setAttribute("role", "status");
   const empty = el("span", "", graphText("empty"));
@@ -325,7 +323,7 @@ export function createGraphPanel(
       searchPanel.hidden = true;
       search.setAttribute("aria-expanded", "false");
       presentPanel();
-      panel.querySelector<HTMLButtonElement>("button")?.focus({ preventScroll: true });
+      closeButton.focus({ preventScroll: true });
     } else {
       panel.close();
       document.body.classList.remove("graph-modal-open");
