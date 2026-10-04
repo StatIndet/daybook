@@ -53,10 +53,11 @@
 .memos-page span.memo-photo-tile { display: inline-block; vertical-align: middle; }
 .memos-page .memo-photo-grid .memo-photo-tile { width: auto; max-width: 100%; }
 .memos-page .memo-photo-tile img { display: block; width: auto; max-height: calc((100cqw - 8px) * .375); margin: 0; transition: transform 220ms cubic-bezier(.22, .61, .36, 1), filter 220ms cubic-bezier(.22, .61, .36, 1); }
+.memos-page .memo-content .memo-photo-tile figcaption { padding: 24px 16px 12px; }
 .memos-page .has-more-photos::before {
   content: "";
-  position: absolute; inset: 0 0 auto; height: 72px; max-height: 50%; z-index: 1;
-  background: linear-gradient(to bottom, rgb(0 0 0 / .7), transparent);
+  position: absolute; inset: 0 0 auto; height: 48px; max-height: 50%; z-index: 1;
+  background: linear-gradient(to bottom, rgb(0 0 0 / .55), transparent);
   pointer-events: none;
 }
 .memos-page .memo-content .memo-more-photos {
