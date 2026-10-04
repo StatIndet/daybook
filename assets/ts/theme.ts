@@ -152,6 +152,14 @@
     });
 
     // Mobile Radiogroup
+    const modes = ["light", "system", "dark"];
+    document.querySelectorAll<HTMLElement>(".mobile-theme-selector").forEach(function(selector) {
+      const previous = selector.dataset['mode'];
+      if (previous && previous !== mode) {
+        selector.dataset['direction'] = modes.indexOf(mode) > modes.indexOf(previous) ? "right" : "left";
+      }
+      selector.dataset['mode'] = mode;
+    });
     document.querySelectorAll(".theme-selector-btn").forEach(function(btn) {
       if (btn.getAttribute("data-mode") === mode) {
         btn.setAttribute("aria-checked", "true");

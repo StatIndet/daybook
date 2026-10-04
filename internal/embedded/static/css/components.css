@@ -1447,36 +1447,46 @@ body.is-search-overlay-open .mobile-search-overlay {
 
 /* Mobile Theme Selector */
 .mobile-theme-selector {
+  --theme-position: 1;
   display: flex;
   align-items: center;
   position: relative;
   width: max-content;
   padding: 4px;
   gap: 4px;
+  border: 2px solid var(--color-muted);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--color-line) 40%, transparent);
+  background: var(--color-paper);
 }
 
 .theme-selector-indicator {
   position: absolute;
   top: 4px;
-  left: 4px;
-  width: 32px;
+  left: calc(4px + var(--theme-position) * 36px);
+  right: calc(4px + (2 - var(--theme-position)) * 36px);
   height: 32px;
-  border-radius: 50%;
-  background-color: var(--color-accent-soft-strong);
-  transition: transform var(--motion-expressive-fast-spatial-duration) var(--motion-expressive-fast-spatial-easing);
+  border-radius: 16px;
+  background: var(--color-accent);
+  pointer-events: none;
+  /* The leading edge moves first; the trailing edge catches up without a bounce.
+     Total duration matches the theme change's 350ms preparation phase. */
+  transition: left 280ms cubic-bezier(.22, .61, .36, 1),
+              right 280ms cubic-bezier(.22, .61, .36, 1);
   z-index: 0;
 }
 
-:root[data-theme-mode="light"] .theme-selector-indicator {
-  transform: translateX(0);
+.mobile-theme-selector[data-direction="right"] .theme-selector-indicator {
+  transition-delay: 70ms, 0ms;
 }
-:root[data-theme-mode="system"] .theme-selector-indicator {
-  transform: translateX(36px);
+.mobile-theme-selector[data-direction="left"] .theme-selector-indicator {
+  transition-delay: 0ms, 70ms;
 }
-:root[data-theme-mode="dark"] .theme-selector-indicator {
-  transform: translateX(72px);
+
+:root[data-theme-mode="light"] .mobile-theme-selector {
+  --theme-position: 0;
+}
+:root[data-theme-mode="dark"] .mobile-theme-selector {
+  --theme-position: 2;
 }
 
 .theme-selector-btn {
@@ -1501,9 +1511,13 @@ body.is-search-overlay-open .mobile-search-overlay {
   height: 18px;
 }
 
-.theme-selector-btn:focus-visible,
 .theme-selector-btn[aria-checked="true"] {
-  color: var(--color-hover-text);
+  color: var(--color-page);
+}
+
+.theme-selector-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {
