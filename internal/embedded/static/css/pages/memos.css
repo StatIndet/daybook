@@ -118,18 +118,16 @@
 .memo-body .memo-location, .memo-body .note-tag-capsule { font-size: var(--note-text-size); line-height: 1.75; }
 
 /* Timeline and detail share one post layout and a quiet five-action footer. */
-.memo-card[data-memo-card] { cursor: pointer; transition: background-color 160ms ease; }
-.memo-card[data-memo-card]:hover, .memo-card[data-memo-card]:focus-within { background: var(--color-accent-soft); }
+.memo-card[data-memo-card] { cursor: pointer; }
 .memo-card .memo-avatar { border-radius: 8px; }
 .memo-card .memo-tag { text-decoration: none; }
 .memo-card .memo-number,
 .memo-card [data-like-count],
-.memos-page .memo-number,
-.memos-filters .memo-number {
-  font-family: var(--font-cormorant);
+.memos-count .memo-number {
+  font-family: "Cormorant Garamond Meta", var(--font-cormorant);
   font-style: italic;
-  font-weight: 500;
-  font-variant-numeric: lining-nums tabular-nums;
+  font-weight: 600;
+  font-synthesis: none;
 }
 .memo-permalink { font-size: .9rem; }
 .memo-updated { font-size: .8rem; }
@@ -147,15 +145,14 @@
 .memo-actions .memo-view-action, .memo-actions .is-unavailable { cursor: default; }
 .memo-actions .is-unavailable { opacity: .5; }
 .memo-actions .article-action:focus-visible, .memo-permalink:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
-.memo-detail-page { --memo-gutter: 24px; max-width: 44rem; margin: 0 auto; border: 1px solid var(--color-line); }
-.memo-detail-toolbar { display: flex; align-items: center; gap: 16px; padding: 18px var(--memo-gutter); }
+.memo-detail-layout { display: grid; grid-template-columns: minmax(0, 44rem) 16rem; max-width: 60rem; margin: 0 auto; border: 1px solid transparent; }
+.memo-detail-page { --memo-gutter: 24px; min-width: 0; outline: 1px solid var(--color-line); }
+.memo-detail-toolbar { display: flex; align-items: center; gap: 16px; min-height: 72px; box-sizing: border-box; padding: 16px var(--memo-gutter); }
 .memo-detail-toolbar h1 { font-size: 1.2rem; margin: 0; font-family: var(--font-serif); }
 .memo-detail-toolbar .bilingual-toggle-btn { margin-left: auto; }
 .memo-detail-post .post-content { margin-top: 4px; }
 .memo-detail-page .post-comments { margin: 0; padding: 24px var(--memo-gutter); border-top: 1px solid var(--color-line); scroll-margin-top: 80px; }
 .memo-body .page-main { padding-left: calc(var(--side-rail-width) + 24px); padding-right: 40px; }
-@media (prefers-reduced-motion: reduce) { .memo-card[data-memo-card] { transition: none; } }
-html[data-reduced-motion="true"] .memo-card[data-memo-card] { transition: none; }
 @media (max-width: 960px) {
   .memo-body .page-main { padding: 24px 20px 56px; }
 }
@@ -164,4 +161,19 @@ html[data-reduced-motion="true"] .memo-card[data-memo-card] { transition: none; 
   .memo-detail-page { --memo-gutter: 16px; border: 0; }
   .memo-actions { gap: 4px; }
   .memo-permalink { font-size: .85rem; }
+}
+
+.memos-filters [data-memo-tag], .memos-filters [data-memos-date], .memo-labels button { touch-action: manipulation; user-select: none; -webkit-touch-callout: none; }
+@media (max-width: 1100px) and (min-width: 961px) {
+  .memo-body .page-main { padding-left: 210px; padding-right: 24px; }
+  .memo-detail-layout { grid-template-columns: minmax(0, 1fr) 13rem; }
+  .memo-detail-page { --memo-gutter: 20px; }
+}
+@media (max-width: 960px) {
+  .memo-detail-layout { display: block; max-width: var(--notes-content-width); }
+}
+@media (max-width: 600px) {
+  .memo-detail-layout { border: 0; }
+  .memo-detail-page { outline: none; }
+  .memo-detail-toolbar { min-height: 64px; }
 }

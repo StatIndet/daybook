@@ -11,7 +11,7 @@
     </div>
     <div class="memo-dates">
       <a class="memo-permalink" href="{{.Item.URL}}" aria-label="{{T .Lang "memos.open"}}: {{.Item.DateDisplay}}"><time class="memo-number" datetime="{{.Item.Date}}">{{.Item.DateDisplay}}</time></a>
-      {{if .Item.Updated}}<span class="memo-updated"><span data-ui-text="memos.updated">{{T .Lang "memos.updated"}}</span> <time class="memo-number" datetime="{{.Item.Updated}}">{{.Item.UpdatedDisplay}}</time></span>{{end}}
+      {{if .Item.Updated}}<span class="memo-updated"><span>updated</span> <time class="memo-number" datetime="{{.Item.Updated}}">{{.Item.UpdatedDisplay}}</time></span>{{end}}
     </div>
   </header>
   <div class="markdown memo-content{{if .Detail}} post-content{{end}}" lang="{{if eq .Item.Lang "en_US"}}en-US{{else}}zh-CN{{end}}">{{.Item.HTML}}</div>
@@ -40,6 +40,7 @@
 {{end}}
 
 {{define "memo_detail"}}
+<div class="memo-detail-layout">
 <div class="memo-detail-page">
   <header class="memo-detail-toolbar">
     <a class="memo-detail-back" href="{{if eq .Lang "en_US"}}/en_US{{end}}/memos/" aria-label="{{T .Lang "action.back"}}" data-ui-aria="action.back"><span class="material-symbol" aria-hidden="true">arrow_back</span></a>
@@ -50,5 +51,6 @@
     {{template "memo_post" dict "Item" .Note "Config" .Config "Lang" .Lang "Detail" true}}
   </article>
   {{template "comments" .}}
+</div>
 </div>
 {{end}}
