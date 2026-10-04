@@ -10,7 +10,9 @@ async function sourceFiles(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const file = path.join(directory, entry.name);
     if (entry.isDirectory()) {
-      if (!['static', 'bundles', '.git', 'node_modules'].includes(entry.name)) files.push(...await sourceFiles(file));
+      // Build-only OG templates/code use no site icons. Their ordinary words
+      // (such as "cards" or "more") must not expand the browser icon font.
+      if (!['static', 'bundles', 'og', '.git', 'node_modules'].includes(entry.name)) files.push(...await sourceFiles(file));
     } else if (/\.(html|ts|go|css)$/.test(file) && !file.endsWith('_test.go')) {
       files.push(file);
     }

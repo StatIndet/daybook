@@ -27,6 +27,7 @@ import (
 	"github.com/StatIndet/daybook/internal/media"
 	"github.com/StatIndet/daybook/internal/morphable"
 	"github.com/StatIndet/daybook/internal/obsidian"
+	"github.com/StatIndet/daybook/internal/og"
 	"github.com/StatIndet/daybook/internal/progress"
 	"github.com/StatIndet/daybook/internal/render"
 	"github.com/StatIndet/daybook/internal/search"
@@ -226,6 +227,7 @@ func Build(options Options) (BuildResult, error) {
 	renderer := render.New("templates")
 
 	var allSiteURLs []sitemap.URL
+	var ogCards []og.Card
 
 	var allDiagnostics []obsidian.Diagnostic
 
@@ -454,11 +456,20 @@ func Build(options Options) (BuildResult, error) {
 					noteAlternates = []seo.Alternate{{Lang: lang, URL: joinURL("/", langPrefix, note.Section, note.Slug)}}
 				}
 
+				ogCard, err := og.NewCard(*note, document.HTML, options.Config, displayTags)
+				if err != nil {
+					return BuildResult{}, fmt.Errorf("准备分享图片 %s: %w", note.SourcePath, err)
+				}
+				ogCards = append(ogCards, ogCard)
 				noteSEOArgs := seo.BuilderArgs{
 					Config:      options.Config,
 					Lang:        lang,
 					Title:       note.Title,
-					Description: note.Summary,
+					Description: ogCard.Description,
+					Image:       ogCard.OutputPath,
+					ImageWidth:  1200,
+					ImageHeight: 630,
+					ImageType:   "image/png",
 					PageURL:     joinURL("/", langPrefix, note.Section, note.Slug),
 					Published:   note.Date,
 					Modified:    note.Updated,
@@ -471,8 +482,12 @@ func Build(options Options) (BuildResult, error) {
 				shareText := strings.ReplaceAll(options.Config.Share.Text, "{Title}", note.Title)
 
 				pageKind, bodyClass := "note", "note-body page-body"
+				var pageSEO seo.SEOData
 				if note.Section == "memos" {
 					pageKind, bodyClass = "memo", "note-body memo-body page-body"
+					pageSEO = seo.BuildForMemo(noteSEOArgs)
+				} else {
+					pageSEO = seo.BuildForNote(noteSEOArgs)
 				}
 				notePageData := render.NoteData{
 					Site:         siteData,
@@ -485,7 +500,7 @@ func Build(options Options) (BuildResult, error) {
 					Assets:       assets,
 					HasMath:      hasMath,
 					Tags:         tagLinks,
-					SEO:          seo.BuildForNote(noteSEOArgs),
+					SEO:          pageSEO,
 					Note: render.NotePage{
 						Section:             note.Section,
 						Location:            note.Location,
@@ -1037,6 +1052,16 @@ func Build(options Options) (BuildResult, error) {
 	}
 	if err := sitemap.WriteRobots(filepath.Join(options.PublicDir, "robots.txt"), options.Config); err != nil {
 		return BuildResult{}, err
+	}
+
+	if options.Reporter != nil {
+		options.Reporter.SetStage(5, len(ogCards))
+	}
+	if err := og.Generate(options.PublicDir, ogCards); err != nil {
+		return BuildResult{}, fmt.Errorf("生成静态分享图片: %w", err)
+	}
+	if options.Reporter != nil {
+		options.Reporter.Advance(len(ogCards))
 	}
 
 	deduped := deduplicateDiagnostics(allDiagnostics)

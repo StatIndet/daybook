@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/StatIndet/daybook/internal/config"
+	"github.com/StatIndet/daybook/internal/og"
 	"github.com/StatIndet/daybook/internal/progress"
 	"github.com/StatIndet/daybook/internal/site"
 )
@@ -23,6 +26,7 @@ func main() {
 func printHelp() {
 	fmt.Println("Usage:")
 	fmt.Println("  daybook build    Build the current Daybook vault into ./public")
+	fmt.Println("  daybook setup-og Install local Playwright and Chromium for static social cards")
 	fmt.Println("  daybook serve [--addr :1313]  Serve the existing ./public directory locally")
 	fmt.Println("  daybook version  Print Daybook version")
 }
@@ -34,6 +38,14 @@ func run() error {
 	}
 
 	command := os.Args[1]
+	if command == "setup-og" {
+		if len(os.Args) != 2 {
+			return fmt.Errorf("daybook setup-og: no arguments expected")
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+		defer cancel()
+		return og.Setup(ctx)
+	}
 
 	if command == "version" || command == "--version" || command == "-v" {
 		fmt.Println(Version)
@@ -92,7 +104,8 @@ func run() error {
 			{Name: "抓取音乐元数据", Weight: 0.15},
 			{Name: "构建双向链接索引", Weight: 0.25},
 			{Name: "构建全局搜索索引", Weight: 0.15},
-			{Name: "写入静态构建产物", Weight: 0.35},
+			{Name: "写入静态构建产物", Weight: 0.20},
+			{Name: "生成静态分享图片", Weight: 0.15},
 		})
 	}
 

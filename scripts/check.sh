@@ -3,6 +3,9 @@ set -euo pipefail
 
 echo "==> Phase A: Dependency and Frontend Validation"
 if [ -z "${CI:-}" ]; then npm ci; fi
+# The binary is exercised from an external vault, so resolve the repository's
+# Playwright installation before changing the working directory.
+export DAYBOOK_OG_PLAYWRIGHT_MODULE="${DAYBOOK_OG_PLAYWRIGHT_MODULE:-$(pwd)/node_modules/playwright/index.mjs}"
 npm run typecheck
 npm run test:reading-rail
 node scripts/graph-query-test.mjs
@@ -130,6 +133,18 @@ if (JSON.stringify(manifest).toLowerCase().includes('waline') || existsSync('pub
 }
 for (const route of ['memos', 'en_US/memos', 'memos/smoke-memo']) {
   if (!existsSync(`public/${route}/index.html`)) throw new Error(`Missing memos page: ${route}`);
+}
+for (const route of ['notes/smoke-test', 'memos/smoke-memo']) {
+  const html = readFileSync(`public/${route}/index.html`, 'utf8');
+  const og = html.match(/property="og:image" content="([^"]+)"/)?.[1];
+  const twitter = html.match(/name="twitter:image" content="([^"]+)"/)?.[1];
+  if (!og || og !== twitter || !og.startsWith(`https://example.com/generated/og/${route.split('/')[0]}/`)) {
+    throw new Error(`Missing absolute social image metadata: ${route}`);
+  }
+  const png = readFileSync(`public${new URL(og).pathname}`);
+  if (png.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a' || png.readUInt32BE(16) !== 1200 || png.readUInt32BE(20) !== 630) {
+    throw new Error(`Invalid social PNG: ${route}`);
+  }
 }
 const timeline = readFileSync('public/memos/index.html', 'utf8');
 if (!timeline.includes('A short memo from the smoke test') || !timeline.includes('Riverside')) {

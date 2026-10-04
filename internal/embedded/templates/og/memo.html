@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="{{.Lang}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1200, initial-scale=1">
+  <link rel="stylesheet" href="/vendor/fonts/lxgw-wenkai-screen/regular/result.min.css">
+  <style>
+    @font-face { font-family: "Cormorant Garamond"; size-adjust: 127%; src: url("/vendor/fonts/cormorant-garamond/cormorant-garamond-latin-400-normal.woff2") format("woff2"); font-weight: 400; }
+    * { box-sizing: border-box; }
+    html, body { width: 1200px; height: 630px; margin: 0; overflow: hidden; }
+    body { background: oklch(96% .005 298); color: oklch(25% .005 298); font-family: "LXGW WenKai Screen", serif; }
+    :lang(en) body { font-family: "Cormorant Garamond", "LXGW WenKai Screen", serif; }
+    .memo-card { height: 100%; padding: 48px 64px 38px; display: grid; grid-template-columns: 60px minmax(0, 1fr); gap: 22px; }
+    .avatar { display: flex; align-items: center; justify-content: center; width: 60px; height: 60px; border-radius: 12px; object-fit: cover; color: #6750a4; background: oklch(25% .005 298 / .06); font-size: 30px; }
+    .entry { min-width: 0; display: flex; flex-direction: column; }
+    .header { display: flex; align-items: baseline; gap: 20px; min-height: 42px; line-height: 36px; }
+    .author { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 29px; font-weight: 600; }
+    .date { margin-left: auto; flex-shrink: 0; color: oklch(40% .005 298); font-size: 22px; }
+    .body { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 7; overflow: hidden; margin: 14px 0 0; font-size: 32px; line-height: 1.6; white-space: pre-line; overflow-wrap: anywhere; }
+    .with-images .body { -webkit-line-clamp: 2; font-size: 27px; line-height: 1.48; margin-top: 8px; }
+    .images { flex: 1; min-height: 0; max-height: 336px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 18px; overflow: hidden; border-radius: 6px; }
+    .images-1 { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+    .images-2 { grid-template-rows: minmax(0, 1fr); }
+    .images-3 .image:first-child { grid-row: span 2; }
+    .image { position: relative; min-width: 0; min-height: 0; margin: 0; overflow: hidden; background: oklch(25% .005 298 / .06); }
+    .image img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .more { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgb(0 0 0 / .38); color: white; font-size: 44px; }
+    .footer { display: flex; align-items: baseline; gap: 18px; margin-top: auto; padding-top: 22px; font-size: 22px; line-height: 28px; min-width: 0; }
+    .tags { display: flex; gap: 18px; min-width: 0; color: #6750a4; overflow: hidden; white-space: nowrap; }
+    .tag { overflow: hidden; text-overflow: ellipsis; }
+    .site-name { margin-left: auto; min-width: 0; color: oklch(40% .005 298); font-size: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  </style>
+</head>
+<body>
+  <article class="memo-card{{if .Images}} with-images{{end}}">
+    <div>{{if .Avatar}}<img class="avatar" src="{{.Avatar}}" alt="" width="60" height="60">{{else}}<span class="avatar">{{.Initial}}</span>{{end}}</div>
+    <div class="entry">
+      <header class="header"><span class="author">{{.Author}}</span><time class="date">{{.Date}}</time></header>
+      {{if .Body}}<p class="body">{{.Body}}</p>{{end}}
+      {{if .Images}}<div class="images images-{{len .Images}}">
+        {{range .Images}}<figure class="image"><img src="{{.Source}}" alt="{{.Alt}}">{{if .More}}<span class="more">+{{.More}}</span>{{end}}</figure>{{end}}
+      </div>{{end}}
+      <footer class="footer">
+        {{if .Tags}}<div class="tags">{{range .Tags}}<span class="tag">#{{.}}</span>{{end}}</div>{{end}}
+        <span class="site-name">{{.SiteName}}</span>
+      </footer>
+    </div>
+  </article>
+</body>
+</html>

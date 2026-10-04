@@ -52,7 +52,7 @@ my-vault/
 
 ### Prebuilt Binaries (Recommended)
 
-The easiest way to install Daybook is using our release installer. This script will automatically detect your OS and architecture, download the latest prebuilt CLI, verify its checksum, and install it without requiring Go or Node.js.
+The easiest way to install Daybook is using our release installer. This script will automatically detect your OS and architecture, download the latest prebuilt CLI, verify its checksum, and install it without requiring Go. Building social preview images also requires Node.js (>=24) and the local browser setup described below.
 
 #### Linux / macOS / BSD
 
@@ -86,6 +86,8 @@ By default, the executable is installed to `%LOCALAPPDATA%\Programs\Daybook\bin\
 
 Alternatively, you can manually download the binaries from [GitHub Releases](https://github.com/StatIndet/daybook/releases).
 
+Static social-card generation requires a platform supported by [Playwright Chromium](https://playwright.dev/docs/intro#system-requirements). The Go CLI can still be compiled on the other platforms listed above, but full site builds need the browser runtime; use a supported build machine to generate the static site.
+
 ### Build from Source
 Building from source is recommended for development. Ensure you have **Go**, **Node.js** (>=24), and **npm** installed.
 
@@ -101,6 +103,7 @@ This script installs npm dependencies, builds frontend assets, and installs the 
 Run these commands inside your Vault directory:
 
 * `daybook build`: Reads `daybook.yaml`, `vault/notes/` and `vault/memos/`, compiles your site, and outputs static HTML to `public/`. At least one of the two content directories must exist.
+* `daybook setup-og`: Installs the pinned Playwright package and Chromium in the current user's caches. Requires Node.js (>=24), npm and network access. Run once before the first build, and again when a CLI update changes the bundled Playwright version. This command can run outside a vault.
 * `daybook serve`: Starts a local web server at `http://localhost:1313` to preview your site. Use `daybook serve --addr 127.0.0.1:1415` to select another address or port.
 * `daybook version`: Prints the current CLI version.
 
@@ -118,7 +121,11 @@ npm run build:js
 # Build third-party vendor assets (KaTeX, Fonts)
 npm run build:vendor
 
-# Run Go unit tests
+# Install the local browser and select this checkout's Playwright package
+npx playwright install chromium
+export DAYBOOK_OG_PLAYWRIGHT_MODULE="$PWD/node_modules/playwright/index.mjs"
+
+# Run Go tests (including real PNG generation in temporary vaults)
 go test ./...
 
 # Build the temporary binary for local testing
@@ -129,6 +136,24 @@ go build -o daybook-cli ./cmd/daybook
 ```
 
 > **Note**: Do not modify generated files in `internal/embedded/static/js/` or `internal/embedded/static/vendor/` directly. Always modify the source TypeScript or update the npm package and run the corresponding build scripts.
+
+### Static social preview images
+
+Install Node.js (>=24) and npm on the **build machine**, then run:
+
+```sh
+daybook setup-og
+cd /path/to/my-vault
+daybook build
+```
+
+Set `site.url` in `daybook.yaml` to your public origin (for example `https://blog.example`) so image metadata contains absolute URLs. Each published note and memo gets a **1200 × 630 PNG** at `public/generated/og/notes/<hash>.png` or `public/generated/og/memos/<hash>.png`. The hash comes from the canonical page URL, so filenames remain safe and stable for Chinese titles, nested paths and language variants. Builds regenerate the files; social platforms may retain an older preview until their cache refreshes.
+
+Notes use the filename title, a cleaned `summary` (or a body excerpt), publication date, reading time, optional update date and up to three tags. Memos use the existing author/avatar configuration, date, body text and up to four images; additional images appear as a `+N` overlay. Memo social titles use the author and date instead of the filename. Long text is truncated to fit. Drafts and invalid entries produce no images. Both `og:image` and `twitter:image`, plus structured data, reference the generated PNG.
+
+Dedicated embedded HTML/CSS templates are rendered in one local Playwright Chromium session per build. The renderer waits for fonts and images, uses a fixed light canvas and disables page JavaScript. It reads bundled fonts and local attachments from the generated site. Remote memo images and configured avatars are fetched **during the build** and must be reachable; use local attachments for offline builds. Missing resources, browser setup problems and screenshot failures stop the build with the affected page/resource in the error. No remote browser or image-generation service is used, and hosting the resulting site needs only static files.
+
+`setup-og` stores the pinned npm runtime under the OS user cache directory in `daybook/og/`; Chromium uses Playwright's browser cache (including `PLAYWRIGHT_BROWSERS_PATH` when set). Linux machines missing browser system libraries should follow [Playwright's system-dependency instructions](https://playwright.dev/docs/browsers#install-system-dependencies). For CI or source development, `DAYBOOK_OG_PLAYWRIGHT_MODULE` can point to an absolute installed `playwright` package directory or its `index.mjs` file. `./scripts/check.sh` selects the checkout's package automatically; CI installs Chromium before running it. Keep the pinned runtime version in `internal/og/runtime.go` aligned with `package-lock.json` when updating Playwright.
 
 ## Acknowledge
 

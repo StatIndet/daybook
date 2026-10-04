@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="{{.Lang}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1200, initial-scale=1">
+  <link rel="stylesheet" href="/vendor/fonts/noto-serif-sc/wght.css">
+  <link rel="stylesheet" href="/vendor/fonts/lxgw-wenkai-screen/regular/result.min.css">
+  <style>
+    @font-face { font-family: "Cormorant Garamond"; size-adjust: 127%; src: url("/vendor/fonts/cormorant-garamond/cormorant-garamond-latin-400-normal.woff2") format("woff2"); font-weight: 400; }
+    * { box-sizing: border-box; }
+    html, body { width: 1200px; height: 630px; margin: 0; overflow: hidden; }
+    body { background: oklch(96% .005 298); color: oklch(25% .005 298); font-family: "LXGW WenKai Screen", serif; }
+    :lang(en) body { font-family: "Cormorant Garamond", "LXGW WenKai Screen", serif; }
+    .note-card { height: 100%; padding: 48px 72px 44px; display: flex; flex-direction: column; }
+    .site-name { color: oklch(40% .005 298); font-size: 24px; line-height: 32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .article { margin-top: 38px; min-height: 0; }
+    h1 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; margin: 0; font-family: "Noto Serif SC Variable", serif; font-size: 53px; font-weight: 600; line-height: 1.38; overflow-wrap: anywhere; }
+    .summary { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; margin: 22px 0 0; color: oklch(40% .005 298); font-size: 29px; line-height: 1.58; overflow-wrap: anywhere; }
+    .metadata { margin-top: auto; padding-top: 22px; border-top: 1px solid oklch(25% .005 298 / .16); display: flex; align-items: baseline; gap: 26px; color: oklch(40% .005 298); font-size: 21px; line-height: 30px; white-space: nowrap; }
+    .updated { font-size: 19px; }
+    .tags { display: flex; justify-content: flex-end; min-width: 0; margin-left: auto; gap: 16px; color: #6750a4; font-size: 20px; overflow: hidden; }
+    .tag { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  </style>
+</head>
+<body>
+  <article class="note-card">
+    <header class="site-name">{{.SiteName}}</header>
+    <div class="article">
+      <h1>{{.Title}}</h1>
+      {{if .Summary}}<p class="summary">{{.Summary}}</p>{{end}}
+    </div>
+    <footer class="metadata">
+      <time>{{.Date}}</time>
+      <span>{{.ReadingTime}}</span>
+      {{if .Updated}}<span class="updated">{{if eq .Lang "en-US"}}Updated{{else}}更新于{{end}} {{.Updated}}</span>{{end}}
+      {{if .Tags}}<div class="tags">{{range .Tags}}<span class="tag">#{{.}}</span>{{end}}</div>{{end}}
+    </footer>
+  </article>
+</body>
+</html>

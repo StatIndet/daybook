@@ -10,36 +10,40 @@ type Alternate struct {
 }
 
 type SEOData struct {
-	Title        string
-	Description  string
-	CanonicalURL string
-	PageURL      string
-	SiteName     string
-	Lang         string
-	Type         string // e.g. website, article, profile
+	Title          string
+	SocialTitle    string
+	Description    string
+	CanonicalURL   string
+	PageURL        string
+	SiteName       string
+	Lang           string
+	Type           string // e.g. website, article, profile
 	PaginationPrev string
 	PaginationNext string
-	Image        string
-	AuthorName   string
-	AuthorURL    string
-	Robots       string
-	Published    string
-	Modified     string
-	Tags         []string
-	Alternates   []Alternate
+	Image          string
+	ImageWidth     int
+	ImageHeight    int
+	ImageType      string
+	AuthorName     string
+	AuthorURL      string
+	Robots         string
+	Published      string
+	Modified       string
+	Tags           []string
+	Alternates     []Alternate
 
 	JSONLD template.JS // Populated with marshaled JSON-LD graph
 }
 
 type Person struct {
-	Description   string `json:"description,omitempty"`
-	Image         string `json:"image,omitempty"`
+	Description   string   `json:"description,omitempty"`
+	Image         string   `json:"image,omitempty"`
 	SameAs        []string `json:"sameAs,omitempty"`
-	Type          string `json:"@type,omitempty"`
-	ID            string `json:"@id"`
-	Name          string `json:"name,omitempty"`
-	AlternateName string `json:"alternateName,omitempty"`
-	URL           string `json:"url,omitempty"`
+	Type          string   `json:"@type,omitempty"`
+	ID            string   `json:"@id"`
+	Name          string   `json:"name,omitempty"`
+	AlternateName string   `json:"alternateName,omitempty"`
+	URL           string   `json:"url,omitempty"`
 }
 
 type JSONLDGraph struct {

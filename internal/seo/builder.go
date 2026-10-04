@@ -3,6 +3,7 @@ package seo
 import (
 	"encoding/json"
 	"html/template"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -19,6 +20,9 @@ type BuilderArgs struct {
 	Description string
 	PageURL     string
 	Image       string
+	ImageWidth  int
+	ImageHeight int
+	ImageType   string
 	Published   string
 	Modified    string
 	Tags        []string
@@ -74,6 +78,26 @@ func absURL(cfg config.Config, path string) string {
 		path = "/" + path
 	}
 	return baseURL + path
+}
+
+// imageURL leaves optional and external images intact while resolving generated
+// assets with the same site URL prefix used by canonical page URLs.
+func imageURL(cfg config.Config, image string) string {
+	if image == "" {
+		return ""
+	}
+	ref, err := url.Parse(image)
+	if err == nil {
+		if ref.IsAbs() {
+			return image
+		}
+		if ref.Host != "" {
+			if base, err := url.Parse(cfg.Site.URL); err == nil {
+				return base.ResolveReference(ref).String()
+			}
+		}
+	}
+	return absURL(cfg, image)
 }
 
 func BuildForHome(args BuilderArgs) SEOData {
@@ -136,19 +160,42 @@ func BuildForHome(args BuilderArgs) SEOData {
 }
 
 func BuildForNote(args BuilderArgs) SEOData {
+	return buildForPost(args, "notes", "BlogPosting")
+}
+
+// BuildForMemo gives a social post its own title and structured-data semantics;
+// the caller supplies a plain-text excerpt of the memo body as Description.
+func BuildForMemo(args BuilderArgs) SEOData {
+	author := args.Config.Profile.Author.Name
+	if (args.Lang == "en_US" || author == "") && args.Config.Profile.Author.NameEn != "" {
+		author = args.Config.Profile.Author.NameEn
+	}
+	if author == "" {
+		author = args.Config.GetSiteName(args.Lang)
+	}
+	args.Title = author
+	if date := strings.SplitN(args.Published, "T", 2)[0]; date != "" {
+		args.Title += " · " + date
+	}
+	return buildForPost(args, "memos", "SocialMediaPosting")
+}
+
+func buildForPost(args BuilderArgs, section, schemaType string) SEOData {
 	siteName := args.Config.GetSiteName(args.Lang)
+	args.Alternates = append([]Alternate(nil), args.Alternates...)
 	for i := range args.Alternates {
 		args.Alternates[i].URL = absURL(args.Config, args.Alternates[i].URL)
 	}
 
 	url := absURL(args.Config, args.PageURL)
 	desc := CleanDescription(args.Description)
+	image := imageURL(args.Config, args.Image)
 
 	homePath := "/"
 	if args.Lang == "en_US" {
 		homePath = "/en_US/"
 	}
-	notesPath := homePath + "notes/"
+	collectionPath := homePath + section + "/"
 
 	modTime := args.Modified
 	if modTime == "" {
@@ -157,7 +204,7 @@ func BuildForNote(args BuilderArgs) SEOData {
 
 	graph := []any{
 		BlogPosting{
-			Type:             "BlogPosting",
+			Type:             schemaType,
 			ID:               url + "#article",
 			URL:              url,
 			Headline:         args.Title,
@@ -166,7 +213,7 @@ func BuildForNote(args BuilderArgs) SEOData {
 			DateModified:     modTime,
 			MainEntityOfPage: url,
 			Keywords:         strings.Join(args.Tags, ", "),
-			Image:            args.Image,
+			Image:            image,
 			Author: &Person{
 				ID: absURL(args.Config, "/#person"),
 			},
@@ -176,7 +223,7 @@ func BuildForNote(args BuilderArgs) SEOData {
 			ID:   url + "#breadcrumb",
 			ItemListElement: []ListItem{
 				{Type: "ListItem", Position: 1, Name: i18n.T(args.Lang, "nav.home"), Item: absURL(args.Config, homePath)},
-				{Type: "ListItem", Position: 2, Name: i18n.T(args.Lang, "nav.notes"), Item: absURL(args.Config, notesPath)},
+				{Type: "ListItem", Position: 2, Name: i18n.T(args.Lang, "nav."+section), Item: absURL(args.Config, collectionPath)},
 				{Type: "ListItem", Position: 3, Name: args.Title, Item: url},
 			},
 		},
@@ -184,12 +231,17 @@ func BuildForNote(args BuilderArgs) SEOData {
 
 	return SEOData{
 		Title:        args.Title + " | " + siteName,
+		SocialTitle:  args.Title,
 		Description:  desc,
 		CanonicalURL: url,
 		PageURL:      url,
 		SiteName:     siteName,
 		Lang:         args.Lang,
 		Type:         "article",
+		Image:        image,
+		ImageWidth:   args.ImageWidth,
+		ImageHeight:  args.ImageHeight,
+		ImageType:    args.ImageType,
 		Published:    args.Published,
 		Modified:     modTime,
 		Tags:         args.Tags,
