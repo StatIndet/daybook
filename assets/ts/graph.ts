@@ -232,7 +232,7 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
       play: toggleAnimation,
       retry: () => void applyQuery(),
     });
-    panel.setCount(currentNodes.length);
+    panel.setEmpty(currentNodes.length === 0);
     panel.animation(animation);
     void applyQuery();
   }
@@ -516,7 +516,7 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
         n.fy = null;
       }
     draw(alpha);
-    panel?.setCount(currentNodes.length);
+    panel?.setEmpty(currentNodes.length === 0);
   }
   function draw(alpha: number) {
     const d3 = window.d3;

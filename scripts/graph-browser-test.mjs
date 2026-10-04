@@ -402,9 +402,8 @@ try {
   const mobile = await openGraph(fixture(), { viewport: { width: 390, height: 844 }, reducedMotion: 'reduce', storageUnavailable: true });
   await mobile.locator('#graph-settings-btn').click();
   const panelBox = await mobile.locator('#graph-settings-panel').boundingBox();
-  const shellBox = await mobile.locator('.graph-shell').boundingBox();
-  assert.ok(panelBox.width <= shellBox.width + 1, 'Mobile drawer stays inside graph width');
-  assert.ok(Math.abs(panelBox.y + panelBox.height - shellBox.y - shellBox.height) < 2, 'Mobile drawer anchors to the bottom');
+  assert.deepEqual(panelBox, { x: 0, y: 0, width: 390, height: 844 }, 'Mobile settings cover the viewport');
+  assert.equal(await mobile.locator('#graph-settings-panel').evaluate(panel => panel.matches(':modal')), true, 'Mobile settings use a modal layer');
   await mobile.locator('#graph-arrows').focus();
   await mobile.keyboard.press('Space');
   assert.equal((await mobile.locator('#graph-arrows').getAttribute('aria-checked')) === 'true', true, 'Switch supports keyboard interaction without localStorage');
@@ -415,6 +414,10 @@ try {
   await mobile.keyboard.press('Space');
   assert.equal(await mobile.locator('#graph-existing-btn').getAttribute('aria-pressed'), 'false');
   assert.ok((await ids(mobile)).includes('missing'), 'Existing-note toolbar toggle supports keyboard interaction');
+  await mobile.locator('#graph-settings-btn').click();
+  await mobile.evaluate(() => window.DaybookGraph.destroy());
+  assert.equal(await mobile.locator(':modal').count(), 0, 'Leaving closes the fullscreen layer');
+  assert.equal(await mobile.evaluate(() => document.body.classList.contains('graph-modal-open')), false, 'Leaving releases the page scroll lock');
   await mobile.close();
 
   const timings = [];

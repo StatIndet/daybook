@@ -28,7 +28,6 @@ const words = {
     "没有匹配的节点，请调整筛选。",
     "No matching nodes. Adjust your filters.",
   ],
-  count: ["个节点", "nodes"],
   loading: ["正在加载搜索索引…", "Loading search index…"],
   loadError: [
     "搜索索引加载失败，可重试或使用 path/file/tag 筛选。",
@@ -47,7 +46,6 @@ const words = {
   sectionHelp: ["同一章节", "Same section"],
   propertyHelp: ["公开属性", "Public property"],
   noDates: ["当前筛选没有可用于动画的日期", "No dated notes in this selection"],
-  storage: ["设置保存在此浏览器中", "Settings saved in this browser"],
 } as const;
 export function graphText(key: keyof typeof words): string {
   return words[key][
@@ -86,7 +84,7 @@ export function createGraphPanel(
   };
   host.replaceChildren();
   const toolbar = el("div", "graph-toolbar");
-  const panel = el("aside", "graph-panel");
+  const panel = el("dialog", "graph-panel");
   panel.id = "graph-settings-panel";
   panel.hidden = true;
   panel.setAttribute("aria-label", graphText("settings"));
@@ -110,6 +108,7 @@ export function createGraphPanel(
   const center = iconButton("center", "center_focus_strong", actions.center);
   center.id = "graph-reset";
   const full = iconButton("full", "zoom_out_map", actions.full);
+  full.id = "graph-full-btn";
   full.hidden = !new URLSearchParams(location.search).has("node");
   const search = iconButton("search", "search", () =>
     setSearchOpen(!!searchPanel.hidden),
@@ -288,32 +287,56 @@ export function createGraphPanel(
   const footer = el("div", "graph-panel-footer");
   const reset = button(graphText("reset"), actions.reset);
   reset.id = "graph-defaults";
-  footer.append(reset, el("small", "graph-hint", graphText("storage")));
+  footer.append(reset);
   panel.append(footer);
   const status = el("div", "graph-status");
   status.setAttribute("role", "status");
-  const count = el("span");
+  const empty = el("span", "", graphText("empty"));
+  empty.hidden = true;
   const error = el("span", "graph-error");
   const retry = button(graphText("retry"), actions.retry);
   retry.hidden = true;
-  status.append(count, error, retry);
+  status.append(empty, error, retry);
+  status.hidden = true;
   toolbar.append(searchPanel);
   host.append(toolbar, panel, status);
+  const narrow = window.matchMedia("(max-width: 960px)");
+  function presentPanel() {
+    const focused = panel.contains(document.activeElement) ? document.activeElement as HTMLElement : null;
+    panel.close();
+    if (narrow.matches) panel.showModal();
+    else panel.show();
+    document.body.classList.toggle("graph-modal-open", narrow.matches);
+    focused?.focus({ preventScroll: true });
+  }
+  const resizedPanel = () => {
+    if (!panel.hidden) presentPanel();
+  };
+  narrow.addEventListener("change", resizedPanel);
+  disposers.push(() => narrow.removeEventListener("change", resizedPanel));
+  panel.oncancel = (event) => {
+    event.preventDefault();
+    setOpen(false);
+  };
   function setOpen(open: boolean) {
     panel.hidden = !open;
     toggle.setAttribute("aria-expanded", String(open));
     if (open) {
       searchPanel.hidden = true;
       search.setAttribute("aria-expanded", "false");
-      panel.querySelector<HTMLButtonElement>("button")?.focus();
-    } else toggle.focus();
+      presentPanel();
+      panel.querySelector<HTMLButtonElement>("button")?.focus({ preventScroll: true });
+    } else {
+      panel.close();
+      document.body.classList.remove("graph-modal-open");
+      toggle.focus({ preventScroll: true });
+    }
   }
   function setSearchOpen(open: boolean) {
     searchPanel.hidden = !open;
     search.setAttribute("aria-expanded", String(open));
     if (open) {
-      panel.hidden = true;
-      toggle.setAttribute("aria-expanded", "false");
+      if (!panel.hidden) setOpen(false);
       query.focus();
     } else search.focus();
   }
@@ -323,6 +346,7 @@ export function createGraphPanel(
       event.stopPropagation();
       setSearchOpen(false);
     } else if (!panel.hidden) {
+      event.preventDefault();
       event.stopPropagation();
       setOpen(false);
     }
@@ -347,12 +371,14 @@ export function createGraphPanel(
   return {
     sync,
     fullButton: full,
-    setCount(n: number) {
-      count.textContent = n ? `${n} ${graphText("count")}` : graphText("empty");
+    setEmpty(isEmpty: boolean) {
+      empty.hidden = !isEmpty;
+      status.hidden = !isEmpty && !error.textContent;
     },
     setError(message: string, retryable = false) {
       error.textContent = message;
       retry.hidden = !retryable;
+      status.hidden = empty.hidden && !message;
     },
     queryError(message: string) {
       queryError.textContent = message;
@@ -368,6 +394,8 @@ export function createGraphPanel(
         state === "playing" ? "stop" : "play_arrow";
     },
     destroy() {
+      panel.close();
+      document.body.classList.remove("graph-modal-open");
       disposers.forEach((d) => d());
       host.replaceChildren();
     },

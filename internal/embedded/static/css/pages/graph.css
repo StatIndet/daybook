@@ -114,8 +114,13 @@
   bottom: 12px;
   right: 12px;
   z-index: 4;
-  width: 320px;
+  width: 420px;
   max-width: calc(100% - 24px);
+  max-height: none;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  left: auto;
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
@@ -155,7 +160,7 @@
   gap: 10px;
   margin: 0;
   font: inherit;
-  padding: 16px 20px;
+  padding: 12px 20px;
   font-weight: 600;
 }
 .graph-section-title .material-symbol {
@@ -163,10 +168,10 @@
   font-size: 20px;
 }
 .graph-section-body {
-  padding: 0 20px 20px;
+  padding: 0 20px 12px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
 }
 .graph-shell .graph-query {
   width: 100%;
@@ -218,7 +223,10 @@
 .graph-slider-row {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
+}
+.graph-slider-row > label {
+  padding-right: 64px;
 }
 /* Geometry and motion follow Clavis's MaterialSlider: 16px split track,
    18px handle gap, 44px handle, and an animated value indicator. */
@@ -231,7 +239,7 @@
   --graph-slider-duration: var(--motion-expressive-effects-duration, 200ms);
   --graph-slider-easing: var(--motion-expressive-effects-easing, cubic-bezier(0.34, 0.8, 0.34, 1));
   position: relative;
-  height: 78px;
+  height: 44px;
   transition: --graph-progress var(--graph-slider-duration) var(--graph-slider-easing);
 }
 .graph-slider.is-dragging {
@@ -239,7 +247,7 @@
 }
 .graph-slider-visual {
   position: absolute;
-  top: 32px;
+  top: 0;
   left: 20px;
   right: 20px;
   height: 44px;
@@ -288,12 +296,12 @@
 }
 .graph-slider-value {
   position: absolute;
-  bottom: calc(100% + 8px);
-  left: var(--graph-progress);
+  bottom: calc(100% + 2px);
+  right: 0;
   display: grid;
   place-items: center;
   min-width: 40px;
-  height: 32px;
+  height: 24px;
   padding: 0 10px;
   box-sizing: border-box;
   border-radius: 999px;
@@ -302,7 +310,7 @@
   font: 500 12px/1 var(--font-ui);
   font-variant-numeric: tabular-nums;
   opacity: 0;
-  transform: translate(-50%, 8px) scale(0.82);
+  transform: translateY(6px) scale(0.82);
   transform-origin: bottom center;
   transition:
     opacity var(--graph-slider-duration) var(--graph-slider-easing),
@@ -310,17 +318,17 @@
 }
 .graph-slider:is(:hover, .is-dragging, :has(input:focus-visible)) .graph-slider-value {
   opacity: 1;
-  transform: translate(-50%, 0) scale(1);
+  transform: translateY(0) scale(1);
 }
 .graph-slider:has(input:focus-visible) .graph-slider-visual {
   outline: 2px solid var(--color-accent);
-  outline-offset: 6px;
+  outline-offset: 0;
   border-radius: 8px;
 }
 .graph-shell .graph-slider input[type="range"] {
   appearance: none;
   position: absolute;
-  top: 32px;
+  top: 0;
   left: 0;
   width: 100%;
   height: 44px;
@@ -355,11 +363,6 @@
 .graph-shell .graph-slider input:disabled {
   cursor: not-allowed;
 }
-.graph-hint {
-  color: var(--color-muted);
-  font-size: 12px;
-  margin: 0;
-}
 .graph-error {
   color: #c44c4c;
   font-size: 12px;
@@ -370,7 +373,7 @@
   display: none;
 }
 .graph-panel-footer {
-  padding: 20px;
+  padding: 12px 20px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -462,42 +465,82 @@
 .graph-label.is-highlight {
   fill: var(--color-text);
 }
+body.graph-modal-open {
+  overflow: hidden;
+}
+/* Native modal dialogs sit above the site's custom cursor layer. */
+html.has-custom-cursor .graph-panel:modal,
+html.has-custom-cursor .graph-panel:modal * {
+  cursor: auto !important;
+}
+html.has-custom-cursor .graph-panel:modal :is(button, input[type="range"]) {
+  cursor: pointer !important;
+}
 @media (max-width: 960px) {
+  .graph-body .page-shell {
+    flex: 0 0 auto;
+    min-height: 0;
+  }
   .graph-body .page-main {
-    padding: 20px;
-    height: auto;
-    min-height: calc(100dvh - 180px);
+    padding: 8px 12px max(8px, env(safe-area-inset-bottom));
+    height: calc(100dvh - var(--mobile-topbar-height, 64px));
+    min-height: 0;
+  }
+  .graph-body .home-footer:not(:has(.footer-copyright)) {
+    display: none;
   }
   .graph-shell {
+    flex-direction: column;
     border-radius: 0;
-    min-height: 65dvh;
+    min-height: 0;
     background: transparent;
     box-shadow: none;
   }
+  #graph-controls {
+    flex: 0 0 auto;
+  }
   #graph-container {
-    min-height: 65dvh;
+    height: auto;
+    min-height: 0;
   }
   .graph-panel {
-    top: auto;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: auto;
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
     max-width: none;
-    max-height: min(72dvh, 100%);
-    border-radius: 20px 20px 0 0;
+    max-height: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .graph-panel::backdrop {
+    background: var(--color-paper);
+  }
+  .graph-panel-header {
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+  .graph-panel-footer {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
   }
   .graph-shell .graph-toolbar {
-    left: 0;
-    top: 8px;
-    gap: 4px;
-    max-width: 100%;
+    position: relative;
+    left: auto;
+    top: auto;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px 8px;
+    max-width: none;
     width: 100%;
+    margin-bottom: 8px;
+    padding: 4px 6px;
+  }
+  .graph-shell .graph-toolbar:has(#graph-full-btn:not([hidden])) {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
   .graph-shell .graph-toolbar .notes-action-button {
-    flex: 1 1 0;
     min-width: 0;
-    max-width: 44px;
+    width: 100%;
+    max-width: none;
     height: auto;
     min-height: 48px;
     display: flex;
@@ -506,10 +549,14 @@
     padding: 4px 0;
     border-radius: 8px;
   }
+  .graph-search-panel {
+    width: 100%;
+    max-height: min(420px, 55dvh);
+  }
   .graph-action-text {
     display: block;
     font-family: var(--font-ui);
-    font-size: 10px;
+    font-size: 11px;
     line-height: 1.2;
     white-space: nowrap;
     max-width: 100%;

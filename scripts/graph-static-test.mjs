@@ -49,24 +49,30 @@ try {
   await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
   await page.evaluate(() => document.documentElement.dataset.theme = 'dark');
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForFunction(() => document.querySelector('#graph-settings-panel').matches(':modal'));
   await page.screenshot({ path: '/tmp/daybook-graph-mobile.png' });
   const bounds = await page.locator('.graph-panel').boundingBox();
-  assert.ok(bounds.width <= 390 && bounds.x >= 0, 'Drawer must fit mobile viewport');
+  assert.deepEqual(bounds, {x: 0, y: 0, width: 390, height: 844}, 'Settings cover the full mobile viewport');
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#graph-settings-panel').isVisible(), false);
-  for (const width of [390, 320]) {
+  for (const width of [390, 320, 800]) {
     await page.setViewportSize({ width, height: 844 });
-    // Include the additional local-graph action in the narrowest toolbar layout.
-    await page.locator('.graph-toolbar button').last().evaluate(button => { button.hidden = false; });
-    const buttons = await page.locator('.graph-toolbar > button:visible').all();
-    const shell = await page.locator('.graph-shell').boundingBox();
-    const boxes = await Promise.all(buttons.map(button => button.boundingBox()));
-    assert.equal(boxes.length, 9);
-    // Compare layout positions; the focused action intentionally lifts by 2px.
-    const tops = await page.locator('.graph-toolbar > button:visible').evaluateAll(buttons => buttons.map(button => button.offsetTop));
-    assert.ok(tops.every(top => top === tops[0]), 'Toolbar stays on one row');
-    assert.ok(boxes.every(box => box.x >= shell.x && box.x + box.width <= shell.x + shell.width + 1), 'All toolbar actions fit the graph');
+    for (const local of [false, true]) {
+      await page.locator('#graph-full-btn').evaluate((button, local) => { button.hidden = !local; }, local);
+      const buttons = await page.locator('.graph-toolbar > button:visible').all();
+      const shell = await page.locator('.graph-shell').boundingBox();
+      const boxes = await Promise.all(buttons.map(button => button.boundingBox()));
+      assert.equal(boxes.length, local ? 9 : 8);
+      // Compare layout positions; the focused action intentionally lifts by 2px.
+      const tops = await page.locator('.graph-toolbar > button:visible').evaluateAll(buttons => buttons.map(button => button.offsetTop));
+      assert.equal(new Set(tops).size, 2, 'Narrow toolbar occupies two rows');
+      assert.ok(boxes.every(box => box.x >= shell.x && box.x + box.width <= shell.x + shell.width + 1), 'All toolbar actions fit the graph');
+      assert.ok(Math.abs(shell.y + shell.height - (844 - 8)) < 2, 'Graph fills the space below the site header');
+    }
   }
+  await page.setViewportSize({width:390, height:844});
+  await page.locator('#graph-full-btn').evaluate(button => { button.hidden = true; });
+  await page.screenshot({ path: '/tmp/daybook-graph-mobile-toolbar.png' });
   assert.deepEqual(errors, []);
   console.log('Graph static-vault regression passed (published index, toolbar, settings, animation, SPA, language and mobile).');
 } finally { await browser.close(); }
