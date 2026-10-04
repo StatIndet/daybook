@@ -257,6 +257,7 @@ func Build(options Options) (BuildResult, error) {
 		memosHaveMath := false
 		var graphNodes []graph.InputNode
 		var graphLinks []graph.InputLink
+		var graphDocuments []graph.SearchDocument
 
 		tagLinks := collectTagLinksForLang(groups, lang, tagRegistry)
 
@@ -274,6 +275,7 @@ func Build(options Options) (BuildResult, error) {
 					return BuildResult{}, fmt.Errorf("处理笔记 %s: %w", note.SourcePath, err)
 				}
 				document.HTML = obsidian.RestoreHTML(document.HTML, processed.HTML)
+				graphDocuments = append(graphDocuments, graph.NewSearchDocument(*note, document.HTML, options.Config.Graph.SearchProperties))
 				readingTime := ""
 				if note.Section != "memos" {
 					readingTime = estimateReadingTime(note.Body)
@@ -321,6 +323,8 @@ func Build(options Options) (BuildResult, error) {
 						ID:    "attachment:" + att.RelPath,
 						Title: att.Name,
 						URL:   att.PublicURL,
+						Path:  att.RelPath,
+						File:  filepath.Base(att.RelPath),
 					})
 				}
 
@@ -328,6 +332,8 @@ func Build(options Options) (BuildResult, error) {
 					ID:          note.URL,
 					Title:       note.Title,
 					URL:         note.URL,
+					Path:        note.Section + "/" + note.Slug + filepath.Ext(note.SourcePath),
+					File:        filepath.Base(note.SourcePath),
 					Tags:        tagNodes,
 					Attachments: attachmentNodes,
 					Date:        note.Date,
@@ -856,6 +862,9 @@ func Build(options Options) (BuildResult, error) {
 		graphJSONPath := filepath.Join(langPublicDir, "graph.json")
 		if err := graph.BuildJSON(graphNodes, graphLinks, graphJSONPath); err != nil {
 			return BuildResult{}, fmt.Errorf("生成 graph.json: %w", err)
+		}
+		if err := graph.BuildSearchJSON(graphDocuments, filepath.Join(langPublicDir, "graph-search.json")); err != nil {
+			return BuildResult{}, fmt.Errorf("生成 graph-search.json: %w", err)
 		}
 
 		graphPath := filepath.Join(langPublicDir, "graph", "index.html")

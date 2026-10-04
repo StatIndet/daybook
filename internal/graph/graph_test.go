@@ -38,7 +38,7 @@ func TestBuildJSON_EdgeCases(t *testing.T) {
 		{Source: "A", Target: "A", Exists: true}, // Self edge
 		{Source: "A", Target: "B", Exists: true}, // A->B
 		{Source: "A", Target: "B", Exists: true}, // A->B duplicate
-		{Source: "B", Target: "A", Exists: true}, // B->A duplicate reverse
+		{Source: "B", Target: "A", Exists: true}, // B->A is a distinct citation
 		{Source: "A", Target: "C", Exists: true}, // A->C
 	}
 
@@ -59,8 +59,8 @@ func TestBuildJSON_EdgeCases(t *testing.T) {
 		t.Fatalf("Failed to unmarshal output: %v", err)
 	}
 
-	if len(data.Links) != 2 {
-		t.Fatalf("Expected 2 links, got %d", len(data.Links))
+	if data.Version != 1 || len(data.Links) != 3 {
+		t.Fatalf("Expected v1 graph with 3 directed links, got %+v", data)
 	}
 
 	degree := make(map[string]int)
@@ -101,7 +101,7 @@ func TestBuildJSONKeepsSameNamedContentDistinct(t *testing.T) {
 	if err := json.Unmarshal(b, &graph); err != nil {
 		t.Fatal(err)
 	}
-	if len(graph.Nodes) != 3 || len(graph.Links) != 2 || graph.Nodes[0].Degree != 2 {
+	if len(graph.Nodes) != 3 || len(graph.Links) != 3 || graph.Nodes[0].Degree != 2 {
 		t.Fatalf("graph conflated content with the same filename: %+v", graph)
 	}
 }

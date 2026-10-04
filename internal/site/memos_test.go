@@ -118,7 +118,7 @@ func TestBuildMemosWithSharedContentFeatures(t *testing.T) {
 		if err := json.Unmarshal([]byte(readPublicAsset(t, publicDir, prefix+"/graph.json")), &graphData); err != nil {
 			t.Fatal(err)
 		}
-		if len(graphData.Nodes) != 4 || len(graphData.Links) != 1 {
+		if len(graphData.Nodes) != 4 || len(graphData.Links) != 2 {
 			t.Fatalf("shared graph: %+v", graphData)
 		}
 		link := graphData.Links[0]

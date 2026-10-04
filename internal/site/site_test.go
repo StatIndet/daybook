@@ -357,8 +357,8 @@ func TestBuildGraphIdentity(t *testing.T) {
 		nodeIDs[n.ID] = true
 	}
 
-	if len(graphData.Links) != 1 {
-		t.Fatalf("Expected 1 deduplicated link (A-B), got %d: %v", len(graphData.Links), graphData.Links)
+	if len(graphData.Links) != 2 {
+		t.Fatalf("Expected 2 directed citations (A-B and B-A), got %d: %v", len(graphData.Links), graphData.Links)
 	}
 
 	link := graphData.Links[0]

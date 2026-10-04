@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -17,12 +18,16 @@ type AttachmentNode struct {
 	ID    string `json:"id"`
 	Title string `json:"title"`
 	URL   string `json:"url"`
+	Path  string `json:"path"`
+	File  string `json:"file"`
 }
 
 type Node struct {
 	ID          string           `json:"id"`
 	Title       string           `json:"title"`
 	URL         string           `json:"url"`
+	Path        string           `json:"path"`
+	File        string           `json:"file"`
 	Tags        []TagNode        `json:"tags"`
 	Attachments []AttachmentNode `json:"attachments,omitempty"`
 	Date        string           `json:"date"`
@@ -44,15 +49,18 @@ type GraphMeta struct {
 }
 
 type Data struct {
-	Nodes []Node    `json:"nodes"`
-	Links []Link    `json:"links"`
-	Meta  GraphMeta `json:"meta"`
+	Version int       `json:"version"`
+	Nodes   []Node    `json:"nodes"`
+	Links   []Link    `json:"links"`
+	Meta    GraphMeta `json:"meta"`
 }
 
 type InputNode struct {
 	ID          string
 	Title       string
 	URL         string
+	Path        string
+	File        string
 	Tags        []TagNode
 	Attachments []AttachmentNode
 	Date        string
@@ -91,37 +99,40 @@ func computeLayoutDiameter(nodeCount int, linkCount int, maxDegree int) float64 
 
 func BuildJSON(nodes []InputNode, links []InputLink, outputPath string) error {
 	degreeMap := make(map[string]int)
-	linkSet := make(map[string]bool)
+	linkSet := make(map[[2]string]bool)
+	neighborSet := make(map[[2]string]bool)
 	var finalLinks []Link
 
-	// 1. Canonicalize undirected edges and deduplicate
+	// Preserve citation direction, deduplicating only repeated A -> B links.
 	for _, link := range links {
 		if link.Source == link.Target {
 			continue // ignore self-link
 		}
 
-		a := link.Source
-		b := link.Target
-
-		if a > b {
-			a, b = b, a
-		}
-
-		key := a + "|" + b
+		key := [2]string{link.Source, link.Target}
 		if linkSet[key] {
-			continue // duplicate undirected edge
+			continue
 		}
 		linkSet[key] = true
 
 		finalLinks = append(finalLinks, Link{
 			Source: link.Source,
-			Target: link.Target, // Keep original directedness for source/target fields, but effectively it's one edge
+			Target: link.Target,
 			Type:   "wikilink",
 		})
 	}
 
-	// 2. Calculate degree strictly from finalLinks
+	// Degree and density count distinct neighbors, including reciprocal links once.
 	for _, link := range finalLinks {
+		a, b := link.Source, link.Target
+		if a > b {
+			a, b = b, a
+		}
+		key := [2]string{a, b}
+		if neighborSet[key] {
+			continue
+		}
+		neighborSet[key] = true
 		degreeMap[link.Source]++
 		degreeMap[link.Target]++
 	}
@@ -144,6 +155,8 @@ func BuildJSON(nodes []InputNode, links []InputLink, outputPath string) error {
 			ID:          node.ID,
 			Title:       node.Title,
 			URL:         node.URL,
+			Path:        node.Path,
+			File:        node.File,
 			Tags:        node.Tags,
 			Attachments: node.Attachments,
 			Date:        node.Date,
@@ -163,18 +176,23 @@ func BuildJSON(nodes []InputNode, links []InputLink, outputPath string) error {
 	}
 
 	// Add non-existent nodes that are targets of links
+	var missingIDs []string
 	for target, exists := range existsMap {
 		if !exists {
-			finalNodes = append(finalNodes, Node{
-				ID:     target,
-				Title:  target,
-				URL:    "",
-				Tags:   []TagNode{},
-				Date:   "",
-				Degree: degreeMap[target],
-				Exists: false,
-			})
+			missingIDs = append(missingIDs, target)
 		}
+	}
+	sort.Strings(missingIDs)
+	for _, target := range missingIDs {
+		finalNodes = append(finalNodes, Node{
+			ID:     target,
+			Title:  target,
+			URL:    "",
+			Tags:   []TagNode{},
+			Date:   "",
+			Degree: degreeMap[target],
+			Exists: false,
+		})
 	}
 
 	maxDegree := 0
@@ -184,7 +202,7 @@ func BuildJSON(nodes []InputNode, links []InputLink, outputPath string) error {
 		}
 	}
 
-	diameter := computeLayoutDiameter(len(finalNodes), len(finalLinks), maxDegree)
+	diameter := computeLayoutDiameter(len(finalNodes), len(neighborSet), maxDegree)
 
 	meta := GraphMeta{
 		NodeCount:      len(finalNodes),
@@ -194,9 +212,10 @@ func BuildJSON(nodes []InputNode, links []InputLink, outputPath string) error {
 	}
 
 	data := Data{
-		Nodes: finalNodes,
-		Links: finalLinks,
-		Meta:  meta,
+		Version: 1,
+		Nodes:   finalNodes,
+		Links:   finalLinks,
+		Meta:    meta,
 	}
 
 	if data.Nodes == nil {

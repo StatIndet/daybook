@@ -37,6 +37,9 @@ type Note struct {
 	CanonicalPath  string
 	Section        string
 	Location       string
+	// Frontmatter is retained only for explicit graph search property exports.
+	// It must never be serialized wholesale into a public artifact.
+	Frontmatter map[string]any `json:"-"`
 }
 
 type frontmatter struct {
@@ -156,6 +159,10 @@ func ParseSection(sourcePath, text, slug, section string) (Note, error) {
 	if err := yaml.Unmarshal([]byte(yamlText), &meta); err != nil {
 		return Note{}, fmt.Errorf("解析 YAML frontmatter: %w", err)
 	}
+	var properties map[string]any
+	if err := yaml.Unmarshal([]byte(yamlText), &properties); err != nil {
+		return Note{}, fmt.Errorf("解析 YAML frontmatter: %w", err)
+	}
 
 	note := Note{
 		Title:         titleFromFilename(sourcePath, slug),
@@ -177,6 +184,7 @@ func ParseSection(sourcePath, text, slug, section string) (Note, error) {
 		SourcePath:    sourcePath,
 		Section:       section,
 		Location:      strings.TrimSpace(meta.Location),
+		Frontmatter:   properties,
 	}
 
 	if note.Draft {

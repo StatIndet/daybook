@@ -58,8 +58,8 @@ func TestBuildPublishesEveryNonDraftNote(t *testing.T) {
 		if err := json.Unmarshal([]byte(readPublicAsset(t, publicDir, prefix+"/graph.json")), &data); err != nil {
 			t.Fatal(err)
 		}
-		if len(data.Nodes) != 3 || len(data.Links) != 1 {
-			t.Fatalf("%s graph has %d nodes, %d links; want three published notes and their link", prefix, len(data.Nodes), len(data.Links))
+		if len(data.Nodes) != 3 || len(data.Links) != 2 {
+			t.Fatalf("%s graph has %d nodes, %d links; want three published notes and two directed citations", prefix, len(data.Nodes), len(data.Links))
 		}
 		nodeURLs := make(map[string]bool)
 		for _, node := range data.Nodes {

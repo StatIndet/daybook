@@ -102,6 +102,12 @@ type ShareConfig struct {
 	Text string `yaml:"text"`
 }
 
+// SearchProperties explicitly opts custom note properties into the public
+// graph search index. All other frontmatter remains build-time data only.
+type GraphConfig struct {
+	SearchProperties []string `yaml:"searchProperties"`
+}
+
 // GitHubConfig selects the public profile used by the homepage. Credentials are
 // read from the environment at build time and are never included in output.
 type GitHubConfig struct {
@@ -124,6 +130,7 @@ type Config struct {
 	Stats   StatsConfig   `yaml:"stats"`
 	Share   ShareConfig   `yaml:"share"`
 	GitHub  GitHubConfig  `yaml:"github"`
+	Graph   GraphConfig   `yaml:"graph"`
 }
 
 func (c Config) GetSiteName(_ string) string {
@@ -194,6 +201,16 @@ func Load() (Config, error) {
 	if cfg.Share.Text == "" {
 		cfg.Share.Text = `"{Title}"`
 	}
+	properties := make([]string, 0, len(cfg.Graph.SearchProperties))
+	seenProperties := make(map[string]bool)
+	for _, property := range cfg.Graph.SearchProperties {
+		property = strings.TrimSpace(property)
+		if property != "" && !seenProperties[property] {
+			properties = append(properties, property)
+			seenProperties[property] = true
+		}
+	}
+	cfg.Graph.SearchProperties = properties
 
 	cfg.Comment.Provider = strings.TrimSpace(cfg.Comment.Provider)
 	cfg.Comment.Giscus.Repo = strings.TrimSpace(cfg.Comment.Giscus.Repo)
