@@ -176,33 +176,13 @@
   }
 }
 
+/* Hide the decoration entirely, including during route transitions. */
+html[data-reduced-motion="true"] .golden-spiral {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .golden-spiral-stage,
-  .golden-rect,
-  .golden-diagonal,
-  .golden-curve {
-    animation: none !important;
-    opacity: 1 !important;
-  }
-  
-  .golden-rect,
-  .golden-diagonal {
-    transform: scaleX(1) !important;
-  }
-
-  .golden-spiral-stage {
-    transform: none !important;
-  }
-
-  .golden-spin-motion {
+  .golden-spiral {
     display: none;
-  }
-
-  
-
-  .golden-curve {
-  stroke-width: 1.618;
-    stroke-dasharray: 1 !important;
-    stroke-dashoffset: 0 !important;
   }
 }

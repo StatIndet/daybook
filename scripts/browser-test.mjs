@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import assert from 'node:assert/strict';
 
 const serverUrl = process.env.DAYBOOK_TEST_URL || 'http://localhost:1313';
 
@@ -59,6 +60,16 @@ async function run() {
     await page.locator('.persistent-logo').click();
     await page.waitForSelector('#settings-overlay.is-open');
     await page.waitForFunction(() => performance.getEntriesByType('resource').some(entry => entry.name.includes('settings-paper')));
+    assert.equal(await page.locator('.settings-checkbox-input:checked').count(), 0, 'All preferences start unchecked');
+    assert.equal(await page.locator('html.has-custom-cursor').count(), 0, 'Custom cursor is opt-in');
+    assert.equal(await page.locator('#setting-clock-cursor').isDisabled(), true);
+    await page.locator('#setting-custom-cursor').check();
+    assert.equal(await page.locator('html.has-custom-cursor').count(), 1);
+    assert.equal(await page.locator('#setting-clock-cursor').isDisabled(), false);
+    assert.equal(await page.locator('#setting-clock-cursor').isChecked(), false);
+    await page.locator('#setting-custom-cursor').uncheck();
+    assert.equal(await page.locator('.daybook-cursor').count(), 0, 'Disabling custom cursor removes it');
+    assert.equal(await page.locator('#setting-clock-cursor').isDisabled(), true);
     await page.keyboard.press('Escape');
     await page.waitForSelector('#settings-overlay.is-open', { state: 'hidden' });
 
@@ -186,6 +197,35 @@ async function run() {
     await page.waitForSelector('[data-github-home]', { state: 'attached', timeout: 5000 });
     if (errors.length > 0) throw new Error(errors.join('\n'));
     
+    console.log('Checking reduced-motion About decoration across navigation and reload...');
+    await settled(page);
+    await page.evaluate(() => window.daybookNavigateTo('/about/'));
+    await page.waitForSelector('.golden-spiral');
+    await settled(page);
+    await page.locator('.persistent-logo').click();
+    await page.locator('#setting-reduced-motion').check();
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('.golden-spiral').isVisible(), false);
+    assert.equal(await page.locator('.golden-spiral').evaluate(el => el.getAnimations({ subtree: true }).length), 0);
+    await page.evaluate(() => window.daybookNavigateTo('/notes/'));
+    await page.waitForSelector('.notes-list');
+    await settled(page);
+    await page.evaluate(() => window.daybookNavigateTo('/about/'));
+    await page.waitForSelector('.golden-spiral', { state: 'attached' });
+    await settled(page);
+    assert.equal(await page.locator('.golden-spiral').isVisible(), false);
+    await page.reload({ waitUntil: 'networkidle' });
+    assert.equal(await page.locator('.golden-spiral').isVisible(), false, 'Reduced motion persists through reload');
+    assert.equal(await page.locator('html.has-custom-cursor').count(), 0);
+    await page.locator('.persistent-logo').click();
+    assert.equal(await page.locator('#setting-reduced-motion').isChecked(), true);
+    await page.locator('#setting-reduced-motion').uncheck();
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('.golden-spiral').isVisible(), true);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    assert.equal(await page.locator('.golden-spiral').isVisible(), false, 'System reduced motion also hides the decoration');
+    if (errors.length > 0) throw new Error(errors.join('\n'));
+
     console.log('Browser tests passed successfully.');
   } finally {
     await browser.close();

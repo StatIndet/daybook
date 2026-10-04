@@ -46,12 +46,13 @@
   <script src="{{.Assets.Path "/js/theme.js"}}"></script>
   <script>
     (function() {
+      var html = document.documentElement;
+      html.setAttribute('data-use-system-cursor', 'true');
       try {
         var raw = localStorage.getItem('daybook:user-settings');
         if (raw) {
           var settings = JSON.parse(raw);
-          var html = document.documentElement;
-          if (settings.useSystemCursor) html.setAttribute('data-use-system-cursor', 'true');
+          if (settings.useSystemCursor === false) html.removeAttribute('data-use-system-cursor');
           if (settings.disableComments) html.setAttribute('data-comments-disabled', 'true');
           if (settings.reducedMotion || settings.disableTitleTransition) html.setAttribute('data-reduced-motion', 'true');
         }
