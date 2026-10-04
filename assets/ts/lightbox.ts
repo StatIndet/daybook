@@ -102,7 +102,7 @@
       const en = this.english();
       this.overlay.setAttribute("aria-label", en ? "Image viewer" : "图片浏览器");
       for (const [button, label] of [[this.prev, en ? "Previous image (←)" : "上一张（←）"], [this.next, en ? "Next image (→)" : "下一张（→）"], [this.closer, en ? "Close (Esc)" : "关闭（Esc）"], [this.zoomButton, this.zoom > 1 ? (en ? "Fit image (0)" : "适应窗口（0）") : (en ? "Zoom in (+)" : "放大（+）")]] as const) {
-        button.setAttribute("aria-label", label); button.title = label;
+        button.setAttribute("aria-label", label); button.dataset.tooltip = label;
       }
       this.zoomButton.firstElementChild!.textContent = this.zoom > 1 ? "zoom_out" : "zoom_in";
       this.zoomButton.setAttribute("aria-pressed", String(this.zoom > 1));
