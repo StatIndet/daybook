@@ -120,7 +120,7 @@
   overscroll-behavior: contain;
   scrollbar-width: thin;
   background: var(--color-paper);
-  border: 1px solid var(--color-line);
+  border: 0;
   border-radius: 20px;
   box-shadow: 0 8px 30px rgb(0 0 0 / 0.12);
   color: var(--color-text);
@@ -150,10 +150,17 @@
   border-bottom: 1px solid var(--color-line);
 }
 .graph-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin: 0;
   font: inherit;
   padding: 16px 20px;
   font-weight: 600;
+}
+.graph-section-title .material-symbol {
+  color: var(--color-muted);
+  font-size: 20px;
 }
 .graph-section-body {
   padding: 0 20px 20px;
@@ -206,46 +213,7 @@
   cursor: pointer;
 }
 .graph-shell .graph-switch {
-  appearance: none;
-  position: relative;
   flex: 0 0 52px;
-  width: 52px;
-  height: 32px;
-  margin: 0;
-  border: 2px solid var(--color-muted);
-  border-radius: 20px;
-  background: color-mix(in srgb, var(--color-muted) 10%, var(--color-paper));
-  cursor: pointer;
-  transition:
-    background 160ms,
-    border-color 160ms;
-}
-.graph-switch::before {
-  content: "";
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--color-muted);
-  transition:
-    transform 160ms,
-    width 160ms,
-    height 160ms,
-    top 160ms;
-}
-.graph-shell .graph-switch:checked {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-}
-.graph-switch:checked::before {
-  width: 24px;
-  height: 24px;
-  top: 2px;
-  left: 2px;
-  transform: translateX(20px);
-  background: var(--color-paper);
 }
 .graph-slider-row {
   display: flex;
@@ -267,52 +235,140 @@
   background: var(--color-page);
   font-size: 12px;
 }
-.graph-shell input[type="range"] {
-  appearance: none;
-  width: 100%;
+/* Geometry and motion follow Clavis's MaterialSlider: 16px split track,
+   18px handle gap, 44px handle, and an animated value indicator. */
+@property --graph-progress {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 0%;
+}
+.graph-slider {
+  --graph-slider-duration: var(--motion-expressive-effects-duration, 200ms);
+  --graph-slider-easing: var(--motion-expressive-effects-easing, cubic-bezier(0.34, 0.8, 0.34, 1));
+  position: relative;
+  height: 78px;
+  transition: --graph-progress var(--graph-slider-duration) var(--graph-slider-easing);
+}
+.graph-slider.is-dragging {
+  transition: none;
+}
+.graph-slider-visual {
+  position: absolute;
+  top: 32px;
+  left: 20px;
+  right: 20px;
+  height: 44px;
+  pointer-events: none;
+}
+.graph-slider-active,
+.graph-slider-inactive {
+  position: absolute;
+  top: 14px;
+  height: 16px;
+  border-radius: 8px;
+}
+.graph-slider-active {
+  left: 0;
+  width: max(0px, calc(var(--graph-progress) - 9px));
+  background: var(--color-accent);
+}
+.graph-slider-inactive {
+  left: min(100%, calc(var(--graph-progress) + 9px));
+  right: 0;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-accent) 22%, var(--color-paper));
+}
+.graph-slider-end {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+.graph-slider-handle {
+  position: absolute;
+  top: 0;
+  left: var(--graph-progress);
+  width: 4px;
+  height: 44px;
+  border-radius: 2px;
+  transform: translateX(-50%);
+  background: var(--color-accent);
+  transition: width var(--graph-slider-duration) var(--graph-slider-easing);
+}
+.graph-slider:is(.is-dragging, :has(input:focus-visible)) .graph-slider-handle {
+  width: 2px;
+}
+.graph-slider-value {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: var(--graph-progress);
+  display: grid;
+  place-items: center;
+  min-width: 40px;
   height: 32px;
-  margin: 0;
-  background: transparent;
-  cursor: pointer;
-  accent-color: var(--color-accent);
+  padding: 0 10px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: var(--color-paper);
+  font: 500 12px/1 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+  transform: translate(-50%, 8px) scale(0.82);
+  transform-origin: bottom center;
+  transition:
+    opacity var(--graph-slider-duration) var(--graph-slider-easing),
+    transform var(--graph-slider-duration) var(--graph-slider-easing);
 }
-.graph-shell input[type="range"]::-webkit-slider-runnable-track {
-  height: 12px;
+.graph-slider:is(:hover, .is-dragging, :has(input:focus-visible)) .graph-slider-value {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+.graph-slider:has(input:focus-visible) .graph-slider-visual {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 6px;
   border-radius: 8px;
-  background: linear-gradient(
-    to right,
-    var(--color-accent) var(--graph-progress, 50%),
-    color-mix(in srgb, var(--color-accent) 22%, var(--color-paper))
-      var(--graph-progress, 50%)
-  );
 }
-.graph-shell input[type="range"]::-moz-range-track {
-  height: 12px;
-  border-radius: 8px;
-  background: linear-gradient(
-    to right,
-    var(--color-accent) var(--graph-progress, 50%),
-    color-mix(in srgb, var(--color-accent) 22%, var(--color-paper))
-      var(--graph-progress, 50%)
-  );
-}
-.graph-shell input[type="range"]::-webkit-slider-thumb {
+.graph-shell .graph-slider input[type="range"] {
   appearance: none;
-  height: 28px;
-  width: 8px;
-  margin-top: -8px;
-  border: 0;
-  border-radius: 4px;
-  background: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-paper);
+  position: absolute;
+  top: 32px;
+  left: 0;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  touch-action: pan-y;
 }
-.graph-shell input[type="range"]::-moz-range-thumb {
-  height: 28px;
-  width: 8px;
+.graph-shell .graph-slider input[type="range"]::-webkit-slider-runnable-track {
+  height: 16px;
+}
+.graph-shell .graph-slider input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 40px;
+  height: 44px;
+  margin-top: -14px;
+}
+.graph-shell .graph-slider input[type="range"]::-moz-range-track {
+  height: 16px;
+}
+.graph-shell .graph-slider input[type="range"]::-moz-range-thumb {
+  width: 40px;
+  height: 44px;
   border: 0;
-  border-radius: 4px;
-  background: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-paper);
+}
+.graph-slider:has(input:disabled) {
+  opacity: 0.38;
+}
+.graph-slider:has(input:disabled) .graph-slider-value {
+  opacity: 0;
+}
+.graph-shell .graph-slider input:disabled {
+  cursor: not-allowed;
 }
 .graph-hint {
   color: var(--color-muted);

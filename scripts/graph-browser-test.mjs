@@ -319,7 +319,7 @@ try {
   assert.equal(await page.locator('.graph-node').count(), 53);
   assert.equal(await page.locator('#graph-search-input').inputValue(), '');
   assert.equal(await page.locator('#graph-lineWidth').inputValue(), '1');
-  assert.equal(await page.locator('#graph-arrows').isChecked(), false);
+  assert.equal((await page.locator('#graph-arrows').getAttribute('aria-checked')) === 'true', false);
   const storage = await page.evaluate(() => JSON.parse(localStorage.getItem('daybook:graph:/')));
   assert.equal(storage.settings.query, '');
   assert.equal('groups' in storage.settings, false);
@@ -407,7 +407,7 @@ try {
   assert.ok(Math.abs(panelBox.y + panelBox.height - shellBox.y - shellBox.height) < 2, 'Mobile drawer anchors to the bottom');
   await mobile.locator('#graph-arrows').focus();
   await mobile.keyboard.press('Space');
-  assert.equal(await mobile.locator('#graph-arrows').isChecked(), true, 'Switch supports keyboard interaction without localStorage');
+  assert.equal((await mobile.locator('#graph-arrows').getAttribute('aria-checked')) === 'true', true, 'Switch supports keyboard interaction without localStorage');
   await mobile.keyboard.press('Escape');
   assert.equal(await mobile.locator('#graph-settings-panel').isHidden(), true);
   assert.equal(await mobile.locator('#graph-settings-btn').evaluate(button => button === document.activeElement), true, 'Closing returns keyboard focus to Settings');

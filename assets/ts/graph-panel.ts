@@ -158,7 +158,10 @@ export function createGraphPanel(
   const sections = new Map<string, HTMLElement>();
   for (const name of ["appearance", "forces"] as const) {
     const section = el("section", "graph-section");
-    const title = el("h2", "graph-section-title", graphText(name));
+    const title = el("h2", "graph-section-title");
+    const icon = el("span", "material-symbol", name === "appearance" ? "palette" : "hub");
+    icon.setAttribute("aria-hidden", "true");
+    title.append(icon, el("span", "", graphText(name)));
     title.id = `graph-${name}-title`;
     section.setAttribute("aria-labelledby", title.id);
     const body = el("div", "graph-section-body");
@@ -198,17 +201,41 @@ export function createGraphPanel(
   searchPanel.append(query, queryError, help);
   const fields = new Map<keyof GraphSettings, HTMLInputElement[]>();
   const arrowRow = el("label", "graph-switch-row");
-  const arrows = el("input", "graph-switch");
-  arrows.type = "checkbox";
+  const arrows = button("", () => {
+    get().arrows = !get().arrows;
+    arrows.setAttribute("aria-checked", String(get().arrows));
+    change("arrows");
+  }, "material-switch graph-switch");
   arrows.id = "graph-arrows";
   arrows.setAttribute("role", "switch");
-  arrows.onchange = () => {
-    get().arrows = arrows.checked;
-    change("arrows");
+  arrows.setAttribute("aria-label", graphText("arrows"));
+  for (const cls of ["switch-track", "switch-thumb"]) {
+    const shape = el("span", cls);
+    shape.setAttribute("aria-hidden", "true");
+    arrows.append(shape);
+  }
+  arrows.onpointerdown = (event) => {
+    if (event.button !== 0) return;
+    arrows.setPointerCapture(event.pointerId);
+    arrows.classList.add("is-pressed");
   };
+  const releaseSwitch = () => arrows.classList.remove("is-pressed");
+  arrows.onpointerup = releaseSwitch;
+  arrows.onpointercancel = releaseSwitch;
+  arrows.onlostpointercapture = releaseSwitch;
+  arrows.onkeydown = (event) => {
+    if (event.key === " " || event.key === "Enter") arrows.classList.add("is-pressed");
+  };
+  arrows.onkeyup = releaseSwitch;
+  arrows.onblur = releaseSwitch;
   arrowRow.append(el("span", "", graphText("arrows")), arrows);
   sections.get("appearance")!.append(arrowRow);
-  fields.set("arrows", [arrows]);
+  function updateSlider(range: HTMLInputElement) {
+    const slider = range.closest<HTMLElement>(".graph-slider")!;
+    slider.style.setProperty("--graph-progress",
+      `${((range.valueAsNumber - Number(range.min)) / (Number(range.max) - Number(range.min))) * 100}%`);
+    slider.querySelector(".graph-slider-value")!.textContent = range.value;
+  }
   for (const [key, min, max, step] of [
     ["textFade", -1, 1, 0.05],
     ["nodeSize", 0.25, 3, 0.05],
@@ -224,6 +251,24 @@ export function createGraphPanel(
     const range = el("input");
     range.type = "range";
     range.id = label.htmlFor;
+    const slider = el("div", "graph-slider");
+    const visual = el("div", "graph-slider-visual");
+    visual.setAttribute("aria-hidden", "true");
+    const activeTrack = el("span", "graph-slider-active");
+    const inactiveTrack = el("span", "graph-slider-inactive");
+    inactiveTrack.append(el("span", "graph-slider-end"));
+    visual.append(activeTrack, inactiveTrack, el("span", "graph-slider-handle"), el("span", "graph-slider-value"));
+    slider.append(visual, range);
+    range.onpointerdown = (event) => {
+      if (event.button !== 0) return;
+      range.setPointerCapture(event.pointerId);
+      slider.classList.add("is-dragging");
+    };
+    const releaseSlider = () => slider.classList.remove("is-dragging");
+    range.onpointerup = releaseSlider;
+    range.onpointercancel = releaseSlider;
+    range.onlostpointercapture = releaseSlider;
+    range.onblur = releaseSlider;
     const number = el("input", "graph-number");
     number.type = "number";
     number.setAttribute("aria-label", graphText(key));
@@ -237,10 +282,7 @@ export function createGraphPanel(
         const value = Math.max(min, Math.min(max, input.valueAsNumber));
         get()[key] = value;
         range.value = String(value);
-        range.style.setProperty(
-          "--graph-progress",
-          `${((value - min) / (max - min)) * 100}%`,
-        );
+        updateSlider(range);
         if (input !== number) number.value = String(value);
         change(key);
       };
@@ -250,7 +292,7 @@ export function createGraphPanel(
     }
     const top = el("div", "graph-slider-label");
     top.append(label, number);
-    row.append(top, range);
+    row.append(top, slider);
     (key.endsWith("Force") || key === "linkDistance"
       ? sections.get("forces")!
       : sections.get("appearance")!
@@ -303,17 +345,11 @@ export function createGraphPanel(
   disposers.push(() => host.removeEventListener("keydown", escape));
   function sync() {
     query.value = get().query;
+    arrows.setAttribute("aria-checked", String(get().arrows));
     for (const [key, inputs] of fields) {
       for (const input of inputs) {
-        if (input.type === "checkbox") input.checked = get()[key] as boolean;
-        else {
-          input.value = String(get()[key]);
-          if (input.type === "range")
-            input.style.setProperty(
-              "--graph-progress",
-              `${((input.valueAsNumber - Number(input.min)) / (Number(input.max) - Number(input.min))) * 100}%`,
-            );
-        }
+        input.value = String(get()[key]);
+        if (input.type === "range") updateSlider(input);
       }
     }
     syncToggles();

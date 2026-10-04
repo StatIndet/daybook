@@ -54,6 +54,7 @@
     "home",
     "html",
     "http",
+    "hub",
     "iframe",
     "image",
     "info",
@@ -130,5 +131,5 @@
     }
   },
   "originalBytes": 5347060,
-  "subsetBytes": 14612
+  "subsetBytes": 14908
 }

@@ -19,11 +19,11 @@ try {
   await page.locator('#graph-settings-btn').click();
   await page.locator('#graph-defaults').click();
   await page.waitForFunction(count => document.querySelectorAll('.graph-node').length === count, count);
-  assert.deepEqual(await page.locator('.graph-section-title').allTextContents(), ['外观', '力度']);
+  assert.deepEqual(await page.locator('.graph-section-title > span:last-child').allTextContents(), ['外观', '力度']);
   assert.equal(await page.locator('#graph-settings-panel details, #graph-settings-panel summary').count(), 0);
   assert.equal(await page.locator('#graph-linkDistance').isVisible(), true);
   await page.locator('#graph-nodeSize').fill('2');
-  await page.locator('#graph-arrows').check();
+  await page.locator('#graph-arrows').click();
   await page.locator('#graph-play').click();
   await page.locator('#graph-play').click();
   assert.equal(await page.locator('#graph-play').getAttribute('aria-pressed'), 'false');
@@ -45,7 +45,7 @@ try {
   await page.waitForFunction(() => !document.documentElement.classList.contains('is-transitioning'));
   assert.equal(await page.locator('#graph-settings-btn').getAttribute('aria-label'), 'Graph settings');
   await page.locator('#graph-settings-btn').click();
-  assert.deepEqual(await page.locator('.graph-section-title').allTextContents(), ['Display', 'Forces']);
+  assert.deepEqual(await page.locator('.graph-section-title > span:last-child').allTextContents(), ['Display', 'Forces']);
   await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
   await page.evaluate(() => document.documentElement.dataset.theme = 'dark');
   await page.setViewportSize({ width: 390, height: 844 });
