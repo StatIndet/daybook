@@ -109,7 +109,9 @@
     "transform",
     "translate",
     "variables",
-    "warning"
+    "warning",
+    "zoom_in",
+    "zoom_out"
   ],
   "axes": {
     "FILL": {
@@ -120,5 +122,5 @@
     }
   },
   "originalBytes": 5347060,
-  "subsetBytes": 13564
+  "subsetBytes": 13684
 }

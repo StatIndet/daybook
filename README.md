@@ -165,6 +165,10 @@ Notes and memos use the Markdown filename (without `.md`) as their title. The `t
 
 Chinese and English article versions both appear in Notes, Archive, tags, search and the graph. Each article keeps its canonical URL and original text. The global language button changes the interface; on an article it uses `?ui=zh_CN` or `?ui=en_US`. The separate `translate` icon in article metadata opens the corresponding translation. Existing `/en_US/` URL paths remain unchanged; HTML language and `hreflang` values use BCP 47 (`zh-CN`, `en-US`).
 
+### Reading and image viewing
+
+Notes retain their outline in reader mode: a desktop sidebar or a compact-screen TOC drawer. The image viewer groups photos from the current article or memo, with previous/next buttons and a position counter. Use Left/Right or Home/End to navigate, the wheel or +/- to zoom, 0 to fit, and Escape to close. Double-click to toggle zoom, drag to pan an enlarged photo, or swipe horizontally on touch to change photos. Linked images and images marked `no-lightbox` keep their authored behavior.
+
 ### Memos
 
 Create Markdown files in `vault/memos/`. The timeline displays each entry's body directly, with its date, optional tags and optional location. Search covers body text, filenames, dates, locations and tags, and combines with calendar and tag filters. Click to select one tag/date; Ctrl-click (or Command-click) or long-press on touch to add or remove selections. Selections within each category are combined with OR, while tags, dates and search are combined with AND. Repeated `tag` and `date` URL parameters preserve and share multiple selections. The timeline shows the full text and up to four images; captions overlay the bottom of each image, and a +N badge at the top-right of the fourth image expands on hover or keyboard focus to open the remaining images in the detail page. Each feed image fits within the size of one responsive 4:3 grid cell. Detail pages retain normal Markdown image rendering. Memos use the same Markdown, Obsidian links and attachment syntax as notes.

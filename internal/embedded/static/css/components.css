@@ -828,7 +828,9 @@ html[data-reduced-motion="true"] [data-reading-toc-rail-dot]::before {
 
 .zoom-overlay {
   background-color: color-mix(in srgb, var(--color-page) 95%, transparent);
-  cursor: zoom-out;
+  cursor: default;
+  touch-action: none;
+  overscroll-behavior: contain;
   display: none;
   height: 100%;
   left: 0;
@@ -841,11 +843,56 @@ html[data-reduced-motion="true"] [data-reading-toc-rail-dot]::before {
 }
 
 .zoom-img {
-  cursor: zoom-out;
+  cursor: zoom-in;
   margin: 0 !important;
   position: fixed;
-  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: none;
+  max-height: none;
+  user-select: none;
+  touch-action: none;
   z-index: 3001;
+}
+
+.zoom-control {
+  position: fixed;
+  z-index: 3002;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-page) 88%, transparent);
+  color: var(--color-text);
+  cursor: pointer;
+}
+.zoom-control:hover { background: var(--color-accent-soft, var(--color-paper)); }
+.zoom-control:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+.zoom-control:disabled { opacity: .25; cursor: default; }
+.zoom-control .material-symbol { font-size: 26px; width: 26px; height: 26px; overflow: hidden; pointer-events: none; }
+.zoom-previous { left: max(12px, env(safe-area-inset-left)); top: calc(50% - 22px); }
+.zoom-next { right: max(12px, env(safe-area-inset-right)); top: calc(50% - 22px); }
+.zoom-close { right: max(16px, env(safe-area-inset-right)); top: max(16px, env(safe-area-inset-top)); }
+.zoom-toggle { right: max(68px, calc(env(safe-area-inset-right) + 52px)); top: max(16px, env(safe-area-inset-top)); }
+.zoom-status, .zoom-caption {
+  position: fixed;
+  z-index: 3002;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 140px);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-size: .88rem;
+  text-align: center;
+  pointer-events: none;
+}
+.zoom-status { top: max(28px, env(safe-area-inset-top)); font-variant-numeric: tabular-nums; }
+.zoom-caption { bottom: max(20px, env(safe-area-inset-bottom)); max-height: 3.2em; overflow: hidden; }
+.zoom-overlay[aria-busy="true"] .zoom-img { cursor: progress; }
+@media (max-width: 767px) {
+  .zoom-previous, .zoom-next { top: auto; bottom: max(12px, env(safe-area-inset-bottom)); }
+  .zoom-status { left: 20px; transform: none; max-width: calc(100% - 140px); }
 }
 
 /* Mobile Menu Toggle */
