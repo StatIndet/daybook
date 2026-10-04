@@ -1,3 +1,4 @@
+import { updateNumber } from "./number-flip";
 (() => {
   interface Memo {
     element: HTMLElement;
@@ -169,7 +170,12 @@
     let visible = 0;
     memos.forEach(memo => { memo.element.hidden = !matches(memo); if (!memo.element.hidden) visible++; });
     const count = page.querySelector<HTMLElement>('[data-memos-count]');
-    if (count) numberText(count, english() ? `${visible} memos` : `${visible} 条`);
+    if (count) {
+      let value = count.querySelector<HTMLElement>('.memo-number');
+      if (!value) { value = document.createElement('span'); value.className = 'memo-number'; count.replaceChildren(value, document.createTextNode('')); }
+      updateNumber(value, String(visible));
+      count.lastChild!.textContent = english() ? ' memos' : ' 条';
+    }
     const empty = page.querySelector<HTMLElement>('[data-memos-empty]');
     if (empty) empty.hidden = visible > 0 || memos.length === 0;
     const active = page.querySelector<HTMLElement>('[data-memos-active]');

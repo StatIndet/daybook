@@ -1,3 +1,4 @@
+import { updateNumber } from "./number-flip";
 (() => {
     // ==========================================
     // 1. Dataset Cache (Cross-visit)
@@ -604,7 +605,7 @@
     let activeArchiveInstance: ReturnType<typeof createArchiveInstance> | null = null;
 
     function initStatsAnimation() {
-        const nums = document.querySelectorAll(".archive-stat-num:not(.anim-done)");
+        const nums = document.querySelectorAll(".archive-stat-num[data-target], .archive-stat-num[data-started-at]");
         nums.forEach(el => {
             const startedAt = el.getAttribute("data-started-at");
             if (startedAt) {
@@ -619,35 +620,8 @@
             const target = parseInt(targetAttr, 10);
             if (isNaN(target)) return;
             
-            el.classList.add("anim-done");
-            
             const isKFormat = el.getAttribute("data-format") === "k";
-            const displayTarget = isKFormat ? target / 1000 : target;
-            
-            const duration = 1200; // 1.2s for quick count
-            const startTime = performance.now();
-            
-            const update = (currentTime: number) => {
-                const elapsed = currentTime - startTime;
-                let progress = Math.min(elapsed / duration, 1);
-                // easeOutExpo
-                progress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-                
-                const current = progress * displayTarget;
-                
-                if (isKFormat) {
-                    el.textContent = current.toFixed(1);
-                } else {
-                    el.textContent = Math.floor(current).toLocaleString();
-                }
-                
-                if (progress < 1) {
-                    requestAnimationFrame(update);
-                } else {
-                    el.textContent = isKFormat ? displayTarget.toFixed(1) : displayTarget.toLocaleString();
-                }
-            };
-            requestAnimationFrame(update);
+            updateNumber(el, isKFormat ? (target / 1000).toFixed(1) : target.toLocaleString());
         });
     }
 

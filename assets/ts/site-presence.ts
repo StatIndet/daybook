@@ -1,3 +1,4 @@
+import { updateNumber } from "./number-flip";
 function normalizePath(p: string): string {
   try {
     const url = new URL(p, window.location.origin);
@@ -25,19 +26,14 @@ let isStatsEnabled = true;
 function updatePresenceDOM(path: string, pageViewers: number, siteViewers: number) {
   const siteEls = document.querySelectorAll("[data-site-viewers]");
   siteEls.forEach(el => {
-    if (!el.classList.contains("anim-done") && el.classList.contains("archive-stat-num")) {
-      el.setAttribute("data-target", siteViewers.toString());
-      document.dispatchEvent(new CustomEvent("daybook:stats-loaded"));
-    } else {
-      el.textContent = siteViewers.toString();
-    }
+    updateNumber(el, siteViewers.toLocaleString());
   });
 
   const pageEls = document.querySelectorAll("[data-page-viewers]");
   pageEls.forEach(el => {
     const pathAttr = el.getAttribute("data-path");
     if (pathAttr && normalizePath(pathAttr) === path) {
-      el.textContent = pageViewers.toString();
+      updateNumber(el, pageViewers.toLocaleString());
     }
   });
 }

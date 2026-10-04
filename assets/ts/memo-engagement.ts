@@ -1,3 +1,4 @@
+import { updateNumber } from "./number-flip";
 // Read-only counts for visible posts. Likes remain independent of giscus.
 type CommentCount = { count: number; expires: number };
 const comments = new Map<string, CommentCount>();
@@ -34,7 +35,7 @@ async function loadComments(link: HTMLElement, signal: AbortSignal): Promise<voi
     if (comments.size >= 500) comments.clear();
     comments.set(key, cached);
   }
-  if (!signal.aborted && link.isConnected) link.querySelector('[data-comment-count]')!.textContent = cached.count.toLocaleString();
+  if (!signal.aborted && link.isConnected) updateNumber(link.querySelector('[data-comment-count]')!, cached.count.toLocaleString());
 }
 
 async function loadViews(element: HTMLElement, signal: AbortSignal): Promise<void> {
@@ -43,7 +44,7 @@ async function loadViews(element: HTMLElement, signal: AbortSignal): Promise<voi
   if (!response.ok) return;
   const data = await response.json();
   if (!signal.aborted && element.isConnected && validCount(data.pageViews) && normalize(data.path) === normalize(element.dataset.path!)) {
-    element.textContent = data.pageViews.toLocaleString();
+    updateNumber(element, data.pageViews.toLocaleString());
   }
 }
 
@@ -87,7 +88,7 @@ document.addEventListener('daybook:comments-loaded', event => {
   for (const link of document.querySelectorAll<HTMLElement>('[data-comment-path]')) {
     if (link.dataset.commentPath !== path) continue;
     comments.set(keyFor(link), { count, expires: Date.now() + 60000 });
-    link.querySelector('[data-comment-count]')!.textContent = count.toLocaleString();
+    updateNumber(link.querySelector('[data-comment-count]')!, count.toLocaleString());
   }
 });
 

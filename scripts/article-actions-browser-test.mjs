@@ -81,6 +81,8 @@ try {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce', permissions: ['clipboard-read', 'clipboard-write'] });
   const page = await context.newPage();
   const errors = [];
+  let presenceSocket;
+  await context.routeWebSocket(/\/api\/presence\?/, socket => { presenceSocket = socket; });
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(base + '/notes/example/');
   const like = page.locator('[data-like-path]');
@@ -189,6 +191,57 @@ try {
   assert.equal(await dialog.evaluate(dialog => dialog.open), true);
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('body').evaluate(body => body.classList.contains('is-mobile-drawer-open')), true, 'RSS Escape does not close the underlying drawer');
+  console.log('Checking shared counter flips in notes, memos and archive...');
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto(base + '/notes/example/');
+  await ready(like, true, 1);
+  await page.evaluate(() => delete document.documentElement.dataset.reducedMotion);
+  const assertFlipping = async selector => {
+    const counter = page.locator(selector).first();
+    assert.equal(await counter.locator('.number-flip-current').evaluate(el => getComputedStyle(el).animationName), 'number-flip-in');
+    assert.equal(await counter.evaluate(el => getComputedStyle(el, '::before').animationName), 'number-flip-out');
+    return counter;
+  };
+  presenceSocket.send(JSON.stringify({ type: 'presence', path: '/notes/example/', pageViewers: 9, siteViewers: 99 }));
+  await page.waitForFunction(() => document.querySelector('[data-page-viewers]')?.textContent === '9');
+  await assertFlipping('[data-page-viewers]');
+  presenceSocket.send(JSON.stringify({ type: 'presence', path: '/notes/example/', pageViewers: 10, siteViewers: 100 }));
+  await page.waitForFunction(() => document.querySelector('[data-page-viewers]')?.textContent === '10');
+  assert.equal(await page.locator('[data-page-viewers]').getAttribute('data-number-previous'), '9', 'Rapid updates flip from the latest confirmed value');
+  await page.waitForTimeout(500);
+  presenceSocket.send(JSON.stringify({ type: 'presence', path: '/notes/example/', pageViewers: 10, siteViewers: 100 }));
+  await page.waitForTimeout(50);
+  assert.equal(await page.locator('[data-page-viewers].is-number-flipping').count(), 0, 'An unchanged count does not animate');
+  await like.click(); await ready(like, false, 0);
+  await assertFlipping('[data-like-count]');
+  await page.goto(base + '/memos/');
+  const memoLike = page.locator('[data-like-path]');
+  await ready(memoLike, false, 0);
+  await memoLike.click(); await ready(memoLike, true, 1);
+  await assertFlipping('[data-like-count]');
+  await page.goto(base + '/archive/');
+  await page.waitForFunction(() => document.querySelector('[data-site-visitors-anim]')?.textContent === '1');
+  await page.evaluate(() => {
+    document.querySelector('[data-site-visitors-anim]').dataset.target = '1200';
+    document.querySelector('[data-site-views-anim]').dataset.target = '42000';
+    document.dispatchEvent(new Event('daybook:stats-loaded'));
+  });
+  await assertFlipping('[data-site-visitors-anim]');
+  assert.equal(await page.locator('[data-site-visitors-anim]').textContent(), '1,200');
+  assert.equal(await page.locator('[data-site-views-anim]').textContent(), '42.0');
+  presenceSocket.send(JSON.stringify({ type: 'presence', path: '/archive/', pageViewers: 1, siteViewers: 17 }));
+  await page.waitForFunction(() => document.querySelector('[data-site-viewers]')?.textContent === '17');
+  await assertFlipping('[data-site-viewers]');
+  for (const preference of ['system', 'setting']) {
+    await page.emulateMedia({ reducedMotion: preference === 'system' ? 'reduce' : 'no-preference' });
+    await page.evaluate(preference => {
+      if (preference === 'setting') document.documentElement.dataset.reducedMotion = 'true';
+      document.querySelector('[data-site-visitors-anim]').dataset.target = preference === 'system' ? '2' : '3';
+      document.dispatchEvent(new Event('daybook:stats-loaded'));
+    }, preference);
+    assert.equal(await page.locator('[data-site-visitors-anim] .number-flip-current').evaluate(el => getComputedStyle(el).animationName), 'none', 'Reduced motion updates the number immediately');
+  }
   assert.deepEqual(errors, []);
   await context.close();
   console.log('Article actions passed: identity bootstrap, likes, retries, revisits, memos, SPA, RSS, clipboard, language and mobile.');

@@ -1,3 +1,4 @@
+import { updateNumber } from "./number-flip";
 interface StatsResponse {
   path: string;
   pageViews: number;
@@ -74,19 +75,19 @@ export function initSiteStats(root: Document | HTMLElement = document): Promise<
     // Update DOM
     const visitorsEls = root.querySelectorAll("[data-site-visitors]");
     visitorsEls.forEach(el => {
-      el.textContent = stats.visitors.toLocaleString();
+      updateNumber(el, stats.visitors.toLocaleString());
     });
 
     const viewsEls = root.querySelectorAll("[data-site-views]");
     viewsEls.forEach(el => {
-      el.textContent = stats.totalViews.toLocaleString();
+      updateNumber(el, stats.totalViews.toLocaleString());
     });
 
     const pageViewsEls = root.querySelectorAll("[data-page-views]");
     pageViewsEls.forEach(el => {
       const pathAttr = el.getAttribute("data-path");
       if (pathAttr && normalizePath(pathAttr) === stats.path) {
-        el.textContent = stats.pageViews.toLocaleString();
+        updateNumber(el, stats.pageViews.toLocaleString());
       }
     });
 

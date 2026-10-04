@@ -1609,3 +1609,29 @@ html[data-reduced-motion="true"] .like-button[data-like-feedback][aria-pressed] 
 .rss-status { min-height: 1.7em; margin-bottom: 0; }
 
 body:has(.rss-dialog[open]) { overflow: hidden; }
+
+
+/* Counter updates share one flip motion without animating the surrounding row. */
+.number-flip { position: relative; display: inline-grid; perspective: 8em; white-space: nowrap; }
+.number-flip-current { display: inline-block; transform-origin: center; backface-visibility: hidden; }
+.number-flip.is-number-flipping::before {
+  content: attr(data-number-previous) / "";
+  position: absolute; inset: 0; pointer-events: none;
+  transform-origin: center; backface-visibility: hidden;
+  animation: number-flip-out 400ms ease-in-out both;
+}
+.number-flip.is-number-flipping > .number-flip-current { animation: number-flip-in 400ms ease-in-out both; }
+@keyframes number-flip-out {
+  0% { transform: rotateX(0); opacity: 1; }
+  49%, 100% { transform: rotateX(90deg); opacity: 0; }
+}
+@keyframes number-flip-in {
+  0%, 49% { transform: rotateX(-90deg); opacity: 0; }
+  100% { transform: rotateX(0); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .number-flip.is-number-flipping::before { display: none; }
+  .number-flip.is-number-flipping > .number-flip-current { animation: none; }
+}
+html[data-reduced-motion="true"] .number-flip.is-number-flipping::before { display: none; }
+html[data-reduced-motion="true"] .number-flip.is-number-flipping > .number-flip-current { animation: none; }

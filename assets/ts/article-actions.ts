@@ -1,3 +1,4 @@
+import { updateNumber } from "./number-flip";
 type LikeState = { path: string; count: number; liked: boolean };
 
 function text(key: string): string {
@@ -15,7 +16,7 @@ function paint(state: LikeState): void {
   for (const button of likeButtons(state.path)) {
     button.dataset.likeReady = 'true';
     button.setAttribute('aria-pressed', String(state.liked));
-    button.querySelector('[data-like-count]')!.textContent = state.count.toLocaleString();
+    updateNumber(button.querySelector('[data-like-count]')!, state.count.toLocaleString());
     button.dataset.uiAria = state.liked ? 'likes.unlike' : 'likes.like';
     button.dataset.uiTooltip = button.dataset.uiAria;
     button.setAttribute('aria-label', text(button.dataset.uiAria));
