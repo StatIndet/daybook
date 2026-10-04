@@ -32,12 +32,12 @@ func TestNoteCardSummaryAndStaticMetadata(t *testing.T) {
 	if card.Description != "A short summary. Revised." {
 		t.Fatalf("description = %q", card.Description)
 	}
-	for _, expected := range []string{"中文标题 &lt;静态&gt;", "3 分钟阅读", "2026-10-04", "2026-10-05", "#Go", "#中文", "#HTML"} {
+	for _, expected := range []string{"中文标题 &lt;静态&gt;", "3 min read", "2026-10-04", "Updated 2026-10-05", "#Go", "#中文", "#HTML"} {
 		if !strings.Contains(card.HTML, expected) {
 			t.Errorf("card missing %q", expected)
 		}
 	}
-	for _, excluded := range []string{"excluded", "Body fallback", "<em>", "<script", "/css/"} {
+	for _, excluded := range []string{"excluded", "Body fallback", "<em>", "<script", "/css/", "分钟阅读", "更新于"} {
 		if strings.Contains(card.HTML, excluded) {
 			t.Errorf("card unexpectedly contains %q", excluded)
 		}
@@ -61,7 +61,57 @@ func TestNoteCardFallsBackToCleanBody(t *testing.T) {
 		t.Fatal("empty update and tags should not render")
 	}
 	if !strings.Contains(card.HTML, "1 min read") {
-		t.Fatal("missing localized reading time")
+		t.Fatal("missing reading time")
+	}
+}
+
+func TestNoteCardBrandAndEnglishMetadataInBothLanguages(t *testing.T) {
+	for _, lang := range []string{"zh_CN", "en_US"} {
+		for _, avatar := range []string{"/attachments/avatar.png", ""} {
+			t.Run(lang+"/"+avatar, func(t *testing.T) {
+				cfg := testConfig()
+				cfg.Profile.Author.Avatar = avatar
+				card, err := NewCard(content.Note{Lang: lang, Date: "2026-06-25", Updated: "2026-08-23"}, "<p>摘要 Summary.</p>", cfg, nil)
+				if err != nil {
+					t.Fatal(err)
+				}
+				root, err := html.Parse(strings.NewReader(card.HTML))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !strings.Contains(card.HTML, ">1 min read</span>") || classText(root, "updated") != "Updated 2026-08-23" {
+					t.Fatal("OG reading time and update label must remain English in both languages")
+				}
+				if classText(root, "site-name") != cfg.GetSiteName(lang) {
+					t.Fatal("brand must retain the configured site name")
+				}
+				if avatar != "" {
+					if !strings.Contains(card.HTML, `<img class="brand-avatar" src="`+avatar+`"`) || strings.Contains(card.HTML, `<span class="brand-avatar brand-avatar-fallback">`) {
+						t.Fatal("note brand must use the existing author avatar")
+					}
+				} else {
+					initial := "史"
+					if lang == "en_US" {
+						initial = "S"
+					}
+					if classText(root, "brand-avatar brand-avatar-fallback") != initial || strings.Contains(card.HTML, `<img class="brand-avatar"`) {
+						t.Fatal("note brand must fall back to the existing localized author initial")
+					}
+				}
+			})
+		}
+	}
+}
+
+func TestCardsReferenceRealMetadataItalicFace(t *testing.T) {
+	for _, section := range []string{"notes", "memos"} {
+		card, err := NewCard(content.Note{Section: section, Date: "2026-10-04"}, "<p>Content.</p>", testConfig(), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(card.HTML, `/vendor/fonts/cormorant-garamond/cormorant-garamond-latin-600-italic.woff2`) || !strings.Contains(card.HTML, `font-family: "Cormorant Garamond Meta"`) || !strings.Contains(card.HTML, `font-synthesis: none`) {
+			t.Errorf("%s must load the real metadata italic face without synthesis", section)
+		}
 	}
 }
 

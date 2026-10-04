@@ -7,16 +7,23 @@
   <link rel="stylesheet" href="/vendor/fonts/lxgw-wenkai-screen/regular/result.min.css">
   <style>
     @font-face { font-family: "Cormorant Garamond"; size-adjust: 127%; src: url("/vendor/fonts/cormorant-garamond/cormorant-garamond-latin-400-normal.woff2") format("woff2"); font-weight: 400; }
+    @font-face { font-family: "Cormorant Garamond"; size-adjust: 127%; src: url("/vendor/fonts/cormorant-garamond/cormorant-garamond-latin-700-italic.woff2") format("woff2"); font-weight: 700; font-style: italic; }
+    @font-face { font-family: "Cormorant Garamond Meta"; src: url("/vendor/fonts/cormorant-garamond/cormorant-garamond-latin-600-italic.woff2") format("woff2"); font-weight: 600; font-style: italic; }
     * { box-sizing: border-box; }
     html, body { width: 1200px; height: 630px; margin: 0; overflow: hidden; }
     body { background: oklch(96% .005 298); color: oklch(25% .005 298); font-family: "LXGW WenKai Screen", serif; }
     :lang(en) body { font-family: "Cormorant Garamond", "LXGW WenKai Screen", serif; }
     .note-card { height: 100%; padding: 48px 72px 44px; display: flex; flex-direction: column; }
-    .site-name { color: oklch(40% .005 298); font-size: 24px; line-height: 32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .article { margin-top: 38px; min-height: 0; }
+    .brand { display: flex; align-items: center; gap: 16px; height: 40px; flex-shrink: 0; }
+    .brand-avatar { width: 40px; height: 40px; flex-shrink: 0; border-radius: 8px; object-fit: cover; }
+    .brand-avatar-fallback { display: flex; align-items: center; justify-content: center; color: #6750a4; background: oklch(25% .005 298 / .06); font-size: 22px; }
+    .site-name { min-width: 0; color: oklch(40% .005 298); font-size: 24px; line-height: 32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .article { margin-top: 30px; min-height: 0; }
     h1 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; margin: 0; font-family: "Noto Serif SC Variable", serif; font-size: 53px; font-weight: 600; line-height: 1.38; overflow-wrap: anywhere; }
     .summary { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; margin: 22px 0 0; color: oklch(40% .005 298); font-size: 29px; line-height: 1.58; overflow-wrap: anywhere; }
+    .summary::first-letter { color: #6750a4; float: left; font-family: inherit; font-size: 3.4em; font-style: italic; font-weight: 700; line-height: .92; margin-top: 4px; padding: 4px 10px 0 0; }
     .metadata { margin-top: auto; padding-top: 22px; border-top: 1px solid oklch(25% .005 298 / .16); display: flex; align-items: baseline; gap: 26px; color: oklch(40% .005 298); font-size: 21px; line-height: 30px; white-space: nowrap; }
+    .metadata > time, .metadata > span { font-family: "Cormorant Garamond Meta", serif; font-style: italic; font-weight: 600; font-synthesis: none; }
     .updated { font-size: 19px; }
     .tags { display: flex; justify-content: flex-end; min-width: 0; margin-left: auto; gap: 16px; color: #6750a4; font-size: 20px; overflow: hidden; }
     .tag { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
@@ -24,7 +31,10 @@
 </head>
 <body>
   <article class="note-card">
-    <header class="site-name">{{.SiteName}}</header>
+    <header class="brand">
+      {{if .Avatar}}<img class="brand-avatar" src="{{.Avatar}}" alt="" width="40" height="40">{{else}}<span class="brand-avatar brand-avatar-fallback">{{.Initial}}</span>{{end}}
+      <span class="site-name">{{.SiteName}}</span>
+    </header>
     <div class="article">
       <h1>{{.Title}}</h1>
       {{if .Summary}}<p class="summary">{{.Summary}}</p>{{end}}
@@ -32,7 +42,7 @@
     <footer class="metadata">
       <time>{{.Date}}</time>
       <span>{{.ReadingTime}}</span>
-      {{if .Updated}}<span class="updated">{{if eq .Lang "en-US"}}Updated{{else}}更新于{{end}} {{.Updated}}</span>{{end}}
+      {{if .Updated}}<span class="updated">Updated {{.Updated}}</span>{{end}}
       {{if .Tags}}<div class="tags">{{range .Tags}}<span class="tag">#{{.}}</span>{{end}}</div>{{end}}
     </footer>
   </article>

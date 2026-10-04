@@ -106,10 +106,9 @@ func NewCard(note content.Note, renderedHTML string, cfg config.Config, tags []s
 	if minutes < 1 {
 		minutes = 1
 	}
-	data.ReadingTime = fmt.Sprintf("%d 分钟阅读", minutes)
+	data.ReadingTime = fmt.Sprintf("%d min read", minutes)
 	if note.Lang == "en_US" {
 		data.Lang = "en-US"
-		data.ReadingTime = fmt.Sprintf("%d min read", minutes)
 	}
 	templateName := "note.html"
 	if section == "memos" {

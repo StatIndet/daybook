@@ -6,6 +6,7 @@
   <link rel="stylesheet" href="/vendor/fonts/lxgw-wenkai-screen/regular/result.min.css">
   <style>
     @font-face { font-family: "Cormorant Garamond"; size-adjust: 127%; src: url("/vendor/fonts/cormorant-garamond/cormorant-garamond-latin-400-normal.woff2") format("woff2"); font-weight: 400; }
+    @font-face { font-family: "Cormorant Garamond Meta"; src: url("/vendor/fonts/cormorant-garamond/cormorant-garamond-latin-600-italic.woff2") format("woff2"); font-weight: 600; font-style: italic; }
     * { box-sizing: border-box; }
     html, body { width: 1200px; height: 630px; margin: 0; overflow: hidden; }
     body { background: oklch(96% .005 298); color: oklch(25% .005 298); font-family: "LXGW WenKai Screen", serif; }
@@ -15,7 +16,7 @@
     .entry { min-width: 0; display: flex; flex-direction: column; }
     .header { display: flex; align-items: baseline; gap: 20px; min-height: 42px; line-height: 36px; }
     .author { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 29px; font-weight: 600; }
-    .date { margin-left: auto; flex-shrink: 0; color: oklch(40% .005 298); font-size: 22px; }
+    .date { margin-left: auto; flex-shrink: 0; color: oklch(40% .005 298); font-size: 22px; font-family: "Cormorant Garamond Meta", serif; font-style: italic; font-weight: 600; font-synthesis: none; }
     .body { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 7; overflow: hidden; margin: 14px 0 0; font-size: 32px; line-height: 1.6; white-space: pre-line; overflow-wrap: anywhere; }
     .with-images .body { -webkit-line-clamp: 2; font-size: 27px; line-height: 1.48; margin-top: 8px; }
     .images { flex: 1; min-height: 0; max-height: 336px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 18px; overflow: hidden; border-radius: 6px; }
