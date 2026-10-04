@@ -26,7 +26,8 @@ try {
   await page.locator('#graph-arrows').check();
   await page.locator('#graph-play').click();
   await page.locator('#graph-play').click();
-  await page.locator('#graph-stop').click();
+  assert.equal(await page.locator('#graph-play').getAttribute('aria-pressed'), 'false');
+  assert.equal(await page.locator('#graph-settings-panel #graph-play, #graph-settings-panel progress, .graph-animation').count(), 0);
   await page.screenshot({ path: '/tmp/daybook-graph-desktop.png' });
   await page.locator('.graph-close').click();
   await page.reload();
@@ -60,7 +61,7 @@ try {
     const buttons = await page.locator('.graph-toolbar > button:visible').all();
     const shell = await page.locator('.graph-shell').boundingBox();
     const boxes = await Promise.all(buttons.map(button => button.boundingBox()));
-    assert.equal(boxes.length, 8);
+    assert.equal(boxes.length, 9);
     // Compare layout positions; the focused action intentionally lifts by 2px.
     const tops = await page.locator('.graph-toolbar > button:visible').evaluateAll(buttons => buttons.map(button => button.offsetTop));
     assert.ok(tops.every(top => top === tops[0]), 'Toolbar stays on one row');

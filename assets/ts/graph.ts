@@ -94,7 +94,7 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
     fullLinks: GraphLink[] = [],
     currentNodes: GraphNode[] = [],
     currentLinks: GraphLink[] = [];
-  let animation: "idle" | "playing" | "paused" = "idle",
+  let animation: "idle" | "playing" = "idle",
     frame = 0,
     elapsed = 0,
     started = 0,
@@ -137,7 +137,6 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
       reset: restore,
       full: fullGraph,
       play: toggleAnimation,
-      stop: () => stopAnimation(true),
       retry: () => {
         if (raw.nodes.length) void applyQuery();
         else void init(root);
@@ -231,11 +230,10 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
       reset: restore,
       full: fullGraph,
       play: toggleAnimation,
-      stop: () => stopAnimation(true),
       retry: () => void applyQuery(),
     });
     panel.setCount(currentNodes.length);
-    panel.animation(animation, elapsed / ANIMATION_DURATION_MS);
+    panel.animation(animation);
     void applyQuery();
   }
   function routeChanged() {
@@ -806,29 +804,25 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
     animation = "idle";
     elapsed = 0;
     lastBatch = -1;
-    panel?.animation("idle", 0);
+    panel?.animation("idle");
     if (restoreGraph && wasActive) showGraph(fullNodes, fullLinks);
   }
   function toggleAnimation() {
     if (animation === "playing") {
-      elapsed = Math.min(ANIMATION_DURATION_MS, performance.now() - started);
-      animation = "paused";
-      cancelAnimationFrame(frame);
-      panel?.animation(animation, elapsed / ANIMATION_DURATION_MS);
+      stopAnimation(true);
       return;
     }
-    if (animation === "idle") {
-      days = [
-        ...new Set(
-          fullNodes.filter((n) => n.date).map((n) => n.date!.slice(0, 10)),
-        ),
-      ].sort();
-      if (!days.length) return;
-      elapsed = 0;
-      lastBatch = -1;
-    }
+    days = [
+      ...new Set(
+        fullNodes.filter((n) => n.date).map((n) => n.date!.slice(0, 10)),
+      ),
+    ].sort();
+    if (!days.length) return;
+    elapsed = 0;
+    lastBatch = -1;
     animation = "playing";
-    started = performance.now() - elapsed;
+    started = performance.now();
+    panel?.animation(animation);
     animationFrame();
   }
   function animationFrame() {
@@ -859,11 +853,10 @@ const endpoint = (n: string | GraphNode) => (typeof n === "string" ? n : n.id);
         fullLinks,
       );
     }
-    panel?.animation(animation, elapsed / ANIMATION_DURATION_MS);
     if (elapsed >= ANIMATION_DURATION_MS) {
       animation = "idle";
       showGraph(fullNodes, fullLinks);
-      panel?.animation("idle", 1);
+      panel?.animation("idle");
       frame = 0;
     } else frame = requestAnimationFrame(animationFrame);
   }

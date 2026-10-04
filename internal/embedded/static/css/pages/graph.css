@@ -54,6 +54,10 @@
 .graph-shell .graph-toolbar .notes-action-button {
   flex-shrink: 0;
 }
+.graph-shell .graph-toolbar .notes-action-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 .graph-action-text {
   display: none;
 }
@@ -323,20 +327,6 @@
 }
 .graph-error:empty {
   display: none;
-}
-.graph-animation {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding-top: 8px;
-}
-.graph-animation .graph-hint {
-  width: 100%;
-}
-.graph-animation progress {
-  width: 100%;
-  height: 4px;
-  accent-color: var(--color-accent);
 }
 .graph-panel-footer {
   padding: 20px;

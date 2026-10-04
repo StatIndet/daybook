@@ -22,10 +22,7 @@ const words = {
   repelForce: ["节点排斥力", "Repel force"],
   linkForce: ["连接吸引力", "Link force"],
   linkDistance: ["连线长度", "Link distance"],
-  play: ["播放动画", "Animate"],
-  pause: ["暂停", "Pause"],
-  resume: ["继续", "Resume"],
-  stop: ["停止", "Stop"],
+  play: ["播放生长动画", "Growth animation"],
   retry: ["重试", "Retry"],
   empty: [
     "没有匹配的节点，请调整筛选。",
@@ -51,7 +48,6 @@ const words = {
   propertyHelp: ["公开属性", "Public property"],
   noDates: ["当前筛选没有可用于动画的日期", "No dated notes in this selection"],
   storage: ["设置保存在此浏览器中", "Settings saved in this browser"],
-  day: ["按笔记日期 · 8 秒", "By note date · 8 seconds"],
 } as const;
 export function graphText(key: keyof typeof words): string {
   return words[key][
@@ -68,7 +64,6 @@ export function createGraphPanel(
     reset(): void;
     full(): void;
     play(): void;
-    stop(): void;
     retry(): void;
   },
 ) {
@@ -142,7 +137,11 @@ export function createGraphPanel(
     shortcuts.set(key, shortcut);
     toolbar.append(shortcut);
   }
-  toolbar.append(center, toggle, full);
+  const play = iconButton("play", "play_arrow", actions.play);
+  play.id = "graph-play";
+  play.setAttribute("aria-pressed", "false");
+  play.disabled = true;
+  toolbar.append(play, center, toggle, full);
   const searchPanel = el("div", "graph-search-panel");
   searchPanel.id = "graph-local-search-panel";
   searchPanel.hidden = true;
@@ -258,19 +257,6 @@ export function createGraphPanel(
     ).append(row);
     fields.set(key, [range, number]);
   }
-  const animation = el("div", "graph-animation");
-  const play = button(graphText("play"), actions.play);
-  play.id = "graph-play";
-  const stop = button(graphText("stop"), actions.stop);
-  stop.id = "graph-stop";
-  stop.disabled = true;
-  const progress = el("progress");
-  progress.max = 1;
-  progress.value = 0;
-  progress.setAttribute("aria-label", graphText("play"));
-  const animationHint = el("p", "graph-hint", graphText("day"));
-  animation.append(animationHint, play, stop, progress);
-  sections.get("appearance")!.append(animation);
   const footer = el("div", "graph-panel-footer");
   const reset = button(graphText("reset"), actions.reset);
   reset.id = "graph-defaults";
@@ -354,14 +340,12 @@ export function createGraphPanel(
     },
     animationAvailable(available: boolean) {
       play.disabled = !available;
-      animationHint.textContent = graphText(available ? "day" : "noDates");
+      play.setAttribute("data-tooltip", graphText(available ? "play" : "noDates"));
     },
-    animation(state: "idle" | "playing" | "paused", value: number) {
-      play.textContent = graphText(
-        state === "playing" ? "pause" : state === "paused" ? "resume" : "play",
-      );
-      stop.disabled = state === "idle";
-      progress.value = value;
+    animation(state: "idle" | "playing") {
+      play.setAttribute("aria-pressed", String(state === "playing"));
+      play.querySelector(".material-symbol")!.textContent =
+        state === "playing" ? "stop" : "play_arrow";
     },
     destroy() {
       disposers.forEach((d) => d());
