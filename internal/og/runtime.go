@@ -22,7 +22,7 @@ import (
 
 // PlaywrightVersion is kept in sync with package-lock.json. A dedicated cache
 // lets a standalone Daybook binary render cards outside its source checkout.
-const PlaywrightVersion = "1.62.1"
+const PlaywrightVersion = "1.63.0"
 
 const playwrightModuleEnv = "DAYBOOK_OG_PLAYWRIGHT_MODULE"
 
