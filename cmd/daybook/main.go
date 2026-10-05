@@ -32,7 +32,7 @@ func main() {
 func printHelp() {
 	fmt.Println("Usage:")
 	fmt.Println("  daybook build [--verbose]  Build the current Daybook vault into ./public")
-	fmt.Println("  daybook setup-og [--with-deps]  Install Playwright and Chromium (optionally OS libraries)")
+	fmt.Println("  daybook setup-og [--with-deps | --user-deps]  Install Playwright and Chromium (optionally OS libraries)")
 	fmt.Println("  daybook serve [--addr :1313]  Serve the existing ./public directory locally")
 	fmt.Println("  daybook version  Print Daybook version")
 }
@@ -47,6 +47,7 @@ func run() error {
 	if command == "setup-og" {
 		flags := flag.NewFlagSet("setup-og", flag.ContinueOnError)
 		withDeps := flags.Bool("with-deps", false, "Install Chromium system libraries too (Linux requires root or sudo)")
+		userDeps := flags.Bool("user-deps", false, "Download Linux system libraries into the user cache (Debian/Ubuntu, no root required)")
 		if err := flags.Parse(os.Args[2:]); err != nil {
 			if err == flag.ErrHelp {
 				return nil
@@ -56,9 +57,12 @@ func run() error {
 		if flags.NArg() > 0 {
 			return fmt.Errorf("daybook setup-og: unexpected argument: %s", flags.Arg(0))
 		}
+		if *withDeps && *userDeps {
+			return fmt.Errorf("daybook setup-og: --with-deps and --user-deps are mutually exclusive")
+		}
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 		defer cancel()
-		return og.Setup(ctx, *withDeps)
+		return og.Setup(ctx, og.SetupOptions{WithDeps: *withDeps, UserDeps: *userDeps})
 	}
 
 	if command == "version" || command == "--version" || command == "-v" {

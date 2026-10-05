@@ -104,7 +104,7 @@ Run these commands inside your Vault directory:
 
 * `daybook build`: Reads `daybook.yaml`, `vault/notes/` and `vault/memos/`, compiles your site, and outputs static HTML to `public/`. At least one of the two content directories must exist.
 * `daybook build --verbose`: Prints timestamped stages, completed files and stage durations without animation.
-* `daybook setup-og [--with-deps]`: Installs the pinned Playwright package and Chromium in the current user's caches. Requires Node.js (>=24), npm and network access. Run once before the first build, and again when a CLI update changes the bundled Playwright version. This command can run outside a vault. Add `--with-deps` on a fresh Linux build machine to install Chromium system libraries as well; this uses Playwright's OS dependency installer and requires root or sudo.
+* `daybook setup-og [--with-deps | --user-deps]`: Installs the pinned Playwright package and Chromium in the current user's caches. Requires Node.js (>=24), npm and network access. Run once before the first build, and again when a CLI update changes the bundled Playwright version. This command can run outside a vault. Add `--with-deps` on a fresh Linux build machine to install Chromium system libraries as well; this uses Playwright's OS dependency installer and requires root or sudo. On Debian/Ubuntu hosts without those privileges, use `--user-deps` to download authenticated APT packages and extract the needed libraries into the user cache; only Chromium loads those libraries, and system packages remain unchanged.
 * `daybook serve`: Starts a local web server at `http://localhost:1313` to preview your site. Use `daybook serve --addr 127.0.0.1:1415` to select another address or port.
 * `daybook version`: Prints the current CLI version.
 
@@ -163,10 +163,10 @@ Dedicated embedded HTML/CSS templates are rendered in one local Playwright Chrom
 For an external vault deployed through Cloudflare Workers Builds, install the renderer after downloading the CLI and before building. With a vault-local CLI installer, the npm build script should run:
 
 ```sh
-npm run daybook:setup && ./.daybook/bin/daybook setup-og --with-deps && ./.daybook/bin/daybook build
+npm run daybook:setup && ./.daybook/bin/daybook setup-og --user-deps && ./.daybook/bin/daybook build
 ```
 
-Use Node.js 24 or newer. Run `setup-og --with-deps` on every fresh Cloudflare build environment, even when the CLI binary is cached: the Playwright package and Chromium have separate caches, and cached downloads do not provide Linux system libraries such as `libatk-1.0.so.0`. Repeating setup is safe and also selects the runtime required by an updated CLI. The release archive contains the CLI and embedded site assets, not Playwright or Chromium.
+Use Node.js 24 or newer. Run `setup-og --user-deps` on every fresh Cloudflare build environment (its build user cannot install system packages with root/sudo), even when the CLI binary is cached: the Playwright package and Chromium have separate caches, and cached downloads do not provide Linux system libraries such as `libatk-1.0.so.0`. Repeating setup is safe and also selects the runtime required by an updated CLI. The release archive contains the CLI and embedded site assets, not Playwright or Chromium.
 
 ## Acknowledge
 

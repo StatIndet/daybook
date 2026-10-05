@@ -136,9 +136,17 @@ async function main() {
   if (!chromium) throw new Error(`Playwright module has no Chromium renderer: ${manifest.module}`);
   let browser;
   try {
-    browser = await chromium.launch({ headless: true, timeout: 30_000 });
+    // Playwright's host-only preflight cannot see launch-specific library
+    // paths. The actual browser launch below still verifies they work.
+    if (manifest.libraryPath) process.env.PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = '1';
+    // Scope downloaded libraries to Chromium; Node uses the host's libraries.
+    const env = manifest.libraryPath ? {
+      ...process.env,
+      LD_LIBRARY_PATH: [manifest.libraryPath, process.env.LD_LIBRARY_PATH].filter(Boolean).join(':'),
+    } : undefined;
+    browser = await chromium.launch({ headless: true, timeout: 30_000, env });
   } catch (error) {
-    throw new Error(`Cannot launch OG Chromium. Run \`daybook setup-og\`; on Linux with missing OS libraries, run \`daybook setup-og --with-deps\` (requires root or sudo). ${error.message}`);
+    throw new Error(`Cannot launch OG Chromium. Run \`daybook setup-og\`; on Linux with missing OS libraries, use \`daybook setup-og --with-deps\` (root/sudo) or \`daybook setup-og --user-deps\` (Debian/Ubuntu without root). ${error.message}`);
   }
   try {
     const assets = new Map();

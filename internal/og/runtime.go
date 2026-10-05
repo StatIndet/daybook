@@ -29,9 +29,10 @@ const playwrightModuleEnv = "DAYBOOK_OG_PLAYWRIGHT_MODULE"
 var outputFilename = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*\.png$`)
 
 type renderManifest struct {
-	PublicDir string `json:"publicDir"`
-	Module    string `json:"module"`
-	Cards     []Card `json:"cards"`
+	PublicDir   string `json:"publicDir"`
+	Module      string `json:"module"`
+	Cards       []Card `json:"cards"`
+	LibraryPath string `json:"libraryPath,omitempty"`
 }
 
 // Progress is emitted by the renderer after it is ready, before each card, and
@@ -89,7 +90,7 @@ func Generate(publicDir string, cards []Card, onProgress ...func(Progress)) erro
 	if err := os.WriteFile(runnerPath, runner, 0600); err != nil {
 		return fmt.Errorf("write OG renderer: %w", err)
 	}
-	manifest, err := json.Marshal(renderManifest{PublicDir: publicDir, Module: module, Cards: cards})
+	manifest, err := json.Marshal(renderManifest{PublicDir: publicDir, Module: module, Cards: cards, LibraryPath: userLibraryPath()})
 	if err != nil {
 		return fmt.Errorf("prepare OG cards: %w", err)
 	}
@@ -299,9 +300,7 @@ func validatePlaywrightModule(module string) (string, error) {
 
 // Setup installs the pinned renderer into the user's cache and explicitly
 // downloads its matching Chromium. Normal builds never invoke this function.
-// withDeps opts into Playwright's OS package installation, which can require
-// elevated privileges on Linux and must also run when browsers are cached.
-func Setup(ctx context.Context, withDeps bool) error {
+func Setup(ctx context.Context, options SetupOptions) error {
 	node, err := nodeExecutable()
 	if err != nil {
 		return err
@@ -329,11 +328,21 @@ func Setup(ctx context.Context, withDeps bool) error {
 	if _, err := validatePlaywrightModule(moduleDir); err != nil {
 		return err
 	}
+	if options.UserDeps {
+		if err := setupUserLibraries(ctx, node, moduleDir, dir); err != nil {
+			return fmt.Errorf("install OG user libraries: %w", err)
+		}
+	}
 	args := []string{filepath.Join(moduleDir, "cli.js"), "install", "chromium", "--only-shell"}
-	if withDeps {
+	if options.WithDeps {
 		args = append(args, "--with-deps")
 	}
 	installBrowser := exec.CommandContext(ctx, node, args...)
+	if options.UserDeps {
+		// The renderer supplies these libraries at launch, outside the host's
+		// loader paths inspected by Playwright's installation-time preflight.
+		installBrowser.Env = append(os.Environ(), "PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1")
+	}
 	installBrowser.Stdout, installBrowser.Stderr = os.Stdout, os.Stderr
 	if err := installBrowser.Run(); err != nil {
 		return fmt.Errorf("install OG Chromium browser: %w", err)

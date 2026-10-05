@@ -50,6 +50,7 @@ func TestSetupOGFlagsAreValidatedBeforeInstalling(t *testing.T) {
 		{"setup-og", "unexpected"},
 		{"setup-og", "--unknown"},
 		{"setup-og", "--with-deps", "unexpected"},
+		{"setup-og", "--user-deps", "--with-deps"},
 	} {
 		_, err := runCaptured(t, args...)
 		if err == nil || strings.Contains(err.Error(), "Node.js") {
