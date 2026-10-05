@@ -33,30 +33,31 @@
   will-change: width, height, border-radius, transform, opacity;
 }
 
-/* A separate ring shares the pointer hotspot without rotating with the core.
+/* A separate diamond ring shares the pointer hotspot with the core.
    Keeping it mounted lets interrupted hover/press transitions reverse smoothly. */
 .daybook-cursor::before {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
-  width: 32px;
-  height: 32px;
+  /* Preserve the previous ring's 32px footprint after rotating the square. */
+  width: 22.6274px;
+  height: 22.6274px;
   box-sizing: border-box;
-  border: 1px solid var(--color-accent);
-  border-radius: 50%;
+  border: 1px solid var(--color-text);
+  border-radius: 2px;
   opacity: 0;
-  transform: translate(-50%, -50%) scale(0.25);
+  transform: translate(-50%, -50%) rotate(45deg) scale(0.25);
   transition: transform 0.3s var(--ease-out), opacity 0.3s ease;
 }
 
 .daybook-cursor[data-cursor-state="hover"]:not(.is-loading)::before {
   opacity: 0.45;
-  transform: translate(-50%, -50%) scale(1);
+  transform: translate(-50%, -50%) rotate(45deg) scale(1);
 }
 
 .daybook-cursor.is-active[data-cursor-state="hover"]:not(.is-loading)::before {
-  transform: translate(-50%, -50%) scale(0.875);
+  transform: translate(-50%, -50%) rotate(45deg) scale(0.875);
 }
 
 .daybook-cursor__liquid {
@@ -106,8 +107,9 @@
 
 /* States */
 .daybook-cursor[data-cursor-state="hover"] .daybook-cursor__core {
-  width: 12px;
-  height: 12px;
+  /* A rotated square's diagonal stays close to the resting 8px dot. */
+  width: 6px;
+  height: 6px;
   border-radius: 2px;
   opacity: 1;
   transform: translate(-50%, -50%) rotate(45deg);
