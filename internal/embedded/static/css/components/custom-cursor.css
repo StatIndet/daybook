@@ -40,9 +40,8 @@
   position: absolute;
   top: 0;
   left: 0;
-  /* Preserve the previous ring's 32px footprint after rotating the square. */
-  width: 22.6274px;
-  height: 22.6274px;
+  width: 24px;
+  height: 24px;
   box-sizing: border-box;
   border: 1px solid var(--color-text);
   border-radius: 2px;
@@ -107,9 +106,8 @@
 
 /* States */
 .daybook-cursor[data-cursor-state="hover"] .daybook-cursor__core {
-  /* A rotated square's diagonal stays close to the resting 8px dot. */
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 2px;
   opacity: 1;
   transform: translate(-50%, -50%) rotate(45deg);
