@@ -19,7 +19,8 @@ export PATH=/opt/node/bin:$PATH
 cd "$HOME"
 test "$(id -u)" != 0
 daybook setup-og --user-deps
-mkdir -p vault/notes
+mkdir -p vault/notes vault/pages
+printf -- '---\ntitle: About\n---\n' > vault/pages/about.md
 printf 'site:\n  url: https://example.com\n' > daybook.yaml
 printf -- '---\ndate: 2026-10-05\n---\nRootless OG smoke test.\n' > vault/notes/rootless.md
 daybook build

@@ -35,11 +35,11 @@ jobs:
       - name: Check POSIX syntax
         run: shellcheck -s sh scripts/install.sh
 
-      - name: Run checks
-        run: ./scripts/check.sh
-
       - name: Test OG rendering without root in a minimal Ubuntu image
         run: bash scripts/test-og-user-deps.sh
+
+      - name: Run checks
+        run: ./scripts/check.sh
 
   check-windows:
     runs-on: windows-latest
