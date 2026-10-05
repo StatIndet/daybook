@@ -7,7 +7,7 @@ const errors = [];
 const contexts = [];
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-async function createPage(options = {}, settings = {}) {
+async function createPage(options = {}, settings = { useSystemCursor: true }) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, ...options });
   contexts.push(context);
   const page = await context.newPage();
@@ -226,8 +226,8 @@ try {
   await gate.remove();
   await custom.locator('.persistent-logo').click();
   await custom.waitForSelector('#settings-overlay.is-open');
-  await custom.locator('#setting-custom-cursor').hover();
-  assert.notEqual(await custom.locator('#setting-custom-cursor').evaluate(el => getComputedStyle(el).cursor), 'none', 'Settings retain the native cursor when the custom cursor is hidden');
+  await custom.locator('#setting-system-cursor').hover();
+  assert.notEqual(await custom.locator('#setting-system-cursor').evaluate(el => getComputedStyle(el).cursor), 'none', 'Settings retain the native cursor when the custom cursor is hidden');
   await custom.keyboard.press('Escape');
 
   console.log('Navigation loading: mobile label, top bar, reduced motion and interrupted entry');

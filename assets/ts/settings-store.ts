@@ -8,7 +8,7 @@ export interface DaybookSettings {
 const STORAGE_KEY = 'daybook:user-settings';
 
 const DEFAULT_SETTINGS: DaybookSettings = {
-  useSystemCursor: true,
+  useSystemCursor: false,
   enableClockCursor: false,
   disableComments: false,
   reducedMotion: false

@@ -47,12 +47,11 @@
   <script>
     (function() {
       var html = document.documentElement;
-      html.setAttribute('data-use-system-cursor', 'true');
       try {
         var raw = localStorage.getItem('daybook:user-settings');
         if (raw) {
           var settings = JSON.parse(raw);
-          if (settings.useSystemCursor === false) html.removeAttribute('data-use-system-cursor');
+          if (settings.useSystemCursor === true) html.setAttribute('data-use-system-cursor', 'true');
           if (settings.disableComments) html.setAttribute('data-comments-disabled', 'true');
           if (settings.reducedMotion || settings.disableTitleTransition) html.setAttribute('data-reduced-motion', 'true');
         }

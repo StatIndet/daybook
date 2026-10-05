@@ -60,30 +60,29 @@ export function initSettingsOverlay() {
 
   const settings = loadSettings();
   
-  const setupCheckbox = (id: string, key: keyof DaybookSettings, inverted = false) => {
+  const setupCheckbox = (id: string, key: keyof DaybookSettings) => {
     const checkbox = document.getElementById(id) as HTMLInputElement | null;
     if (checkbox) {
-      checkbox.checked = inverted ? !settings[key] : settings[key];
+      checkbox.checked = settings[key];
       checkbox.addEventListener('change', (e) => {
         const checked = (e.target as HTMLInputElement).checked;
-        updateSetting(key, inverted ? !checked : checked);
+        updateSetting(key, checked);
       });
     }
   };
 
-  // Retain the stored inverse preference so existing choices remain compatible.
-  setupCheckbox('setting-custom-cursor', 'useSystemCursor', true);
+  setupCheckbox('setting-system-cursor', 'useSystemCursor');
   setupCheckbox('setting-clock-cursor', 'enableClockCursor');
   setupCheckbox('setting-disable-comments', 'disableComments');
   setupCheckbox('setting-reduced-motion', 'reducedMotion');
 
-  const customCursorCheckbox = document.getElementById('setting-custom-cursor') as HTMLInputElement | null;
+  const systemCursorCheckbox = document.getElementById('setting-system-cursor') as HTMLInputElement | null;
   const clockCursorCheckbox = document.getElementById('setting-clock-cursor') as HTMLInputElement | null;
   const clockCursorLabel = document.querySelector('.setting-item-clock-cursor') as HTMLElement | null;
 
-  if (customCursorCheckbox && clockCursorCheckbox && clockCursorLabel) {
+  if (systemCursorCheckbox && clockCursorCheckbox && clockCursorLabel) {
     const updateClockCursorState = () => {
-      if (!customCursorCheckbox.checked) {
+      if (systemCursorCheckbox.checked) {
         clockCursorLabel.style.opacity = '0.5';
         clockCursorLabel.style.pointerEvents = 'none';
         clockCursorCheckbox.disabled = true;
@@ -93,7 +92,7 @@ export function initSettingsOverlay() {
         clockCursorCheckbox.disabled = false;
       }
     };
-    customCursorCheckbox.addEventListener('change', updateClockCursorState);
+    systemCursorCheckbox.addEventListener('change', updateClockCursorState);
     updateClockCursorState();
   }
 
