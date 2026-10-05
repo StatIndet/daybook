@@ -35,10 +35,10 @@
 
 .daybook-cursor__liquid {
   position: absolute;
-  width: 56px;
-  height: 56px;
-  left: -28px;
-  top: -28px;
+  width: 112px;
+  height: 112px;
+  left: -56px;
+  top: -56px;
   fill: var(--color-accent);
   display: none;
 }
@@ -52,7 +52,8 @@
   animation: cursor-liquid-grow 150ms var(--ease-out) both;
 }
 @keyframes cursor-liquid-grow {
-  from { transform: scale(0.535); }
+  /* Match the resting dot before growing into the larger loading shape. */
+  from { transform: scale(0.2675); }
   to { transform: scale(1); }
 }
 
