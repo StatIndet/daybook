@@ -1,7 +1,7 @@
 /* Share the existing paper texture, torn edge and animated checkbox. */
 .privacy-overlay {
   margin: 0;
-  padding: 16px 12px;
+  padding: 16px 0;
   border: 0;
   max-width: none;
   max-height: none;
@@ -12,39 +12,39 @@
 .privacy-overlay:not([open]) { display: none; }
 .privacy-overlay::backdrop { background: transparent; }
 .privacy-overlay .privacy-paper {
-  width: min(560px, 100%);
-  min-height: 0;
-  padding: 38px 32px 64px;
+  /* Width comes from .settings-paper, exactly as in Settings and Share. */
+  min-height: min(480px, calc(100dvh - 32px));
 }
-.privacy-overlay .settings-close-btn { top: 12px; right: 12px; }
-.privacy-content { max-height: calc(100dvh - 134px); overflow-y: auto; scrollbar-width: thin; }
-.privacy-overlay .settings-title { margin: 0 28px 24px; }
+.privacy-content {
+  height: min(360px, calc(100dvh - 152px));
+  overflow-y: auto;
+  scrollbar-width: thin;
+  font: 1.05rem/1.65 var(--font-body);
+}
+.privacy-page { min-height: 100%; display: flex; flex-direction: column; }
+.privacy-page[hidden] { display: none; }
+.privacy-overlay .settings-title { margin: 0 28px 32px; }
 .privacy-overlay .settings-title:focus { outline: none; }
-.privacy-content p { margin: 0 0 20px; font-size: 1rem; line-height: 1.65; }
-.privacy-content .privacy-necessary { font-size: 0.9rem; color: #62594f; }
-.privacy-option { margin-bottom: 8px; }
-.privacy-content .privacy-description { margin-left: 32px; font-size: 0.9rem; }
-.privacy-details { font-size: 0.9rem; line-height: 1.65; margin-bottom: 24px; }
-.privacy-details summary { cursor: pointer; width: fit-content; }
-.privacy-details p { margin: 12px 0; font-size: inherit; }
-.privacy-actions { display: flex; gap: 12px; }
-.privacy-actions button {
-  flex: 1;
-  min-height: 44px;
-  padding: 10px 12px;
-  border: 1px solid #8d8173;
-  border-radius: 2px;
+.privacy-content :is(p, button, label, .settings-checkbox-text) { font: inherit; color: #3e3832; }
+.privacy-content p { margin: 0 0 20px; }
+.privacy-text-btn {
+  width: fit-content;
+  border: 0;
+  padding: 6px 0;
   background: transparent;
-  color: #3e3832;
-  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 4px;
   cursor: pointer;
 }
-.privacy-actions button:hover { background: #3e38320d; }
-.privacy-actions button:disabled { opacity: 0.6; cursor: wait; }
-.privacy-content .privacy-footnote { margin: 16px 0 0; font-size: 0.8rem; color: #62594f; text-align: center; }
-.privacy-content .privacy-status { margin: 12px 0 0; font-size: 0.9rem; }
+.privacy-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: auto; padding-top: 32px; }
+.privacy-option { min-height: 44px; align-items: baseline; }
+.privacy-option .settings-checkbox-svg { align-self: flex-start; margin-top: 6px; }
+.privacy-save { align-self: flex-end; }
+.privacy-back { margin-top: auto; }
+.privacy-content .privacy-status { margin: 12px 0 0; }
 .privacy-status:empty { display: none; }
-.privacy-overlay :is(button, summary):focus-visible,
+.privacy-overlay button:disabled { opacity: 0.6; cursor: wait; }
+.privacy-overlay button:focus-visible,
 .privacy-option:has(input:focus-visible) { outline: 2px solid #3e3832; outline-offset: 3px; }
 .settings-privacy-btn {
   padding: 0;
@@ -57,8 +57,10 @@
   cursor: pointer;
 }
 @media (max-width: 480px) {
-  .privacy-overlay .privacy-paper { padding: 36px 22px 60px; }
-  .privacy-actions { flex-direction: column; }
+  .privacy-overlay .privacy-paper { padding: 50px 22px 70px; }
+  .privacy-content { height: auto; max-height: calc(100dvh - 152px); }
+  .privacy-page { min-height: min(360px, calc(100dvh - 152px)); }
+  .privacy-choices { gap: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .privacy-overlay .settings-checkbox-svg line { transition: none; }
