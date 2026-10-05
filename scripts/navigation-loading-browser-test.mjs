@@ -169,7 +169,7 @@ try {
   const timeoutGate = await hold(timeoutPage, '/about/');
   await navigate(timeoutPage, '/about/');
   await timeoutGate.requested;
-  await timeoutPage.clock.fastForward(200);
+  await timeoutPage.clock.fastForward(450);
   await busy(timeoutPage);
   await timeoutPage.clock.fastForward(15000);
   await timeoutPage.waitForURL(`${base}/about/`);

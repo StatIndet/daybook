@@ -33,7 +33,7 @@ export class NavigationLoading {
       if (this.status) this.status.textContent = document.documentElement.lang.startsWith('en') ? 'Loading page…' : '正在载入页面…';
       this.syncLogo();
       document.dispatchEvent(new CustomEvent('daybook:navigation-loading'));
-    }, 180);
+    }, 400);
   }
 
   finish(id: number, immediate = false) {

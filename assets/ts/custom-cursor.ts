@@ -183,14 +183,13 @@ function syncLoading() {
     currentState !== 'hidden' && !document.hidden;
   if (busy === isBusy) return;
   isBusy = busy;
-  cursorEl.classList.toggle('is-loading', busy);
   if (busy) {
     isClockActive = false;
     clockController?.destroy();
     clockController = null;
     liquid.start();
   } else {
-    liquid.stop();
+    liquid.stop(currentState === 'hidden' || document.hidden);
   }
 }
 
