@@ -78,5 +78,15 @@ export function cursorPath(frame) {
   // Anchor the main blob to the actual pointer; retain squash and droplets.
   pose[0] = 0;
   pose[1] = 0;
+  // Enlarge the satellite without scaling the main blob. Move its center out
+  // by the added radius so the inner gap and the separation rhythm survive.
+  // Ease that offset to zero inside the main blob for a smooth reabsorption.
+  const addedRadius = pose[6] * 0.45;
+  const separation = clamp(Math.abs(pose[5]) / pose[2], 0, 1);
+  const emergence = separation * separation * (3 - 2 * separation);
+  pose[5] += Math.sign(pose[5]) * addedRadius * emergence;
+  pose[6] += addedRadius;
+  // A slightly broader neck keeps the larger droplet's stretch/pinch fluid.
+  pose[7] *= 1.2;
   return contour(pose);
 }
