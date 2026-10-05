@@ -190,7 +190,7 @@ function syncLoading() {
     clockController = null;
     liquid.start();
   } else {
-    liquid.reset();
+    liquid.stop();
   }
 }
 

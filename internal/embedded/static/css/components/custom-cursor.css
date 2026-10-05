@@ -29,7 +29,7 @@
   opacity: 1;
   border-radius: 50%;
   transform: translate(-50%, -50%);
-  transition: width 0.3s ease, height 0.3s ease, border-radius 0.3s ease, transform 0.3s var(--ease-out), opacity 0.3s ease;
+  transition: width 0.3s ease, height 0.3s ease, border-radius 0.3s ease, transform 0.3s var(--ease-out), opacity 0.3s ease, background-color 0.3s ease;
   will-change: width, height, border-radius, transform, opacity;
 }
 
@@ -40,7 +40,9 @@
   left: -56px;
   top: -56px;
   fill: var(--color-accent);
-  display: none;
+  opacity: 0;
+  transform: scale(0.2675);
+  transition: transform 0.3s ease, opacity 0.3s ease;
 }
 .daybook-cursor[data-cursor-state="hidden"] { visibility: hidden; }
 .daybook-cursor.is-loading .daybook-cursor__core,
@@ -48,13 +50,8 @@
   opacity: 0 !important;
 }
 .daybook-cursor.is-loading .daybook-cursor__liquid {
-  display: block;
-  animation: cursor-liquid-grow 150ms var(--ease-out) both;
-}
-@keyframes cursor-liquid-grow {
-  /* Match the resting dot before growing into the larger loading shape. */
-  from { transform: scale(0.2675); }
-  to { transform: scale(1); }
+  opacity: 1;
+  transform: scale(1);
 }
 
 .daybook-cursor__viewfinder {
@@ -128,6 +125,16 @@
 }
 .daybook-cursor.is-active[data-cursor-state="zoom"] .daybook-cursor__viewfinder {
   transform: translate(-50%, -50%) scale(0.85);
+}
+
+/* Morph the existing dot/diamond/text caret into the resting liquid circle.
+   On exit the same transition reverses toward the current pointer state. */
+.daybook-cursor.is-loading[data-cursor-state] .daybook-cursor__core {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: var(--color-accent);
+  transform: translate(-50%, -50%);
 }
 
 /* Reduced motion disables the fake cursor */
