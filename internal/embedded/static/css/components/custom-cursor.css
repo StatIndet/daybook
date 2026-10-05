@@ -33,6 +33,32 @@
   will-change: width, height, border-radius, transform, opacity;
 }
 
+/* A separate ring shares the pointer hotspot without rotating with the core.
+   Keeping it mounted lets interrupted hover/press transitions reverse smoothly. */
+.daybook-cursor::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 32px;
+  height: 32px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-accent);
+  border-radius: 50%;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.25);
+  transition: transform 0.3s var(--ease-out), opacity 0.3s ease;
+}
+
+.daybook-cursor[data-cursor-state="hover"]:not(.is-loading)::before {
+  opacity: 0.45;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.daybook-cursor.is-active[data-cursor-state="hover"]:not(.is-loading)::before {
+  transform: translate(-50%, -50%) scale(0.875);
+}
+
 .daybook-cursor__liquid {
   position: absolute;
   width: 112px;
