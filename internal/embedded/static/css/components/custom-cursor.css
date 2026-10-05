@@ -61,13 +61,13 @@
 
 .daybook-cursor__liquid {
   position: absolute;
-  width: 112px;
-  height: 112px;
-  left: -56px;
-  top: -56px;
+  width: 56px;
+  height: 56px;
+  left: -28px;
+  top: -28px;
   fill: var(--color-accent);
   opacity: 0;
-  transform: scale(0.2675);
+  transform: scale(0.535);
   transition: transform 0.3s ease, opacity 0.3s ease;
 }
 .daybook-cursor[data-cursor-state="hidden"] { visibility: hidden; }
@@ -156,8 +156,8 @@
 /* Morph the existing dot/diamond/text caret into the resting liquid circle.
    On exit the same transition reverses toward the current pointer state. */
 .daybook-cursor.is-loading[data-cursor-state] .daybook-cursor__core {
-  width: 30px;
-  height: 30px;
+  width: 15px;
+  height: 15px;
   border-radius: 50%;
   background-color: var(--color-accent);
   transform: translate(-50%, -50%);
