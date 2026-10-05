@@ -104,7 +104,7 @@ Run these commands inside your Vault directory:
 
 * `daybook build`: Reads `daybook.yaml`, `vault/notes/` and `vault/memos/`, compiles your site, and outputs static HTML to `public/`. At least one of the two content directories must exist.
 * `daybook build --verbose`: Prints timestamped stages, completed files and stage durations without animation.
-* `daybook setup-og`: Installs the pinned Playwright package and Chromium in the current user's caches. Requires Node.js (>=24), npm and network access. Run once before the first build, and again when a CLI update changes the bundled Playwright version. This command can run outside a vault.
+* `daybook setup-og [--with-deps]`: Installs the pinned Playwright package and Chromium in the current user's caches. Requires Node.js (>=24), npm and network access. Run once before the first build, and again when a CLI update changes the bundled Playwright version. This command can run outside a vault. Add `--with-deps` on a fresh Linux build machine to install Chromium system libraries as well; this uses Playwright's OS dependency installer and requires root or sudo.
 * `daybook serve`: Starts a local web server at `http://localhost:1313` to preview your site. Use `daybook serve --addr 127.0.0.1:1415` to select another address or port.
 * `daybook version`: Prints the current CLI version.
 
@@ -158,15 +158,15 @@ Notes use the filename title, a cleaned `summary` (or a body excerpt), publicati
 
 Dedicated embedded HTML/CSS templates are rendered in one local Playwright Chromium session per build. The renderer waits for fonts and images, uses a fixed light canvas and disables page JavaScript. It reads bundled fonts and local attachments from the generated site. Remote memo images and configured avatars are fetched **during the build** and must be reachable; use local attachments for offline builds. Missing resources, browser setup problems and screenshot failures stop the build with the affected page/resource in the error. No remote browser or image-generation service is used, and hosting the resulting site needs only static files.
 
-`setup-og` stores the pinned npm runtime under the OS user cache directory in `daybook/og/`; Chromium uses Playwright's browser cache (including `PLAYWRIGHT_BROWSERS_PATH` when set). Linux machines missing browser system libraries should follow [Playwright's system-dependency instructions](https://playwright.dev/docs/browsers#install-system-dependencies). For CI or source development, `DAYBOOK_OG_PLAYWRIGHT_MODULE` can point to an absolute installed `playwright` package directory or its `index.mjs` file. `./scripts/check.sh` selects the checkout's package automatically; CI installs Chromium before running it. Keep the pinned runtime version in `internal/og/runtime.go` aligned with `package-lock.json` when updating Playwright.
+`setup-og` stores the pinned npm runtime under the OS user cache directory in `daybook/og/`; Chromium uses Playwright's browser cache (including `PLAYWRIGHT_BROWSERS_PATH` when set). Linux machines missing browser system libraries can run `daybook setup-og --with-deps` or follow [Playwright's system-dependency instructions](https://playwright.dev/docs/browsers#install-system-dependencies). For CI or source development, `DAYBOOK_OG_PLAYWRIGHT_MODULE` can point to an absolute installed `playwright` package directory or its `index.mjs` file. `./scripts/check.sh` selects the checkout's package automatically; CI installs Chromium before running it. Keep the pinned runtime version in `internal/og/runtime.go` aligned with `package-lock.json` when updating Playwright.
 
 For an external vault deployed through Cloudflare Workers Builds, install the renderer after downloading the CLI and before building. With a vault-local CLI installer, the npm build script should run:
 
 ```sh
-npm run daybook:setup && ./.daybook/bin/daybook setup-og && ./.daybook/bin/daybook build
+npm run daybook:setup && ./.daybook/bin/daybook setup-og --with-deps && ./.daybook/bin/daybook build
 ```
 
-Use Node.js 24 or newer. Run `setup-og` on every fresh build environment, even when the CLI binary is cached: the Playwright package and Chromium have separate caches. Repeating setup is safe and also selects the runtime required by an updated CLI. The release archive contains the CLI and embedded site assets, not Playwright or Chromium.
+Use Node.js 24 or newer. Run `setup-og --with-deps` on every fresh Cloudflare build environment, even when the CLI binary is cached: the Playwright package and Chromium have separate caches, and cached downloads do not provide Linux system libraries such as `libatk-1.0.so.0`. Repeating setup is safe and also selects the runtime required by an updated CLI. The release archive contains the CLI and embedded site assets, not Playwright or Chromium.
 
 ## Acknowledge
 

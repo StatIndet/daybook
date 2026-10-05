@@ -43,6 +43,27 @@ func TestBuildFlagsAreValidatedBeforeLoadingVault(t *testing.T) {
 	}
 }
 
+func TestSetupOGFlagsAreValidatedBeforeInstalling(t *testing.T) {
+	t.Chdir(t.TempDir())
+	t.Setenv("PATH", "")
+	for _, args := range [][]string{
+		{"setup-og", "unexpected"},
+		{"setup-og", "--unknown"},
+		{"setup-og", "--with-deps", "unexpected"},
+	} {
+		_, err := runCaptured(t, args...)
+		if err == nil || strings.Contains(err.Error(), "Node.js") {
+			t.Fatalf("%v: must reject invalid flags before installing: %v", args, err)
+		}
+	}
+	if _, err := runCaptured(t, "setup-og", "--help"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := runCaptured(t, "setup-og", "--with-deps"); err == nil || !strings.Contains(err.Error(), "Node.js") {
+		t.Fatalf("valid setup flag should reach runtime setup: %v", err)
+	}
+}
+
 func TestBuildSummaryAndFailureOutput(t *testing.T) {
 	t.Chdir(t.TempDir())
 	if err := os.MkdirAll("vault/notes", 0755); err != nil {

@@ -299,7 +299,9 @@ func validatePlaywrightModule(module string) (string, error) {
 
 // Setup installs the pinned renderer into the user's cache and explicitly
 // downloads its matching Chromium. Normal builds never invoke this function.
-func Setup(ctx context.Context) error {
+// withDeps opts into Playwright's OS package installation, which can require
+// elevated privileges on Linux and must also run when browsers are cached.
+func Setup(ctx context.Context, withDeps bool) error {
 	node, err := nodeExecutable()
 	if err != nil {
 		return err
@@ -327,7 +329,11 @@ func Setup(ctx context.Context) error {
 	if _, err := validatePlaywrightModule(moduleDir); err != nil {
 		return err
 	}
-	installBrowser := exec.CommandContext(ctx, node, filepath.Join(moduleDir, "cli.js"), "install", "chromium", "--only-shell")
+	args := []string{filepath.Join(moduleDir, "cli.js"), "install", "chromium", "--only-shell"}
+	if withDeps {
+		args = append(args, "--with-deps")
+	}
+	installBrowser := exec.CommandContext(ctx, node, args...)
 	installBrowser.Stdout, installBrowser.Stderr = os.Stdout, os.Stderr
 	if err := installBrowser.Run(); err != nil {
 		return fmt.Errorf("install OG Chromium browser: %w", err)

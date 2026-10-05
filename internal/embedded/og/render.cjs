@@ -138,7 +138,7 @@ async function main() {
   try {
     browser = await chromium.launch({ headless: true, timeout: 30_000 });
   } catch (error) {
-    throw new Error(`Cannot launch OG Chromium. Run \`daybook setup-og\`; on Linux, install the browser's OS libraries if needed. ${error.message}`);
+    throw new Error(`Cannot launch OG Chromium. Run \`daybook setup-og\`; on Linux with missing OS libraries, run \`daybook setup-og --with-deps\` (requires root or sudo). ${error.message}`);
   }
   try {
     const assets = new Map();

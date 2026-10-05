@@ -32,7 +32,7 @@ func main() {
 func printHelp() {
 	fmt.Println("Usage:")
 	fmt.Println("  daybook build [--verbose]  Build the current Daybook vault into ./public")
-	fmt.Println("  daybook setup-og Install local Playwright and Chromium for static social cards")
+	fmt.Println("  daybook setup-og [--with-deps]  Install Playwright and Chromium (optionally OS libraries)")
 	fmt.Println("  daybook serve [--addr :1313]  Serve the existing ./public directory locally")
 	fmt.Println("  daybook version  Print Daybook version")
 }
@@ -45,12 +45,20 @@ func run() error {
 
 	command := os.Args[1]
 	if command == "setup-og" {
-		if len(os.Args) != 2 {
-			return fmt.Errorf("daybook setup-og: no arguments expected")
+		flags := flag.NewFlagSet("setup-og", flag.ContinueOnError)
+		withDeps := flags.Bool("with-deps", false, "Install Chromium system libraries too (Linux requires root or sudo)")
+		if err := flags.Parse(os.Args[2:]); err != nil {
+			if err == flag.ErrHelp {
+				return nil
+			}
+			return err
+		}
+		if flags.NArg() > 0 {
+			return fmt.Errorf("daybook setup-og: unexpected argument: %s", flags.Arg(0))
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 		defer cancel()
-		return og.Setup(ctx)
+		return og.Setup(ctx, *withDeps)
 	}
 
 	if command == "version" || command == "--version" || command == "-v" {
