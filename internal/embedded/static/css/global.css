@@ -5,6 +5,8 @@
 @import url("components.css");
 @import url("components/settings-overlay.css");
 @import url("components/share-overlay.css");
+@import url("components/text-roll.css");
+@import url("components/navigation-loading.css");
 @import url("components/privacy-overlay.css");
 @import url("components/embed-skeleton.css");
 @import url("components/custom-cursor.css");
@@ -24,4 +26,3 @@
 html[data-theme="dark"] {
   color-scheme: dark;
 }
-

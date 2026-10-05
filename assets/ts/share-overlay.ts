@@ -1,3 +1,5 @@
+import { animateTextChange } from "./text-roll";
+
 export function initShareOverlay() {
   const overlay = document.getElementById('share-overlay');
   if (!overlay) return;
@@ -7,7 +9,7 @@ export function initShareOverlay() {
   const xBtn = overlay.querySelector('[data-share-x]');
   const tgBtn = overlay.querySelector('[data-share-tg]');
   const copyBtn = overlay.querySelector('[data-share-copy]');
-  const copyText = overlay.querySelector('.share-copy-text');
+  const copyText = overlay.querySelector<HTMLElement>('.share-copy-text');
 
   // Prevent multiple bindings
   if (overlay.dataset.shareBound === 'true') {
@@ -97,69 +99,6 @@ export function initShareOverlay() {
       const url = `https://t.me/share/url?url=${encodeURIComponent(currentShareURL)}&text=${encodeURIComponent(tgText)}`;
       window.open(url, '_blank', 'noopener,noreferrer');
     });
-  }
-
-  function animateTextChange(container: Element, newText: string) {
-    let oldText = '';
-    const newSpans = container.querySelectorAll('.share-char-new');
-    if (newSpans.length > 0) {
-      newSpans.forEach(span => { oldText += span.textContent || ''; });
-    } else {
-      oldText = container.textContent?.trim() || '';
-    }
-
-    if (oldText === newText) return;
-
-    const animationId = Math.random().toString(36).substring(2);
-    container.setAttribute('data-animation-id', animationId);
-
-    const maxLength = Math.max(oldText.length, newText.length);
-    container.innerHTML = '';
-    // display: inline allows the spans to perfectly maintain font shaping/kerning
-    // white-space: nowrap prevents awkward line breaks during animation
-    (container as HTMLElement).style.display = 'inline';
-    (container as HTMLElement).style.whiteSpace = 'nowrap';
-
-    for (let i = 0; i < maxLength; i++) {
-      // Wrapper MUST remain purely inline to preserve text runs
-      const wrapper = document.createElement('span');
-      wrapper.style.position = 'relative';
-      
-      if (oldText[i]) {
-        const oldSpan = document.createElement('span');
-        oldSpan.textContent = oldText[i] || null;
-        // If there is no new text for this position, the old character must take up the layout space
-        // otherwise the wrapper collapses and absolute positioning forces characters to overlap.
-        oldSpan.style.position = newText[i] ? 'absolute' : 'relative';
-        oldSpan.style.left = '0';
-        oldSpan.style.top = '0';
-        oldSpan.style.animation = `shareRollOut 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards`;
-        oldSpan.style.animationDelay = `${i * 0.03}s`;
-        wrapper.appendChild(oldSpan);
-      }
-
-      if (newText[i]) {
-        const newSpan = document.createElement('span');
-        newSpan.className = 'share-char-new';
-        newSpan.textContent = newText[i] || null;
-        newSpan.style.position = 'relative';
-        newSpan.style.animation = `shareRollIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards`;
-        newSpan.style.animationDelay = `${i * 0.03}s`;
-        newSpan.style.opacity = '0';
-        newSpan.style.top = '1em';
-        wrapper.appendChild(newSpan);
-      }
-      
-      container.appendChild(wrapper);
-    }
-
-    setTimeout(() => {
-      if (container.getAttribute('data-animation-id') === animationId) {
-        container.textContent = newText;
-        (container as HTMLElement).style.display = '';
-        (container as HTMLElement).style.whiteSpace = '';
-      }
-    }, 400 + maxLength * 30 + 50); // animation duration + stagger delay + buffer
   }
 
   if (copyBtn && copyText) {

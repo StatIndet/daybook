@@ -1,0 +1,24 @@
+.text-roll-active { white-space: nowrap; }
+.text-roll-char { position: relative; }
+.text-roll-old,
+.text-roll-new {
+  position: relative;
+  animation: text-roll-out 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--roll-delay, 0ms);
+}
+.text-roll-overlap { position: absolute; left: 0; top: 0; }
+.text-roll-new { animation-name: text-roll-in; }
+@keyframes text-roll-out {
+  from { top: 0; opacity: 1; }
+  to { top: -1em; opacity: 0; }
+}
+@keyframes text-roll-in {
+  from { top: 1em; opacity: 0; }
+  to { top: 0; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .text-roll-old { display: none; }
+  .text-roll-new { animation: none; top: 0; opacity: 1; }
+}
+html[data-reduced-motion="true"] .text-roll-old { display: none; }
+html[data-reduced-motion="true"] .text-roll-new { animation: none; top: 0; opacity: 1; }

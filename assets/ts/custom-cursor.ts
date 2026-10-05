@@ -1,9 +1,16 @@
 import { IdleClockController } from "./custom-cursor-clock.js";
+import { LiquidCursor } from './liquid-cursor';
+import { reducedMotion } from './text-roll';
 
 let isInitialized = false;
 let cursorEl: HTMLDivElement | null = null;
 let rafId: number | null = null;
 let clockController: IdleClockController | null = null;
+let liquid: LiquidCursor | null = null;
+let isBusy = false;
+let pointerInside = false;
+const eligiblePointer = matchMedia('(min-width: 961px) and (hover: hover) and (pointer: fine)');
+const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
 
 let mouseX = window.innerWidth / 2;
 let mouseY = window.innerHeight / 2;
@@ -46,8 +53,11 @@ function breakIdleClock(snap = false) {
 }
 
 function handlePointerMove(e: PointerEvent) {
+  if (e.pointerType === 'touch') return;
+  pointerInside = true;
   mouseX = e.clientX;
   mouseY = e.clientY;
+  updateStateFromTarget(e.target);
   
   const now = performance.now();
   const dt = Math.max(now - lastMoveTime, 16); 
@@ -80,6 +90,7 @@ function setState(state: string) {
   if (currentState === state || !cursorEl) return;
   currentState = state;
   cursorEl.dataset.cursorState = state;
+  syncLoading();
 
   if (state !== "default" && state !== "hidden") {
     isClockActive = false;
@@ -88,6 +99,7 @@ function setState(state: string) {
 }
 
 function updateStateFromTarget(target: EventTarget | null) {
+  if (!pointerInside) { setState('hidden'); return; }
   if (!(target instanceof Element)) {
     setState("default");
     return;
@@ -128,22 +140,26 @@ function handleMouseUp() {
 
 function handleMouseLeave(e: MouseEvent) {
   if (e.relatedTarget === null) {
+    pointerInside = false;
     setState("hidden");
   }
 }
 
 function handleMouseEnter(e: MouseEvent) {
+  pointerInside = true;
   updateStateFromTarget(e.target);
 }
 
 function handleClick(e: MouseEvent) {
+  if (document.documentElement.dataset.navigationPending === 'true') return;
   if (document.documentElement.getAttribute('data-clock-cursor') !== 'true') {
     return;
   }
   if (isClockActive) {
     breakIdleClock(false);
   } else {
-    if (currentState === "default" && clockController) {
+    if (currentState === "default") {
+      clockController ||= new IdleClockController();
       isClockActive = true;
       clockController.start(cursorX, cursorY);
     }
@@ -153,19 +169,35 @@ function handleClick(e: MouseEvent) {
 function handleVisibilityChange() {
   if (document.hidden) breakIdleClock(false);
   else if (clockController) clockController.updateColors();
+  syncLoading();
 }
 
 function handlePageLoad() {
   breakIdleClock(false);
+  updateStateFromTarget(document.elementFromPoint(mouseX, mouseY));
+}
+
+function syncLoading() {
+  if (!cursorEl || !liquid) return;
+  const busy = document.documentElement.dataset.navigationLoading === 'true' &&
+    currentState !== 'hidden' && !document.hidden;
+  if (busy === isBusy) return;
+  isBusy = busy;
+  cursorEl.classList.toggle('is-loading', busy);
+  if (busy) {
+    isClockActive = false;
+    clockController?.destroy();
+    clockController = null;
+    liquid.start();
+  } else {
+    liquid.reset();
+  }
 }
 
 function setupCustomCursor() {
   if (typeof window === "undefined" || isInitialized) return;
   
-  const isTouch = window.matchMedia("(hover: none), (pointer: coarse)").matches;
-  const isMobileSize = window.matchMedia("(max-width: 768px)").matches;
-  if (isTouch || isMobileSize) return;
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (!eligiblePointer.matches || reducedMotion()) return;
   if (document.documentElement.getAttribute('data-use-system-cursor') === 'true') return;
 
   if (!cursorEl) {
@@ -186,6 +218,8 @@ function setupCustomCursor() {
       viewfinderEl.appendChild(corner);
     }
     cursorEl.appendChild(viewfinderEl);
+    liquid = new LiquidCursor();
+    cursorEl.append(liquid.element);
   }
   
   if (!document.body.contains(cursorEl)) {
@@ -198,18 +232,17 @@ function setupCustomCursor() {
     clockController = new IdleClockController();
   }
 
-  mouseX = window.innerWidth / 2;
-  mouseY = window.innerHeight / 2;
   cursorX = mouseX;
   cursorY = mouseY;
   isMoving = false;
-  currentState = "default";
+  currentState = pointerInside ? 'default' : 'hidden';
+  cursorEl.dataset.cursorState = currentState;
+  isBusy = false;
   isClockActive = false;
   lastMoveTime = performance.now();
   lastMoveX = mouseX;
   lastMoveY = mouseY;
 
-  document.addEventListener("pointermove", handlePointerMove, { passive: true });
   document.addEventListener("mouseover", handleMouseOver, { passive: true });
   document.addEventListener("mousedown", handleMouseDown, { passive: true });
   document.addEventListener("mouseup", handleMouseUp, { passive: true });
@@ -218,14 +251,17 @@ function setupCustomCursor() {
   document.addEventListener("click", handleClick, { passive: true });
   document.addEventListener("visibilitychange", handleVisibilityChange);
   document.addEventListener("daybook:page-load", handlePageLoad);
+  document.addEventListener('daybook:navigation-loading', syncLoading);
 
   isInitialized = true;
+  updateStateFromTarget(document.elementFromPoint(mouseX, mouseY));
+  updateCursorPosition();
+  syncLoading();
 }
 
 function teardownCustomCursor() {
   if (!isInitialized) return;
 
-  document.removeEventListener("pointermove", handlePointerMove);
   document.removeEventListener("mouseover", handleMouseOver);
   document.removeEventListener("mousedown", handleMouseDown);
   document.removeEventListener("mouseup", handleMouseUp);
@@ -234,6 +270,10 @@ function teardownCustomCursor() {
   document.removeEventListener("click", handleClick);
   document.removeEventListener("visibilitychange", handleVisibilityChange);
   document.removeEventListener("daybook:page-load", handlePageLoad);
+  document.removeEventListener('daybook:navigation-loading', syncLoading);
+  liquid?.destroy();
+  liquid = null;
+  isBusy = false;
 
   if (rafId !== null) {
     cancelAnimationFrame(rafId);
@@ -256,14 +296,29 @@ function teardownCustomCursor() {
   isInitialized = false;
 }
 
-// Global initialization
-setupCustomCursor();
-
-document.addEventListener('daybook:settings-change', (e: any) => {
-  const settings = e.detail;
-  if (settings.useSystemCursor) {
+function syncCursorAvailability() {
+  if (!eligiblePointer.matches || reducedMotion() || document.documentElement.dataset.useSystemCursor === 'true') {
     teardownCustomCursor();
   } else {
     setupCustomCursor();
   }
+}
+
+syncCursorAvailability();
+// Remember the hotspot while the native cursor is in use as well. Re-enabling
+// the custom cursor must not jump it to the middle of the screen.
+document.addEventListener('pointermove', event => {
+  if (event.pointerType === 'touch') return;
+  if (isInitialized) handlePointerMove(event);
+  else {
+    mouseX = event.clientX;
+    mouseY = event.clientY;
+    pointerInside = true;
+  }
+}, { passive: true });
+eligiblePointer.addEventListener('change', syncCursorAvailability);
+motionPreference.addEventListener('change', syncCursorAvailability);
+document.addEventListener('daybook:settings-change', syncCursorAvailability);
+new MutationObserver(syncCursorAvailability).observe(document.documentElement, {
+  attributes: true, attributeFilter: ['data-use-system-cursor', 'data-reduced-motion']
 });

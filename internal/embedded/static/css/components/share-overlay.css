@@ -102,12 +102,3 @@
     gap: 16px;
   }
 }
-
-@keyframes shareRollOut {
-  0% { top: 0; opacity: 1; }
-  100% { top: -1em; opacity: 0; }
-}
-@keyframes shareRollIn {
-  0% { top: 1em; opacity: 0; }
-  100% { top: 0; opacity: 1; }
-}

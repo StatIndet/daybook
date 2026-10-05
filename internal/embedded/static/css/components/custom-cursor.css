@@ -1,8 +1,8 @@
 /* static/css/components/custom-cursor.css */
 
-@media (hover: hover) and (pointer: fine) {
-  html.has-custom-cursor,
-  html.has-custom-cursor * {
+@media (min-width: 961px) and (hover: hover) and (pointer: fine) {
+  html.has-custom-cursor:where(:not([data-reduced-motion="true"])),
+  html.has-custom-cursor:where(:not([data-reduced-motion="true"])) * {
     cursor: none !important;
   }
 }
@@ -31,6 +31,29 @@
   transform: translate(-50%, -50%);
   transition: width 0.3s ease, height 0.3s ease, border-radius 0.3s ease, transform 0.3s var(--ease-out), opacity 0.3s ease;
   will-change: width, height, border-radius, transform, opacity;
+}
+
+.daybook-cursor__liquid {
+  position: absolute;
+  width: 56px;
+  height: 56px;
+  left: -28px;
+  top: -28px;
+  fill: var(--color-accent);
+  display: none;
+}
+.daybook-cursor[data-cursor-state="hidden"] { visibility: hidden; }
+.daybook-cursor.is-loading .daybook-cursor__core,
+.daybook-cursor.is-loading .daybook-cursor__viewfinder {
+  opacity: 0 !important;
+}
+.daybook-cursor.is-loading .daybook-cursor__liquid {
+  display: block;
+  animation: cursor-liquid-grow 150ms var(--ease-out) both;
+}
+@keyframes cursor-liquid-grow {
+  from { transform: scale(0.535); }
+  to { transform: scale(1); }
 }
 
 .daybook-cursor__viewfinder {
@@ -112,9 +135,15 @@
   .daybook-cursor-clock {
     display: none !important;
   }
+  html.has-custom-cursor,
   html.has-custom-cursor * {
     cursor: auto !important;
   }
+}
+
+html[data-reduced-motion="true"] .daybook-cursor,
+html[data-reduced-motion="true"] .daybook-cursor-clock {
+  display: none !important;
 }
 
 .daybook-cursor-clock {

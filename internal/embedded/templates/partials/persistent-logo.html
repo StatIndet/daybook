@@ -2,12 +2,14 @@
 <div class="persistent-logo-container" id="mobile-top-bar">
   <div class="persistent-logo-main">
     <a class="site-logo persistent-logo" href="/" aria-label="{{.Config.Profile.GetLogoText}} 首页">
-      <span>{{.Config.Profile.GetLogoText}}</span>
+      <span data-navigation-logo>{{.Config.Profile.GetLogoText}}</span>
     </a>
     <button class="mobile-menu-toggle" id="mobile-menu-toggle" type="button" aria-expanded="false" aria-label="打开导航菜单" aria-controls="mobile-drawer">
       <span class="material-symbol icon-menu" aria-hidden="true">menu</span>
       <span class="material-symbol icon-close" aria-hidden="true">close</span>
     </button>
   </div>
+  <div class="navigation-progress" aria-hidden="true"><span></span><span></span></div>
 </div>
+<span id="navigation-status" class="navigation-status" role="status" aria-live="polite" aria-atomic="true"></span>
 {{end}}

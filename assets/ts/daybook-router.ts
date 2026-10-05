@@ -4,6 +4,7 @@ import { initSiteStats, initSiteUptime } from "./site-stats";
 import { initSitePresence } from "./site-presence";
 import { initPrivacyOverlay } from "./privacy-overlay";
 import { initHomeTooltips } from "./home-tooltips";
+import { NavigationLoading } from "./navigation-loading";
 
 interface RouterState {
   __daybook: boolean;
@@ -38,8 +39,10 @@ interface DaybookTransitionFinishedDetail {
 (() => {
   const ROUTER_STATE_KEY = "daybook-router";
   let currentIndex = 0;
-  let isNavigating = false;
   let abortController: AbortController | null = null;
+  let navigationId = 0;
+  let activeTransition: ReturnType<NonNullable<Document['startViewTransition']>> | null = null;
+  const loading = new NavigationLoading();
   let currentRouterUrl = location.href;
   const stylesheetLoads = new Map<string, Promise<void>>();
   const pageScriptLoads = new Map<string, Promise<void>>();
@@ -207,7 +210,9 @@ interface DaybookTransitionFinishedDetail {
   }
 
   function saveCurrentScroll() {
-    if (isRouterState(history.state)) {
+    // During a pending back/forward request, the URL/history already identify
+    // the destination but the visible DOM still belongs to the previous page.
+    if (isRouterState(history.state) && history.state.url === currentRouterUrl) {
       history.replaceState({
         ...history.state,
         scrollX: window.scrollX,
@@ -227,23 +232,35 @@ interface DaybookTransitionFinishedDetail {
   }
 
   async function navigate(urlStr: string, isTraverse = false, targetState: RouterState | null = null, sourceLink: HTMLElement | null = null) {
-    if (isNavigating) {
-      if (abortController) abortController.abort();
-    }
-
     const targetUrl = new URL(urlStr, location.origin);
+    const displayedUrl = new URL(currentRouterUrl);
+    const id = ++navigationId;
+    abortController?.abort();
+    activeTransition?.skipTransition();
+    activeTransition = null;
+    window.DaybookTransitionEngine?.clearTransitionClasses();
+    window.DaybookTransitionEngine?.clearArticleSharedTransitions(document);
+    // Transfer indicator ownership before cancelling or starting this request.
+    loading.start(id);
 
     // If pure hash jump on same page handled programmatically
-    if (!isTraverse && targetUrl.pathname === location.pathname && targetUrl.search === location.search) {
+    if (!isTraverse && targetUrl.pathname === location.pathname && targetUrl.search === location.search &&
+        targetUrl.pathname === displayedUrl.pathname && targetUrl.search === displayedUrl.search) {
+      loading.finish(id);
       window.location.hash = targetUrl.hash;
       return;
     }
 
-    isNavigating = true;
-    abortController = new AbortController();
-    const signal = abortController.signal;
+    const controller = new AbortController();
+    abortController = controller;
+    const signal = controller.signal;
+    let timedOut = false;
+    const timeout = window.setTimeout(() => { timedOut = true; controller.abort(); }, 15000);
+    const ensureCurrent = () => {
+      if (id !== navigationId || signal.aborted) throw new DOMException('Navigation aborted', 'AbortError');
+    };
 
-    const oldUrl = isTraverse ? currentRouterUrl : location.href;
+    const oldUrl = currentRouterUrl;
 
     try {
       if (!isTraverse) {
@@ -261,6 +278,7 @@ interface DaybookTransitionFinishedDetail {
       }
 
       const html = await response.text();
+      ensureCurrent();
       const parser = new DOMParser();
       const newDocument = parser.parseFromString(html, "text/html");
       syncGitHubAvatar(newDocument);
@@ -269,21 +287,22 @@ interface DaybookTransitionFinishedDetail {
       const currentContainer = document.querySelector("[data-daybook-page]");
       const newContainer = newDocument.querySelector("[data-daybook-page]");
 
-      await Promise.all([prepareStylesheets(newDocument), preparePageScripts(newDocument)]);
-      if (signal.aborted) throw new DOMException("Navigation aborted", "AbortError");
+      await withAbort(Promise.all([prepareStylesheets(newDocument), preparePageScripts(newDocument)]), signal);
+      ensureCurrent();
 
 
       if (!currentContainer || !newContainer) {
         throw new Error("Missing data-daybook-page");
       }
+      clearTimeout(timeout);
+      loading.finish(id);
 
       // Prepare state
       let newState: RouterState;
       if (!isTraverse) {
-        currentIndex++;
         newState = {
           __daybook: true,
-          index: currentIndex,
+          index: (isRouterState(history.state) ? history.state.index : currentIndex) + 1,
           url: targetUrl.href,
           fromUrl: oldUrl,
           scrollX: 0,
@@ -291,10 +310,11 @@ interface DaybookTransitionFinishedDetail {
         };
       } else {
         newState = targetState!;
-        currentIndex = targetState!.index;
       }
 
       const doSwap = () => {
+        ensureCurrent();
+        currentIndex = newState.index;
         emitBeforeSwap(oldUrl, targetUrl.href);
         updateHead(newDocument);
         syncShellFragments(newDocument);
@@ -348,12 +368,16 @@ interface DaybookTransitionFinishedDetail {
           engine.resolveStableRegions(document, newDocument);
           document.body.classList.add(engine.exitClassName(document.body));
           
-          await new Promise(r => setTimeout(r, engine.cssDuration("--transition-exit-delay", 260)));
+          await withAbort(new Promise(r => setTimeout(r, engine.cssDuration("--transition-exit-delay", 260))), signal);
+          ensureCurrent();
         }
       }
 
       if (useMotion && document.startViewTransition) {
         const transition = document.startViewTransition(() => {
+          // skipTransition still invokes the update callback. A stale callback
+          // must never swap a page or add a history entry.
+          if (id !== navigationId || signal.aborted) return;
           doSwap();
           if (articleTransition && transitionInfo) {
             engine.prepareArticleTransitionTarget(transitionInfo);
@@ -362,14 +386,18 @@ interface DaybookTransitionFinishedDetail {
             document.body.classList.add(engine.enterClassName(document.body));
           }
         });
+        activeTransition = transition;
         
         transition.finished.catch(() => {}).finally(() => {
+          if (id !== navigationId) return;
+          activeTransition = null;
           if (engine) {
             engine.clearTransitionClasses();
             engine.clearArticleSharedTransitions(document);
           }
           emitTransitionFinished(oldUrl, targetUrl.href);
         });
+        await transition.updateCallbackDone;
       } else {
         doSwap();
         if (engine) {
@@ -380,7 +408,8 @@ interface DaybookTransitionFinishedDetail {
       }
 
     } catch (err: any) {
-      if (err && err.name === "AbortError") return;
+      if (id !== navigationId || (err?.name === "AbortError" && !timedOut)) return;
+      loading.finish(id, true);
       console.error("Router navigation failed:", err);
       if (window.DaybookTransitionEngine) {
         window.DaybookTransitionEngine.clearTransitionClasses();
@@ -388,11 +417,23 @@ interface DaybookTransitionFinishedDetail {
       }
       fallbackToNative(targetUrl);
     } finally {
+      clearTimeout(timeout);
+      loading.finish(id);
       if (abortController && abortController.signal === signal) {
-        isNavigating = false;
         abortController = null;
       }
     }
+  }
+
+  // Shared stylesheet/script downloads may outlive an individual navigation.
+  // Stop waiting immediately on cancellation without cancelling those assets.
+  function withAbort<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
+    return new Promise((resolve, reject) => {
+      const abort = () => reject(new DOMException('Navigation aborted', 'AbortError'));
+      if (signal.aborted) { abort(); return; }
+      signal.addEventListener('abort', abort, { once: true });
+      promise.then(resolve, reject).finally(() => signal.removeEventListener('abort', abort));
+    });
   }
 
   function fallbackToNative(url: URL) {
@@ -488,8 +529,9 @@ interface DaybookTransitionFinishedDetail {
         const script = document.createElement("script");
         script.src = url;
         script.dataset.daybookPageScript = "";
-        script.onload = () => resolve();
-        script.onerror = () => { script.remove(); reject(new Error(`Page script failed: ${url}`)); };
+        const timeout = window.setTimeout(() => { script.remove(); reject(new Error(`Page script timed out: ${url}`)); }, 10000);
+        script.onload = () => { clearTimeout(timeout); resolve(); };
+        script.onerror = () => { clearTimeout(timeout); script.remove(); reject(new Error(`Page script failed: ${url}`)); };
         document.head.appendChild(script);
       });
       pageScriptLoads.set(url, promise);
