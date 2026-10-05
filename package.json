@@ -27,7 +27,7 @@
     "katex": "^0.18.4",
     "lxgw-wenkai-screen-web": "^1.522.0",
     "material-symbols": "^0.46.0",
-    "playwright": "^1.62.1",
+    "playwright": "^1.63.0",
     "sharp": "^0.35.5",
     "subset-font": "^2.9.0",
     "typescript": "^7.0.2"
