@@ -140,10 +140,9 @@ async function main() {
     // paths. The actual browser launch below still verifies they work.
     if (manifest.libraryPath) process.env.PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = '1';
     // Scope downloaded libraries to Chromium; Node uses the host's libraries.
-    const env = manifest.libraryPath ? {
-      ...process.env,
-      LD_LIBRARY_PATH: [manifest.libraryPath, process.env.LD_LIBRARY_PATH].filter(Boolean).join(':'),
-    } : undefined;
+    const env = { ...process.env };
+    if (manifest.libraryPath) env.LD_LIBRARY_PATH = [manifest.libraryPath, process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
+    if (manifest.fontConfig) env.FONTCONFIG_FILE = manifest.fontConfig;
     browser = await chromium.launch({ headless: true, timeout: 30_000, env });
   } catch (error) {
     throw new Error(`Cannot launch OG Chromium. Run \`daybook setup-og\`; on Linux with missing OS libraries, use \`daybook setup-og --with-deps\` (root/sudo) or \`daybook setup-og --user-deps\` (Debian/Ubuntu without root). ${error.message}`);

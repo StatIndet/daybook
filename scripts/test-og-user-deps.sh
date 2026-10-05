@@ -23,7 +23,7 @@ mkdir -p vault/notes vault/pages
 printf -- '---\ntitle: About\n---\n' > vault/pages/about.md
 printf 'site:\n  url: https://example.com\n' > daybook.yaml
 printf -- '---\ndate: 2026-10-05\n---\nRootless OG smoke test.\n' > vault/notes/rootless.md
-daybook build
+DEBUG=pw:browser daybook build
 node <<'JS'
 const fs = require('node:fs');
 const dir = 'public/generated/og/notes';

@@ -2,6 +2,7 @@ package og
 
 import (
 	"context"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"os"
@@ -39,14 +40,14 @@ func setupUserLibraries(ctx context.Context, node, moduleDir, cache string) erro
 	if strings.ContainsAny(work, "\\\"\r\n") {
 		return fmt.Errorf("APT cannot represent this cache path: %q", work)
 	}
-	for _, dir := range []string{"lists/partial", "archives/partial", "downloads", "root"} {
+	for _, dir := range []string{"apt.conf.d", "lists/partial", "archives/partial", "downloads", "root"} {
 		if err := os.MkdirAll(filepath.Join(work, dir), 0755); err != nil {
 			return err
 		}
 	}
 	// APT_CONFIG is read before apt.conf.d. Disable system hooks (which may
 	// write system caches), but retain the default sources and trusted keyrings.
-	config := "Dir::Etc::parts \"-\";\nDir::Etc::main \"-\";\n" +
+	config := "Dir::Etc::parts " + strconv.Quote(filepath.Join(work, "apt.conf.d")) + ";\nDir::Etc::main \"/dev/null\";\n" +
 		"Dir::State::lists " + strconv.Quote(filepath.Join(work, "lists")) + ";\n" +
 		"Dir::Cache::archives " + strconv.Quote(filepath.Join(work, "archives")) + ";\n" +
 		"Dir::Cache::pkgcache \"\";\nDir::Cache::srcpkgcache \"\";\n" +
@@ -92,6 +93,22 @@ func setupUserLibraries(ctx context.Context, node, moduleDir, cache string) erro
 		}
 	}
 	root := filepath.Join(cache, "system-libraries")
+	// Fontconfig otherwise searches /etc/fonts, which is absent in minimal
+	// images. Supply a private configuration including the extracted fonts and
+	// any existing host configuration; Chromium still uses Daybook's web fonts.
+	var fontConfig strings.Builder
+	fontConfig.WriteString("<?xml version=\"1.0\"?><fontconfig><include ignore_missing=\"yes\">/etc/fonts/fonts.conf</include><dir>")
+	if err := xml.EscapeText(&fontConfig, []byte(filepath.Join(root, "usr", "share", "fonts"))); err != nil {
+		return err
+	}
+	fontConfig.WriteString("</dir><cachedir>")
+	if err := xml.EscapeText(&fontConfig, []byte(filepath.Join(cache, "fontconfig"))); err != nil {
+		return err
+	}
+	fontConfig.WriteString("</cachedir></fontconfig>\n")
+	if err := os.WriteFile(filepath.Join(work, "root", "fonts.conf"), []byte(fontConfig.String()), 0600); err != nil {
+		return err
+	}
 	if err := os.RemoveAll(root); err != nil {
 		return err
 	}
@@ -153,4 +170,16 @@ func userLibraryPath() string {
 		}
 	}
 	return strings.Join(paths, ":")
+}
+
+func userFontConfig() string {
+	if runtime.GOOS == "linux" {
+		if cache, err := runtimeDirectory(); err == nil {
+			config := filepath.Join(cache, "system-libraries", "fonts.conf")
+			if info, err := os.Stat(config); err == nil && !info.IsDir() {
+				return config
+			}
+		}
+	}
+	return ""
 }

@@ -33,6 +33,7 @@ type renderManifest struct {
 	Module      string `json:"module"`
 	Cards       []Card `json:"cards"`
 	LibraryPath string `json:"libraryPath,omitempty"`
+	FontConfig  string `json:"fontConfig,omitempty"`
 }
 
 // Progress is emitted by the renderer after it is ready, before each card, and
@@ -90,7 +91,7 @@ func Generate(publicDir string, cards []Card, onProgress ...func(Progress)) erro
 	if err := os.WriteFile(runnerPath, runner, 0600); err != nil {
 		return fmt.Errorf("write OG renderer: %w", err)
 	}
-	manifest, err := json.Marshal(renderManifest{PublicDir: publicDir, Module: module, Cards: cards, LibraryPath: userLibraryPath()})
+	manifest, err := json.Marshal(renderManifest{PublicDir: publicDir, Module: module, Cards: cards, LibraryPath: userLibraryPath(), FontConfig: userFontConfig()})
 	if err != nil {
 		return fmt.Errorf("prepare OG cards: %w", err)
 	}
