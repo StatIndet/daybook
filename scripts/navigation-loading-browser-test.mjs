@@ -245,7 +245,23 @@ try {
   assert(busyMenu.y >= 0, 'Loading reveals a hidden top bar');
   assert.equal(await mobile.locator('[data-navigation-logo]').evaluate(el => getComputedStyle(el).fontStyle), 'italic');
   const segments = mobile.locator('.navigation-progress span');
-  assert.notEqual(await segments.nth(0).evaluate(el => getComputedStyle(el).transform), await segments.nth(1).evaluate(el => getComputedStyle(el).transform));
+  const strokes = await segments.evaluateAll(elements => {
+    // Compare visible geometry at one shared instant, regardless of whether
+    // the motion uses transforms or independently animated endpoints.
+    const animations = elements.flatMap(el => el.getAnimations());
+    for (const animation of animations) {
+      animation.pause();
+      animation.currentTime = 900;
+    }
+    const bounds = elements.map(el => {
+      const rect = el.getBoundingClientRect();
+      return { x: rect.x, width: rect.width };
+    });
+    for (const animation of animations) animation.play();
+    return bounds;
+  });
+  assert(strokes.every(stroke => stroke.width > 0), 'Both strokes appear during their overlap');
+  assert.notDeepEqual(strokes[0], strokes[1], 'The two strokes have staggered motion');
   await mobile.emulateMedia({ reducedMotion: 'reduce' });
   for (const segment of await segments.all()) assert.equal(await segment.evaluate(el => getComputedStyle(el).animationName), 'none');
   gate.release();

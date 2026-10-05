@@ -47,36 +47,56 @@
   html[data-navigation-loading="true"] .navigation-progress { opacity: 1; }
   .navigation-progress span {
     position: absolute;
-    inset: 0;
+    inset: 0 100% 0 0;
+    border-radius: 999px;
     background: var(--color-accent);
     transform-origin: left;
-    transform: translateX(-100%) scaleX(0.2);
   }
   html[data-navigation-loading="true"] .navigation-progress span {
-    animation: navigation-progress-leading 1800ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    animation: navigation-progress-leading-head 1750ms linear infinite,
+      navigation-progress-leading-tail 1750ms linear infinite;
   }
   html[data-navigation-loading="true"] .navigation-progress span + span {
-    animation-name: navigation-progress-trailing;
+    animation-name: navigation-progress-trailing-head, navigation-progress-trailing-tail;
   }
 }
-@keyframes navigation-progress-leading {
-  0% { transform: translateX(-35%) scaleX(0.12); }
-  40% { transform: translateX(15%) scaleX(0.55); }
-  75%, 100% { transform: translateX(105%) scaleX(0.08); }
+/* Material 3 disjoint motion: each head starts slowly, accelerates across the
+   track, then its delayed tail catches up. The second stroke starts before the
+   first finishes and travels faster, giving the pair an asymmetric rhythm.
+   Timings within the 1750ms cycle (head / tail):
+   leading: 0–1000ms / 250–1250ms; trailing: 650–1500ms / 900–1750ms.
+   Reference: AndroidX Compose Material 3 ProgressIndicator.kt and MotionTokens.kt
+   https://github.com/androidx/androidx/tree/androidx-main/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3
+   Keep both strokes collapsed at the loop boundary to avoid a visible reset. */
+@keyframes navigation-progress-leading-head {
+  0% { right: 100%; animation-timing-function: cubic-bezier(0.3, 0, 0.8, 0.15); }
+  57.142857%, 100% { right: 0; }
 }
-@keyframes navigation-progress-trailing {
-  0%, 25% { transform: translateX(-45%) scaleX(0.1); }
-  65% { transform: translateX(5%) scaleX(0.3); }
-  100% { transform: translateX(105%) scaleX(0.5); }
+@keyframes navigation-progress-leading-tail {
+  0% { left: 0; }
+  14.285714% { left: 0; animation-timing-function: cubic-bezier(0.3, 0, 0.8, 0.15); }
+  71.428571%, 100% { left: 100%; }
+}
+@keyframes navigation-progress-trailing-head {
+  0% { right: 100%; }
+  37.142857% { right: 100%; animation-timing-function: cubic-bezier(0.3, 0, 0.8, 0.15); }
+  85.714286%, 100% { right: 0; }
+}
+@keyframes navigation-progress-trailing-tail {
+  0% { left: 0; }
+  51.428571% { left: 0; animation-timing-function: cubic-bezier(0.3, 0, 0.8, 0.15); }
+  100% { left: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
   html[data-navigation-loading="true"] .navigation-progress span {
     animation: none !important;
+    inset: 0;
     transform: scaleX(0.35);
   }
   .navigation-progress { transition: none; }
 }
 html[data-reduced-motion="true"][data-navigation-loading="true"] .navigation-progress span {
   animation: none !important;
+  inset: 0;
   transform: scaleX(0.35);
 }
