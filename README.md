@@ -160,6 +160,14 @@ Dedicated embedded HTML/CSS templates are rendered in one local Playwright Chrom
 
 `setup-og` stores the pinned npm runtime under the OS user cache directory in `daybook/og/`; Chromium uses Playwright's browser cache (including `PLAYWRIGHT_BROWSERS_PATH` when set). Linux machines missing browser system libraries should follow [Playwright's system-dependency instructions](https://playwright.dev/docs/browsers#install-system-dependencies). For CI or source development, `DAYBOOK_OG_PLAYWRIGHT_MODULE` can point to an absolute installed `playwright` package directory or its `index.mjs` file. `./scripts/check.sh` selects the checkout's package automatically; CI installs Chromium before running it. Keep the pinned runtime version in `internal/og/runtime.go` aligned with `package-lock.json` when updating Playwright.
 
+For an external vault deployed through Cloudflare Workers Builds, install the renderer after downloading the CLI and before building. With a vault-local CLI installer, the npm build script should run:
+
+```sh
+npm run daybook:setup && ./.daybook/bin/daybook setup-og && ./.daybook/bin/daybook build
+```
+
+Use Node.js 24 or newer. Run `setup-og` on every fresh build environment, even when the CLI binary is cached: the Playwright package and Chromium have separate caches. Repeating setup is safe and also selects the runtime required by an updated CLI. The release archive contains the CLI and embedded site assets, not Playwright or Chromium.
+
 ## Acknowledge
 
 [Retypeset](https://github.com/radishzzz/astro-theme-retypeset)

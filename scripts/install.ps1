@@ -39,21 +39,27 @@ Write-Log "Detected platform: $Platform"
 # Default install directory
 $InstallDir = if ($env:DAYBOOK_INSTALL_DIR) { $env:DAYBOOK_INSTALL_DIR } else { "$env:LOCALAPPDATA\Programs\Daybook\bin" }
 
-# 2. Get latest release tag
+# 2. Resolve the public release redirect, avoiding anonymous API rate limits.
 Write-Log "Fetching latest release info..."
 $Repo = "StatIndet/daybook"
-$ApiUrl = "https://api.github.com/repos/$Repo/releases/latest"
+$LatestUrl = "https://github.com/$Repo/releases/latest"
 
 try {
-    $Release = Invoke-RestMethod -Uri $ApiUrl -ErrorAction Stop
+    $Response = Invoke-WebRequest -UseBasicParsing -Uri $LatestUrl -ErrorAction Stop
+    # Windows PowerShell 5.1 uses HttpWebResponse; PowerShell 7 uses HttpResponseMessage.
+    $ResolvedUrl = if ($Response.BaseResponse.ResponseUri) {
+        $Response.BaseResponse.ResponseUri.AbsoluteUri
+    } else {
+        $Response.BaseResponse.RequestMessage.RequestUri.AbsoluteUri
+    }
 } catch {
     Abort "Failed to query latest release. Error: $_"
 }
 
-$LatestTag = $Release.tag_name
-if (-not $LatestTag) {
-    Abort "Failed to determine the latest release tag from GitHub API."
+if ($ResolvedUrl -notmatch ('^https://github\.com/' + [regex]::Escape($Repo) + '/releases/tag/(v[^/?#]+)$')) {
+    Abort "Failed to determine the latest release tag from GitHub redirect."
 }
+$LatestTag = $Matches[1]
 Write-Log "Latest release is $LatestTag"
 
 # 3. Construct file names
