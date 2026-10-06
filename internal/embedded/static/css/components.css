@@ -137,6 +137,7 @@ html[data-reduced-motion="true"] :is(.github-repository-heading a, .github-follo
   color: var(--color-tooltip-text);
   font-family: var(--font-ui);
   font-size: 0.72rem;
+  font-style: normal;
   left: 50%;
   line-height: 1;
   opacity: 0;
