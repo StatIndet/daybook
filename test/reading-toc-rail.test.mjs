@@ -80,7 +80,7 @@ test("heading dots follow the same cosine-squared wave envelope", () => {
   approximatelyEqual(readingTocRailDotOffset(100, 100, 50, 20, 1), 20);
 });
 
-test("endpoint folds remain fully visible without exposing reflected rails", async () => {
+test("endpoint folds stay visible and the highlight follows their actual arc length", async () => {
   const { readFile } = await import("node:fs/promises");
   const { build } = await import("esbuild");
   const { chromium } = await import("playwright");
@@ -134,6 +134,68 @@ test("endpoint folds remain fully visible without exposing reflected rails", asy
         assert.ok(Math.abs(paintedRows[0] - bounds.top) <= 2.1, `top clipped or extended at ${progress}, span ${halfHeight}: ${paintedRows[0]} vs ${bounds.top}`);
         assert.ok(Math.abs(paintedRows.at(-1) - bounds.bottom) <= 2.1, `bottom clipped or extended at ${progress}, span ${halfHeight}: ${paintedRows.at(-1)} vs ${bounds.bottom}`);
       }
+    }
+    const measurements = await page.evaluate(({ geometry }) => {
+      const measurements = [];
+      const accent = document.querySelector("[data-reading-toc-rail-svg] > [data-reading-toc-rail-accent]");
+      for (const height of [40, 200, 840]) {
+        for (const amplitude of [10.4, 24.4]) {
+          for (const progress of [0, 0.00001, 0.001, 0.01, 0.1, 0.5, 0.9, 0.99, 0.999, 0.99999, 1]) {
+            const g = { ...geometry, height, idleAmplitude: amplitude };
+            window.rail.setGeometry(g);
+            window.rail.setTargets(progress, -1, -1);
+            window.rail.advance(0);
+            const curve = Rail.buildReadingTocRailCurve(g, height * progress, amplitude);
+            const length = accent.getTotalLength();
+            const dash = parseFloat(accent.style.strokeDasharray);
+            const offset = Number(accent.getAttribute("stroke-dashoffset"));
+            const center = accent.getPointAtLength((dash / 2 - offset) * length);
+            measurements.push({ height, amplitude, progress,
+              lengthError: Math.abs(length - curve.totalLength),
+              centerError: Math.hypot(center.x - curve.peakX, center.y - height * progress),
+              highlightLength: dash * length,
+            });
+          }
+        }
+      }
+      return measurements;
+    }, { geometry });
+    for (const result of measurements) {
+      const context = JSON.stringify(result);
+      assert.ok(result.lengthError < 0.1, `arc length agrees with browser: ${context}`);
+      assert.ok(result.centerError < 0.1, `highlight follows the peak through endpoint folds: ${context}`);
+      assert.ok(Math.abs(result.highlightLength - 0.12 * result.height) < 0.1, `highlight keeps a constant length: ${context}`);
+    }
+    const animated = await page.evaluate(({ geometry }) => {
+      const accent = document.querySelector("[data-reading-toc-rail-svg] > [data-reading-toc-rail-accent]");
+      const samples = [];
+      window.rail.setGeometry({ ...geometry, height: 840 });
+      window.rail.setReducedMotion(false);
+      window.rail.setInteractive(true);
+      for (const [start, end] of [[0.1, 0], [0.9, 1]]) {
+        window.rail.setTargets(start, -1, -1);
+        window.rail.snapToTargets();
+        window.rail.advance(0);
+        window.rail.setTargets(end, -1, -1, 4000);
+        for (let frame = 1; frame <= 90; frame++) {
+          window.rail.advance(frame * 1000 / 60);
+          const length = accent.getTotalLength();
+          const dash = parseFloat(accent.style.strokeDasharray);
+          const offset = Number(accent.getAttribute("stroke-dashoffset"));
+          const center = accent.getPointAtLength((dash / 2 - offset) * length);
+          // The first cubic ends at the moving wave peak.
+          const coordinates = accent.getAttribute("d").match(/-?\d+(?:\.\d+)?/g).map(Number);
+          samples.push({ end, frame,
+            centerError: Math.hypot(center.x - coordinates[8], center.y - coordinates[9]),
+            highlightLength: dash * length,
+          });
+        }
+      }
+      return samples;
+    }, { geometry });
+    for (const sample of animated) {
+      assert.ok(sample.centerError < 0.1, `animated highlight drifts from peak: ${JSON.stringify(sample)}`);
+      assert.ok(Math.abs(sample.highlightLength - 0.12 * 840) < 0.1, `animated highlight changes length: ${JSON.stringify(sample)}`);
     }
     await page.evaluate(() => window.rail.destroy());
     assert.equal(await page.locator("[data-reading-toc-rail-svg] g").count(), 0);

@@ -40,6 +40,8 @@ export interface ReadingTocRailCurve {
   effectiveHalfHeight: number;
   topY: number;
   bottomY: number;
+  markerLength: number;
+  totalLength: number;
 }
 
 const DEFAULT_GEOMETRY: ReadingTocRailGeometry = {
@@ -168,6 +170,24 @@ function normalizeGeometry(geometry: ReadingTocRailGeometry): ReadingTocRailGeom
   };
 }
 
+type RailPoint = readonly [number, number];
+
+function cubicLength(a: RailPoint, b: RailPoint, c: RailPoint, d: RailPoint, depth = 0): number {
+  const distance = (p: RailPoint, q: RailPoint): number => Math.hypot(q[0] - p[0], q[1] - p[1]);
+  const chord = distance(a, d);
+  const polygon = distance(a, b) + distance(b, c) + distance(c, d);
+  // Subdivide even collinear folds: their travelled length exceeds the chord.
+  if (polygon - chord <= 0.001 || depth >= 12) return (polygon + chord) / 2;
+  const midpoint = (p: RailPoint, q: RailPoint): RailPoint => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+  const ab = midpoint(a, b);
+  const bc = midpoint(b, c);
+  const cd = midpoint(c, d);
+  const abc = midpoint(ab, bc);
+  const bcd = midpoint(bc, cd);
+  const middle = midpoint(abc, bcd);
+  return cubicLength(a, ab, abc, middle, depth + 1) + cubicLength(middle, bcd, cd, d, depth + 1);
+}
+
 /**
  * Builds the whole rail path. Near an edge only the path endpoints are clipped;
  * the control points keep their full wave positions, which creates the short
@@ -209,6 +229,20 @@ export function buildReadingTocRailCurve(
     `${formatNumber(baselineX)} ${formatNumber(bottomY)}`,
   ].join(" ");
 
+  const upperLength = cubicLength(
+    [baselineX, topY],
+    [baselineX, safeMarkerY - 0.6 * safeHalfHeight],
+    [peakX, safeMarkerY - 0.3 * safeHalfHeight],
+    [peakX, safeMarkerY],
+  );
+  const lowerLength = cubicLength(
+    [peakX, safeMarkerY],
+    [peakX, safeMarkerY + 0.3 * safeHalfHeight],
+    [baselineX, safeMarkerY + 0.6 * safeHalfHeight],
+    [baselineX, bottomY],
+  );
+  const markerLength = topY + upperLength;
+
   return {
     basePath: [
       `M ${formatNumber(baselineX)} ${formatNumber(Math.min(0, topY))}`,
@@ -221,6 +255,8 @@ export function buildReadingTocRailCurve(
     effectiveHalfHeight: safeHalfHeight,
     topY,
     bottomY,
+    markerLength,
+    totalLength: markerLength + lowerLength + height - bottomY,
   };
 }
 
@@ -677,15 +713,16 @@ export class ReadingTocRail {
     this.accentBottom.setAttribute("d", path.basePath);
     this.accentBottom.setAttribute("transform", bottomTransform);
 
-    const pathStartY = Math.min(0, path.topY);
-    const pathEndY = Math.max(this.geometry.height, path.bottomY);
-    const totalLength = pathEndY - pathStartY;
-    const distanceToDot = markerY - pathStartY;
-    const offset = formatNumber(0.06 - distanceToDot / totalLength);
-
-    this.accentPath.setAttribute("stroke-dashoffset", offset);
-    this.accentTop.setAttribute("stroke-dashoffset", offset);
-    this.accentBottom.setAttribute("stroke-dashoffset", offset);
+    // Anchor the highlight at the curve's peak by travelled distance, not by
+    // vertical progress. Folds add length without advancing the reading marker.
+    const highlightLength = 0.12 * this.geometry.height / path.totalLength;
+    const offset = highlightLength / 2 - path.markerLength / path.totalLength;
+    for (const accent of [this.accentPath, this.accentTop, this.accentBottom]) {
+      // Keep full precision: rounding normalized values to .001 causes visible
+      // one-pixel steps on tall rails. Inline style overrides the shared CSS dash.
+      accent.style.strokeDasharray = `${highlightLength} 2`;
+      accent.setAttribute("stroke-dashoffset", String(offset));
+    }
 
     this.dotButtons.forEach((button, index) => {
       const heading = this.headings[index];
