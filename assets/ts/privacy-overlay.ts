@@ -28,9 +28,9 @@ export function initPrivacyOverlay(): void {
     animation?.cancel();
     if (matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.dataset.reducedMotion === 'true') return;
     animation = element.animate([
-      { opacity: 0, transform: 'translateY(6px)' },
-      { opacity: 1, transform: 'translateY(0)' },
-    ], { duration: 220, easing: 'ease-out' });
+      { opacity: 0, transform: 'scale(0.95)' },
+      { opacity: 1, transform: 'scale(1)' },
+    ], { duration: 320, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' });
   }
 
   function restoreSettings(focus = true): void {
