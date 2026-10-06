@@ -69,3 +69,24 @@
 html[data-reduced-motion="true"] .privacy-overlay,
 html[data-reduced-motion="true"] .privacy-overlay :is(.settings-backdrop, .settings-paper, .settings-checkbox-svg line) { transition: none; }
 html[data-reduced-motion="true"] .privacy-overlay .settings-checkbox-label .settings-checkbox-input:checked + .settings-checkbox-svg polyline { animation: none; stroke-dashoffset: 0; }
+
+/* The settings shell and backdrop stay mounted; only their content changes. */
+[data-settings-page][hidden], .privacy-settings-back[hidden] { display: none; }
+.has-privacy-page > .privacy-content {
+  position: absolute;
+  inset: 50px 50px 70px;
+  height: auto;
+  max-height: none;
+}
+.has-privacy-page .privacy-page { min-height: 100%; }
+.has-privacy-page .settings-title { margin: 0 28px 32px; }
+.has-privacy-page .settings-title:focus { outline: none; }
+.has-privacy-page .privacy-content button:focus-visible { outline: 2px solid #3e3832; outline-offset: 3px; }
+.privacy-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.privacy-footer .privacy-save { margin-left: auto; }
+@media (prefers-reduced-motion: reduce) {
+  .has-privacy-page .settings-checkbox-svg line { transition: none; }
+  .has-privacy-page .settings-checkbox-label .settings-checkbox-input:checked + .settings-checkbox-svg polyline { animation: none; stroke-dashoffset: 0; }
+}
+html[data-reduced-motion="true"] .has-privacy-page .settings-checkbox-svg line { transition: none; }
+html[data-reduced-motion="true"] .has-privacy-page .settings-checkbox-label .settings-checkbox-input:checked + .settings-checkbox-svg polyline { animation: none; stroke-dashoffset: 0; }

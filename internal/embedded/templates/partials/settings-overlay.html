@@ -6,6 +6,7 @@
       <span class="material-symbol" aria-hidden="true">close</span>
     </button>
     
+    <div data-settings-page>
     <h2 id="settings-title" class="settings-title" data-i18n-en="Settings" data-i18n-zh="设置">{{if eq .Lang "en_US"}}Settings{{else}}设置{{end}}</h2>
     
     <div class="settings-content">
@@ -67,6 +68,7 @@
       {{if .Config.Stats.Enabled}}
       <button type="button" class="settings-privacy-btn" data-privacy-open data-i18n-en="Privacy" data-i18n-zh="隐私">{{if eq .Lang "en_US"}}Privacy{{else}}隐私{{end}}</button>
       {{end}}
+    </div>
     </div>
   </div>
 </div>

@@ -21,7 +21,10 @@
             <span class="settings-checkbox-text" data-i18n-en="Allow anonymous statistics" data-i18n-zh="允许匿名统计">{{if eq .Lang "en_US"}}Allow anonymous statistics{{else}}允许匿名统计{{end}}</span>
           </label>
         </div>
+        <div class="privacy-footer">
+        <button type="button" class="privacy-text-btn privacy-settings-back" data-privacy-settings-back hidden data-i18n-en="Back to Settings" data-i18n-zh="返回设置">{{if eq .Lang "en_US"}}Back to Settings{{else}}返回设置{{end}}</button>
         <button type="button" class="privacy-text-btn privacy-save" data-privacy-save>{{if eq .Lang "en_US"}}Save selection{{else}}保存选择{{end}}</button>
+        </div>
       </section>
       <section class="privacy-page" data-privacy-detail-page hidden>
         <h2 id="privacy-details-title" class="settings-title" tabindex="-1" data-i18n-en="Details" data-i18n-zh="详细信息">{{if eq .Lang "en_US"}}Details{{else}}详细信息{{end}}</h2>

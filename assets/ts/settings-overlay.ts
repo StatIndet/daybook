@@ -16,11 +16,18 @@ export function initSettingsOverlay() {
   });
 
   const closeOverlay = (overlay: HTMLElement) => {
+    if (!document.dispatchEvent(new CustomEvent('daybook:settings-close', { cancelable: true }))) return;
     overlay.setAttribute('inert', '');
     overlay.setAttribute('aria-hidden', 'true');
     overlay.classList.remove('is-open');
     document.body.style.overflow = '';
+    (persistentLogo as HTMLElement).focus({ preventScroll: true });
   };
+
+  document.addEventListener('daybook:settings-dismiss', () => {
+    const overlay = document.getElementById('settings-overlay');
+    if (overlay) closeOverlay(overlay);
+  });
 
   document.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
@@ -28,9 +35,7 @@ export function initSettingsOverlay() {
     if (!overlay || !overlay.classList.contains('is-open')) return;
 
     if (target.closest('[data-privacy-open]')) {
-      closeOverlay(overlay);
-      (persistentLogo as HTMLElement).focus();
-      document.dispatchEvent(new CustomEvent('daybook:privacy-open'));
+      document.dispatchEvent(new CustomEvent('daybook:privacy-open', { detail: { withinSettings: true } }));
       return;
     }
 
