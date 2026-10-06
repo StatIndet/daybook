@@ -76,25 +76,23 @@
               {{end}}
             </span>
             {{if .Config.Stats.Enabled}}<span class="meta-stagger-item">{{template "like_button" dict "Lang" .Lang "Path" .Note.CanonicalPath}}</span>{{end}}
-            <span class="meta-stagger-item">{{template "rss_button" dict "Lang" .Lang "Class" "article-action" "InlineLabel" true}}</span>
+            <span class="meta-stagger-item">{{template "rss_button" dict "Lang" .Lang "Class" "article-action"}}</span>
 
             <span class="meta-stagger-item share-entry">
-              <button type="button" class="article-action share-toggle-btn" aria-label="{{T .Lang "action.share"}}" data-ui-aria="action.share" data-share-open data-share-title="{{.Note.Title}}" data-share-link="{{.Note.ShareURL}}" data-share-text="{{.Note.ShareText}}">
+              <button type="button" class="article-action share-toggle-btn" aria-label="{{T .Lang "action.share"}}" data-ui-aria="action.share" data-tooltip="{{T .Lang "action.share"}}" data-ui-tooltip="action.share" data-share-open data-share-title="{{.Note.Title}}" data-share-link="{{.Note.ShareURL}}" data-share-text="{{.Note.ShareText}}">
                 <span class="material-symbol" aria-hidden="true">share</span>
-                <span data-ui-text="action.share">{{T .Lang "action.share"}}</span>
               </button>
             </span>
             
             <span class="meta-stagger-item reader-mode-entry">
-              <button type="button" class="article-action reader-mode-toggle" aria-label="{{T .Lang "action.reader"}}" data-ui-aria="action.reader" aria-pressed="false" data-reader-toggle>
+              <button type="button" class="article-action reader-mode-toggle" aria-label="{{T .Lang "action.reader"}}" data-ui-aria="action.reader" data-tooltip="{{T .Lang "action.reader"}}" data-ui-tooltip="action.reader" aria-pressed="false" data-reader-toggle>
                 <span class="material-symbol" aria-hidden="true">chrome_reader_mode</span>
-                <span data-ui-text="action.reader">{{T .Lang "action.reader"}}</span>
               </button>
             </span>
 
             {{if .Note.HasTranslation}}
             <span class="meta-stagger-item note-bilingual-wrapper">
-              {{template "bilingual_toggle" dict "Lang" .Lang "URL" .Note.TranslationURL "Label" true}}
+              {{template "bilingual_toggle" dict "Lang" .Lang "URL" .Note.TranslationURL}}
             </span>
             {{end}}
           </div>

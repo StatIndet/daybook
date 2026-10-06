@@ -335,8 +335,8 @@ try {
   assert.equal(await page.locator('.article-meta-rows > div:nth-child(2) [data-page-viewers]').count(), 1);
   assert(await page.locator('.article-stagger-meta > *').evaluateAll(items => items.every((item, index) => item.style.getPropertyValue('--stagger-index') === String(index))), 'Metadata entrance order continues across both rows');
   const actions = page.locator('.article-actions-meta');
-  assert.equal(await actions.locator('[data-tooltip]').count(), 2, 'Only comments and likes retain tooltips');
-  assert.deepEqual(await actions.locator('[data-ui-text]').allTextContents(), ['RSS订阅', '分享', '阅读模式', '翻译']);
+  assert.equal(await actions.locator('[data-tooltip]').count(), 6, 'All article actions have tooltips');
+  assert.equal(await actions.locator('[data-ui-text]').count(), 0, 'Article actions use icons without text labels');
   const translation = actions.locator('.bilingual-toggle-btn');
   await translation.hover();
   assert.equal(await translation.evaluate(el => getComputedStyle(el).color), await actions.locator('[data-rss-open]').evaluate(el => {
@@ -345,7 +345,7 @@ try {
   }));
   for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
-    assert(await actions.evaluate(el => el.scrollWidth <= el.clientWidth + 1), 'Labeled article actions fit without horizontal overflow');
+    assert(await actions.evaluate(el => el.scrollWidth <= el.clientWidth + 1), 'Article actions fit without horizontal overflow');
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.locator('.side-nav a[href="/about/"]').click();

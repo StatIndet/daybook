@@ -1,6 +1,5 @@
 {{define "bilingual_toggle"}}
-<a class="bilingual-toggle-btn" href="{{.URL}}" aria-label="{{T .Lang "post.translation"}}" data-ui-aria="post.translation">
+<a class="bilingual-toggle-btn" href="{{.URL}}" aria-label="{{T .Lang "post.translation"}}" data-ui-aria="post.translation" data-tooltip="{{T .Lang "post.translation"}}" data-ui-tooltip="post.translation">
   <span class="material-symbol" aria-hidden="true">translate</span>
-  {{if .Label}}<span data-ui-text="action.translate">{{T .Lang "action.translate"}}</span>{{end}}
 </a>
 {{end}}
