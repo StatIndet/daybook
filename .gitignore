@@ -2,6 +2,7 @@
 /public/
 /daybook
 /bin/
+/.preview/
 
 # Go generated files
 *.test
