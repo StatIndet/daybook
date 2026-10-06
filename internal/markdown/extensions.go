@@ -285,7 +285,7 @@ func (context *extensionContext) renderCallout(info calloutInfo, content string)
 		builder.WriteString(`<div class="callout-title-inner">`)
 		builder.WriteString(stdhtml.EscapeString(info.Title))
 		builder.WriteString(`</div>`)
-		builder.WriteString(`<span class="callout-fold-icon material-symbol">expand_more</span>`)
+		builder.WriteString(`<span class="callout-fold-icon material-symbol">keyboard_arrow_down</span>`)
 		builder.WriteString(`</summary>`)
 
 		builder.WriteString(`<div class="callout-content">`)

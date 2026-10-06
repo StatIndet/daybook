@@ -59,6 +59,7 @@
     "image",
     "info",
     "input",
+    "keyboard_arrow_down",
     "label",
     "language",
     "light",
@@ -132,5 +133,5 @@
     }
   },
   "originalBytes": 5399668,
-  "subsetBytes": 14980
+  "subsetBytes": 15056
 }
