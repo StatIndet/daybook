@@ -94,8 +94,8 @@ A portrait between paragraphs.
     await write(`vault/attachments/picture/${i}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="hsl(${i * 40} 40% 50%)"/><text x="40" y="80" font-size="40">Photo ${i}</text></svg>`);
   }
 
-  const binary = path.join(fixture, process.platform === 'win32' ? 'daybook.exe' : 'daybook');
-  await exec('go', ['build', '-o', binary, './cmd/daybook'], { cwd: root, timeout: 120000 });
+  const binary = process.env.DAYBOOK_TEST_BINARY || path.join(fixture, process.platform === 'win32' ? 'daybook.exe' : 'daybook');
+  if (!process.env.DAYBOOK_TEST_BINARY) await exec('go', ['build', '-o', binary, './cmd/daybook'], { cwd: root, timeout: 120000 });
   await exec(binary, ['build'], { cwd: fixture, timeout: 120000 });
   server = createServer(async (request, response) => {
     try {

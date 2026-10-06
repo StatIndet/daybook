@@ -7,7 +7,6 @@ if [ -z "${CI:-}" ]; then npm ci; fi
 # Playwright installation before changing the working directory.
 export DAYBOOK_OG_PLAYWRIGHT_MODULE="${DAYBOOK_OG_PLAYWRIGHT_MODULE:-$(pwd)/node_modules/playwright/index.mjs}"
 npm run typecheck
-npm run test:reading-rail
 node scripts/graph-query-test.mjs
 node --test test/graph-controls.test.mjs
 npm run build:js
@@ -33,6 +32,8 @@ trap cleanup EXIT INT TERM
 DAYBOOK_BIN="$TEMP_DIR/daybook-bin"
 echo "==> Building Daybook binary to $DAYBOOK_BIN"
 go build -o "$DAYBOOK_BIN" ./cmd/daybook
+# Reuse this exact binary in the isolated browser fixtures below.
+export DAYBOOK_TEST_BINARY="$DAYBOOK_BIN"
 
 echo "==> Phase C: Standalone Smoke Test"
 VAULT_DIR="$TEMP_DIR/vault"

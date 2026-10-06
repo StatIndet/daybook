@@ -136,9 +136,23 @@ go test ./...
 # Build the temporary binary for local testing
 go build -o daybook-cli ./cmd/daybook
 
-# Run the complete integrity check suite
+# Run required integrity and functional browser checks (excludes optional TOC diagnostics)
 ./scripts/check.sh
 ```
+
+TOC geometry, screenshots and desktop/mobile outline checks are opt-in:
+`npm run test:toc`. They are not run by `check.sh`, CI or Release. See
+[the TOC diagnostics guide](scripts/manual/toc/GUIDE.md) for prerequisites and
+checks against a served article or external vault.
+
+The required checks retain generated-output, privacy, navigation, search and OG
+rendering coverage. `check.sh` builds the CLI once and shares that binary with
+the isolated memo and article-action fixtures through `DAYBOOK_TEST_BINARY`;
+those scripts still compile their own binary when run separately. Browser smoke
+tests do not save unasserted screenshots or scan the RSS animation frame by frame.
+Release requires a successful main-branch CI run for the exact tagged commit, then
+rebuilds and packages the assets and binaries without rerunning browser tests. If
+CI is still running when the tag is pushed, rerun Release after CI succeeds.
 
 > **Note**: Do not modify generated files in `internal/embedded/static/js/` or `internal/embedded/static/vendor/` directly. Always modify the source TypeScript or update the npm package and run the corresponding build scripts.
 

@@ -9,13 +9,13 @@
     "build:vendor-fonts": "node scripts/build-vendor-fonts.mjs",
     "build:vendor-katex": "node scripts/build-vendor-katex.mjs",
     "build:vendor": "node scripts/build-vendor.mjs",
-    "test:reading-rail": "node --test test/reading-toc-rail.test.mjs",
     "typecheck": "tsc --noEmit",
     "build:js": "npm run build:css && npm run build:images && node scripts/build-js.mjs",
     "watch:js": "node scripts/build-js.mjs --watch",
     "build:css": "node scripts/build-css.mjs",
     "build:images": "node scripts/build-images.mjs",
-    "test:giscus": "node scripts/giscus-browser-test.mjs"
+    "test:giscus": "node scripts/giscus-browser-test.mjs",
+    "test:toc": "node scripts/manual/toc/run.mjs"
   },
   "devDependencies": {
     "@chinese-fonts/maple-mono-cn": "^2.0.0",

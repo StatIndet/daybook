@@ -4,7 +4,7 @@ import test from "node:test";
 import {
   buildReadingTocRailCurve,
   readingTocRailDotOffset,
-} from "../assets/ts/toc/reading-toc-rail.ts";
+} from "../../../assets/ts/toc/reading-toc-rail.ts";
 
 const geometry = {
   width: 208,
@@ -86,13 +86,13 @@ test("endpoint folds stay visible and the highlight follows their actual arc len
   const { chromium } = await import("playwright");
   const { default: sharp } = await import("sharp");
   const { outputFiles } = await build({
-    entryPoints: [new URL("../assets/ts/toc/reading-toc-rail.ts", import.meta.url).pathname],
+    entryPoints: [new URL("../../../assets/ts/toc/reading-toc-rail.ts", import.meta.url).pathname],
     bundle: true, format: "iife", globalName: "Rail", write: false,
   });
   const css = (await Promise.all(["tokens.css", "components.css", "pages/note.css"].map(name =>
-    readFile(new URL(`../internal/embedded/static/css/${name}`, import.meta.url), "utf8"),
+    readFile(new URL(`../../../internal/embedded/static/css/${name}`, import.meta.url), "utf8"),
   ))).join("\n");
-  const template = await readFile(new URL("../internal/embedded/templates/partials/toc.html", import.meta.url), "utf8");
+  const template = await readFile(new URL("../../../internal/embedded/templates/partials/toc.html", import.meta.url), "utf8");
   const nav = template.match(/<nav class="reading-toc-rail"[\s\S]*?<\/nav>/)[0].replace(/{{.*?}}/g, "");
   const browser = await chromium.launch({ headless: true });
   try {

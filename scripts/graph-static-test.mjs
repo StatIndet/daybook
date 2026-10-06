@@ -13,7 +13,6 @@ try {
   await page.locator('#graph-search-btn').click();
   await page.locator('#graph-search-input').fill('line:"Hello World"');
   await page.waitForFunction(() => getComputedStyle(document.querySelector('.graph-search-panel')).opacity === '1');
-  await page.screenshot({ path: '/tmp/daybook-graph-search-desktop.png' });
   await page.waitForFunction(() => document.querySelectorAll('.graph-node').length === 1);
   assert.match(await page.locator('.graph-label').textContent(), /smoke-test/);
   await page.locator('#graph-search-input').fill('path:missing-no-match');
@@ -30,7 +29,6 @@ try {
   await page.locator('#graph-play').click();
   assert.equal(await page.locator('#graph-play').getAttribute('aria-pressed'), 'false');
   assert.equal(await page.locator('#graph-settings-panel #graph-play, #graph-settings-panel progress, .graph-animation').count(), 0);
-  await page.screenshot({ path: '/tmp/daybook-graph-desktop.png' });
   await page.locator('.graph-close').click();
   await page.reload();
   await page.waitForSelector('.graph-node');
@@ -52,7 +50,6 @@ try {
   await page.evaluate(() => document.documentElement.dataset.theme = 'dark');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForFunction(() => document.querySelector('#graph-settings-panel').matches(':modal'));
-  await page.screenshot({ path: '/tmp/daybook-graph-mobile.png' });
   const bounds = await page.locator('.graph-panel').boundingBox();
   assert.deepEqual(bounds, {x: 0, y: 0, width: 390, height: 844}, 'Settings cover the full mobile viewport');
   await page.keyboard.press('Escape');
@@ -74,10 +71,8 @@ try {
   }
   await page.setViewportSize({width:390, height:844});
   await page.locator('#graph-full-btn').evaluate(button => { button.hidden = true; });
-  await page.screenshot({ path: '/tmp/daybook-graph-mobile-toolbar.png' });
   await page.locator('#graph-search-btn').click();
   await page.locator('#graph-search-input').fill('path:notes');
-  await page.screenshot({ path: '/tmp/daybook-graph-search-mobile.png' });
   assert.deepEqual(errors, []);
   console.log('Graph static-vault regression passed (published index, toolbar, settings, animation, SPA, language and mobile).');
 } finally { await browser.close(); }
