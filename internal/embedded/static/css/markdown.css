@@ -1170,6 +1170,10 @@
   color: currentColor;
 }
 
+.markdown .gc-repo-title strong {
+  color: inherit;
+}
+
 .markdown .gc-slash {
   margin: 0 0.25rem;
   opacity: 0.4;
