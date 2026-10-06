@@ -147,6 +147,20 @@ A portrait between paragraphs.
     }
   });
   page.on('pageerror', error => errors.push(error.message));
+  await page.goto(`${base}/notes/reference/`, { waitUntil: 'networkidle' });
+  await page.waitForFunction(() => document.querySelector('.note-header [data-comment-count]')?.textContent === '5');
+  assert(commentRequests.includes('/notes/reference/'), 'Article counts use the same strict path mapping as the widget');
+  const historyBeforeCommentJump = await page.evaluate(() => history.length);
+  await page.locator('.note-header [data-comment-path]').click();
+  await page.waitForFunction(() => location.hash === '#comments' && document.activeElement?.id === 'comments');
+  assert.equal(await page.evaluate(() => history.length), historyBeforeCommentJump, 'Article comment jumps preserve router history');
+  const articleFrame = page.locator('#giscus iframe');
+  await articleFrame.waitFor();
+  assert.equal(new URL(await articleFrame.getAttribute('src')).searchParams.get('emitMetadata'), '1');
+  await articleFrame.contentFrame().locator('body').evaluate(() => {
+    parent.postMessage({ giscus: { discussion: { totalCommentCount: 4, totalReplyCount: 3 } } }, '*');
+  });
+  await page.waitForFunction(() => document.querySelector('.note-header [data-comment-count]')?.textContent === '7');
   await page.goto(`${base}/notes/`, { waitUntil: 'networkidle' });
   await page.evaluate(() => { window.__memosDocument = document; });
   await page.locator('.side-nav a[href="/memos/"]').click();

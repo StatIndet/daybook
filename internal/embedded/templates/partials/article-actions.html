@@ -8,9 +8,10 @@
 {{end}}
 
 {{define "rss_button"}}
-<a class="{{.Class}} rss-button" href="/rss.xml" data-rss-open data-daybook-reload aria-haspopup="dialog" aria-controls="rss-dialog" aria-label="{{T .Lang "rss.subscribe"}}" data-ui-aria="rss.subscribe" data-tooltip="{{T .Lang "rss.subscribe"}}" data-ui-tooltip="rss.subscribe">
+<a class="{{.Class}} rss-button" href="/rss.xml" data-rss-open data-daybook-reload aria-haspopup="dialog" aria-controls="rss-dialog" aria-label="{{T .Lang "rss.subscribe"}}" data-ui-aria="rss.subscribe" {{if not .InlineLabel}}data-tooltip="{{T .Lang "rss.subscribe"}}" data-ui-tooltip="rss.subscribe"{{end}}>
   <span class="material-symbol" aria-hidden="true">rss_feed</span>
   {{if .Label}}<span class="drawer-nav-label" data-ui-text="action.rss">{{T .Lang "action.rss"}}</span>{{end}}
+  {{if .InlineLabel}}<span data-ui-text="action.rss">{{T .Lang "action.rss"}}</span>{{end}}
 </a>
 {{end}}
 

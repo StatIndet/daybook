@@ -2,7 +2,7 @@
       {{if .Note.CommentEnabled}}
       <section class="post-comments" id="comments" tabindex="-1">
         <div id="giscus"
-             {{if eq .PageKind "memo"}}data-comment-counts="true"{{end}}
+             data-comment-counts="true"
              data-repo="{{$.Config.Comment.Giscus.Repo}}"
              data-repo-id="{{$.Config.Comment.Giscus.RepoID}}"
              data-category="{{$.Config.Comment.Giscus.Category}}"

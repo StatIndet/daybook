@@ -77,7 +77,7 @@ export function initMemoEngagement(): void {
   observer = new IntersectionObserver(entries => {
     for (const entry of entries) if (entry.isIntersecting) { observer?.unobserve(entry.target); schedule(entry.target); }
   }, { rootMargin: '160px' });
-  document.querySelectorAll('.memo-card').forEach(post => observer!.observe(post));
+  document.querySelectorAll('.memo-card, .note-header').forEach(post => observer!.observe(post));
 }
 
 document.addEventListener('daybook:before-swap', () => { lifetime?.abort(); observer?.disconnect(); });
@@ -96,7 +96,7 @@ document.addEventListener('daybook:comments-loaded', event => {
 // entry outside the SPA router (the same convention as the mobile TOC).
 document.addEventListener('click', event => {
   if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-  const link = (event.target as Element).closest<HTMLAnchorElement>('.memo-comment-action');
+  const link = (event.target as Element).closest<HTMLAnchorElement>('a[data-comment-path]');
   if (!link) return;
   const url = new URL(link.href);
   if (url.pathname !== location.pathname || url.search !== location.search) return;

@@ -23,10 +23,17 @@
         {{end}}
       </div>
       {{if .Config.Stats.Enabled}}
-      <span class="about-meta-group">
-        <span data-page-views data-path="/about/">--</span>
-        <span data-page-views-label data-path="/about/">views</span>
-      </span>
+      <div class="about-engagement">
+        <span class="about-meta-group">
+          <span data-page-views data-path="/about/">--</span>
+          <span data-page-views-label data-path="/about/">views</span>
+        </span>
+        <span class="about-meta-group">
+          <span data-page-viewers data-path="/about/">--</span>
+          <span>viewing</span>
+        </span>
+        {{template "like_button" dict "Lang" .Lang "Path" "/about/"}}
+      </div>
       {{end}}
     </div>
   </div>

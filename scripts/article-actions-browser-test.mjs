@@ -34,7 +34,10 @@ async function ready(button, pressed, count) {
 }
 try {
   await write('daybook.yaml', 'site:\n  url: https://example.com\nstats:\n  enabled: true\nprofile:\n  author:\n    logoText: Actions Test\n');
-  await write('vault/pages/about.md', '---\ntitle: About\n---\nAbout.');
+  await write('vault/pages/about.md', '---\ntitle: About\ndate: 2026-10-01\nupdated: 2026-10-03\n---\nAbout.');
+  await write('vault/pages/about-en.md', '---\ntitle: About\n---\nAbout in English.');
+  await write('vault/notes/bilingual.md', '---\ndate: 2026-10-03\ni18n_key: bilingual\n---\n双语文章。');
+  await write('vault/notes/bilingual-en.md', '---\ndate: 2026-10-03\ni18n_key: bilingual\nlang: en_US\n---\nBilingual article.');
   await write('vault/notes/example.md', '---\ndate: 2026-10-03\n---\nAn article with [a short memo](/memos/随记/).');
   await write('vault/memos/随记.md', '---\ndate: 2026-10-03T10:00:00+08:00\ntags: [日常]\nlocation: 公园\n---\n记录一段日常。 [Read the note](/notes/example/).');
   const binary = process.env.DAYBOOK_TEST_BINARY || path.join(fixture, process.platform === 'win32' ? 'daybook.exe' : 'daybook');
@@ -324,6 +327,45 @@ try {
     }, preference);
     assert.equal(await page.locator('[data-site-visitors-anim]').textContent(), preference === 'system' ? '2' : '3', 'Reduced motion updates archive counters immediately');
   }
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto(base + '/notes/bilingual/');
+  await ready(like, false, 0);
+  assert.equal(await page.locator('.article-meta-rows > div').count(), 3);
+  assert.equal(await page.locator('.article-meta-rows > div:nth-child(2) [data-page-views]').count(), 1);
+  assert.equal(await page.locator('.article-meta-rows > div:nth-child(2) [data-page-viewers]').count(), 1);
+  assert(await page.locator('.article-stagger-meta > *').evaluateAll(items => items.every((item, index) => item.style.getPropertyValue('--stagger-index') === String(index))), 'Metadata entrance order continues across both rows');
+  const actions = page.locator('.article-actions-meta');
+  assert.equal(await actions.locator('[data-tooltip]').count(), 2, 'Only comments and likes retain tooltips');
+  assert.deepEqual(await actions.locator('[data-ui-text]').allTextContents(), ['RSS订阅', '分享', '阅读模式', '翻译']);
+  const translation = actions.locator('.bilingual-toggle-btn');
+  await translation.hover();
+  assert.equal(await translation.evaluate(el => getComputedStyle(el).color), await actions.locator('[data-rss-open]').evaluate(el => {
+    el.style.color = 'var(--color-hover-text)';
+    return getComputedStyle(el).color;
+  }));
+  for (const width of [1440, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    assert(await actions.evaluate(el => el.scrollWidth <= el.clientWidth + 1), 'Labeled article actions fit without horizontal overflow');
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.locator('.side-nav a[href="/about/"]').click();
+  await settled(page, 'about');
+  const aboutLike = page.locator('.about-meta [data-like-path]');
+  await ready(aboutLike, false, 0);
+  assert.equal(await aboutLike.getAttribute('data-like-path'), '/about/');
+  assert.deepEqual(await page.locator('.about-time-group time').allTextContents(), ['2026-10-01', '2026-10-03']);
+  presenceSocket.send(JSON.stringify({ type: 'presence', path: '/about/', pageViewers: 3, siteViewers: 10 }));
+  await page.waitForFunction(() => document.querySelector('.about-meta [data-page-viewers]')?.textContent === '3');
+  await aboutLike.click();
+  await ready(aboutLike, true, 1);
+  await page.reload();
+  await ready(aboutLike, true, 1);
+  await page.locator('.about-content .bilingual-toggle-btn').hover();
+  assert(await page.locator('.about-content .bilingual-toggle-btn').evaluate(el => {
+    const actual = getComputedStyle(el).color;
+    el.style.color = 'var(--color-hover-text)';
+    return actual === getComputedStyle(el).color;
+  }), 'About translation uses the shared hover highlight');
   assert.deepEqual(errors, []);
   await context.close();
 

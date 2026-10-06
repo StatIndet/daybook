@@ -34,3 +34,17 @@
 .bilingual-toggle-btn:focus-visible .material-symbol {
   font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
 }
+
+.note-header .bilingual-toggle-btn:hover,
+.note-header .bilingual-toggle-btn:focus-visible,
+.about-content .bilingual-toggle-btn:hover,
+.about-content .bilingual-toggle-btn:focus-visible {
+  color: var(--color-hover-text);
+}
+
+.note-header .bilingual-toggle-btn:hover .material-symbol,
+.note-header .bilingual-toggle-btn:focus-visible .material-symbol,
+.about-content .bilingual-toggle-btn:hover .material-symbol,
+.about-content .bilingual-toggle-btn:focus-visible .material-symbol {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+}

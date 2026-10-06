@@ -63,25 +63,38 @@
               <span>viewing</span>
             </span>
             {{end}}
+          </div>
 
+          <div class="article-stagger-meta article-actions-meta">
+            <span class="meta-stagger-item">
+              {{if .Note.CommentEnabled}}
+              <a class="article-action" href="{{.Note.URL}}#comments" aria-label="{{T .Lang "memos.comments"}}" data-ui-aria="memos.comments" data-tooltip="{{T .Lang "memos.comments"}}" data-ui-tooltip="memos.comments" data-comment-path="{{.Note.CommentPath}}" data-comment-repo="{{.Config.Comment.Giscus.Repo}}" data-comment-category="{{.Config.Comment.Giscus.Category}}">
+                <span class="material-symbol" aria-hidden="true">chat_bubble</span><span data-comment-count>—</span>
+              </a>
+              {{else}}
+              <span class="article-action is-unavailable" aria-label="{{T .Lang "memos.comments_disabled"}}" data-ui-aria="memos.comments_disabled" data-tooltip="{{T .Lang "memos.comments_disabled"}}" data-ui-tooltip="memos.comments_disabled"><span class="material-symbol" aria-hidden="true">chat_bubble</span><span>—</span></span>
+              {{end}}
+            </span>
             {{if .Config.Stats.Enabled}}<span class="meta-stagger-item">{{template "like_button" dict "Lang" .Lang "Path" .Note.CanonicalPath}}</span>{{end}}
-            <span class="meta-stagger-item">{{template "rss_button" dict "Lang" .Lang "Class" "article-action"}}</span>
+            <span class="meta-stagger-item">{{template "rss_button" dict "Lang" .Lang "Class" "article-action" "InlineLabel" true}}</span>
 
             <span class="meta-stagger-item share-entry">
-              <button type="button" class="share-toggle-btn" aria-label="{{T .Lang "action.share"}}" data-ui-aria="action.share" data-tooltip="{{T .Lang "action.share"}}" data-ui-tooltip="action.share" data-share-open data-share-title="{{.Note.Title}}" data-share-link="{{.Note.ShareURL}}" data-share-text="{{.Note.ShareText}}">
+              <button type="button" class="article-action share-toggle-btn" aria-label="{{T .Lang "action.share"}}" data-ui-aria="action.share" data-share-open data-share-title="{{.Note.Title}}" data-share-link="{{.Note.ShareURL}}" data-share-text="{{.Note.ShareText}}">
                 <span class="material-symbol" aria-hidden="true">share</span>
+                <span data-ui-text="action.share">{{T .Lang "action.share"}}</span>
               </button>
             </span>
             
             <span class="meta-stagger-item reader-mode-entry">
-              <button type="button" class="reader-mode-toggle" aria-label="{{T .Lang "action.reader"}}" data-ui-aria="action.reader" aria-pressed="false" data-tooltip="{{T .Lang "action.reader"}}" data-ui-tooltip="action.reader" data-reader-toggle>
+              <button type="button" class="article-action reader-mode-toggle" aria-label="{{T .Lang "action.reader"}}" data-ui-aria="action.reader" aria-pressed="false" data-reader-toggle>
                 <span class="material-symbol" aria-hidden="true">chrome_reader_mode</span>
+                <span data-ui-text="action.reader">{{T .Lang "action.reader"}}</span>
               </button>
             </span>
 
             {{if .Note.HasTranslation}}
             <span class="meta-stagger-item note-bilingual-wrapper">
-              {{template "bilingual_toggle" dict "Lang" .Lang "URL" .Note.TranslationURL}}
+              {{template "bilingual_toggle" dict "Lang" .Lang "URL" .Note.TranslationURL "Label" true}}
             </span>
             {{end}}
           </div>

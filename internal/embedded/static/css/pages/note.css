@@ -162,6 +162,28 @@
   width: 1.1em;
 }
 
+.article-actions-meta .article-action,
+.article-actions-meta .bilingual-toggle-btn {
+  white-space: nowrap;
+}
+
+.article-actions-meta .bilingual-toggle-btn {
+  width: auto;
+  height: auto;
+  min-height: 28px;
+  gap: .35em;
+  transform: none;
+}
+
+.article-actions-meta .bilingual-toggle-btn .material-symbol {
+  font-size: 1.15em;
+}
+
+.article-actions-meta .is-unavailable {
+  cursor: default;
+  opacity: .5;
+}
+
 .notes-item-music,
 .notes-item-bilingual {
   color: var(--color-muted);

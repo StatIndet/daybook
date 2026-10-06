@@ -41,13 +41,9 @@
     import "{{.Assets.Path "/js/giscus-loader.js"}}";
     
     function updateStaggerIndices() {
-      const staggerMeta = document.querySelector(".article-stagger-meta");
-      if (staggerMeta) {
-        const items = staggerMeta.children;
-        for (let i = 0; i < items.length; i++) {
-          items[i].style.setProperty("--stagger-index", i);
-        }
-      }
+      document.querySelectorAll(".article-stagger-meta > *").forEach((item, index) => {
+        item.style.setProperty("--stagger-index", index);
+      });
     }
     
     // Run on initial load
