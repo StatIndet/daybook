@@ -35,6 +35,7 @@ interface SpringValue {
 
 export interface ReadingTocRailCurve {
   basePath: string;
+  accentPath: string;
   peakX: number;
   effectiveAmplitude: number;
   effectiveHalfHeight: number;
@@ -188,6 +189,76 @@ function cubicLength(a: RailPoint, b: RailPoint, c: RailPoint, d: RailPoint, dep
   return cubicLength(a, ab, abc, middle, depth + 1) + cubicLength(middle, bcd, cd, d, depth + 1);
 }
 
+type RailCubic = readonly [RailPoint, RailPoint, RailPoint, RailPoint];
+
+function splitCubic(curve: RailCubic, t: number): readonly [RailCubic, RailCubic] {
+  const lerp = (a: RailPoint, b: RailPoint): RailPoint => [
+    a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t,
+  ];
+  const ab = lerp(curve[0], curve[1]);
+  const bc = lerp(curve[1], curve[2]);
+  const cd = lerp(curve[2], curve[3]);
+  const abc = lerp(ab, bc);
+  const bcd = lerp(bc, cd);
+  const point = lerp(abc, bcd);
+  return [[curve[0], ab, abc, point], [point, bcd, cd, curve[3]]];
+}
+
+function cubicParameterAtLength(curve: RailCubic, distance: number, length: number): number {
+  if (distance <= 0) return 0;
+  if (distance >= length) return 1;
+  let low = 0;
+  let high = 1;
+  for (let iteration = 0; iteration < 18; iteration++) {
+    const t = (low + high) / 2;
+    if (cubicLength(...splitCubic(curve, t)[0]) < distance) low = t;
+    else high = t;
+  }
+  return (low + high) / 2;
+}
+
+// Draw the highlighted section explicitly. SVG dash placement can jump when
+// the folded cubic becomes collinear, even when getTotalLength stays continuous.
+function buildAccentPath(
+  upper: RailCubic, lower: RailCubic, upperLength: number, lowerLength: number, height: number,
+): string {
+  const topY = upper[0][1];
+  const bottomY = lower[3][1];
+  const baselineX = upper[0][0];
+  const markerLength = topY + upperLength;
+  const totalLength = markerLength + lowerLength + height - bottomY;
+  const start = Math.max(0, markerLength - 0.06 * height);
+  const end = Math.min(totalLength, markerLength + 0.06 * height);
+  const commands: string[] = [];
+  const point = (p: RailPoint): string => `${formatNumber(p[0])} ${formatNumber(p[1])}`;
+  const move = (p: RailPoint): void => {
+    if (commands.length === 0) commands.push(`M ${point(p)}`);
+  };
+  if (start < topY) {
+    move([baselineX, start]);
+    commands.push(`L ${point([baselineX, Math.min(end, topY)])}`);
+  }
+  let segmentStart = topY;
+  for (const [curve, length] of [[upper, upperLength], [lower, lowerLength]] as const) {
+    const from = Math.max(0, start - segmentStart);
+    const to = Math.min(length, end - segmentStart);
+    if (to > from) {
+      const t0 = cubicParameterAtLength(curve, from, length);
+      const t1 = cubicParameterAtLength(curve, to, length);
+      const prefix = splitCubic(curve, t1)[0];
+      const slice = splitCubic(prefix, t0 / t1)[1];
+      move(slice[0]);
+      commands.push(`C ${point(slice[1])} ${point(slice[2])} ${point(slice[3])}`);
+    }
+    segmentStart += length;
+  }
+  if (end > segmentStart) {
+    move([baselineX, bottomY + Math.max(0, start - segmentStart)]);
+    commands.push(`L ${point([baselineX, bottomY + end - segmentStart])}`);
+  }
+  return commands.join(" ");
+}
+
 /**
  * Builds the whole rail path. Near an edge only the path endpoints are clipped;
  * the control points keep their full wave positions, which creates the short
@@ -229,18 +300,20 @@ export function buildReadingTocRailCurve(
     `${formatNumber(baselineX)} ${formatNumber(bottomY)}`,
   ].join(" ");
 
-  const upperLength = cubicLength(
+  const upper: RailCubic = [
     [baselineX, topY],
     [baselineX, safeMarkerY - 0.6 * safeHalfHeight],
     [peakX, safeMarkerY - 0.3 * safeHalfHeight],
     [peakX, safeMarkerY],
-  );
-  const lowerLength = cubicLength(
+  ];
+  const lower: RailCubic = [
     [peakX, safeMarkerY],
     [peakX, safeMarkerY + 0.3 * safeHalfHeight],
     [baselineX, safeMarkerY + 0.6 * safeHalfHeight],
     [baselineX, bottomY],
-  );
+  ];
+  const upperLength = cubicLength(...upper);
+  const lowerLength = cubicLength(...lower);
   const markerLength = topY + upperLength;
 
   return {
@@ -250,6 +323,7 @@ export function buildReadingTocRailCurve(
       curve,
       `L ${formatNumber(baselineX)} ${formatNumber(Math.max(height, bottomY))}`,
     ].join(" "),
+    accentPath: buildAccentPath(upper, lower, upperLength, lowerLength, height),
     peakX,
     effectiveAmplitude,
     effectiveHalfHeight: safeHalfHeight,
@@ -700,29 +774,18 @@ export class ReadingTocRail {
     // Control points extend by less than halfHeight, including at scroll speed.
     this.root.style.setProperty("--reading-toc-rail-overflow", `${formatNumber(halfHeight + 2)}px`);
     this.basePath.setAttribute("d", path.basePath);
-    this.accentPath.setAttribute("d", path.basePath);
+    this.accentPath.setAttribute("d", path.accentPath);
 
     this.baseTop.setAttribute("d", path.basePath);
     this.baseTop.setAttribute("transform", "scale(1, -1)");
-    this.accentTop.setAttribute("d", path.basePath);
+    this.accentTop.setAttribute("d", path.accentPath);
     this.accentTop.setAttribute("transform", "scale(1, -1)");
 
     const bottomTransform = `scale(1, -1) translate(0, -${formatNumber(2 * this.geometry.height)})`;
     this.baseBottom.setAttribute("d", path.basePath);
     this.baseBottom.setAttribute("transform", bottomTransform);
-    this.accentBottom.setAttribute("d", path.basePath);
+    this.accentBottom.setAttribute("d", path.accentPath);
     this.accentBottom.setAttribute("transform", bottomTransform);
-
-    // Anchor the highlight at the curve's peak by travelled distance, not by
-    // vertical progress. Folds add length without advancing the reading marker.
-    const highlightLength = 0.12 * this.geometry.height / path.totalLength;
-    const offset = highlightLength / 2 - path.markerLength / path.totalLength;
-    for (const accent of [this.accentPath, this.accentTop, this.accentBottom]) {
-      // Keep full precision: rounding normalized values to .001 causes visible
-      // one-pixel steps on tall rails. Inline style overrides the shared CSS dash.
-      accent.style.strokeDasharray = `${highlightLength} 2`;
-      accent.setAttribute("stroke-dashoffset", String(offset));
-    }
 
     this.dotButtons.forEach((button, index) => {
       const heading = this.headings[index];

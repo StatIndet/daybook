@@ -147,13 +147,13 @@ test("endpoint folds stay visible and the highlight follows their actual arc len
             window.rail.advance(0);
             const curve = Rail.buildReadingTocRailCurve(g, height * progress, amplitude);
             const length = accent.getTotalLength();
-            const dash = parseFloat(accent.style.strokeDasharray);
-            const offset = Number(accent.getAttribute("stroke-dashoffset"));
-            const center = accent.getPointAtLength((dash / 2 - offset) * length);
+            const center = accent.getPointAtLength(Math.min(0.06 * height, curve.markerLength));
+            const expectedLength = Math.min(curve.totalLength, curve.markerLength + 0.06 * height)
+              - Math.max(0, curve.markerLength - 0.06 * height);
             measurements.push({ height, amplitude, progress,
-              lengthError: Math.abs(length - curve.totalLength),
+              lengthError: Math.abs(length - expectedLength),
               centerError: Math.hypot(center.x - curve.peakX, center.y - height * progress),
-              highlightLength: dash * length,
+              solid: getComputedStyle(accent).strokeDasharray === "none",
             });
           }
         }
@@ -164,10 +164,12 @@ test("endpoint folds stay visible and the highlight follows their actual arc len
       const context = JSON.stringify(result);
       assert.ok(result.lengthError < 0.1, `arc length agrees with browser: ${context}`);
       assert.ok(result.centerError < 0.1, `highlight follows the peak through endpoint folds: ${context}`);
-      assert.ok(Math.abs(result.highlightLength - 0.12 * result.height) < 0.1, `highlight keeps a constant length: ${context}`);
+      assert.ok(result.solid, `highlight must be an explicit solid path: ${context}`);
     }
     const animated = await page.evaluate(({ geometry }) => {
       const accent = document.querySelector("[data-reading-toc-rail-svg] > [data-reading-toc-rail-accent]");
+      const base = document.querySelector("[data-reading-toc-rail-svg] > [data-reading-toc-rail-base]");
+      const prefix = document.createElementNS("http://www.w3.org/2000/svg", "path");
       const samples = [];
       window.rail.setGeometry({ ...geometry, height: 840 });
       window.rail.setReducedMotion(false);
@@ -180,14 +182,16 @@ test("endpoint folds stay visible and the highlight follows their actual arc len
         for (let frame = 1; frame <= 90; frame++) {
           window.rail.advance(frame * 1000 / 60);
           const length = accent.getTotalLength();
-          const dash = parseFloat(accent.style.strokeDasharray);
-          const offset = Number(accent.getAttribute("stroke-dashoffset"));
-          const center = accent.getPointAtLength((dash / 2 - offset) * length);
+          prefix.setAttribute("d", base.getAttribute("d").match(/^(.*?C.*?) C/)[1]);
+          const markerLength = prefix.getTotalLength();
+          const center = accent.getPointAtLength(Math.min(0.06 * 840, markerLength));
+          const expectedLength = Math.min(base.getTotalLength(), markerLength + 0.06 * 840)
+            - Math.max(0, markerLength - 0.06 * 840);
           // The first cubic ends at the moving wave peak.
-          const coordinates = accent.getAttribute("d").match(/-?\d+(?:\.\d+)?/g).map(Number);
+          const coordinates = base.getAttribute("d").match(/-?\d+(?:\.\d+)?/g).map(Number);
           samples.push({ end, frame,
             centerError: Math.hypot(center.x - coordinates[8], center.y - coordinates[9]),
-            highlightLength: dash * length,
+            lengthError: Math.abs(length - expectedLength),
           });
         }
       }
@@ -195,7 +199,43 @@ test("endpoint folds stay visible and the highlight follows their actual arc len
     }, { geometry });
     for (const sample of animated) {
       assert.ok(sample.centerError < 0.1, `animated highlight drifts from peak: ${JSON.stringify(sample)}`);
-      assert.ok(Math.abs(sample.highlightLength - 0.12 * 840) < 0.1, `animated highlight changes length: ${JSON.stringify(sample)}`);
+      assert.ok(sample.lengthError < 0.1, `animated highlight changes length: ${JSON.stringify(sample)}`);
+    }
+    // Inspect painted pixels, not just SVG measurements: a dashed, collinear
+    // fold can paint differently even when its reported arc length is correct.
+    await page.setViewportSize({ width: 1400, height: 1200 });
+    await page.evaluate(() => {
+      document.body.style.setProperty("--reading-toc-rail-height", "840px");
+      window.rail.setReducedMotion(true);
+    });
+    for (const end of [0, 1]) {
+      let previous = null;
+      for (const distance of [0.0001, 0.00001, 0.000001, 0]) {
+        const bounds = await page.evaluate(({ end, distance }) => {
+          window.rail.setTargets(end === 0 ? distance : 1 - distance, -1, -1);
+          window.rail.advance(0);
+          const box = document.querySelector("[data-reading-toc-rail-svg] > [data-reading-toc-rail-accent]").getBBox();
+          return { top: 140 + box.y, bottom: 140 + box.y + box.height };
+        }, { end, distance });
+        const png = await page.screenshot({ clip: { x: 250, y: 100, width: 80, height: 980 } });
+        const { data, info } = await sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+        const rows = [];
+        for (let y = 0; y < info.height; y++) {
+          for (let x = 0; x < info.width; x++) {
+            const offset = (y * info.width + x) * info.channels;
+            if (data[offset + 2] - data[offset] > 20 && data[offset] - data[offset + 1] > 10) {
+              rows.push(y + 100);
+              break;
+            }
+          }
+        }
+        const painted = { top: rows[0], bottom: rows.at(-1) };
+        for (const edge of ["top", "bottom"]) {
+          assert.ok(Math.abs(painted[edge] - bounds[edge]) <= 2, `painted ${edge} differs from solid highlight at ${end}: ${distance}`);
+          if (previous) assert.ok(Math.abs(painted[edge] - previous[edge]) <= 1, `highlight pixels jump as fold becomes collinear at ${end}`);
+        }
+        previous = painted;
+      }
     }
     await page.evaluate(() => window.rail.destroy());
     assert.equal(await page.locator("[data-reading-toc-rail-svg] g").count(), 0);

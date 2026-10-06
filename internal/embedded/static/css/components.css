@@ -667,6 +667,7 @@ body.is-tags-overlay-open .mobile-tags-overlay .notes-tag-link {
 }
 
 .reading-toc-rail-accent {
+  stroke-dasharray: none;
   stroke: var(--color-accent);
   stroke-width: var(--reading-toc-rail-accent-line-width);
 }
