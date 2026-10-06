@@ -12,6 +12,8 @@ try {
   assert.ok(count >= 2);
   await page.locator('#graph-search-btn').click();
   await page.locator('#graph-search-input').fill('line:"Hello World"');
+  await page.waitForFunction(() => getComputedStyle(document.querySelector('.graph-search-panel')).opacity === '1');
+  await page.screenshot({ path: '/tmp/daybook-graph-search-desktop.png' });
   await page.waitForFunction(() => document.querySelectorAll('.graph-node').length === 1);
   assert.match(await page.locator('.graph-label').textContent(), /smoke-test/);
   await page.locator('#graph-search-input').fill('path:missing-no-match');
@@ -73,6 +75,9 @@ try {
   await page.setViewportSize({width:390, height:844});
   await page.locator('#graph-full-btn').evaluate(button => { button.hidden = true; });
   await page.screenshot({ path: '/tmp/daybook-graph-mobile-toolbar.png' });
+  await page.locator('#graph-search-btn').click();
+  await page.locator('#graph-search-input').fill('path:notes');
+  await page.screenshot({ path: '/tmp/daybook-graph-search-mobile.png' });
   assert.deepEqual(errors, []);
   console.log('Graph static-vault regression passed (published index, toolbar, settings, animation, SPA, language and mobile).');
 } finally { await browser.close(); }

@@ -65,19 +65,34 @@
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  width: min(320px, calc(100vw - 64px));
-  max-height: min(420px, 55dvh);
-  overflow: auto;
-  box-sizing: border-box;
-  padding: 14px;
+  width: min(240px, calc(100vw - 64px));
+  max-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 12px;
   background: var(--color-page);
-  border: 1px solid var(--color-line);
-  border-radius: 12px;
-  box-shadow: 0 6px 20px rgb(0 0 0 / 0.12);
   font: 14px/1.5 var(--font-ui);
+  visibility: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    max-height 360ms cubic-bezier(0.2, 0.78, 0.24, 1),
+    opacity 220ms ease,
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0ms linear 360ms;
+}
+.graph-toolbar.is-search-open .graph-search-panel {
+  max-height: min(420px, 55dvh);
+  overflow-y: auto;
+  visibility: visible;
+  pointer-events: auto;
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0ms;
+}
+.graph-toolbar.is-search-open #graph-search-btn {
+  color: var(--color-accent);
 }
 .graph-shell button,
 .graph-shell input,
@@ -196,38 +211,15 @@
 .graph-shell .graph-query {
   width: 100%;
   box-sizing: border-box;
-  min-height: 44px;
-  padding: 10px 12px;
-  border: 1px solid var(--color-line);
-  border-radius: 8px;
-  background: var(--color-page);
-  color: var(--color-text);
-  font-size: 13px;
+  opacity: 1;
+  transform: none;
+  font: 0.84rem/1.4 var(--font-ui);
+}
+.graph-shell .graph-query:focus-visible {
+  outline: 0;
 }
 .graph-shell .graph-query[aria-invalid="true"] {
   border-color: #c44c4c;
-}
-.graph-help {
-  color: var(--color-muted);
-  font-size: 12px;
-}
-.graph-help summary {
-  cursor: pointer;
-}
-.graph-help dl {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 6px;
-  margin: 12px 0;
-}
-.graph-help dt {
-  overflow-wrap: anywhere;
-}
-.graph-help dd {
-  margin: 0;
-}
-.graph-help p {
-  margin: 0;
 }
 .graph-switch-row {
   min-height: 44px;
@@ -563,7 +555,6 @@ html.has-custom-cursor .graph-panel:modal :is(button, input[type="range"]) {
   }
   .graph-search-panel {
     width: 100%;
-    max-height: min(420px, 55dvh);
   }
   .graph-action-text {
     display: block;

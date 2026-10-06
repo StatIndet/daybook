@@ -205,9 +205,25 @@ Chinese and English article versions both appear in Notes, Archive, tags, search
 
 ### Interactive graph
 
-The upper-left toolbar on `/graph/` provides search, orphans, tags, attachments, existing notes only, growth animation, recentering and graph settings. Search opens its query field and syntax help below the toolbar; Graph settings opens the always-expanded Display and Forces sections. On narrow screens the toolbar uses two rows and settings open as a fullscreen layer. Settings stay in the current browser and are shared across interface languages; they do not change the vault or other visitors’ settings. Recenter only moves the camera. Restore defaults clears queries and tuning while keeping a local graph’s scope; use Full graph to leave that scope.
+The upper-left toolbar on `/graph/` provides search, orphans, tags, attachments, existing notes only, growth animation, recentering and graph settings. Search opens a compact query field below the toolbar; Graph settings opens the always-expanded Display and Forces sections. On narrow screens the toolbar uses two rows and settings open as a fullscreen layer. Settings stay in the current browser and are shared across interface languages; they do not change the vault or other visitors’ settings. Recenter only moves the camera. Restore defaults clears queries and tuning while keeping a local graph’s scope; use Full graph to leave that scope.
 
-Queries support `path:"notes/项目"`, `file:.md`, `tag:work`, `line:(甲 乙)`, `section:(甲 乙)`, `[status]`, and `[status:done]`. Plain words match filenames/titles or published body text. Space means AND, `OR` matches either side, `-` excludes, parentheses group conditions, and double quotes preserve a phrase. Matching ignores case. Parent tags include descendants; line and section conditions must match within the same line or heading section. Regular expressions, numeric comparisons, task and block operators are not supported. Errors keep the previous valid result. If the content index cannot load, `path:`, `file:` and `tag:` remain available.
+Use the search field for plain text or the query syntax below. Matching is case-insensitive; an empty query shows all nodes allowed by the toolbar filters.
+
+| Query | Example | Matches |
+| --- | --- | --- |
+| Plain words | `项目 计划` | Filename/title or published body containing both words |
+| Quoted phrase | `"Hello World"` | The complete phrase |
+| Relative path | `path:"notes/My Project"` | Published Vault-relative paths, including spaces; never local absolute paths |
+| Filename | `file:.md` | Filenames including the extension |
+| Tag | `tag:work` | The tag itself and descendants such as `work/project` |
+| Same line | `line:(甲 乙)` | Both terms within one published line |
+| Same section | `section:(甲 乙)` | Both terms within one heading section; headings inside code blocks do not split sections |
+| Property exists | `[status]` | A public property is present |
+| Property value | `[status:done]` | A public scalar value or an item in its scalar list matches |
+
+Combine conditions with spaces (AND), `OR`, `-` (exclude), and parentheses. Exclusion has the highest precedence, followed by AND, then OR. For example, `path:"notes/My Project" (tag:work OR tag:study) -file:archive` matches that path and either tag while excluding filenames containing `archive`. Custom properties must be included in `graph.searchProperties`; see **Graph search data** below.
+
+Regular expressions, numeric comparisons, task and block operators are not supported. Invalid syntax shows an error below the field and keeps the previous valid result. If the content index cannot load, `path:`, `file:` and `tag:` remain available. Syntax help is documented here rather than displayed in the graph UI.
 
 Tags and attachments are added for matching notes; attachments can also match filename/path queries directly. Orphans are determined after filtering, using the currently visible links. Missing-note placeholders can be displayed but cannot create files. Arrows preserve both citation directions while reciprocal citations contribute only one physical link.
 

@@ -34,17 +34,6 @@ const words = {
     "Search index unavailable. Retry or use path/file/tag filters.",
   ],
   graphError: ["图谱加载失败，请重试。", "Unable to load graph. Please retry."],
-  help: ["查询语法", "Query syntax"],
-  helpText: [
-    "空格：同时满足 · OR：任一满足 · -：排除 · 引号：短语。",
-    "Space: AND · OR: either · -: exclude · quotes: phrase.",
-  ],
-  pathHelp: ["路径", "Path"],
-  fileHelp: ["文件名", "Filename"],
-  tagHelp: ["标签及子标签", "Tag and descendants"],
-  lineHelp: ["同一行", "Same line"],
-  sectionHelp: ["同一章节", "Same section"],
-  propertyHelp: ["公开属性", "Public property"],
   noDates: ["当前筛选没有可用于动画的日期", "No dated notes in this selection"],
 } as const;
 export function graphText(key: keyof typeof words): string {
@@ -111,7 +100,7 @@ export function createGraphPanel(
   full.id = "graph-full-btn";
   full.hidden = !new URLSearchParams(location.search).has("node");
   const search = iconButton("search", "search", () =>
-    setSearchOpen(!!searchPanel.hidden),
+    setSearchOpen(searchPanel.inert),
   );
   search.id = "graph-search-btn";
   search.setAttribute("aria-controls", "graph-local-search-panel");
@@ -143,7 +132,8 @@ export function createGraphPanel(
   toolbar.append(play, center, toggle, full);
   const searchPanel = el("div", "graph-search-panel");
   searchPanel.id = "graph-local-search-panel";
-  searchPanel.hidden = true;
+  searchPanel.inert = true;
+  searchPanel.setAttribute("aria-hidden", "true");
   const header = el("div", "graph-panel-header");
   const headerActions = el("div", "graph-panel-actions");
   const reset = iconButton("reset", "restart_alt", actions.reset);
@@ -171,7 +161,7 @@ export function createGraphPanel(
     panel.append(section);
     sections.set(name, body);
   }
-  const query = el("input", "graph-query");
+  const query = el("input", "notes-search-input graph-query");
   query.id = "graph-search-input";
   query.type = "search";
   query.placeholder = graphText("query");
@@ -186,21 +176,7 @@ export function createGraphPanel(
   queryError.id = "graph-query-error";
   queryError.setAttribute("role", "status");
   query.setAttribute("aria-describedby", queryError.id);
-  const help = el("details", "graph-help");
-  help.append(el("summary", "", graphText("help")));
-  const helpList = el("dl");
-  for (const [syntax, key] of [
-    ['path:"notes/项目"', "pathHelp"],
-    ["file:.md", "fileHelp"],
-    ["tag:work", "tagHelp"],
-    ["line:(甲 乙)", "lineHelp"],
-    ["section:(甲 乙)", "sectionHelp"],
-    ["[status:done]", "propertyHelp"],
-  ] as const) {
-    helpList.append(el("dt", "", syntax), el("dd", "", graphText(key)));
-  }
-  help.append(helpList, el("p", "", graphText("helpText")));
-  searchPanel.append(query, queryError, help);
+  searchPanel.append(query, queryError);
   const fields = new Map<keyof GraphSettings, HTMLInputElement>();
   const arrowRow = el("label", "graph-switch-row");
   const arrows = button("", () => {
@@ -320,8 +296,7 @@ export function createGraphPanel(
     panel.hidden = !open;
     toggle.setAttribute("aria-expanded", String(open));
     if (open) {
-      searchPanel.hidden = true;
-      search.setAttribute("aria-expanded", "false");
+      if (!searchPanel.inert) setSearchOpen(false);
       presentPanel();
       closeButton.focus({ preventScroll: true });
     } else {
@@ -331,7 +306,9 @@ export function createGraphPanel(
     }
   }
   function setSearchOpen(open: boolean) {
-    searchPanel.hidden = !open;
+    searchPanel.inert = !open;
+    searchPanel.setAttribute("aria-hidden", String(!open));
+    toolbar.classList.toggle("is-search-open", open);
     search.setAttribute("aria-expanded", String(open));
     if (open) {
       if (!panel.hidden) setOpen(false);
@@ -340,7 +317,7 @@ export function createGraphPanel(
   }
   const escape = (event: KeyboardEvent) => {
     if (event.key !== "Escape") return;
-    if (!searchPanel.hidden) {
+    if (!searchPanel.inert) {
       event.stopPropagation();
       setSearchOpen(false);
     } else if (!panel.hidden) {

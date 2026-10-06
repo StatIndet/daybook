@@ -93,10 +93,10 @@ try {
   await page.locator('#graph-search-btn').click();
   assert.equal(await page.locator('#graph-search-input').isVisible(), true);
   assert.equal(await page.locator('#graph-search-input').evaluate(input => input === document.activeElement), true);
-  await page.locator('.graph-help > summary').click();
-  assert.equal(await page.locator('.graph-help dt').count(), 6, 'Toolbar search keeps all query hints');
+  assert.equal(await page.locator('.graph-help').count(), 0, 'Query help is documented outside the graph UI');
   await page.keyboard.press('Escape');
-  assert.equal(await page.locator('#graph-local-search-panel').isHidden(), true);
+  assert.equal(await page.locator('#graph-local-search-panel').evaluate(panel => panel.inert), true);
+  await page.locator('#graph-local-search-panel').waitFor({ state: 'hidden' });
   assert.equal(await page.locator('#graph-search-btn').evaluate(button => button === document.activeElement), true);
 
   const initialTransform = await page.evaluate(() => ({ ...window.d3.zoomTransform(document.querySelector('#graph-container svg')) }));
