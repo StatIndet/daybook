@@ -4,13 +4,43 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    versioning-strategy: "increase"
+    groups:
+      build-tools:
+        patterns:
+          - "esbuild"
+          - "fontkit"
+          - "playwright"
+          - "sharp"
+          - "subset-font"
+          - "typescript"
+        update-types: ["minor", "patch"]
+      fonts-and-icons:
+        patterns:
+          - "@chinese-fonts/*"
+          - "@fontsource/*"
+          - "@fontsource-variable/*"
+          - "lxgw-wenkai-screen-web"
+          - "material-symbols"
+        update-types: ["minor", "patch"]
+      katex:
+        patterns: ["katex"]
+        update-types: ["minor", "patch"]
 
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      go-dependencies:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      github-actions:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
