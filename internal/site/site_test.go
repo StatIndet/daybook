@@ -221,6 +221,8 @@ func TestShareRendering(t *testing.T) {
 
 	writeRequiredTemplateAssets(t, staticDir)
 	writeTestFile(t, contentDir, "pages/about.md", "---\ntitle: About\n---\n")
+	writeTestFile(t, contentDir, "notes/100% #1.md", "---\ndate: 2026-06-18\n---\nReserved characters.")
+	writeTestFile(t, contentDir, "memos/中文 空格.md", "---\ndate: 2026-06-18\n---\nMemo sharing.")
 	writeTestFile(t, contentDir, "notes/鲸歌.md", strings.Join([]string{
 		"---",
 		"title: 鲸歌",
@@ -262,19 +264,28 @@ func TestShareRendering(t *testing.T) {
 	if !strings.Contains(cjkHtml, `data-share-title="鲸歌"`) {
 		t.Errorf("Expected CJK title to be preserved in data-share-title")
 	}
-	if !strings.Contains(cjkHtml, `data-share-link="https://daybook.page/notes/鲸歌/"`) {
-		t.Errorf("Expected CJK ShareURL to be unencoded and correct: %s", cjkHtml)
+	if !strings.Contains(cjkHtml, `data-share-link="https://daybook.page/notes/%E9%B2%B8%E6%AD%8C/"`) {
+		t.Errorf("Expected CJK ShareURL to be percent-encoded: %s", cjkHtml)
 	}
 	if !strings.Contains(cjkHtml, `data-share-text="分享：&#34;鲸歌&#34;"`) {
 		t.Errorf("Expected CJK ShareText to have replaced Title and be html-escaped")
 	}
 
 	spaceHtml := readPublicAsset(t, publicDir, "/notes/A Space Title/index.html")
-	if !strings.Contains(spaceHtml, `data-share-link="https://daybook.page/notes/A Space Title/"`) {
-		t.Errorf("Expected ASCII space ShareURL to be unencoded and correct")
+	if !strings.Contains(spaceHtml, `data-share-link="https://daybook.page/notes/A%20Space%20Title/"`) {
+		t.Errorf("Expected ASCII space ShareURL to be percent-encoded")
 	}
 	if !strings.Contains(spaceHtml, `data-share-text="分享：&#34;A Space Title&#34;"`) {
 		t.Errorf("Expected ASCII space ShareText to have replaced Title and be html-escaped")
+	}
+	reservedHTML := readPublicAsset(t, publicDir, "/notes/100% #1/index.html")
+	if !strings.Contains(reservedHTML, `data-share-link="https://daybook.page/notes/100%25%20%231/"`) {
+		t.Error("Expected literal percent and hash characters to be escaped in the share path")
+	}
+	for _, page := range []string{"/memos/index.html", "/memos/中文 空格/index.html"} {
+		if !strings.Contains(readPublicAsset(t, publicDir, page), `data-share-link="https://daybook.page/memos/%E4%B8%AD%E6%96%87%20%E7%A9%BA%E6%A0%BC/"`) {
+			t.Errorf("Expected percent-encoded memo ShareURL on %s", page)
+		}
 	}
 }
 

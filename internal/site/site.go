@@ -398,7 +398,7 @@ func Build(options Options) (BuildResult, error) {
 						return BuildResult{}, fmt.Errorf("处理短记卡片 %s: %w", note.SourcePath, err)
 					}
 					card.CommentEnabled = options.Config.Comment.Available() && (note.Comment == nil || *note.Comment)
-					card.ShareURL = strings.TrimSuffix(options.Config.Site.URL, "/") + note.URL
+					card.ShareURL = strings.TrimSuffix(options.Config.Site.URL, "/") + escapeURLPath(note.URL)
 					card.ShareText = strings.ReplaceAll(options.Config.Share.Text, "{Title}", note.Title)
 					memoCards = append(memoCards, card)
 					dateDisplay = card.DateDisplay
@@ -488,7 +488,7 @@ func Build(options Options) (BuildResult, error) {
 				}
 
 				canonicalPath := joinURL("/", langPrefix, note.Section, note.Slug)
-				shareURL := strings.TrimSuffix(options.Config.Site.URL, "/") + canonicalPath
+				shareURL := strings.TrimSuffix(options.Config.Site.URL, "/") + escapeURLPath(canonicalPath)
 				shareText := strings.ReplaceAll(options.Config.Share.Text, "{Title}", note.Title)
 
 				pageKind, bodyClass := "note", "note-body page-body"
