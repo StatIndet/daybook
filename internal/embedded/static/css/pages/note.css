@@ -284,7 +284,7 @@
 
   /* State: Reading & Not Hovered (Visible, In Place) */
   .note-toc-stage.has-reading-rail.is-reading:not(.is-hovered) .reading-toc-rail {
-    clip-path: inset(0);
+    clip-path: inset(calc(-1 * var(--reading-toc-rail-overflow, 0px)) 0);
     opacity: 1;
     pointer-events: auto;
     transform: translate3d(0, 0, 0);
@@ -293,7 +293,7 @@
 
   /* State: Reading & Hovered (Invisible, In Place) */
   .note-toc-stage.has-reading-rail.is-reading.is-hovered .reading-toc-rail {
-    clip-path: inset(0);
+    clip-path: inset(calc(-1 * var(--reading-toc-rail-overflow, 0px)) 0);
     opacity: 0;
     pointer-events: none;
     transform: translate3d(0, 0, 0);
