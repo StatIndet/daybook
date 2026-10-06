@@ -1688,6 +1688,10 @@ html[data-reduced-motion="true"] .like-button[data-like-feedback][aria-pressed] 
 }
 .rss-dialog-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 20px; }
 .rss-dialog-actions a, .rss-dialog-actions button { font: inherit; color: inherit; cursor: pointer; background: transparent; border: 0; padding: 4px 0; }
+/* Reserve both labels so removing outgoing characters cannot move the button. */
+.rss-dialog-actions [data-rss-copy] { position: relative; display: inline-grid; text-align: left; }
+.rss-copy-reserve { grid-area: 1 / 1; visibility: hidden; white-space: nowrap; }
+[data-rss-copy-text] { position: absolute; inset: 4px 0; white-space: nowrap; }
 .rss-status { min-height: 1.7em; margin-bottom: 0; }
 
 body:has(.rss-dialog[open]) { overflow: hidden; }

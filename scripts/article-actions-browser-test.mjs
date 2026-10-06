@@ -245,6 +245,32 @@ try {
   await page.locator('.site-tools .lang-toggle').click();
   await page.locator('.article-stagger-meta [data-rss-open]').click();
   assert.equal(await page.locator('#rss-title').textContent(), 'Subscribe to this site (RSS)');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const copyLayout = await page.evaluate(async () => {
+    await document.fonts.ready;
+    const button = document.querySelector('[data-rss-copy]');
+    const label = button.querySelector('[data-rss-copy-text]');
+    const samples = [];
+    button.click();
+    const start = performance.now();
+    while (performance.now() - start < 2500) {
+      await new Promise(requestAnimationFrame);
+      const rect = button.getBoundingClientRect();
+      const first = label.querySelector('.text-roll-new')?.firstChild || label.firstChild;
+      const range = document.createRange();
+      range.setStart(first, 0);
+      range.setEnd(first, first.nodeType === Node.TEXT_NODE ? 1 : 0);
+      samples.push({ left: rect.left, width: rect.width, textLeft: range.getBoundingClientRect().left, rolling: label.classList.contains('text-roll-active') });
+    }
+    return { samples, text: label.textContent };
+  });
+  assert(copyLayout.samples.some(sample => sample.rolling), 'RSS copy uses the shared rolling animation');
+  for (const key of ['left', 'width', 'textLeft']) {
+    const values = copyLayout.samples.map(sample => sample[key]);
+    assert(Math.max(...values) - Math.min(...values) < 0.5, `RSS copy ${key} stays stable through animation cleanup and reset`);
+  }
+  assert.equal(copyLayout.text, 'Copy address');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.evaluate(() => { navigator.clipboard.writeText = async () => { throw new Error('Denied'); }; });
   await dialog.locator('[data-rss-copy]').click();
   await page.waitForFunction(() => document.querySelector('.rss-status').textContent.includes('selected'));
