@@ -237,7 +237,7 @@ try {
   assert.equal(await dialog.evaluate(dialog => dialog.open), true);
   assert.equal(await dialog.locator('[data-rss-address]').inputValue(), base + '/rss.xml');
   await dialog.locator('[data-rss-copy]').click();
-  await page.waitForFunction(() => document.querySelector('.rss-status').textContent === '已复制');
+  await page.waitForFunction(() => document.querySelector('[data-rss-copy-text]').textContent === '已复制');
   assert.equal(await page.evaluate(() => navigator.clipboard.readText()), base + '/rss.xml');
   await page.keyboard.press('Escape');
   assert.equal(await dialog.evaluate(dialog => dialog.open), false);

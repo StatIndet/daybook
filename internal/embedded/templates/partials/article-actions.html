@@ -26,7 +26,7 @@
   <input data-rss-address readonly aria-label="{{T .Lang "rss.address"}}" data-ui-aria="rss.address">
   <div class="rss-dialog-actions">
     <a href="/rss.xml" data-rss-feed data-daybook-reload target="_blank" rel="noopener" data-ui-text="rss.open">{{T .Lang "rss.open"}}</a>
-    <button type="button" data-rss-copy data-ui-text="rss.copy">{{T .Lang "rss.copy"}}</button>
+    <button type="button" data-rss-copy aria-label="{{T .Lang "rss.copy"}}" data-ui-aria="rss.copy"><span data-rss-copy-text aria-hidden="true" data-ui-text="rss.copy">{{T .Lang "rss.copy"}}</span></button>
   </div>
   <p class="rss-status" role="status"></p>
   </div>

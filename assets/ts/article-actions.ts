@@ -1,5 +1,6 @@
 import { updateNumber } from "./number-flip";
 import { privacyReady } from "./privacy-store";
+import { animateTextChange } from "./text-roll";
 type LikeState = { path: string; count: number; liked: boolean };
 
 function text(key: string): string {
@@ -149,24 +150,49 @@ function setupRSS(): void {
   const address = dialog.querySelector<HTMLInputElement>('[data-rss-address]')!;
   const open = dialog.querySelector<HTMLAnchorElement>('[data-rss-feed]')!;
   const status = dialog.querySelector<HTMLElement>('[role="status"]')!;
+  const copyButton = dialog.querySelector<HTMLButtonElement>('[data-rss-copy]')!;
+  const copyText = copyButton.querySelector<HTMLElement>('[data-rss-copy-text]')!;
+  let resetTimer = 0;
+  let copyRequest = 0;
+  function resetCopy(): void {
+    copyRequest++;
+    clearTimeout(resetTimer);
+    copyButton.dataset.uiAria = 'rss.copy';
+    copyButton.setAttribute('aria-label', text('rss.copy'));
+    animateTextChange(copyText, text('rss.copy'), true);
+    status.textContent = '';
+  }
   document.addEventListener('click', event => {
     const link = (event.target as Element | null)?.closest<HTMLAnchorElement>('[data-rss-open]');
     if (!link || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     address.value = link.href;
     open.href = link.href;
-    status.textContent = '';
+    resetCopy();
     if (!dialog.open) {
       dialog.classList.add('is-open');
       dialog.showModal();
     }
   }, true);
-  dialog.querySelector('[data-rss-copy]')!.addEventListener('click', async () => {
+  copyButton.addEventListener('click', async () => {
     const value = address.value;
+    const request = ++copyRequest;
+    clearTimeout(resetTimer);
+    status.textContent = '';
     try {
       await navigator.clipboard.writeText(value);
-      if (dialog.open && address.value === value) status.textContent = text('action.copied');
+      if (!dialog.open || request !== copyRequest) return;
+      copyButton.dataset.uiAria = 'action.copied';
+      copyButton.setAttribute('aria-label', text('action.copied'));
+      animateTextChange(copyText, text('action.copied'));
+      resetTimer = window.setTimeout(() => {
+        copyButton.dataset.uiAria = 'rss.copy';
+        copyButton.setAttribute('aria-label', text('rss.copy'));
+        animateTextChange(copyText, text('rss.copy'));
+      }, 1500);
     } catch {
+      if (!dialog.open || request !== copyRequest) return;
+      resetCopy();
       address.focus();
       address.select();
       status.textContent = text('rss.copy_fallback');
@@ -174,9 +200,12 @@ function setupRSS(): void {
   });
   dialog.addEventListener('keydown', event => { if (event.key === 'Escape') event.stopPropagation(); });
   dialog.querySelector('[data-rss-close]')!.addEventListener('click', () => dialog.close());
-  dialog.addEventListener('close', () => dialog.classList.remove('is-open'));
+  dialog.addEventListener('close', () => {
+    dialog.classList.remove('is-open');
+    resetCopy();
+  });
   document.addEventListener('daybook:before-swap', () => dialog.close());
-  document.addEventListener('daybook:lang-change', () => { status.textContent = ''; });
+  document.addEventListener('daybook:lang-change', resetCopy);
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupRSS, { once: true });
 else setupRSS();
