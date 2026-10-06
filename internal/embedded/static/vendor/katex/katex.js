@@ -197,7 +197,6 @@ const protocolFromUrl = url => {
 
 
 
-
 /**
  * Union of all values that appear as schema defaults, cliDefaults, or
  * cliProcessor return values.  StrictFunction / TrustFunction are
@@ -364,64 +363,6 @@ class Settings {
         // TODO: validate options
         applySetting(this, prop, options, schema);
       }
-    }
-  }
-
-  /**
-   * Report nonstrict (non-LaTeX-compatible) input.
-   * Can safely not be called if `this.strict` is false in JavaScript.
-   */
-  reportNonstrict(errorCode, errorMsg, token) {
-    let strict = this.strict;
-    if (typeof strict === "function") {
-      // Allow return value of strict function to be boolean or string
-      // (or null/undefined, meaning no further processing).
-      strict = strict(errorCode, errorMsg, token);
-    }
-    if (!strict || strict === "ignore") {
-      return;
-    } else if (strict === true || strict === "error") {
-      throw new src_ParseError("LaTeX-incompatible input and strict mode is set to 'error': " + (errorMsg + " [" + errorCode + "]"), token);
-    } else if (strict === "warn") {
-      typeof console !== "undefined" && console.warn("LaTeX-incompatible input and strict mode is set to 'warn': " + (errorMsg + " [" + errorCode + "]"));
-    } else {
-      // won't happen in type-safe code
-      typeof console !== "undefined" && console.warn("LaTeX-incompatible input and strict mode is set to " + ("unrecognized '" + strict + "': " + errorMsg + " [" + errorCode + "]"));
-    }
-  }
-
-  /**
-   * Check whether to apply strict (LaTeX-adhering) behavior for unusual
-   * input (like `\\`).  Unlike `nonstrict`, will not throw an error;
-   * instead, "error" translates to a return value of `true`, while "ignore"
-   * translates to a return value of `false`.  May still print a warning:
-   * "warn" prints a warning and returns `false`.
-   * This is for the second category of `errorCode`s listed in the README.
-   */
-  useStrictBehavior(errorCode, errorMsg, token) {
-    let strict = this.strict;
-    if (typeof strict === "function") {
-      // Allow return value of strict function to be boolean or string
-      // (or null/undefined, meaning no further processing).
-      // But catch any exceptions thrown by function, treating them
-      // like "error".
-      try {
-        strict = strict(errorCode, errorMsg, token);
-      } catch (error) {
-        strict = "error";
-      }
-    }
-    if (!strict || strict === "ignore") {
-      return false;
-    } else if (strict === true || strict === "error") {
-      return true;
-    } else if (strict === "warn") {
-      typeof console !== "undefined" && console.warn("LaTeX-incompatible input and strict mode is set to 'warn': " + (errorMsg + " [" + errorCode + "]"));
-      return false;
-    } else {
-      // won't happen in type-safe code
-      typeof console !== "undefined" && console.warn("LaTeX-incompatible input and strict mode is set to " + ("unrecognized '" + strict + "': " + errorMsg + " [" + errorCode + "]"));
-      return false;
     }
   }
 
@@ -4908,12 +4849,75 @@ const wideCharacterFont = wideChar => {
     throw new src_ParseError("Unsupported character: " + wideChar);
   }
 };
-;// ./src/buildCommon.ts
+;// ./src/strict.ts
 /* eslint no-console:0 */
+
+
+
+/**
+ * Dispatch LaTeX-incompatible (nonstrict) input according to the `strict`
+ * setting.  Can safely not be called if `strict` is `false`.
+ *
+ * With `report: true`, reports the transgression and returns nothing:
+ * `"error"`/`true` throws a `ParseError`, `"warn"` warns via `console.warn`,
+ * and `"ignore"`/`false` does nothing.  An exception thrown by a `strict`
+ * callback propagates to the caller.
+ *
+ * With `report: false`, checks whether to apply strict (LaTeX-adhering)
+ * behavior for unusual input (like `\\`) and never throws: `"error"`/`true`
+ * returns `true`, `"ignore"`/`false` returns `false`, and `"warn"` warns and
+ * returns `false`.  An exception thrown by a `strict` callback is treated as
+ * `"error"`.  This is for the second category of `errorCode`s listed in
+ * `docs/options.md`.
+ */
+
+function handleStrict(params) {
+  const strict = params.strict,
+    errorCode = params.errorCode,
+    errorMsg = params.errorMsg,
+    token = params.token,
+    report = params.report;
+  let behavior = strict;
+  if (typeof strict === "function") {
+    if (report) {
+      behavior = strict(errorCode, errorMsg, token);
+    } else {
+      try {
+        behavior = strict(errorCode, errorMsg, token);
+      } catch (error) {
+        behavior = "error";
+      }
+    }
+  }
+  switch (behavior) {
+    case true:
+    case "error":
+      if (report) {
+        throw new src_ParseError("LaTeX-incompatible input and strict mode is set to 'error': " + (errorMsg + " [" + errorCode + "]"), token);
+      } else {
+        return true;
+      }
+    case false:
+    case "ignore":
+      if (!report) {
+        return false;
+      }
+      break;
+    case "warn":
+    default:
+      typeof console !== "undefined" && console.warn("LaTeX-incompatible input and strict mode is set to 'warn': " + (errorMsg + " [" + errorCode + "]"));
+      if (!report) {
+        return false;
+      }
+      break;
+  }
+}
+;// ./src/buildCommon.ts
 /**
  * This module contains general functions that can be used for building
  * different kinds of domTree nodes in a consistent manner.
  */
+
 
 
 
@@ -4947,7 +4951,6 @@ const lookupSymbol = function (value, fontName, mode) {
  * TODO: make argument order closer to makeSpan
  * TODO: add a separate argument for math class (e.g. `mop`, `mbin`), which
  * should if present come first in `classes`.
- * TODO(#953): Make `options` mandatory and always pass it in.
  */
 const makeSymbol = function (value, fontName, mode, options, classes) {
   const lookup = lookupSymbol(value, fontName, mode);
@@ -4961,19 +4964,21 @@ const makeSymbol = function (value, fontName, mode, options, classes) {
     }
     symbolNode = new SymbolNode(value, metrics.height, metrics.depth, italic, metrics.skew, metrics.width, classes);
   } else {
-    // TODO(emily): Figure out a good way to only print this in development
-    typeof console !== "undefined" && console.warn("No character metrics " + ("for '" + value + "' in style '" + fontName + "' and mode '" + mode + "'"));
+    handleStrict({
+      strict: options.strict,
+      errorCode: "symbolNotInFont",
+      errorMsg: "No character metrics for '" + value + "' in style '" + fontName + "' and mode '" + mode + "'",
+      report: true
+    });
     symbolNode = new SymbolNode(value, 0, 0, 0, 0, 0, classes);
   }
-  if (options) {
-    symbolNode.maxFontSize = options.sizeMultiplier;
-    if (options.style.isTight()) {
-      symbolNode.classes.push("mtight");
-    }
-    const color = options.getColor();
-    if (color) {
-      symbolNode.style.color = color;
-    }
+  symbolNode.maxFontSize = options.sizeMultiplier;
+  if (options.style.isTight()) {
+    symbolNode.classes.push("mtight");
+  }
+  const color = options.getColor();
+  if (color) {
+    symbolNode.style.color = color;
   }
   return symbolNode;
 };
@@ -6620,6 +6625,7 @@ class Options {
     this.maxSize = void 0;
     this.minRuleThickness = void 0;
     this._fontMetrics = void 0;
+    this.strict = void 0;
     this.style = data.style;
     this.color = data.color;
     this.size = data.size || Options.BASESIZE;
@@ -6632,6 +6638,7 @@ class Options {
     this.sizeMultiplier = sizeMultipliers[this.size - 1];
     this.maxSize = data.maxSize;
     this.minRuleThickness = data.minRuleThickness;
+    this.strict = data.strict;
     this._fontMetrics = undefined;
   }
 
@@ -6651,7 +6658,8 @@ class Options {
       fontWeight: this.fontWeight,
       fontShape: this.fontShape,
       maxSize: this.maxSize,
-      minRuleThickness: this.minRuleThickness
+      minRuleThickness: this.minRuleThickness,
+      strict: this.strict
     };
     Object.assign(data, extension);
     return new Options(data);
@@ -6853,13 +6861,12 @@ Options.BASESIZE = 6;
 
 
 
-const optionsFromSettings = function (settings) {
-  return new src_Options({
-    style: settings.displayMode ? src_Style.DISPLAY : src_Style.TEXT,
-    maxSize: settings.maxSize,
-    minRuleThickness: settings.minRuleThickness
-  });
-};
+const optionsFromSettings = settings => new src_Options({
+  style: settings.displayMode ? src_Style.DISPLAY : src_Style.TEXT,
+  maxSize: settings.maxSize,
+  minRuleThickness: settings.minRuleThickness,
+  strict: settings.strict
+});
 const displayWrap = function (node, settings) {
   if (settings.displayMode) {
     const classes = ["katex-display"];
@@ -6888,7 +6895,7 @@ const buildTree = function (tree, expression, settings) {
   }
   return displayWrap(katexNode, settings);
 };
-const buildHTMLTree = function (tree, expression, settings) {
+const buildHTMLTree = function (tree, settings) {
   const options = optionsFromSettings(settings);
   const htmlNode = buildHTML(tree, options);
   const katexNode = makeSpan(["katex"], [htmlNode]);
@@ -7290,6 +7297,7 @@ function assertCharacterGroup(group, errorMessage, allowSpaces) {
 
 
 
+
 const getBaseSymbol = group => {
   if (group instanceof SymbolNode) {
     return group;
@@ -7503,7 +7511,12 @@ defineFunction({
     const base = args[0];
     let mode = context.parser.mode;
     if (mode === "math") {
-      context.parser.settings.reportNonstrict("mathVsTextAccents", "LaTeX's accent " + context.funcName + " works only in text mode");
+      handleStrict({
+        strict: context.parser.settings.strict,
+        errorCode: "mathVsTextAccents",
+        errorMsg: "LaTeX's accent " + context.funcName + " works only in text mode",
+        report: true
+      });
       mode = "text";
     }
     return {
@@ -8308,6 +8321,7 @@ defineFunction({
 
 
 
+
 // \DeclareRobustCommand\\{...\@xnewline}
 defineFunction({
   type: "cr",
@@ -8315,10 +8329,15 @@ defineFunction({
   numArgs: 0,
   numOptionalArgs: 0,
   allowedInText: true,
-  handler(_ref, args, optArgs) {
+  handler(_ref) {
     let parser = _ref.parser;
     const size = parser.gullet.future().text === "[" ? parser.parseSizeGroup(true) : null;
-    const newLine = !parser.settings.displayMode || !parser.settings.useStrictBehavior("newLineInDisplayMode", "In LaTeX, \\\\ or \\newline " + "does nothing in display mode");
+    const newLine = !parser.settings.displayMode || !handleStrict({
+      strict: parser.settings.strict,
+      errorCode: "newLineInDisplayMode",
+      errorMsg: "In LaTeX, \\\\ or \\newline does nothing in display mode",
+      report: false
+    });
     return {
       type: "cr",
       mode: parser.mode,
@@ -8654,7 +8673,7 @@ const makeLargeDelim = function (delim, size, center, options, mode, classes) {
  * Make a span from a font glyph with the given offset and in the given font.
  * This is used in makeStackedDelim to make the stacking pieces for the delimiter.
  */
-const makeGlyphSpan = function (symbol, font, mode) {
+const makeGlyphSpan = function (symbol, font, mode, options) {
   let sizeClass;
   // Apply the correct CSS class to choose the right font.
   if (font === "Size1-Regular") {
@@ -8662,7 +8681,7 @@ const makeGlyphSpan = function (symbol, font, mode) {
   } else /* if (font === "Size4-Regular") */{
       sizeClass = "delim-size4";
     }
-  const corner = makeSpan(["delimsizinginner", sizeClass], [makeSpan([], [makeSymbol(symbol, font, mode)])]);
+  const corner = makeSpan(["delimsizinginner", sizeClass], [makeSpan([], [makeSymbol(symbol, font, mode, options)])]);
 
   // Since this will be passed into `makeVList` in the end, wrap the element
   // in the appropriate tag that VList uses.
@@ -8897,7 +8916,7 @@ const makeStackedDelim = function (delim, heightTotal, center, options, mode, cl
   } else {
     // Stack glyphs
     // Start by adding the bottom symbol
-    stack.push(makeGlyphSpan(bottom, font, mode));
+    stack.push(makeGlyphSpan(bottom, font, mode, options));
     stack.push(lap); // overlap
 
     if (middle === null) {
@@ -8912,14 +8931,14 @@ const makeStackedDelim = function (delim, heightTotal, center, options, mode, cl
       stack.push(makeInner(repeat, innerHeight, options));
       // Now insert the middle of the brace.
       stack.push(lap);
-      stack.push(makeGlyphSpan(middle, font, mode));
+      stack.push(makeGlyphSpan(middle, font, mode, options));
       stack.push(lap);
       stack.push(makeInner(repeat, innerHeight, options));
     }
 
     // Add the top symbol
     stack.push(lap);
-    stack.push(makeGlyphSpan(top, font, mode));
+    stack.push(makeGlyphSpan(top, font, mode, options));
   }
 
   // Finally, build the vlist
@@ -9588,6 +9607,7 @@ defineFunction({
 
 
 
+
 const enclose_htmlBuilder = (group, options) => {
   // \cancel, \bcancel, \xcancel, \sout, \fbox, \colorbox, \fcolorbox, \phase
   // Some groups can return document fragments.  Handle those by wrapping
@@ -9867,7 +9887,12 @@ defineFunction({
     let parser = _ref5.parser,
       funcName = _ref5.funcName;
     if (parser.mode === "math") {
-      parser.settings.reportNonstrict("mathVsSout", "LaTeX's \\sout works only in text mode");
+      handleStrict({
+        strict: parser.settings.strict,
+        errorCode: "mathVsSout",
+        errorMsg: "LaTeX's \\sout works only in text mode",
+        report: true
+      });
     }
     const body = args[0];
     return {
@@ -10079,6 +10104,7 @@ class Token {
 
 
 
+
 // Data stored in the ParseNode associated with the environment.
 
 // Type to indicate column separation in MathML
@@ -10220,7 +10246,12 @@ function parseArray(parser, _ref, style) {
           throw new src_ParseError("Too many tab characters: &", parser.nextToken);
         } else {
           // {array} environment
-          parser.settings.reportNonstrict("textEnv", "Too few columns " + "specified in the {array} column argument.");
+          handleStrict({
+            strict: parser.settings.strict,
+            errorCode: "textEnv",
+            errorMsg: "Too few columns specified in the {array} column argument.",
+            report: true
+          });
         }
       }
       parser.consume();
@@ -11928,6 +11959,7 @@ defineFunction({
 
 
 
+
 defineFunction({
   type: "html",
   names: ["\\htmlClass", "\\htmlId", "\\htmlStyle", "\\htmlData"],
@@ -11941,7 +11973,12 @@ defineFunction({
     const value = assertNodeType(args[0], "raw").string;
     const body = args[1];
     if (parser.settings.strict) {
-      parser.settings.reportNonstrict("htmlExtension", "HTML extension is disabled on strict mode");
+      handleStrict({
+        strict: parser.settings.strict,
+        errorCode: "htmlExtension",
+        errorMsg: "HTML extension is disabled on strict mode",
+        report: true
+      });
     }
     let trustContext;
     const attributes = {};
@@ -12219,6 +12256,7 @@ defineFunction({
 
 
 
+
 // TODO: \hskip and \mskip should support plus and minus in lengths
 
 defineFunction({
@@ -12237,15 +12275,30 @@ defineFunction({
       const muUnit = size.value.unit === 'mu';
       if (mathFunction) {
         if (!muUnit) {
-          parser.settings.reportNonstrict("mathVsTextUnits", "LaTeX's " + funcName + " supports only mu units, " + ("not " + size.value.unit + " units"));
+          handleStrict({
+            strict: parser.settings.strict,
+            errorCode: "mathVsTextUnits",
+            errorMsg: "LaTeX's " + funcName + " supports only mu units, " + ("not " + size.value.unit + " units"),
+            report: true
+          });
         }
         if (parser.mode !== "math") {
-          parser.settings.reportNonstrict("mathVsTextUnits", "LaTeX's " + funcName + " works only in math mode");
+          handleStrict({
+            strict: parser.settings.strict,
+            errorCode: "mathVsTextUnits",
+            errorMsg: "LaTeX's " + funcName + " works only in math mode",
+            report: true
+          });
         }
       } else {
         // !mathFunction
         if (muUnit) {
-          parser.settings.reportNonstrict("mathVsTextUnits", "LaTeX's " + funcName + " doesn't support mu units");
+          handleStrict({
+            strict: parser.settings.strict,
+            errorCode: "mathVsTextUnits",
+            errorMsg: "LaTeX's " + funcName + " doesn't support mu units",
+            report: true
+          });
         }
       }
     }
@@ -14323,6 +14376,7 @@ const functions = _functions;
 
 
 
+
 /* The following tokenRegex
  * - matches typical whitespace (but not NBSP etc.) using its first group
  * - does not match any control character \x00-\x1f except whitespace
@@ -14410,7 +14464,12 @@ class Lexer {
       const nlIndex = input.indexOf('\n', this.tokenRegex.lastIndex);
       if (nlIndex === -1) {
         this.tokenRegex.lastIndex = input.length; // EOF
-        this.settings.reportNonstrict("commentAtEnd", "% comment has no terminating newline; LaTeX would " + "fail because of commenting the end of math mode (e.g. $)");
+        handleStrict({
+          strict: this.settings.strict,
+          errorCode: "commentAtEnd",
+          errorMsg: "% comment has no terminating newline; LaTeX would " + "fail because of commenting the end of math mode (e.g. $)",
+          report: true
+        });
       } else {
         this.tokenRegex.lastIndex = nlIndex + 1;
       }
@@ -16105,6 +16164,7 @@ const uSubsAndSups = Object.freeze({
 
 
 
+
 // Pre-evaluate both modules as unicodeSymbols require String.normalize()
 const unicodeAccents = {
   "́": {
@@ -17403,7 +17463,13 @@ class Parser {
     if (Object.prototype.hasOwnProperty.call(unicodeSymbols, text[0]) && !src_symbols[this.mode][text[0]]) {
       // This behavior is not strict (XeTeX-compatible) in math mode.
       if (this.settings.strict && this.mode === "math") {
-        this.settings.reportNonstrict("unicodeTextInMathMode", "Accented Unicode text character \"" + text[0] + "\" used in " + "math mode", nucleus);
+        handleStrict({
+          strict: this.settings.strict,
+          errorCode: "unicodeTextInMathMode",
+          errorMsg: "Accented Unicode text character \"" + text[0] + "\" used in math mode",
+          report: true,
+          token: nucleus
+        });
       }
       text = unicodeSymbols[text[0]] + text.slice(1);
     }
@@ -17421,7 +17487,13 @@ class Parser {
     let symbol;
     if (src_symbols[this.mode][text]) {
       if (this.settings.strict && this.mode === 'math' && extraLatin.includes(text)) {
-        this.settings.reportNonstrict("unicodeTextInMathMode", "Latin-1/Unicode text character \"" + text[0] + "\" used in " + "math mode", nucleus);
+        handleStrict({
+          strict: this.settings.strict,
+          errorCode: "unicodeTextInMathMode",
+          errorMsg: "Latin-1/Unicode text character \"" + text[0] + "\" used in math mode",
+          report: true,
+          token: nucleus
+        });
       }
       const group = src_symbols[this.mode][text].group;
       const loc = SourceLocation.range(nucleus);
@@ -17447,9 +17519,21 @@ class Parser {
       // no symbol for e.g. ^
       if (this.settings.strict) {
         if (!supportedCodepoint(text.charCodeAt(0))) {
-          this.settings.reportNonstrict("unknownSymbol", "Unrecognized Unicode character \"" + text[0] + "\"" + (" (" + text.charCodeAt(0) + ")"), nucleus);
+          handleStrict({
+            strict: this.settings.strict,
+            errorCode: "unknownSymbol",
+            errorMsg: "Unrecognized Unicode character \"" + text[0] + "\"" + (" (" + text.charCodeAt(0) + ")"),
+            report: true,
+            token: nucleus
+          });
         } else if (this.mode === "math") {
-          this.settings.reportNonstrict("unicodeTextInMathMode", "Unicode text character \"" + text[0] + "\" used in math mode", nucleus);
+          handleStrict({
+            strict: this.settings.strict,
+            errorCode: "unicodeTextInMathMode",
+            errorMsg: "Unicode text character \"" + text[0] + "\" used in math mode",
+            report: true,
+            token: nucleus
+          });
         }
       }
       // All nonmathematical Unicode characters are rendered as if they
@@ -17626,12 +17710,12 @@ const renderToHTMLTree = function (expression, options) {
   const settings = new Settings(options);
   try {
     const tree = src_parseTree(expression, settings);
-    return buildHTMLTree(tree, expression, settings);
+    return buildHTMLTree(tree, settings);
   } catch (error) {
     return renderError(error, expression, settings);
   }
 };
-const version = "0.18.9";
+const version = "0.19.0";
 const __domTree = {
   Span: Span,
   Anchor: Anchor,
