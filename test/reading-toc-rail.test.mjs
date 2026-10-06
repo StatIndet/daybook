@@ -44,20 +44,20 @@ test("the wave spans the full rail and becomes straight at both endpoints", () =
   assert.equal(bottom.peakX, 188);
 });
 
-test("near-edge paths clip endpoints but retain full bezier control points", () => {
+test("near-edge control points stay within each half-wave", () => {
   const nearTop = buildReadingTocRailCurve(geometry, 10, 20);
   assert.equal(nearTop.topY, 0);
   assert.equal(nearTop.bottomY, 60);
   assert.equal(nearTop.effectiveAmplitude, 4);
   assert.equal(nearTop.peakX, 184);
-  assert.match(nearTop.basePath, /C 188 -20 184 -5 184 10/);
+  assert.match(nearTop.basePath, /C 188 4 184 7 184 10/);
 
   const nearBottom = buildReadingTocRailCurve(geometry, 190, 20);
   assert.equal(nearBottom.topY, 140);
   assert.equal(nearBottom.bottomY, 200);
   assert.equal(nearBottom.effectiveAmplitude, 4);
   assert.equal(nearBottom.peakX, 184);
-  assert.match(nearBottom.basePath, /C 184 205 188 220 188 200/);
+  assert.match(nearBottom.basePath, /C 184 193 188 196 188 200/);
 });
 
 test("direction mirrors only the horizontal wave geometry", () => {
@@ -78,4 +78,24 @@ test("heading dots follow the same cosine-squared wave envelope", () => {
   approximatelyEqual(readingTocRailDotOffset(50, 100, 50, 20, -1), 0);
   approximatelyEqual(readingTocRailDotOffset(30, 100, 50, 20, -1), 0);
   approximatelyEqual(readingTocRailDotOffset(100, 100, 50, 20, 1), 20);
+});
+
+// Ordered control points guarantee that each cubic stays monotonic in Y.
+test("the rail never folds or extends past either endpoint", () => {
+  for (const height of [40, 200, 640]) {
+    for (const halfHeight of [50, 100]) {
+      for (const ratio of [0, 0.001, 0.01, 0.05, 0.5, 0.95, 0.99, 0.999, 1]) {
+        const curve = buildReadingTocRailCurve(
+          { ...geometry, height }, height * ratio, 34, halfHeight,
+        );
+        const coordinates = curve.basePath.match(/-?\d+(?:\.\d+)?/g).map(Number);
+        const ys = coordinates.filter((_, index) => index % 2 === 1);
+        assert.equal(ys[0], 0);
+        assert.equal(ys.at(-1), height);
+        for (let index = 1; index < ys.length; index++) {
+          assert.ok(ys[index] >= ys[index - 1], `fold at ${ratio}: ${curve.basePath}`);
+        }
+      }
+    }
+  }
 });

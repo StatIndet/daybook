@@ -169,9 +169,8 @@ function normalizeGeometry(geometry: ReadingTocRailGeometry): ReadingTocRailGeom
 }
 
 /**
- * Builds the whole rail path. Near an edge only the path endpoints are clipped;
- * the control points keep their full wave positions, which creates the short
- * hook visible before the wave settles into a straight line at 0% or 100%.
+ * Builds the whole rail path. Each half-wave uses its available vertical span
+ * so its control points stay inside the rail and never fold across an endpoint.
  */
 export function buildReadingTocRailCurve(
   geometry: ReadingTocRailGeometry,
@@ -200,12 +199,14 @@ export function buildReadingTocRailCurve(
   );
   const peakX = baselineX + normalized.direction * effectiveAmplitude;
 
+  const topSpan = safeMarkerY - topY;
+  const bottomSpan = bottomY - safeMarkerY;
   const curve = [
-    `C ${formatNumber(baselineX)} ${formatNumber(safeMarkerY - 0.6 * safeHalfHeight)}`,
-    `${formatNumber(peakX)} ${formatNumber(safeMarkerY - 0.3 * safeHalfHeight)}`,
+    `C ${formatNumber(baselineX)} ${formatNumber(safeMarkerY - 0.6 * topSpan)}`,
+    `${formatNumber(peakX)} ${formatNumber(safeMarkerY - 0.3 * topSpan)}`,
     `${formatNumber(peakX)} ${formatNumber(safeMarkerY)}`,
-    `C ${formatNumber(peakX)} ${formatNumber(safeMarkerY + 0.3 * safeHalfHeight)}`,
-    `${formatNumber(baselineX)} ${formatNumber(safeMarkerY + 0.6 * safeHalfHeight)}`,
+    `C ${formatNumber(peakX)} ${formatNumber(safeMarkerY + 0.3 * bottomSpan)}`,
+    `${formatNumber(baselineX)} ${formatNumber(safeMarkerY + 0.6 * bottomSpan)}`,
     `${formatNumber(baselineX)} ${formatNumber(bottomY)}`,
   ].join(" ");
 
@@ -259,10 +260,6 @@ export class ReadingTocRail {
   private readonly svg: SVGSVGElement;
   private readonly basePath: SVGPathElement;
   private readonly accentPath: SVGPathElement;
-  private readonly baseTop: SVGPathElement;
-  private readonly baseBottom: SVGPathElement;
-  private readonly accentTop: SVGPathElement;
-  private readonly accentBottom: SVGPathElement;
   private readonly dotsRoot: HTMLElement;
   private readonly label: HTMLElement;
   private readonly currentLink: HTMLAnchorElement;
@@ -312,18 +309,6 @@ export class ReadingTocRail {
       throw new Error("[Daybook] Reading TOC rail requires two title slots");
     }
     this.titleSlots = [firstTitle, secondTitle];
-
-    this.baseTop = this.basePath.cloneNode() as SVGPathElement;
-    this.baseBottom = this.basePath.cloneNode() as SVGPathElement;
-    this.accentTop = this.accentPath.cloneNode() as SVGPathElement;
-    this.accentBottom = this.accentPath.cloneNode() as SVGPathElement;
-
-    this.svg.insertBefore(this.baseTop, this.basePath);
-    this.svg.insertBefore(this.baseBottom, this.basePath);
-    this.svg.appendChild(this.accentTop);
-    this.svg.appendChild(this.accentBottom);
-
-    this.svg.style.overflow = "hidden";
 
     this.refreshPositionTargets();
   }
@@ -495,10 +480,6 @@ export class ReadingTocRail {
     this.headings = [];
     this.basePath.setAttribute("d", "M 0 0");
     this.accentPath.setAttribute("d", "M 0 0");
-    this.baseTop.remove();
-    this.baseBottom.remove();
-    this.accentTop.remove();
-    this.accentBottom.remove();
     this.label.style.left = "";
     this.label.style.top = "";
     this.label.style.transform = "";
@@ -665,17 +646,6 @@ export class ReadingTocRail {
     this.basePath.setAttribute("d", path.basePath);
     this.accentPath.setAttribute("d", path.basePath);
 
-    this.baseTop.setAttribute("d", path.basePath);
-    this.baseTop.setAttribute("transform", "scale(1, -1)");
-    this.accentTop.setAttribute("d", path.basePath);
-    this.accentTop.setAttribute("transform", "scale(1, -1)");
-
-    const bottomTransform = `scale(1, -1) translate(0, -${formatNumber(2 * this.geometry.height)})`;
-    this.baseBottom.setAttribute("d", path.basePath);
-    this.baseBottom.setAttribute("transform", bottomTransform);
-    this.accentBottom.setAttribute("d", path.basePath);
-    this.accentBottom.setAttribute("transform", bottomTransform);
-
     const pathStartY = Math.min(0, path.topY);
     const pathEndY = Math.max(this.geometry.height, path.bottomY);
     const totalLength = pathEndY - pathStartY;
@@ -683,8 +653,6 @@ export class ReadingTocRail {
     const offset = formatNumber(0.06 - distanceToDot / totalLength);
 
     this.accentPath.setAttribute("stroke-dashoffset", offset);
-    this.accentTop.setAttribute("stroke-dashoffset", offset);
-    this.accentBottom.setAttribute("stroke-dashoffset", offset);
 
     this.dotButtons.forEach((button, index) => {
       const heading = this.headings[index];
