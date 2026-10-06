@@ -15,10 +15,12 @@
 {{end}}
 
 {{define "rss_dialog"}}
-<dialog id="rss-dialog" class="rss-dialog" aria-labelledby="rss-title" aria-describedby="rss-description">
+<dialog id="rss-dialog" class="settings-overlay rss-dialog" aria-labelledby="rss-title" aria-describedby="rss-description">
+  <div class="settings-backdrop" data-rss-close></div>
+  <div class="settings-paper rss-paper">
   <header class="rss-dialog-header">
-    <h2 id="rss-title" data-ui-text="rss.subscribe">{{T .Lang "rss.subscribe"}}</h2>
-    <form method="dialog"><button class="notes-action-button" aria-label="{{T .Lang "action.close"}}" data-ui-aria="action.close" autofocus><span class="material-symbol" aria-hidden="true">close</span></button></form>
+    <h2 id="rss-title" class="settings-title" data-ui-text="rss.subscribe">{{T .Lang "rss.subscribe"}}</h2>
+    <form method="dialog"><button class="settings-close-btn" aria-label="{{T .Lang "action.close"}}" data-ui-aria="action.close" autofocus><span class="material-symbol" aria-hidden="true">close</span></button></form>
   </header>
   <p id="rss-description" data-ui-text="rss.description">{{T .Lang "rss.description"}}</p>
   <input data-rss-address readonly aria-label="{{T .Lang "rss.address"}}" data-ui-aria="rss.address">
@@ -27,5 +29,6 @@
     <button type="button" data-rss-copy data-ui-text="rss.copy">{{T .Lang "rss.copy"}}</button>
   </div>
   <p class="rss-status" role="status"></p>
+  </div>
 </dialog>
 {{end}}

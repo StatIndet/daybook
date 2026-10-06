@@ -1655,38 +1655,48 @@ body.is-search-overlay-open .mobile-search-overlay {
 html[data-reduced-motion="true"] .like-button[data-like-feedback][aria-pressed] .material-symbol,
 html[data-reduced-motion="true"] .like-button[data-like-feedback][aria-pressed] .material-symbol::before { animation: none; }
 .memo-actions { margin-top: .65rem; color: var(--color-muted); }
-.rss-dialog {
-  width: min(440px, calc(100vw - 32px));
-  max-height: calc(100dvh - 48px);
-  box-sizing: border-box;
-  padding: 24px;
-  border: 1px solid var(--color-line);
-  border-radius: 6px;
-  background: var(--color-page);
-  color: var(--color-text);
-  font: inherit;
+.rss-dialog.settings-overlay {
+  margin: 0;
+  padding: 16px 0;
+  max-width: none;
+  max-height: none;
+  height: 100dvh;
+  border: 0;
+  background: transparent;
+  color-scheme: light;
 }
-.rss-dialog::backdrop { background: rgb(0 0 0 / .35); }
-.rss-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.rss-dialog-header h2 { font-size: 1.15rem; margin: 0; }
+.rss-dialog:not([open]) { display: none; }
+.rss-dialog::backdrop { background: transparent; }
+.rss-dialog .rss-paper {
+  min-height: min(480px, calc(100dvh - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  font-size: 1.05rem;
+}
 .rss-dialog-header form { margin: 0; }
-.rss-dialog p { line-height: 1.7; color: var(--color-muted); }
+.rss-dialog p { line-height: 1.7; color: inherit; }
 .rss-dialog input {
   box-sizing: border-box;
   width: 100%;
   padding: 12px 0;
   border: 0;
-  border-block: 1px solid var(--color-line);
+  border-block: 1px solid rgba(62, 56, 50, .2);
   border-radius: 0;
   background: transparent;
-  color: var(--color-text);
+  color: inherit;
   font: inherit;
 }
 .rss-dialog-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 20px; }
-.rss-dialog-actions a, .rss-dialog-actions button { font: inherit; color: var(--color-accent); cursor: pointer; background: transparent; border: 0; padding: 4px 0; }
+.rss-dialog-actions a, .rss-dialog-actions button { font: inherit; color: inherit; cursor: pointer; background: transparent; border: 0; padding: 4px 0; }
 .rss-status { min-height: 1.7em; margin-bottom: 0; }
 
 body:has(.rss-dialog[open]) { overflow: hidden; }
+.rss-dialog :is(input, button, a):focus-visible { outline: 2px solid #3e3832; outline-offset: 3px; }
+html[data-reduced-motion="true"] .rss-dialog,
+html[data-reduced-motion="true"] .rss-dialog :is(.settings-backdrop, .settings-paper) { transition: none; }
+@media (max-width: 480px) {
+  .rss-dialog .rss-paper { padding: 50px 22px 70px; }
+}
 
 
 /* Counter updates share one flip motion without animating the surrounding row. */

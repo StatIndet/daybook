@@ -156,7 +156,10 @@ function setupRSS(): void {
     address.value = link.href;
     open.href = link.href;
     status.textContent = '';
-    if (!dialog.open) dialog.showModal();
+    if (!dialog.open) {
+      dialog.classList.add('is-open');
+      dialog.showModal();
+    }
   }, true);
   dialog.querySelector('[data-rss-copy]')!.addEventListener('click', async () => {
     const value = address.value;
@@ -170,11 +173,8 @@ function setupRSS(): void {
     }
   });
   dialog.addEventListener('keydown', event => { if (event.key === 'Escape') event.stopPropagation(); });
-  dialog.addEventListener('click', event => {
-    if (event.target !== dialog) return;
-    const rect = dialog.getBoundingClientRect();
-    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close();
-  });
+  dialog.querySelector('[data-rss-close]')!.addEventListener('click', () => dialog.close());
+  dialog.addEventListener('close', () => dialog.classList.remove('is-open'));
   document.addEventListener('daybook:before-swap', () => dialog.close());
   document.addEventListener('daybook:lang-change', () => { status.textContent = ''; });
 }
