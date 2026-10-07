@@ -410,7 +410,7 @@ A portrait between paragraphs.
   const requestCount = commentRequests.length;
   await page.evaluate(() => {
     document.documentElement.dataset.commentsDisabled = 'true';
-    document.dispatchEvent(new CustomEvent('daybook:settings-change', { detail: { useSystemCursor: true } }));
+    document.dispatchEvent(new CustomEvent('daybook:settings-change', { detail: { useCustomCursor: false } }));
   });
   await page.waitForTimeout(150);
   assert.equal(commentRequests.length, requestCount, 'Disabling comments stops count requests');

@@ -1,5 +1,5 @@
 export interface DaybookSettings {
-  useSystemCursor: boolean;
+  useCustomCursor: boolean;
   enableClockCursor: boolean;
   disableComments: boolean;
   reducedMotion: boolean;
@@ -8,7 +8,7 @@ export interface DaybookSettings {
 const STORAGE_KEY = 'daybook:user-settings';
 
 const DEFAULT_SETTINGS: DaybookSettings = {
-  useSystemCursor: false,
+  useCustomCursor: false,
   enableClockCursor: false,
   disableComments: false,
   reducedMotion: false
@@ -20,8 +20,13 @@ export function loadSettings(): DaybookSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw);
-      currentSettings = { ...DEFAULT_SETTINGS, ...parsed };
+      const { useSystemCursor, ...saved } = JSON.parse(raw);
+      currentSettings = {
+        ...DEFAULT_SETTINGS,
+        ...saved,
+        // Preserve existing choices stored under the old, inverted preference.
+        useCustomCursor: typeof saved.useCustomCursor === 'boolean' ? saved.useCustomCursor : useSystemCursor === false,
+      };
     }
   } catch (e) {
     console.error('[Daybook] Failed to parse settings from localStorage', e);
@@ -47,7 +52,7 @@ export function updateSetting<K extends keyof DaybookSettings>(key: K, value: Da
 
 export function syncSettingsToDOM() {
   const html = document.documentElement;
-  if (currentSettings.useSystemCursor) {
+  if (!currentSettings.useCustomCursor) {
     html.setAttribute('data-use-system-cursor', 'true');
   } else {
     html.removeAttribute('data-use-system-cursor');

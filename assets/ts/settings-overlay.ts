@@ -76,18 +76,18 @@ export function initSettingsOverlay() {
     }
   };
 
-  setupCheckbox('setting-system-cursor', 'useSystemCursor');
+  setupCheckbox('setting-custom-cursor', 'useCustomCursor');
   setupCheckbox('setting-clock-cursor', 'enableClockCursor');
   setupCheckbox('setting-disable-comments', 'disableComments');
   setupCheckbox('setting-reduced-motion', 'reducedMotion');
 
-  const systemCursorCheckbox = document.getElementById('setting-system-cursor') as HTMLInputElement | null;
+  const customCursorCheckbox = document.getElementById('setting-custom-cursor') as HTMLInputElement | null;
   const clockCursorCheckbox = document.getElementById('setting-clock-cursor') as HTMLInputElement | null;
   const clockCursorLabel = document.querySelector('.setting-item-clock-cursor') as HTMLElement | null;
 
-  if (systemCursorCheckbox && clockCursorCheckbox && clockCursorLabel) {
+  if (customCursorCheckbox && clockCursorCheckbox && clockCursorLabel) {
     const updateClockCursorState = () => {
-      if (systemCursorCheckbox.checked) {
+      if (!customCursorCheckbox.checked) {
         clockCursorLabel.style.opacity = '0.5';
         clockCursorLabel.style.pointerEvents = 'none';
         clockCursorCheckbox.disabled = true;
@@ -97,7 +97,7 @@ export function initSettingsOverlay() {
         clockCursorCheckbox.disabled = false;
       }
     };
-    systemCursorCheckbox.addEventListener('change', updateClockCursorState);
+    customCursorCheckbox.addEventListener('change', updateClockCursorState);
     updateClockCursorState();
   }
 
